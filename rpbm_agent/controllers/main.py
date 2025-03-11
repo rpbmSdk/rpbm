@@ -15,8 +15,12 @@ class AgentController(Controller):
     @route('/rpbm_agent_auth', auth='user', type='json')
     def rpbm_agent_auth(self):
         _logger.info("rpbm_agent_auth")
-        xglassAgent.auth()
-        vsfAgent.auth()
+        VSF_LOGIN = request.env['ir.config_parameter'].sudo().get_param('VSF_LOGIN')
+        VSF_PASSWORD = request.env['ir.config_parameter'].sudo().get_param('VSF_PASSWORD')
+        XGLASS_USER = request.env['ir.config_parameter'].sudo().get_param('XGLASS_USER')
+        XGLASS_PASS = request.env['ir.config_parameter'].sudo().get_param('XGLASS_PASS')
+        xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
+        vsfAgent.auth(VSF_LOGIN, VSF_PASSWORD)
         _logger.info("rpbm_agent_auth done")
         return 
     

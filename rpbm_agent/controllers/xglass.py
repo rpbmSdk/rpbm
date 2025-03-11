@@ -15,8 +15,8 @@ XGLASS_URL = "https://portail-xglass.com"
 XGLASS_LOGIN_URL = f"{XGLASS_URL}/j_spring_security_check"
 XGLASS_MAIN_URL = f"{XGLASS_URL}/mainMenu.html"
 
-XGLASS_USER = os.getenv("XGLASS_USER")
-XGLASS_PASS = os.getenv("XGLASS_PASS")
+# XGLASS_USER = os.getenv("XGLASS_USER")
+# XGLASS_PASS = os.getenv("XGLASS_PASS")
 
 XGLASS_searchImmat = f"{XGLASS_URL}/ajax/searchImmat.html"
 LOGOUT_URL = "https://portail-xglass.com/logout.html"
@@ -266,7 +266,7 @@ class XGLASS:
     def post(self, url, data: dict = {}, **kwargs):
         return self.session.post(url, data=data)
 
-    def auth(self):
+    def auth(self, XGLASS_USER:str, XGLASS_PASS:str):
         self.get(XGLASS_URL)
         JSESSIONID = self.session.cookies.get_dict().get("JSESSIONID")
         payload = {

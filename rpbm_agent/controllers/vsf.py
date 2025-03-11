@@ -53,15 +53,15 @@ class VSFAgent:
         self.session.headers.update(self.headers)
         # self.auth_r = self.auth()
 
-    def auth(self):
+    def auth(self, login:str, password:str):
         r = self.session.get(VSF_LOGIN_URL, headers=self.headers)
         page = bs.BeautifulSoup(r.text, "html.parser")
         _token = page.find("input", {"name": "_token"})["value"]
         r = self.session.post(
             VSF_LOGIN_URL,
             data={
-                "login": VSF_LOGIN,
-                "password": VSF_PASSWORD,
+                "login": login,
+                "password": password,
                 "_token": _token,
                 "customer_id": None,
             },

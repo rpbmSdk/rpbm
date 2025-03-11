@@ -22,7 +22,7 @@ export class AgentWidgetDialog extends Component{
             vehicules: [],
             selectedVehicule: undefined,
             planche:undefined,
-            // calques: [],
+            calques: [],
             selectedCalque: undefined,
             pieces:[],
             selectedPiece: undefined,
@@ -45,6 +45,7 @@ export class AgentWidgetDialog extends Component{
             if(this.selectedVehicule){
                 const planche = this.getPlanche();
                 this.state.planche = planche;
+                // this.
             }
             else{
                 this.state.planche = undefined;

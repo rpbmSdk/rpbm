@@ -31,7 +31,7 @@
                             </t>
                         </select>
                         <div t-if="pieces.length > 0" class="d-flex justify-content-between">
-                            <t t-foreach="pieces" t-as="piece">
+                            <t t-foreach="pieces" t-as="piece" t-key="piece.id">
                                 <div class="card" style="width: 18rem; display: inline-block; margin: 10px;" t-att-data-piece-id="piece.id" t-on-click.prevent="onSelectPiece(piece.id)">
                                     <div class="card-body" t-attf-style="#{'background-color: azure !important;' if selectedPiece.id == piece.id else ''}">
                                         <h5 class="card-title">
