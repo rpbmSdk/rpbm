@@ -20,7 +20,15 @@ export class AgentWidgetDialog extends Component{
             immatriculationValue:"",
             vehicules: [],
             selectedVehicule: undefined,
+            calques: [],
+            selectedCalque: undefined,
         });
+
+        onWillStart(async ()=>{
+            this.toogleLoading();
+            await this.rpc("/rpbm_agent_auth")
+            this.toogleLoading();
+        })
 
 
     }
@@ -29,11 +37,17 @@ export class AgentWidgetDialog extends Component{
         this.state.loading = !this.state.loading;
     }
 
-    onConfirm(){
+    async close(){
+        await this.rpc("/rpbm_agent_close")
+    }
+
+    async onConfirm(){
+        await this.close();
         this.props.close();
     }
 
-    onDiscard(){
+    async onDiscard(){
+        await this.close();
         this.props.close();
     }
 
