@@ -2,21 +2,15 @@
 from odoo.http import Controller, request, route
 import logging
 
-from vsf import VSFAgent
-from xglass import XGLASS
+from . import vsf
+from . import xglass
 
 _logger = logging.getLogger(__name__)
 
-vsfAgent = VSFAgent()
-xglassAgent = XGLASS()
+vsfAgent = vsf.VSFAgent()
+xglassAgent = xglass.XGLASS()
 
 class AgentController(Controller):
-
-    def create_XGlassAgent(self):
-        return XGLASS()
-    
-    def create_VSFAgent(self):
-        return VSFAgent()
     
     @route('/searchImmatriculation', auth='user', methods=['POST'])
     def searchImmatriculation(self,immatriculation: str):
