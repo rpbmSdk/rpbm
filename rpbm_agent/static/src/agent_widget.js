@@ -34,4 +34,4 @@ export const agentWidget = {
     component: AgentWidget,
 }
 
-registry.category("widgets").add("rpbm_agent_widget", agentWidget);
+registry.category("view_widgets").add("rpbm_agent_widget", agentWidget);

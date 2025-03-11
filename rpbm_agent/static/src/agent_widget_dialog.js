@@ -16,9 +16,17 @@ export class AgentWidgetDialog extends Component{
         this.orm = useService("orm");
         this.record = this.props.record;
         this.state = useState({
+            loading: false,
+            immatriculationValue:"",
+            vehicules: [],
+            selectedVehicule: undefined,
         });
 
 
+    }
+
+    toogleLoading(){
+        this.state.loading = !this.state.loading;
     }
 
     onConfirm(){
@@ -28,4 +36,34 @@ export class AgentWidgetDialog extends Component{
     onDiscard(){
         this.props.close();
     }
+
+    get immatriculationValue(){
+        return this.state.immatriculationValue;
+    }
+
+    onChangeImmatriculation(ev){
+        this.state.immatriculationValue = ev.target.value;
+        console.log(this.immatriculationValue);
+    }
+
+    async onSearchImmatriculation(){
+        this.toogleLoading();
+        const res = await this.rpc("/searchImmatriculation",{
+            immatriculation: this.immatriculationValue,
+        })
+        console.log(res);
+        this.state.vehicules = res;
+        this.toogleLoading();
+
+    }
+
+    get vehicules(){
+        return this.state.vehicules;
+    }
+
+    onSelectVehicule(vehiculeId){
+        this.state.selectedVehicule = this.vehicules.find(vehicule => vehicule.id === vehiculeId);
+        console.log(this.state.selectedVehicule);
+    }
+
 }

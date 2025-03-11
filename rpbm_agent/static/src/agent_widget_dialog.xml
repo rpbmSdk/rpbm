@@ -3,14 +3,28 @@
 
     <t t-name="rpbm_agent.AgentWidgetDialog">
         <Dialog size="size" title="title">
-            <input 
-                class="o_input"
-                id="immatriculation"
-                placeholder="Immatriculation"
-                t-ref="immatriculation"
-            />
+            <input class="o_input" id="immatriculation" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" t-att-value="immatriculationValue" style="text-transform: uppercase;" />
+            <button class="btn btn-primary" t-on-click="onSearchImmatriculation">
+                Search
+            </button>
+            <t t-if="vehicules.length > 0">
+                <t t-foreach="vehicules" t-as="vehicules" t-key="vehicule.id">
+                    <div class="card"
+                            style="width: 18rem; display: inline-block; margin: 10px;"
+                            t-att-data-vehicule-id="vehicule.id"
+                            t-on-click="onSelectVehicule(vehicule.id)"
+                    >
+                        <img t-att-src="vehicule.imgUrl" class="card-img-top" alt="vehicule.image"/>
+                        <div class="card-body">
+                            <h5 class="card-title">Immatriculation: <t t-esc="vehicule.immatriculation"/>
+                            </h5>
+                        </div>
+                    </div>
+
+                </t>
+            </t>
             <t t-set-slot="footer">
-                <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!isPossibleConfiguration()">
+                <button class="btn btn-primary" t-on-click="onConfirm">
                     Confirm
                 </button>
                 <button class="btn btn-secondary" t-on-click="onDiscard">

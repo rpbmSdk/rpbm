@@ -14,6 +14,7 @@ class AgentController(Controller):
     
     @route('/searchImmatriculation', auth='user', methods=['POST'])
     def searchImmatriculation(self,immatriculation: str):
-        agent = self.create_XGlassAgent()
-        res = agent.searchVehiculeImmat(immatriculation)
+        _logger.info(f"searchImmatriculation {immatriculation}")
+        vehicules = xglassAgent.searchVehiculeImmat(immatriculation)
+        return [vehicule.__dict__ for vehicule in vehicules]
 

@@ -8,7 +8,8 @@ import bs4 as bs
 import json
 from datetime import datetime
 
-from xglass_lbl import getLabel
+from . import xglass_lbl 
+getLabel = xglass_lbl.getLabel
 
 XGLASS_URL = "https://portail-xglass.com"
 XGLASS_LOGIN_URL = f"{XGLASS_URL}/j_spring_security_check"
