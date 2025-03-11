@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="rpbm_agent.AgentWidgetDialog">
+        <Dialog size="size" title="title">
+            <input 
+                class="o_input"
+                id="immatriculation"
+                placeholder="Immatriculation"
+                t-ref="immatriculation"
+            />
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!isPossibleConfiguration()">
+                    Confirm
+                </button>
+                <button class="btn btn-secondary" t-on-click="onDiscard">
+                    Cancel
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

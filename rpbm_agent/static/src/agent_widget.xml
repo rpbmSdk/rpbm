@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    
+    <t t-name="rpbm_agent.AgentWidget">
+        <button class="btn btn-sm btn-secondary" t-on-click="onOpenWindow" >
+                <i class="oi oi-search me-2"/>
+            </button>
+    </t>
+        
+</templates>
