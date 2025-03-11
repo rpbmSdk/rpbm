@@ -8,8 +8,11 @@ import bs4 as bs
 import json
 from datetime import datetime
 
-from . import xglass_lbl 
-getLabel = xglass_lbl.getLabel
+try:
+    from . import xglass_lbl 
+    getLabel = xglass_lbl.getLabel
+except:
+    from xglass_lbl import getLabel
 
 XGLASS_URL = "https://portail-xglass.com"
 XGLASS_LOGIN_URL = f"{XGLASS_URL}/j_spring_security_check"
@@ -326,6 +329,7 @@ class XGLASS:
     
     def searchVehiculeImmat(self, immatriculation: str = "DS808DZ") -> list[XGlassVehicule]:
         data = self.searchImmat(immatriculation)
+        print(data)
         listeDeVariantes = data.get('regroupementVariantes')[0].get('listeDeVariante')
         return [XGlassVehicule(**v) for v in listeDeVariantes]
     
@@ -347,7 +351,7 @@ class XGLASS:
                             return json.loads(raw)
             except:
                 pass
-        return []
+        return {}
 
     def getPlancheData(self, vehicule: XGlassVehicule):
         raw = self.selectVehicule(vehicule.id)

@@ -43,9 +43,10 @@ export class AgentWidgetDialog extends Component{
         useEffect(()=>{
             console.log("useEffect selectedVehicule changed ", this.selectedVehicule);
             if(this.selectedVehicule){
-                const planche = this.getPlanche();
-                this.state.planche = planche;
+                // const planche = this.getPlanche();
+                // this.state.planche = planche;
                 // this.
+                this.getPlanche();
             }
             else{
                 this.state.planche = undefined;
@@ -66,12 +67,13 @@ export class AgentWidgetDialog extends Component{
         useEffect(()=>{
             console.log("useEffect selectedCalque changed ", this.selectedCalque);
             if(this.selectedCalque){
-                this.state.pieces = this.selectedCalque.pieces;
+                // this.state.pieces = this.selectedCalque.pieces;
+                this.getPieces();
             }
             else{
                 this.state.pieces = [];
             }
-        },()=>[this.pieces]);
+        },()=>[this.selectedCalque]);
 
         useEffect(()=>{
             console.log("useEffect pieces changed ", this.pieces);
@@ -142,6 +144,7 @@ export class AgentWidgetDialog extends Component{
             vehiculeId: this.selectedVehicule.id,
         })
         console.log(res);
+        this.state.planche = res;
         return res;
     }
 
@@ -151,6 +154,10 @@ export class AgentWidgetDialog extends Component{
 
     get calques(){
         return this.planche.calques;
+    }
+
+    get selectedCalque(){
+        return this.state.selectedCalque;
     }
 
     onChangeCalque(ev){

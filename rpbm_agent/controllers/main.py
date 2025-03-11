@@ -42,7 +42,7 @@ class AgentController(Controller):
     def getPlanche(self,vehiculeId:int):
         _logger.info(f"getPlanche {vehiculeId}")
         planche = xglassAgent.selectVehicule(str(vehiculeId))
-        return planche.__dict__
+        return planche
     
     @route('/getPieces', auth='user', type='json')
     def getPieces(self,plancheId:int, calqueId:int):
