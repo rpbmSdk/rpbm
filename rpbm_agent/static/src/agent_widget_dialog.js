@@ -4,6 +4,7 @@
 import { useService } from "@web/core/utils/hooks";
 import { useState, Component } from "@odoo/owl";
 import { Dialog } from '@web/core/dialog/dialog';
+import { onWillStart, useRef,useEffect } from "@odoo/owl";
 
 
 export class AgentWidgetDialog extends Component{
@@ -20,15 +21,66 @@ export class AgentWidgetDialog extends Component{
             immatriculationValue:"",
             vehicules: [],
             selectedVehicule: undefined,
-            calques: [],
+            planche:undefined,
+            // calques: [],
             selectedCalque: undefined,
+            pieces:[],
+            selectedPiece: undefined,
         });
 
         onWillStart(async ()=>{
             this.toogleLoading();
-            await this.rpc("/rpbm_agent_auth")
+            try{
+                await this.rpc("/rpbm_agent_auth")
+            }
+            catch(e){
+                console.error(e);
+                await this.rpc("/rpbm_agent_auth")
+            }
             this.toogleLoading();
         })
+
+        useEffect(()=>{
+            console.log("useEffect selectedVehicule changed ", this.selectedVehicule);
+            if(this.selectedVehicule){
+                const planche = this.getPlanche();
+                this.state.planche = planche;
+            }
+            else{
+                this.state.planche = undefined;
+            }
+        },()=>[this.selectedVehicule]);
+
+        useEffect(()=>{
+            console.log("useEffect planche changed ", this.planche);
+            if(this.planche){
+                this.state.selectedCalque = this.planche.calques[0];
+            }
+            else{
+                this.state.selectedCalque = undefined;
+                // this.state.pieces = [];
+            }
+        },()=>[this.planche]);
+
+        useEffect(()=>{
+            console.log("useEffect selectedCalque changed ", this.selectedCalque);
+            if(this.selectedCalque){
+                this.state.pieces = this.selectedCalque.pieces;
+            }
+            else{
+                this.state.pieces = [];
+            }
+        },()=>[this.pieces]);
+
+        useEffect(()=>{
+            console.log("useEffect pieces changed ", this.pieces);
+            if(this.pieces.length > 0){
+                this.state.selectedPiece = this.pieces[0];
+            }
+            else{
+                this.state.selectedPiece = undefined;
+            }
+        }, ()=>[this.pieces]);
 
 
     }
@@ -75,9 +127,54 @@ export class AgentWidgetDialog extends Component{
         return this.state.vehicules;
     }
 
+    get selectedVehicule(){
+        return this.state.selectedVehicule;
+    }
+
     onSelectVehicule(vehiculeId){
         this.state.selectedVehicule = this.vehicules.find(vehicule => vehicule.id === vehiculeId);
         console.log(this.state.selectedVehicule);
+    }
+
+    async getPlanche(){
+        const res = await this.rpc("/getPlanche",{
+            vehiculeId: this.selectedVehicule.id,
+        })
+        console.log(res);
+        return res;
+    }
+
+    get planche(){
+        return this.state.planche;
+    }
+
+    get calques(){
+        return this.planche.calques;
+    }
+
+    onChangeCalque(ev){
+        const calqueId = parseInt(ev.target.value);
+        this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
+        console.log(this.selectedCalque);
+    }
+
+    get pieces(){
+        return this.state.pieces;
+    }
+
+    async getPieces(){
+        const res = await this.rpc("/getPieces",{
+            plancheId: this.planche.id,
+            calqueId: this.selectedCalque.id,
+        })
+        console.log(res);
+        this.state.pieces = res;
+        // return res;
+    }
+
+    onSelectPiece(pieceId){
+        this.state.selectedPiece = this.pieces.find(vehicule => vehicule.id === pieceId);
+        console.log(this.state.selectedPiece);
     }
 
 }

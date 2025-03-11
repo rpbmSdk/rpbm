@@ -384,7 +384,26 @@ class XGLASS:
         data = self.getPieceData(planche, calque)
         self.elements_principaux = [XGlassElement(**p) for p in data.get('ELEMENTSIT_PRINCIPAUX')]
         self.elements_complementaires = [XGlassElement(**p) for p in data.get('ELEMENTSIT_COMPLEMENTAIRES')]
-        
+
+    def getPiecesData (self, plancheId:int, calqueId:int):
+        html = self.get(f'https://portail-xglass.com/affichagePieces.html?planche.id={plancheId}&calque.id={calqueId}&filtrageVinButtonClickedForDevisRapide=true').text
+        page = bs.BeautifulSoup(html, "html.parser")
+        scripts = page.find_all("script",src=False)
+        lines : list[str] = []
+        for script in scripts:
+            try:
+                if "var elementSitMapData =" in script.text:
+                    lines = script.text.splitlines()
+                    break
+            except:
+                pass
+        for line in lines:
+            if "var elementSitMapData =" in line:
+                raw = line.split("var elementSitMapData = ")[1]
+                raw = raw.replace(";", "")
+                return json.loads(raw)[0]
+        raise Exception("Piece not found")
+    
     def findSelectionsPiecesAmView(self, element:XGlassElement, piece:XGlassPiece = None):
         URL = 'https://portail-xglass.com/ajax/findSelectionsPiecesAmView.html'
         data = {

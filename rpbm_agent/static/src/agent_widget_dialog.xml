@@ -8,19 +8,41 @@
                 Search
             </button>
             <t t-if="vehicules.length > 0">
-                <t t-foreach="vehicules" t-as="vehicules" t-key="vehicule.id">
-                    <div class="card"
-                            style="width: 18rem; display: inline-block; margin: 10px;"
-                            t-att-data-vehicule-id="vehicule.id"
-                            t-on-click="onSelectVehicule(vehicule.id)"
-                    >
-                        <img t-att-src="vehicule.imgUrl" class="card-img-top" alt="vehicule.image"/>
-                        <div class="card-body">
-                            <h5 class="card-title">Immatriculation: <t t-esc="vehicule.immatriculation"/>
+                <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
+                    <div class="card" style="width: 18rem; display: inline-block; margin: 10px;" t-att-data-vehicule-id="vehicule.id" t-on-click.prevent="onSelectVehicule(vehicule.id)">
+                        <!-- <img t-att-src="vehicule.imgUrl" class="card-img-top" alt="vehicule.image"/> -->
+                        <div class="card-body" t-attf-style="#{'background-color: azure !important;' if selectedVehicule.id == vehicule.id else ''}">
+                            <h5 class="card-title">
+                                <t t-esc="vehicule.libelleCourt"/>
                             </h5>
+                            <!-- <p></p> -->
                         </div>
                     </div>
 
+                </t>
+                <t t-if="planche">
+                    <div>
+                        <select t-on-change="onChangeCalque" t-on-click.stop="() =&gt; {}" class="o_input pe-3">
+                            <t t-foreach="calques" t-as="calque" t-key="calque.id">
+                                <option t-att-value="calque.id" t-att-selected="calque.id == selectedCalque.id">
+                                    <t t-esc="calque.libelle"/>
+                                </option>
+
+                            </t>
+                        </select>
+                        <div t-if="pieces.length > 0" class="d-flex justify-content-between">
+                            <t t-foreach="pieces" t-as="piece">
+                                <div class="card" style="width: 18rem; display: inline-block; margin: 10px;" t-att-data-piece-id="piece.id" t-on-click.prevent="onSelectPiece(piece.id)">
+                                    <div class="card-body" t-attf-style="#{'background-color: azure !important;' if selectedPiece.id == piece.id else ''}">
+                                        <h5 class="card-title">
+                                            <t t-esc="piece.libelle"/>
+                                        </h5>
+                                    </div>
+                                </div>
+                            </t>
+
+                        </div>
+                    </div>
                 </t>
             </t>
             <t t-set-slot="footer">
