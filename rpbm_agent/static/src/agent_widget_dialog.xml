@@ -18,7 +18,7 @@
     </t>
 
     <t t-name="rpbm_agent.PieceComponent">
-        <div class="card" style="30%; margin: 5px;">
+        <div class="card" style="width:30%; margin: 5px;">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
                     <t t-esc="props.piece.pieceOe.libelle"/>
@@ -26,14 +26,20 @@
                 <p>
                     Prix: <t t-esc="props.piece.pieceOe.prix"/>
                 </p>
-                <ul>
-                <t t-foreach="props.piece.pieceOe.tempsList" t-as="tempsList">
-                    <li>
-                        <t t-esc="tempsList.operationTemps.libelle"/> : <t t-esc="tempsList.temps"/>h | Taux : <t t-esc="tempsList.taux"/>€
-                    </li>
+                <t t-if="props.piece.tempsList">
+                    <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.id">
+                        <li>
+                            <t t-esc="tempsList.operationTemps.libelle"/>
+ :                            <t t-esc="tempsList.temps"/>
+h | Taux : <t t-esc="tempsList.taux"/>
+€
+                        </li>
+                    </t>
                 </t>
+                <ul>
+
                 </ul>
-                
+
             </div>
         </div>
     </t>
@@ -78,7 +84,7 @@
                     </div>
                     <div>
 
-                        <div t-if="pieces.length > 0" class="d-flex justify-content-between">
+                        <div t-if="pieces.length > 0" class="d-flex justify-content-between" style="flex-wrap: wrap;">
                             <t t-foreach="pieces" t-as="piece" t-key="piece.id">
                                 <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)" />
                             </t>
