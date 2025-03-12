@@ -5,10 +5,37 @@ import { useService } from "@web/core/utils/hooks";
 import { useState, Component } from "@odoo/owl";
 import { Dialog } from '@web/core/dialog/dialog';
 import { onWillStart, useRef,useEffect } from "@odoo/owl";
+import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
+
+
+export class VehiculeComponent extends Component{
+    static props = {
+        vehicule: {type: Object},
+        selectedVehiculeId: {type: Number},
+        // onSelectVehicule: {type: Function},
+    }
+    static template = "rpbm_agent.VehiculeComponent";
+
+    get style (){
+        return this.props.vehicule.id === this.props.selectedVehiculeId ? "background-color: azure !important;" : "";
+    }
+}
+
+
+export class CalqueComponent extends Component{
+
+}
 
 
 export class AgentWidgetDialog extends Component{
-    static components = { Dialog }
+    static components = { 
+        Dialog,
+        VehiculeComponent,
+     }
+    // static props = {
+    //     ...standardWidgetProps,
+    //     close: {type: Function, optional: true},
+    // }
     static template = "rpbm_agent.AgentWidgetDialog";
 
     setup(){
@@ -21,6 +48,7 @@ export class AgentWidgetDialog extends Component{
             immatriculationValue:"",
             vehicules: [],
             selectedVehicule: undefined,
+            selectedVehiculeId: 0,
             planche:undefined,
             calques: [],
             selectedCalque: undefined,
@@ -98,12 +126,12 @@ export class AgentWidgetDialog extends Component{
 
     async onConfirm(){
         await this.close();
-        this.props.close();
+        // this.props.close();
     }
 
     async onDiscard(){
         await this.close();
-        this.props.close();
+        // this.props.close();
     }
 
     get immatriculationValue(){
@@ -134,11 +162,12 @@ export class AgentWidgetDialog extends Component{
         return this.state.selectedVehicule;
     }
 
-    get selectedVehiculeID(){
-        return this.selectedVehicule ? this.selectedVehicule.id : undefined;
+    get selectedVehiculeId(){
+        return this.selectedVehicule ? this.selectedVehicule.id : 0;
     }
 
     onSelectVehicule(vehiculeId){
+        // this.state.selectedVehiculeId = vehiculeId;
         this.state.selectedVehicule = this.vehicules.find(vehicule => vehicule.id === vehiculeId);
         console.log(this.state.selectedVehicule);
     }
@@ -164,8 +193,16 @@ export class AgentWidgetDialog extends Component{
         return this.state.selectedCalque;
     }
 
+    get selectedCalqueID(){
+        return this.selectedCalque ? this.selectedCalque.id : undefined;
+    }
+
     onChangeCalque(ev){
         const calqueId = parseInt(ev.target.value);
+        this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
+        console.log(this.selectedCalque);
+    }
+    onClickCalque(calqueId){
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
         console.log(this.selectedCalque);
     }

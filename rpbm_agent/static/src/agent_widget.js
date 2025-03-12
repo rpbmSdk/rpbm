@@ -14,18 +14,19 @@ export class AgentWidget extends Component{
         super.setup();
         this.dialog = useService("dialog");
 
-        this.state = useState({
-            agents: [],
-        });
+        // this.state = useState({
+        //     agents: [],
+        // });
     }
 
     onOpenWindow(){
         this.dialog.add(AgentWidgetDialog, {
-            title: "Agents",
-            size: "large",
-            buttons: [
-                {text: "Close", close: true},
-            ],
+            // title: "Agents",
+            record: this.props.record,
+            // size: "large",
+            // buttons: [
+            //     {text: "Close", close: true},
+            // ],
         });
     }
 }

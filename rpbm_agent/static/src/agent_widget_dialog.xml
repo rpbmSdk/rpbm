@@ -1,40 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
+    <t t-name="rpbm_agent.VehiculeComponent">
+        <div class="card" style="width: 50%;margin: 15px;">
+            <div class="card-body" t-att-style="style">
+                <h5 class="card-title">
+                    <t t-esc="props.vehicule.libelleCourt"/>
+                </h5>
+            </div>
+        </div>
+    </t>
+
     <t t-name="rpbm_agent.AgentWidgetDialog">
-        <Dialog size="size" title="title">
-            <input class="o_input" id="immatriculation" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" t-att-value="immatriculationValue" style="text-transform: uppercase;" />
+        <Dialog>
+            <input class="o_input" id="immatriculation" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" style="text-transform: uppercase;" />
             <button class="btn btn-primary" t-on-click="onSearchImmatriculation">
                 Search
             </button>
             <t t-if="vehicules.length > 0">
                 <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
-                    <!-- <div class="card" style="width: 18rem; display: inline-block; margin: 10px;" t-att-data-vehicule-id="vehicule.id" t-on-click="()=>onSelectVehicule(vehicule.id)"> -->
-                    <!-- <img t-att-src="vehicule.imgUrl" class="card-img-top" alt="vehicule.image"/> -->
-                    <div class="card-body" t-attf-style="#{'background-color: azure !important;' if selectedVehiculeId == vehicule.id else ''}">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <t t-esc="vehicule.libelleCourt"/>
-                            </h5>
-                            <!-- <p></p> -->
-                        </div>
-                    </div>
+                    <VehiculeComponent vehicule="vehicule" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onSelectVehicule(vehicule.id)" />
+                    <!-- <VehiculeComponent vehicule="vehicule" selectedVehiculeId="selectedVehiculeId" /> -->
+                    <!-- <div class="card" t-on-click="()=>this.onSelectVehicule(vehicule.id)">
+                        <t t-if="selectedVehiculeId == vehicule.id">
+                            <div class="card-body" style="background-color: azure !important;">
+                                <h5 class="card-title">
+                                    <t t-esc="vehicule.libelleCourt"/>
+                                </h5>
+                            </div>
+                        </t>
+
+                        <t t-else="">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <t t-esc="vehicule.libelleCourt"/>
+                                </h5>
+                            </div>
+                        </t>
+
+                    </div> -->
 
                 </t>
+                <!-- <t t-if="selectedVehicule">
+                    <span>Vehicule Select : <t t-esc="selectedVehicule"/>
+                    </span>
+                    <span>Vehicule Select Id: <t t-esc="selectedVehiculeId"/>
+                    </span>
+                </t> -->
                 <button t-if="selectedVehicule" class="btn btn-primary" t-on-click="getPlanche">
                     getPlanche
                 </button>
                 <t t-if="planche">
                     <div>
-                        <select t-on-change="onChangeCalque" t-on-click.stop="() =&gt; {}" class="o_input pe-3">
+                        <t t-foreach="calques" t-as="calque" t-key="calque.id">
+
+                            <button class="btn btn-primary" t-on-click="()=>this.onClickCalque(calque.id)">
+                                <t t-esc="calque.libelle"/>
+                            </button>
+                        </t>
+
+                        <!-- <select t-on-change="onChangeCalque" t-on-click.stop="() =&gt; {}" class="o_input pe-3">
                             <t t-foreach="calques" t-as="calque" t-key="calque.id">
-                                <!-- <option t-att-value="calque.id" t-att-selected="calque.id == selectedCalque.id"> -->
                                 <option t-att-value="calque.id">
                                     <t t-esc="calque.libelle"/>
                                 </option>
 
                             </t>
-                        </select>
+                        </select> -->
                         <button t-if="selectedCalque" class="btn btn-primary" t-on-click="getPieces">
                             getPieces
                         </button>
