@@ -134,6 +134,10 @@ export class AgentWidgetDialog extends Component{
         return this.state.selectedVehicule;
     }
 
+    get selectedVehiculeID(){
+        return this.selectedVehicule ? this.selectedVehicule.id : undefined;
+    }
+
     onSelectVehicule(vehiculeId){
         this.state.selectedVehicule = this.vehicules.find(vehicule => vehicule.id === vehiculeId);
         console.log(this.state.selectedVehicule);
