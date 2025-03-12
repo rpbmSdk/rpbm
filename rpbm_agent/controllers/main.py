@@ -35,8 +35,12 @@ class AgentController(Controller):
     @route('/searchImmatriculation', auth='user', type='json')
     def searchImmatriculation(self,immatriculation: str):
         _logger.info(f"searchImmatriculation {immatriculation}")
-        vehicules = xglassAgent.searchVehiculeImmat(immatriculation)
-        return [vehicule.__dict__ for vehicule in vehicules]
+        try:
+            vehicules = xglassAgent.searchVehiculeImmat(immatriculation)
+            return [vehicule.__dict__ for vehicule in vehicules]
+        except Exception as e:
+            _logger.warning(e)
+            return []
 
     @route('/getPlanche', auth='user', type='json')
     def getPlanche(self,vehiculeId:int):

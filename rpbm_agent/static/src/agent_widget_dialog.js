@@ -40,50 +40,50 @@ export class AgentWidgetDialog extends Component{
             this.toogleLoading();
         })
 
-        useEffect(()=>{
-            console.log("useEffect selectedVehicule changed ", this.selectedVehicule);
-            if(this.selectedVehicule){
-                // const planche = this.getPlanche();
-                // this.state.planche = planche;
-                // this.
-                this.getPlanche();
-            }
-            else{
-                this.state.planche = undefined;
-            }
-        },()=>[this.selectedVehicule]);
+        // useEffect(()=>{
+        //     console.log("useEffect selectedVehicule changed ", this.selectedVehicule);
+        //     if(this.selectedVehicule){
+        //         // const planche = this.getPlanche();
+        //         // this.state.planche = planche;
+        //         // this.
+        //         this.getPlanche();
+        //     }
+        //     else{
+        //         this.state.planche = undefined;
+        //     }
+        // },()=>[this.selectedVehicule]);
 
-        useEffect(()=>{
-            console.log("useEffect planche changed ", this.planche);
-            if(this.planche){
-                this.state.selectedCalque = this.planche.calques[0];
-            }
-            else{
-                this.state.selectedCalque = undefined;
-                // this.state.pieces = [];
-            }
-        },()=>[this.planche]);
+        // useEffect(()=>{
+        //     console.log("useEffect planche changed ", this.planche);
+        //     if(this.planche){
+        //         this.state.selectedCalque = this.planche.calques[0];
+        //     }
+        //     else{
+        //         this.state.selectedCalque = undefined;
+        //         // this.state.pieces = [];
+        //     }
+        // },()=>[this.planche]);
 
-        useEffect(()=>{
-            console.log("useEffect selectedCalque changed ", this.selectedCalque);
-            if(this.selectedCalque){
-                // this.state.pieces = this.selectedCalque.pieces;
-                this.getPieces();
-            }
-            else{
-                this.state.pieces = [];
-            }
-        },()=>[this.selectedCalque]);
+        // useEffect(()=>{
+        //     console.log("useEffect selectedCalque changed ", this.selectedCalque);
+        //     if(this.selectedCalque){
+        //         // this.state.pieces = this.selectedCalque.pieces;
+        //         this.getPieces();
+        //     }
+        //     else{
+        //         this.state.pieces = [];
+        //     }
+        // },()=>[this.selectedCalque]);
 
-        useEffect(()=>{
-            console.log("useEffect pieces changed ", this.pieces);
-            if(this.pieces.length > 0){
-                this.state.selectedPiece = this.pieces[0];
-            }
-            else{
-                this.state.selectedPiece = undefined;
-            }
-        }, ()=>[this.pieces]);
+        // useEffect(()=>{
+        //     console.log("useEffect pieces changed ", this.pieces);
+        //     if(this.pieces.length > 0){
+        //         this.state.selectedPiece = this.pieces[0];
+        //     }
+        //     else{
+        //         this.state.selectedPiece = undefined;
+        //     }
+        // }, ()=>[this.pieces]);
 
 
     }

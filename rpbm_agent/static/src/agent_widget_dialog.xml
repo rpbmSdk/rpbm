@@ -9,7 +9,7 @@
             </button>
             <t t-if="vehicules.length > 0">
                 <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
-                    <div class="card" style="width: 18rem; display: inline-block; margin: 10px;" t-att-data-vehicule-id="vehicule.id" t-on-click.prevent="onSelectVehicule(vehicule.id)">
+                    <div class="card" style="width: 18rem; display: inline-block; margin: 10px;" t-att-data-vehicule-id="vehicule.id" t-on-click="()=>onSelectVehicule(vehicule.id)">
                         <!-- <img t-att-src="vehicule.imgUrl" class="card-img-top" alt="vehicule.image"/> -->
                         <!-- <div class="card-body" t-attf-style="#{'background-color: azure !important;' if selectedVehicule.id == vehicule.id else ''}"> -->
                         <div class="card-body" >
@@ -21,6 +21,9 @@
                     </div>
 
                 </t>
+                <button t-if="selectedVehicule" class="btn btn-primary" t-on-click="getPlanche">
+                    getPlanche
+                </button>
                 <t t-if="planche">
                     <div>
                         <select t-on-change="onChangeCalque" t-on-click.stop="() =&gt; {}" class="o_input pe-3">
@@ -32,6 +35,9 @@
 
                             </t>
                         </select>
+                        <button t-if="selectedCalque" class="btn btn-primary" t-on-click="getPieces">
+                            getPieces
+                        </button>
                         <div t-if="pieces.length > 0" class="d-flex justify-content-between">
                             <t t-foreach="pieces" t-as="piece" t-key="piece.id">
                                 <div class="card" style="width: 18rem; display: inline-block; margin: 10px;" t-att-data-piece-id="piece.id" t-on-click.prevent="onSelectPiece(piece.id)">

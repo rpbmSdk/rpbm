@@ -14,6 +14,9 @@ try:
 except:
     from xglass_lbl import getLabel
 
+import logging
+_logger = logging.getLogger(__name__)
+
 XGLASS_URL = "https://portail-xglass.com"
 XGLASS_LOGIN_URL = f"{XGLASS_URL}/j_spring_security_check"
 XGLASS_MAIN_URL = f"{XGLASS_URL}/mainMenu.html"
@@ -330,6 +333,7 @@ class XGLASS:
     def searchVehiculeImmat(self, immatriculation: str = "DS808DZ") -> list[XGlassVehicule]:
         data = self.searchImmat(immatriculation)
         print(data)
+        _logger.info(data)
         listeDeVariantes = data.get('regroupementVariantes')[0].get('listeDeVariante')
         return [XGlassVehicule(**v) for v in listeDeVariantes]
     
