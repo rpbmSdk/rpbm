@@ -11,8 +11,15 @@
         </div>
     </t>
 
+    <t t-name="rpbm_agent.CalqueComponent">
+        <button t-att-class="class">
+            <t t-esc="props.calque.libelle"/>
+        </button>
+    </t>
+
     <t t-name="rpbm_agent.AgentWidgetDialog">
-        <Dialog>
+        <Dialog size="lg" title="Agent">
+            <label for="immatriculation">Immatriculation</label>
             <input class="o_input" id="immatriculation" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" style="text-transform: uppercase;" />
             <button class="btn btn-primary" t-on-click="onSearchImmatriculation">
                 Search
@@ -20,33 +27,7 @@
             <t t-if="vehicules.length > 0">
                 <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
                     <VehiculeComponent vehicule="vehicule" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onSelectVehicule(vehicule.id)" />
-                    <!-- <VehiculeComponent vehicule="vehicule" selectedVehiculeId="selectedVehiculeId" /> -->
-                    <!-- <div class="card" t-on-click="()=>this.onSelectVehicule(vehicule.id)">
-                        <t t-if="selectedVehiculeId == vehicule.id">
-                            <div class="card-body" style="background-color: azure !important;">
-                                <h5 class="card-title">
-                                    <t t-esc="vehicule.libelleCourt"/>
-                                </h5>
-                            </div>
-                        </t>
-
-                        <t t-else="">
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    <t t-esc="vehicule.libelleCourt"/>
-                                </h5>
-                            </div>
-                        </t>
-
-                    </div> -->
-
                 </t>
-                <!-- <t t-if="selectedVehicule">
-                    <span>Vehicule Select : <t t-esc="selectedVehicule"/>
-                    </span>
-                    <span>Vehicule Select Id: <t t-esc="selectedVehiculeId"/>
-                    </span>
-                </t> -->
                 <button t-if="selectedVehicule" class="btn btn-primary" t-on-click="getPlanche">
                     getPlanche
                 </button>
@@ -54,9 +35,10 @@
                     <div>
                         <t t-foreach="calques" t-as="calque" t-key="calque.id">
 
-                            <button class="btn btn-primary" t-on-click="()=>this.onClickCalque(calque.id)">
+                            <!-- <button class="btn btn-primary" t-on-click="()=>this.onClickCalque(calque.id)">
                                 <t t-esc="calque.libelle"/>
-                            </button>
+                            </button> -->
+                            <CalqueComponent calque="calque" selectedCalqueId="selectedCalqueId" t-on-click="()=>this.onSelectCalque(calque.id)" />
                         </t>
 
                         <!-- <select t-on-change="onChangeCalque" t-on-click.stop="() =&gt; {}" class="o_input pe-3">
@@ -67,9 +49,14 @@
 
                             </t>
                         </select> -->
-                        <button t-if="selectedCalque" class="btn btn-primary" t-on-click="getPieces">
+                        <div>
+                            <button t-if="selectedCalque" class="btn btn-primary" t-on-click="getPieces">
                             getPieces
-                        </button>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+
                         <div t-if="pieces.length > 0" class="d-flex justify-content-between">
                             <t t-foreach="pieces" t-as="piece" t-key="piece.id">
                                 <div class="card" style="width: 18rem; display: inline-block; margin: 10px;" t-att-data-piece-id="piece.id" t-on-click.prevent="onSelectPiece(piece.id)">
