@@ -37,6 +37,18 @@ export class CalqueComponent extends Component{
     }
 }
 
+export class PieceComponent extends Component{
+    static props = {
+        piece: {type: Object},
+        selectedPieceId: {type: Number},
+    }
+    static template = "rpbm_agent.PieceComponent";
+
+    get style (){
+        return this.props.piece.id === this.props.selectedPieceId ? "background-color: azure !important;" : "";
+    }
+}
+
 
 export class AgentWidgetDialog extends Component{
     static components = { 
@@ -205,8 +217,8 @@ export class AgentWidgetDialog extends Component{
         return this.state.selectedCalque;
     }
 
-    get selectedCalqueID(){
-        return this.selectedCalque ? this.selectedCalque.id : undefined;
+    get selectedCalqueId(){
+        return this.selectedCalque ? this.selectedCalque.id : 0;
     }
 
     onChangeCalque(ev){
@@ -236,6 +248,14 @@ export class AgentWidgetDialog extends Component{
     onSelectPiece(pieceId){
         this.state.selectedPiece = this.pieces.find(vehicule => vehicule.id === pieceId);
         console.log(this.state.selectedPiece);
+    }
+
+    get selectedPiece(){
+        return this.state.selectedPiece;
+    }
+
+    get selectedPieceId(){
+        return this.selectedPiece ? this.selectedPiece.id : 0;
     }
 
 }
