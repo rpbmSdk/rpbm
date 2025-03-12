@@ -38,7 +38,7 @@
                             <!-- <button class="btn btn-primary" t-on-click="()=>this.onClickCalque(calque.id)">
                                 <t t-esc="calque.libelle"/>
                             </button> -->
-                            <CalqueComponent calque="calque" selectedCalqueID="selectedCalqueId" t-on-click="()=>this.onSelectCalque(calque.id)" />
+                            <CalqueComponent calque="calque" selectedCalqueId="selectedCalqueId" t-on-click="()=>this.onSelectCalque(calque.id)" />
                         </t>
 
                         <!-- <select t-on-change="onChangeCalque" t-on-click.stop="() =&gt; {}" class="o_input pe-3">
