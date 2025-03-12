@@ -55,6 +55,7 @@ export class AgentWidgetDialog extends Component{
         Dialog,
         VehiculeComponent,
         CalqueComponent,
+        PieceComponent,
      }
     // static props = {
     //     ...standardWidgetProps,

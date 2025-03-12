@@ -21,8 +21,19 @@
         <div class="card" style="30%; margin: 5px;">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
-                    <t t-esc="props.piece.libelle"/>
+                    <t t-esc="props.piece.pieceOe.libelle"/>
                 </h5>
+                <p>
+                    Prix: <t t-esc="props.piece.pieceOe.prix"/>
+                </p>
+                <ul>
+                <t t-foreach="props.piece.pieceOe.tempsList" t-as="tempsList">
+                    <li>
+                        <t t-esc="tempsList.operationTemps.libelle"/> : <t t-esc="tempsList.temps"/>h | Taux : <t t-esc="tempsList.taux"/>€
+                    </li>
+                </t>
+                </ul>
+                
             </div>
         </div>
     </t>
