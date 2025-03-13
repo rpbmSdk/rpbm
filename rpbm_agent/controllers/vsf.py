@@ -28,6 +28,7 @@ class VSFArticle:
     stock: int
     available: bool
     remiseRPBM:float
+    prixVenteRPBM:float
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -37,6 +38,7 @@ class VSFArticle:
         self.stock_groupe = int(self.stock_groupe)
         self.stock = int(self.stock)
         self.remiseRPBM = 0.2
+        self.prixVenteRPBM = self.prixVente * (1 - self.remiseRPBM)
         # TODO : recalculer le prix de vente avec la remise RPBM
         
         pass

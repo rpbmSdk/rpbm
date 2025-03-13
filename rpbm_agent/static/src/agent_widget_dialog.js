@@ -4,89 +4,107 @@
 import { useService } from "@web/core/utils/hooks";
 import { useState, Component } from "@odoo/owl";
 import { Dialog } from '@web/core/dialog/dialog';
-import { onWillStart, useRef,useEffect } from "@odoo/owl";
+import { onWillStart, useRef, useEffect } from "@odoo/owl";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
 
 
-export class VehiculeComponent extends Component{
+export class VehiculeComponent extends Component {
     static props = {
-        vehicule: {type: Object},
-        selectedVehiculeId: {type: Number},
+        vehicule: { type: Object },
+        selectedVehiculeId: { type: Number },
         // onSelectVehicule: {type: Function},
     }
     static template = "rpbm_agent.VehiculeComponent";
 
-    get style (){
+    get style() {
         return this.props.vehicule.id === this.props.selectedVehiculeId ? "background-color: azure !important;" : "";
     }
 }
 
 
-export class CalqueComponent extends Component{
+export class CalqueComponent extends Component {
     static props = {
-        calque: {type: Object},
-        selectedCalqueId: {type: Number},
+        calque: { type: Object },
+        selectedCalqueId: { type: Number },
         // onClickCalque: {type: Function},
     }
     static template = "rpbm_agent.CalqueComponent";
 
-    get class (){
+    get class() {
         let className = "btn ";
         className += this.props.calque.id === this.props.selectedCalqueId ? "btn-primary" : "btn-outline-primary";
         return className;
     }
 }
 
-export class PieceComponent extends Component{
+export class PieceComponent extends Component {
     static props = {
-        piece: {type: Object},
-        selectedPieceId: {type: Number},
+        piece: { type: Object },
+        selectedPieceId: { type: Number },
     }
     static template = "rpbm_agent.PieceComponent";
 
-    get style (){
+    get style() {
         return this.props.piece.id === this.props.selectedPieceId ? "background-color: azure !important;" : "";
     }
 }
 
+export class ArticleComponent extends Component {
+    static props = {
+        article: { type: Object },
+        selectedArticleId: { type: Number },
+    }
+    static template = "rpbm_agent.ArticleComponent";
 
-export class AgentWidgetDialog extends Component{
-    static components = { 
+    get style() {
+        return this.props.article.id === this.props.selectedArticleId ? "background-color: azure !important;" : "";
+    }
+}
+
+
+export class AgentWidgetDialog extends Component {
+    static components = {
         Dialog,
         VehiculeComponent,
         CalqueComponent,
         PieceComponent,
-     }
+        ArticleComponent
+    }
     // static props = {
     //     ...standardWidgetProps,
     //     close: {type: Function, optional: true},
     // }
     static template = "rpbm_agent.AgentWidgetDialog";
 
-    setup(){
+    setup() {
         super.setup();
         this.rpc = useService("rpc");
         this.orm = useService("orm");
         this.record = this.props.record;
         this.state = useState({
             loading: false,
-            immatriculationValue:"",
+            immatriculationValue: "",
             vehicules: [],
             selectedVehicule: undefined,
             selectedVehiculeId: 0,
-            planche:undefined,
+            planche: undefined,
             calques: [],
             selectedCalque: undefined,
-            pieces:[],
+            pieces: [],
             selectedPiece: undefined,
+            piecesAm: [],
+            selectedPieceAm: undefined,
+            baseEurocode: undefined,
+            articlesVsf : [],
+            selectedArticleVsf : undefined,
         });
 
-        onWillStart(async ()=>{
+        onWillStart(async () => {
             this.toogleLoading();
-            try{
+            try {
                 await this.rpc("/rpbm_agent_auth")
             }
-            catch(e){
+            catch (e) {
                 console.error(e);
                 await this.rpc("/rpbm_agent_auth")
             }
@@ -141,36 +159,36 @@ export class AgentWidgetDialog extends Component{
 
     }
 
-    toogleLoading(){
+    toogleLoading() {
         this.state.loading = !this.state.loading;
     }
 
-    async close(){
+    async close() {
         await this.rpc("/rpbm_agent_close")
     }
 
-    async onConfirm(){
+    async onConfirm() {
         await this.close();
         // this.props.close();
     }
 
-    async onDiscard(){
+    async onDiscard() {
         await this.close();
         // this.props.close();
     }
 
-    get immatriculationValue(){
+    get immatriculationValue() {
         return this.state.immatriculationValue;
     }
 
-    onChangeImmatriculation(ev){
+    onChangeImmatriculation(ev) {
         this.state.immatriculationValue = ev.target.value;
         console.log(this.immatriculationValue);
     }
 
-    async onSearchImmatriculation(){
+    async onSearchImmatriculation() {
         this.toogleLoading();
-        const res = await this.rpc("/searchImmatriculation",{
+        const res = await this.rpc("/searchImmatriculation", {
             immatriculation: this.immatriculationValue,
         })
         console.log(res);
@@ -179,26 +197,26 @@ export class AgentWidgetDialog extends Component{
 
     }
 
-    get vehicules(){
+    get vehicules() {
         return this.state.vehicules;
     }
 
-    get selectedVehicule(){
+    get selectedVehicule() {
         return this.state.selectedVehicule;
     }
 
-    get selectedVehiculeId(){
+    get selectedVehiculeId() {
         return this.selectedVehicule ? this.selectedVehicule.id : 0;
     }
 
-    onSelectVehicule(vehiculeId){
+    onSelectVehicule(vehiculeId) {
         // this.state.selectedVehiculeId = vehiculeId;
         this.state.selectedVehicule = this.vehicules.find(vehicule => vehicule.id === vehiculeId);
         console.log(this.state.selectedVehicule);
     }
 
-    async getPlanche(){
-        const res = await this.rpc("/getPlanche",{
+    async getPlanche() {
+        const res = await this.rpc("/getPlanche", {
             vehiculeId: this.selectedVehicule.id,
         })
         console.log(res);
@@ -206,38 +224,38 @@ export class AgentWidgetDialog extends Component{
         return res;
     }
 
-    get planche(){
+    get planche() {
         return this.state.planche;
     }
 
-    get calques(){
+    get calques() {
         return this.planche.calques;
     }
 
-    get selectedCalque(){
+    get selectedCalque() {
         return this.state.selectedCalque;
     }
 
-    get selectedCalqueId(){
+    get selectedCalqueId() {
         return this.selectedCalque ? this.selectedCalque.id : 0;
     }
 
-    onChangeCalque(ev){
+    onChangeCalque(ev) {
         const calqueId = parseInt(ev.target.value);
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
         console.log(this.selectedCalque);
     }
-    onClickCalque(calqueId){
+    onClickCalque(calqueId) {
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
         console.log(this.selectedCalque);
     }
 
-    get pieces(){
+    get pieces() {
         return this.state.pieces;
     }
 
-    async getPieces(){
-        const res = await this.rpc("/getPieces",{
+    async getPieces() {
+        const res = await this.rpc("/getPieces", {
             plancheId: this.planche.id,
             calqueId: this.selectedCalque.id,
         })
@@ -246,17 +264,62 @@ export class AgentWidgetDialog extends Component{
         // return res;
     }
 
-    onSelectPiece(pieceId){
+    onSelectPiece(pieceId) {
         this.state.selectedPiece = this.pieces.find(vehicule => vehicule.id === pieceId);
         console.log(this.state.selectedPiece);
     }
 
-    get selectedPiece(){
+    get selectedPiece() {
         return this.state.selectedPiece;
     }
 
-    get selectedPieceId(){
+    get selectedPieceId() {
         return this.selectedPiece ? this.selectedPiece.id : 0;
+    }
+
+    async getPieceAm() {
+        const res = await this.rpc("/getPieceAm", {
+            element_withPiecesAm: this.selectedPiece['element.withPiecesAm'],
+            pieceId: this.selectedPiece.id,
+            elementSitId: this.selectedPiece.elementSitId,
+        })
+        console.log(res);
+        // this.state.piecesAm = res;
+    }
+
+    onChangeBaseEurocode(ev) {
+        this.state.baseEurocode = ev.target.value;
+        console.log(this.baseEurocode);
+    }
+
+    get baseEurocode() {
+        return this.state.baseEurocode
+    }
+
+    get articlesVsf() {
+        return this.state.articlesVsf;
+    }
+
+    async onSearchBaseEurocode() {
+        const res = await this.rpc("/searchBaseEurocode", {
+            baseEurocode: this.baseEurocode,
+        })
+        console.log(res);
+        this.state.articlesVsf = res;
+        // this.state.piecesAm = res;
+    }
+
+    get selectedArticleVsf() {
+        return this.state.selectedArticleVsf;
+    }
+
+    onClickArticleVsf(articleId) {
+        this.state.selectedArticleVsf = this.articlesVsf.find(article => article.id === articleId);
+        console.log(this.selectedArticleVsf);
+    }
+
+    get selectedArticleId() {
+        return this.selectedArticleVsf ? this.selectedArticleVsf.id : 0;
     }
 
 }

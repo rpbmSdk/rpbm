@@ -68,5 +68,41 @@ class AgentController(Controller):
                 for XGLasspiece in Element.pieces:
                     piece = XGLasspiece.__dict__
                     piece['elementKey'] = elementKey
+                    piece['element.withPiecesAm'] = Element.withPiecesAm
+                    piece['elementSitId'] = Element.elementSitId
                     pieces.append(piece)
         return pieces
+
+    @route('/getPieceAm', auth='user', type='json')
+    def getPieceAm(self,element_withPiecesAm, pieceId:int=None, elementSitId:int=None):
+        _logger.info(f"getPieceAm {element_withPiecesAm} {pieceId} {elementSitId}")
+        URL = 'https://portail-xglass.com/ajax/findSelectionsPiecesAmView.html'
+        data = {
+            'withPiecesAm':element_withPiecesAm,
+            'idDevis':''
+        }
+        if pieceId:
+            data['idPieceOe'] = pieceId
+        else:
+            data['idElementSit'] = elementSitId
+
+        r = xglassAgent.post(
+            URL,
+            data=data,
+        )
+        piecesData = r.json()
+        try:
+            return piecesData.get('selectionsPiecesAmView',[])
+        except Exception as e:
+            _logger.warning(e)
+            return [] 
+         
+    @route('/searchBaseEurocode', auth='user', type='json')
+    def searchBaseEurocode(self,baseEurocode:str):
+        _logger.info(f"searchBaseEurocode {baseEurocode}")
+        try:
+            vsfArticles = vsfAgent.searchEurocodeArticlesClient(baseEurocode)
+            return [vsfArticle.__dict__ for vsfArticle in vsfArticles]
+        except Exception as e:
+            _logger.warning(e)
+            return []
