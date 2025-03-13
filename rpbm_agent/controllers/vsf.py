@@ -43,6 +43,7 @@ class VSFArticle:
         self.remiseRPBM = 0.2
         self.prixVenteRPBM = self.prixVente * (1 - self.remiseRPBM)
         # TODO : recalculer le prix de vente avec la remise RPBM
+        self.absoluteImgUrls = []
         for imgUrl in self.imgUrls:
             self.absoluteImgUrls.append(f"{VSF_BASE_URL}{imgUrl}")
         

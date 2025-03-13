@@ -34,7 +34,7 @@
  €
                 </h6>
                 <p t-if="props.article.available">
-                    En stock: <t t-esc="props.article.prixVenteRPBM"/>
+                    En stock: <t t-esc="props.article.stock"/>
                 <br/>
 
             </p>
@@ -130,13 +130,13 @@ h | Taux : <t t-esc="tempsList.taux"/>
                     </button>
                 </div>
 
-                <div t-if="articlesVsf.length > 0" class="d-flex justify-content-between" style="flex-wrap: wrap;">
+                <div t-if="articlesVsf.length > 0">
                     <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
-                        <div>
+                        <div class="d-flex justify-content-between" style="flex-wrap: wrap;">
                             <ArticleComponent article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
-                            <a t-att-href="articleVsf.url" target="_blank" class="btn btn-primary">Fiche technique</a>
+                            <a t-att-href="articleVsf.url" target="_blank" class="btn btn-primary" style="height: fit-content;">Fiche technique</a>
                             <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
-                                <img t-att-src="absoluteImgUrl.url" style="width: 100px; height: 100px; margin: 5px;" />
+                                <img t-att-src="absoluteImgUrl" style="width: 100px; height: 100px; margin: 5px;" />
                             </t>
                         </div>
                     </t>
