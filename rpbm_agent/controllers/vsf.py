@@ -29,6 +29,9 @@ class VSFArticle:
     available: bool
     remiseRPBM:float
     prixVenteRPBM:float
+    absoluteImgUrls: list
+    imgUrls: list
+    # absoluteUrl:str
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -40,6 +43,8 @@ class VSFArticle:
         self.remiseRPBM = 0.2
         self.prixVenteRPBM = self.prixVente * (1 - self.remiseRPBM)
         # TODO : recalculer le prix de vente avec la remise RPBM
+        for imgUrl in self.imgUrls:
+            self.absoluteImgUrls.append(f"{VSF_BASE_URL}{imgUrl}")
         
         pass
 
@@ -90,7 +95,31 @@ class VSFAgent:
             data = r.json()
             if data['response']:
                 data = data['data']
+                product_lines = page.find_all("tr", class_="product-line")
+                product_lines_data = [self.extractProductInfo(product_line) for product_line in product_lines]
+                for article in data: 
+                    for product_line in product_lines_data:
+                        if article['code'] == product_line['eurocode']:
+                            article['imgUrls'] = product_line['imgUrls']
+                            article['url'] = product_line['url']
+                            article['name'] = product_line['name']
+                            break
                 return [VSFArticle(**article) for article in data]
         print(r.status_code)
         return []
+        
+    def extractProductInfo(self, product_line:bs.BeautifulSoup):
+        product_line_tds = product_line.find_all("td")
+        imgUrls = [img["src"] for img in product_line_tds[0].find_all("img")]
+        url = product_line_tds[1].find("a")["href"]
+        eurocode = product_line_tds[1].find('a').text.strip()
+        refConstructeur = product_line_tds[2].text.strip()
+        name = product_line_tds[3].text.strip()
+        return {
+            'imgUrls': imgUrls,
+            'url': url,
+            'eurocode': eurocode,
+            'refConstructeur': refConstructeur,
+            'name': name
+        }
         

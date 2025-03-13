@@ -21,75 +21,79 @@
         <div class="card" style="width:30%; margin: 5px;">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
-                    <t t-esc="props.article.libelle"/>
+                    <t t-esc="props.article.name"/>
  -                    <t t-esc="props.article.code"/>
                 </h5>
                 <h6>
                     Prix: 
-                    <t t-esc="props.article.prix"/>
+                    <t t-esc="props.article.prixVente"/>
+ 
     €
                     <br/>
     Coût: <t t-esc="props.article.prixVenteRPBM"/>
+ €
                 </h6>
                 <p t-if="props.article.available">
                     En stock: <t t-esc="props.article.prixVenteRPBM"/>
-                </p>
-            </div>
-        </div>
-    </t>
+                <br/>
 
-    <t t-name="rpbm_agent.PieceComponent">
-        <div class="card" style="width:30%; margin: 5px;">
-            <div class="card-body" t-att-style="style">
-                <h5 class="card-title">
-                    <t t-esc="props.piece.pieceOe.libelle"/>
-                </h5>
-                <p>
+            </p>
+        </div>
+    </div>
+</t>
+
+<t t-name="rpbm_agent.PieceComponent">
+    <div class="card" style="width:30%; margin: 5px;">
+        <div class="card-body" t-att-style="style">
+            <h5 class="card-title">
+                <t t-esc="props.piece.pieceOe.libelle"/>
+            </h5>
+            <p>
                     Prix: <t t-esc="props.piece.pieceOe.prix"/>
  €
-                </p>
-                <t t-if="props.piece.tempsList">
-                    <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.id">
-                        <li>
-                            <t t-esc="tempsList.operationTemps.libelle"/>
- :                            <t t-esc="tempsList.temps"/>
+            </p>
+            <t t-if="props.piece.tempsList">
+                <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.id">
+                    <li>
+                        <t t-esc="tempsList.operationTemps.libelle"/>
+ :                        <t t-esc="tempsList.temps"/>
 h | Taux : <t t-esc="tempsList.taux"/>
-                        </li>
-                    </t>
+                    </li>
                 </t>
-                <ul>
+            </t>
+            <ul>
 
-                </ul>
+            </ul>
 
-            </div>
         </div>
-    </t>
+    </div>
+</t>
 
-    <t t-name="rpbm_agent.AgentWidgetDialog">
-        <Dialog size="lg" title="Agent">
-            <label for="immatriculation">Immatriculation</label>
-            <input class="o_input" id="immatriculation" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" style="text-transform: uppercase;margin: 10px;" />
-            <button class="btn btn-primary" t-on-click="onSearchImmatriculation">
+<t t-name="rpbm_agent.AgentWidgetDialog">
+    <Dialog size="lg" title="Agent">
+        <label for="immatriculation">Immatriculation</label>
+        <input class="o_input" id="immatriculation" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" style="text-transform: uppercase;margin: 10px;" />
+        <button class="btn btn-primary" t-on-click="onSearchImmatriculation">
                 Search
-            </button>
-            <t t-if="vehicules.length > 0">
-                <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
-                    <VehiculeComponent vehicule="vehicule" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onSelectVehicule(vehicule.id)" />
-                </t>
-                <button t-if="selectedVehicule" class="btn btn-primary" t-on-click="getPlanche">
+        </button>
+        <t t-if="vehicules.length > 0">
+            <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
+                <VehiculeComponent vehicule="vehicule" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onSelectVehicule(vehicule.id)" />
+            </t>
+            <button t-if="selectedVehicule" class="btn btn-primary" t-on-click="getPlanche">
                     getPlanche
-                </button>
-                <t t-if="planche">
-                    <div>
-                        <t t-foreach="calques" t-as="calque" t-key="calque.id">
+            </button>
+            <t t-if="planche">
+                <div>
+                    <t t-foreach="calques" t-as="calque" t-key="calque.id">
 
-                            <!-- <button class="btn btn-primary" t-on-click="()=>this.onClickCalque(calque.id)">
+                        <!-- <button class="btn btn-primary" t-on-click="()=>this.onClickCalque(calque.id)">
                                 <t t-esc="calque.libelle"/>
                             </button> -->
-                            <CalqueComponent calque="calque" selectedCalqueId="selectedCalqueId" t-on-click="()=>this.onClickCalque(calque.id)" />
-                        </t>
+                        <CalqueComponent calque="calque" selectedCalqueId="selectedCalqueId" t-on-click="()=>this.onClickCalque(calque.id)" />
+                    </t>
 
-                        <!-- <select t-on-change="onChangeCalque" t-on-click.stop="() =&gt; {}" class="o_input pe-3">
+                    <!-- <select t-on-change="onChangeCalque" t-on-click.stop="() =&gt; {}" class="o_input pe-3">
                             <t t-foreach="calques" t-as="calque" t-key="calque.id">
                                 <option t-att-value="calque.id">
                                     <t t-esc="calque.libelle"/>
@@ -97,50 +101,56 @@ h | Taux : <t t-esc="tempsList.taux"/>
 
                             </t>
                         </select> -->
-                        <div>
-                            <button t-if="selectedCalque" class="btn btn-primary" t-on-click="getPieces">
-                            getPieces
-                            </button>
-                        </div>
-
-                    </div>
                     <div>
-
-                        <div t-if="pieces.length > 0" class="d-flex justify-content-between" style="flex-wrap: wrap;">
-                            <t t-foreach="pieces" t-as="piece" t-key="piece.id">
-                                <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)" />
-                            </t>
-
-                        </div>
-                        <div t-if="selectedPiece">
-                            <button class="btn btn-primary" t-on-click="getPieceAm">
-                                    getPieceAm
-                            </button>
-                        </div>
-                    </div>
-                    <div t-if="selectedPiece">
-                        <label for="baseEurocode">baseEurocode</label>
-                        <input class="o_input" id="baseEurocode" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-change="onChangeBaseEurocode" style="margin: 10px;" />
-                        <button class="btn btn-primary" t-on-click="onSearchBaseEurocode">
-                            Search
+                        <button t-if="selectedCalque" class="btn btn-primary" t-on-click="getPieces">
+                            getPieces
                         </button>
                     </div>
 
-                    <div t-if="articlesVsf.length > 0">
-                        <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
-                            <ArticleComponent article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
+                </div>
+                <div>
+
+                    <div t-if="pieces.length > 0" class="d-flex justify-content-between" style="flex-wrap: wrap;">
+                        <t t-foreach="pieces" t-as="piece" t-key="piece.id">
+                            <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)" />
                         </t>
+
                     </div>
-                </t>
+                    <div t-if="selectedPiece">
+                        <button class="btn btn-primary" t-on-click="getPieceAm">
+                                    getPieceAm
+                        </button>
+                    </div>
+                </div>
+                <div t-if="selectedPiece">
+                    <label for="baseEurocode">baseEurocode</label>
+                    <input class="o_input" id="baseEurocode" t-att-value="baseEurocode" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-change="onChangeBaseEurocode" style="margin: 10px;" />
+                    <button class="btn btn-primary" t-on-click="onSearchBaseEurocode">
+                            Search
+                    </button>
+                </div>
+
+                <div t-if="articlesVsf.length > 0" class="d-flex justify-content-between" style="flex-wrap: wrap;">
+                    <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
+                        <div>
+                            <ArticleComponent article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
+                            <a t-att-href="articleVsf.url" target="_blank" class="btn btn-primary">Fiche technique</a>
+                            <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
+                                <img t-att-src="absoluteImgUrl.url" style="width: 100px; height: 100px; margin: 5px;" />
+                            </t>
+                        </div>
+                    </t>
+                </div>
             </t>
-            <t t-set-slot="footer">
-                <button class="btn btn-primary" t-on-click="onConfirm">
+        </t>
+        <t t-set-slot="footer">
+            <button class="btn btn-primary" t-on-click="onConfirm">
                     Confirm
-                </button>
-                <button class="btn btn-secondary" t-on-click="onDiscard">
+            </button>
+            <button class="btn btn-secondary" t-on-click="onDiscard">
                     Cancel
-                </button>
-            </t>
-        </Dialog>
-    </t>
+            </button>
+        </t>
+    </Dialog>
+</t>
 </templates>
