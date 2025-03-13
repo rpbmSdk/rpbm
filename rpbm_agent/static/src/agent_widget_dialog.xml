@@ -21,14 +21,15 @@
         <div class="card" style="width:30%; margin: 5px;">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
-                    <t t-esc="props.article.libelle"/> - <t t-esc="props.article.code"/>
+                    <t t-esc="props.article.libelle"/>
+ -                    <t t-esc="props.article.code"/>
                 </h5>
                 <h6>
                     Prix: 
                     <t t-esc="props.article.prix"/>
     €
-    <br/>
-    Coût: <t t-esc="props.article.prixVenteRPBM"/> 
+                    <br/>
+    Coût: <t t-esc="props.article.prixVenteRPBM"/>
                 </h6>
                 <p t-if="props.article.available">
                     En stock: <t t-esc="props.article.prixVenteRPBM"/>
@@ -109,16 +110,24 @@ h | Taux : <t t-esc="tempsList.taux"/>
                             <t t-foreach="pieces" t-as="piece" t-key="piece.id">
                                 <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)" />
                             </t>
-                            <div t-if="selectedPiece">
-                                <button class="btn btn-primary" t-on-click="getPieceAm">
+
+                        </div>
+                        <div t-if="selectedPiece">
+                            <button class="btn btn-primary" t-on-click="getPieceAm">
                                     getPieceAm
-                                </button>
-                                <input class="o_input" id="baseEurocode" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-change="onChangeBaseEurocode" style="margin: 10px;" />
-                            </div>
+                            </button>
                         </div>
                     </div>
-                    <div t-if="articlesVsf.length > 0" >
-                        <t t-foreach="articlesVsf" t-as="articleVsf">
+                    <div t-if="selectedPiece">
+                        <label for="baseEurocode">baseEurocode</label>
+                        <input class="o_input" id="baseEurocode" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-change="onChangeBaseEurocode" style="margin: 10px;" />
+                        <button class="btn btn-primary" t-on-click="onSearchBaseEurocode">
+                            Search
+                        </button>
+                    </div>
+
+                    <div t-if="articlesVsf.length > 0">
+                        <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
                             <ArticleComponent article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
                         </t>
                     </div>

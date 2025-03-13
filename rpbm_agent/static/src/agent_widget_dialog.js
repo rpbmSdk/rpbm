@@ -284,6 +284,11 @@ export class AgentWidgetDialog extends Component {
             elementSitId: this.selectedPiece.elementSitId,
         })
         console.log(res);
+        if (res.length > 0) {
+            const basePieceAm = res[0].pieceAm;
+            const reference = basePieceAm.reference;
+            this.state.baseEurocode = reference.substring(0, 6);
+        }
         // this.state.piecesAm = res;
     }
 
@@ -306,6 +311,9 @@ export class AgentWidgetDialog extends Component {
         })
         console.log(res);
         this.state.articlesVsf = res;
+        // if (this.articlesVsf.length > 0) {
+        //     const baseEurocode = this.articlesVsf[0].baseEurocode;
+        // }
         // this.state.piecesAm = res;
     }
 
