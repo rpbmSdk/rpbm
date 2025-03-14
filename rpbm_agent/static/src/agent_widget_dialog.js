@@ -109,7 +109,7 @@ export class AgentWidgetDialog extends Component {
         });
 
         onWillStart(async () => {
-            await this.loadAgents();
+            await this.onWillStart();
         })
 
 
@@ -162,7 +162,7 @@ export class AgentWidgetDialog extends Component {
 
     }
 
-    async loadAgents() {
+    async onWillStart() {
         this.toogleLoading();
         try {
             await this.rpc("/rpbm_agent_auth")

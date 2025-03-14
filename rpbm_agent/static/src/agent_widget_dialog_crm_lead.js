@@ -34,16 +34,22 @@ export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
         this.state.immatriculationValue = this.crmLead.immatriculation;
 
         onWillStart(async () => {
-            if(this.state.immatriculationValue){
-                await this.onSearchImmatriculation()
-                if (this.vehicules.length > 0){
-                    this.onSelectVehicule(this.vehicules[0])
-                    await this.getPlanche()
-                    this.calques.forEach(calque => console.log(calque.libelle))
-                }
-            }
+            await this.onWillStart();
+            
         });
         
+    }
+
+    async onWillStart(){
+        await super.onWillStart();
+        if(this.state.immatriculationValue){
+            await this.onSearchImmatriculation()
+            if (this.vehicules.length > 0){
+                this.onSelectVehicule(this.vehicules[0])
+                await this.getPlanche()
+                this.calques.forEach(calque => console.log(calque.libelle))
+            }
+        }
     }
 
     async onConfirm() {
