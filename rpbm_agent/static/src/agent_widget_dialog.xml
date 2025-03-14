@@ -72,7 +72,7 @@ h | Taux : <t t-esc="tempsList.taux"/>
 <t t-name="rpbm_agent.AgentWidgetDialog">
     <Dialog size="lg" title="Agent">
         <label for="immatriculation">Immatriculation</label>
-        <input class="o_input" id="immatriculation" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" style="text-transform: uppercase;margin: 10px;" />
+        <input class="o_input" id="immatriculation" t-att-value="immatriculationValue" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" style="text-transform: uppercase;margin: 10px;" />
         <button class="btn btn-primary" t-on-click="onSearchImmatriculation">
                 Search
         </button>

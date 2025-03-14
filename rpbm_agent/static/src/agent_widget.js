@@ -5,29 +5,31 @@ import { useState, Component } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
 import { AgentWidgetDialog } from "./agent_widget_dialog";
+import { AgentWidgetDialogCrmLead } from "./agent_widget_dialog_crm_lead";
 
-export class AgentWidget extends Component{
+export class AgentWidget extends Component {
 
     static template = "rpbm_agent.AgentWidget";
 
-    setup(){
+    setup() {
         super.setup();
         this.dialog = useService("dialog");
-
-        // this.state = useState({
-        //     agents: [],
-        // });
     }
 
-    onOpenWindow(){
-        this.dialog.add(AgentWidgetDialog, {
-            // title: "Agents",
+    onOpenWindow() {
+        const props = {
+            title: "Agent Widget",
+            size: "lg",
             record: this.props.record,
-            // size: "large",
-            // buttons: [
-            //     {text: "Close", close: true},
-            // ],
-        });
+        };
+        switch (this.props.record.resModel) {
+            case "crm.lead":
+                this.dialog.add(AgentWidgetDialogCrmLead, props);
+                break;
+            default:
+                this.dialog.add(AgentWidgetDialog, props);
+        }
+        
     }
 }
 

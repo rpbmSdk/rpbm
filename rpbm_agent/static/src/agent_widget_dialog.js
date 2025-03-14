@@ -95,21 +95,15 @@ export class AgentWidgetDialog extends Component {
             piecesAm: [],
             selectedPieceAm: undefined,
             baseEurocode: undefined,
-            articlesVsf : [],
-            selectedArticleVsf : undefined,
+            articlesVsf: [],
+            selectedArticleVsf: undefined,
         });
 
         onWillStart(async () => {
-            this.toogleLoading();
-            try {
-                await this.rpc("/rpbm_agent_auth")
-            }
-            catch (e) {
-                console.error(e);
-                await this.rpc("/rpbm_agent_auth")
-            }
-            this.toogleLoading();
+            await this.loadAgents();
         })
+
+
 
         // useEffect(()=>{
         //     console.log("useEffect selectedVehicule changed ", this.selectedVehicule);
@@ -157,6 +151,18 @@ export class AgentWidgetDialog extends Component {
         // }, ()=>[this.pieces]);
 
 
+    }
+
+    async loadAgents() {
+        this.toogleLoading();
+        try {
+            await this.rpc("/rpbm_agent_auth")
+        }
+        catch (e) {
+            console.error(e);
+            await this.rpc("/rpbm_agent_auth")
+        }
+        this.toogleLoading();
     }
 
     toogleLoading() {
