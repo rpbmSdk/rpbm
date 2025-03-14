@@ -61,6 +61,15 @@ export class ArticleComponent extends Component {
     }
 }
 
+export class AbstractRecord {
+    constructor(record) {
+        Object.assign(this, record);
+    }
+    get recordData() {
+        return this.data;
+    }
+}
+
 
 export class AgentWidgetDialog extends Component {
     static components = {
@@ -165,22 +174,26 @@ export class AgentWidgetDialog extends Component {
         this.toogleLoading();
     }
 
+    async init() {
+        console.log("override me");
+    }
+
     toogleLoading() {
         this.state.loading = !this.state.loading;
     }
 
-    async close() {
+    async closeAgents() {
         await this.rpc("/rpbm_agent_close")
     }
 
     async onConfirm() {
-        await this.close();
-        // this.props.close();
+        await this.closeAgents();
+        this.props.close();
     }
 
     async onDiscard() {
-        await this.close();
-        // this.props.close();
+        await this.closeAgents();
+        this.props.close();
     }
 
     get immatriculationValue() {
@@ -203,10 +216,16 @@ export class AgentWidgetDialog extends Component {
 
     }
 
+    /**
+     * @returns {Vehicule[]}
+     */
     get vehicules() {
         return this.state.vehicules;
     }
 
+    /**
+     * @returns {Vehicule|undefined}
+     */
     get selectedVehicule() {
         return this.state.selectedVehicule;
     }
@@ -216,9 +235,19 @@ export class AgentWidgetDialog extends Component {
     }
 
     onSelectVehicule(vehiculeId) {
-        // this.state.selectedVehiculeId = vehiculeId;
         this.state.selectedVehicule = this.vehicules.find(vehicule => vehicule.id === vehiculeId);
         console.log(this.state.selectedVehicule);
+    }
+
+    async getOdooVehicule() {
+        console.log("getOdooVehicule");
+        if (!this.selectedVehicule) {
+            return false;
+        }
+        return await this.rpc("/getOdooVehicule", {
+            immatriculation: this.immatriculationValue,
+            vehicule: this.selectedVehicule,
+        })
     }
 
     async getPlanche() {
@@ -230,18 +259,22 @@ export class AgentWidgetDialog extends Component {
         return res;
     }
 
+    /** @returns {Planche} */
     get planche() {
         return this.state.planche;
     }
 
+    /** @returns {Calque[]} */
     get calques() {
         return this.planche.calques;
     }
 
+    /** @returns {Calque|undefined} */
     get selectedCalque() {
         return this.state.selectedCalque;
     }
 
+    /** @returns {number} */
     get selectedCalqueId() {
         return this.selectedCalque ? this.selectedCalque.id : 0;
     }
