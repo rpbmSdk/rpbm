@@ -85,11 +85,28 @@ export class VehiculeComponent extends asyncWidget {
         this.state = useState({
             ...this.state,
             vehiculeExists: false,
+            vehiculeId:undefined
         });
         onWillStart(() => {
             this.runAsync(this.getOdooVehicule.bind(this));
         })
     }
+
+    /**
+     * @returns {boolean}
+     * */
+    get vehiculeExists(){
+        return this.state.vehiculeExists;
+    }
+
+    get vehiculeId(){
+        return this.state.vehiculeId;
+    }
+
+    get vehiculeOdooUrl(){
+        return `/web#menu_id=684&action=929&model=fleet.vehicle&view_type=form&id=${this.vehiculeId}`;
+    }
+
 
     async getOdooVehicule() {
         const res = await this.rpc("/getOdooVehicule", {
@@ -103,7 +120,14 @@ export class VehiculeComponent extends asyncWidget {
 
     onClickCreateVehicule() {
         console.log("onClickCreateVehicule");
-
+        this.runAsync(async () => {
+            const vehiculeId = await this.rpc("/createVehicule", {
+                immatriculation: this.props.immatriculation,
+                vehicule: this.props.vehicule,
+            })
+            this.state.vehiculeId = vehiculeId;
+            await this.getOdooVehicule();
+        })
     }
 
     get style() {
