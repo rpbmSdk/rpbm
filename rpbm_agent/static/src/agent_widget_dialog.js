@@ -75,19 +75,19 @@ class asyncWidget extends Component {
 export class VehiculeComponent extends asyncWidget {
     static props = {
         ...standardWidgetProps,
-        immatriculation : { type: String, optional: true },
+        immatriculation: { type: String, optional: true },
         vehicule: { type: Object },
         selectedVehiculeId: { type: Number },
         // onSelectVehicule: {type: Function},
     }
     static template = "rpbm_agent.VehiculeComponent";
 
-    setup(){
+    setup() {
         super.setup();
         this.state = useState({
             ...this.state,
             vehiculeExists: false,
-            vehiculeId:undefined
+            vehiculeId: undefined
         });
         onWillStart(() => {
             // this.runAsync(this.getOdooVehicule());
@@ -98,15 +98,15 @@ export class VehiculeComponent extends asyncWidget {
     /**
      * @returns {boolean}
      * */
-    get vehiculeExists(){
+    get vehiculeExists() {
         return this.state.vehiculeExists;
     }
 
-    get vehiculeId(){
+    get vehiculeId() {
         return this.state.vehiculeId;
     }
 
-    get vehiculeOdooUrl(){
+    get vehiculeOdooUrl() {
         return `/web#menu_id=684&action=929&model=fleet.vehicle&view_type=form&id=${this.vehiculeId}`;
     }
 
@@ -132,7 +132,7 @@ export class VehiculeComponent extends asyncWidget {
         this.runAsync(async () => {
             const vehiculeId = await this.rpc("/createVehicule", {
                 immatriculation: this.props.immatriculation,
-                vehicule: this.props.vehicule,
+                vehicule_info: this.props.vehicule,
             })
             this.state.vehiculeId = vehiculeId;
             await this.getOdooVehicule();
@@ -194,7 +194,7 @@ export class AbstractRecord {
 }
 
 
-export class AgentWidgetDialog extends Component {
+export class AgentWidgetDialog extends asyncWidget {
     static components = {
         Dialog,
         VehiculeComponent,
@@ -203,8 +203,8 @@ export class AgentWidgetDialog extends Component {
         ArticleComponent
     }
     static props = {
-        ...standardWidgetProps,
-        close: {type: Function, optional: true},
+        ...asyncWidget.props,
+        close: { type: Function, optional: true },
     }
     static template = "rpbm_agent.AgentWidgetDialog";
 
@@ -214,7 +214,9 @@ export class AgentWidgetDialog extends Component {
         this.orm = useService("orm");
         this.record = this.props.record;
         this.state = useState({
-            loading: false,
+            ...this.state,
+            agentsInitialized: false,
+            // loading: false,
             immatriculationValue: "",
             vehicules: [],
             selectedVehicule: undefined,
@@ -286,24 +288,39 @@ export class AgentWidgetDialog extends Component {
     }
 
     async onWillStart() {
-        this.toogleLoading();
-        try {
-            await this.rpc("/rpbm_agent_auth")
-        }
-        catch (e) {
-            console.error(e);
-            await this.rpc("/rpbm_agent_auth")
-        }
-        this.toogleLoading();
+        // this.toogleLoading();
+        this.runAsync(async () => {
+            try {
+                await this.rpc("/rpbm_agent_auth")
+            }
+            catch (e) {
+                console.error(e);
+                await this.rpc("/rpbm_agent_auth")
+            }
+            this.state.agentinitialized = true;
+        })
+        // this.toogleLoading();
     }
+
+
 
     async init() {
-        console.log("override me");
+        // console.log("override me");
+        this.runAsync(async () => {
+            if (this.state.immatriculationValue) {
+                await this.onSearchImmatriculation()
+                if (this.vehicules.length > 0) {
+                    this.onSelectVehicule(this.vehicules[0].id)
+                    await this.getPlanche()
+                    this.calques.forEach(calque => console.log(calque.libelle))
+                }
+            }
+        })
     }
 
-    toogleLoading() {
-        this.state.loading = !this.state.loading;
-    }
+    // toogleLoading() {
+    //     this.state.loading = !this.state.loading;
+    // }
 
     async closeAgents() {
         await this.rpc("/rpbm_agent_close")
@@ -449,7 +466,7 @@ export class AgentWidgetDialog extends Component {
         if (res.length > 0) {
             const basePieceAm = res[0].pieceAm;
             const reference = basePieceAm.reference;
-            this.state.baseEurocode = reference.substring(0, 6);
+            this.state.baseEurocode = reference.substring(0, 5);
         }
         // this.state.piecesAm = res;
     }

@@ -6,6 +6,7 @@ import { useService } from "@web/core/utils/hooks";
 
 import { AgentWidgetDialog } from "./agent_widget_dialog";
 import { AgentWidgetDialogCrmLead } from "./agent_widget_dialog_crm_lead";
+import { AgentWidgetDialogSaleOrder } from "./agent_widget_dialog_sale_order";
 
 export class AgentWidget extends Component {
 
@@ -25,6 +26,9 @@ export class AgentWidget extends Component {
         switch (this.props.record.resModel) {
             case "crm.lead":
                 this.dialog.add(AgentWidgetDialogCrmLead, props);
+                break;
+            case "sale.order":
+                this.dialog.add(AgentWidgetDialogSaleOrder, props);
                 break;
             default:
                 this.dialog.add(AgentWidgetDialog, props);
