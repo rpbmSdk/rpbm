@@ -14,7 +14,7 @@
                     <t t-if="vehiculeExists">
                         <p>
                             Le véhicule existe en BDD 
-                            <a t-att-href="vehiculeOdooUrl" target="_blank">
+                            <a class="btn btn-primary" t-att-href="vehiculeOdooUrl" target="_blank">
                                 Voir
                             </a>
                         </p>

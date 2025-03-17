@@ -64,11 +64,12 @@ class AgentController(Controller):
             return False
 
     @route('/createVehicule', auth='user', type='json')
-    def createVehicule(self,immatriculation:str, vehicule:xglass.XGlassVehicule):
+    def createVehicule(self,immatriculation:str, vehicule_info:dict):
         """
             Permet de créer un véhicule en BDD de Odoo
         """
-        _logger.info(f"getVehicule {vehicule}")
+        _logger.info(f"getVehicule {vehicule_info}")
+        vehicule = xglass.XGlassVehicule(**vehicule_info)
         vehicules = request.env['fleet.vehicle'].search([('license_plate', '=', immatriculation)])
         if vehicules:
             if len(vehicules) > 1:
@@ -80,10 +81,10 @@ class AgentController(Controller):
                 marque = request.env['fleet.vehicle.model.brand'].create({
                     'name': vehicule.xGlassModele.xGlassMarque.nom
                 })
-            modele = request.env['fleet.vehicle.model'].search([('name', '=', vehicule.xGlassModele.nom)])
+            modele = request.env['fleet.vehicle.model'].search([('name', '=', vehicule.xGlassModele.gamme)])
             if not modele:
                 modele = request.env['fleet.vehicle.model'].create({
-                    'name': vehicule.xGlassModele.nom,
+                    'name': vehicule.xGlassModele.gamme,
                     'brand_id': marque.id
                 })
             vehicule = request.env['fleet.vehicle'].create({

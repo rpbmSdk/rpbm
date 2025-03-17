@@ -28,7 +28,7 @@ class asyncWidget extends Component {
      * Return true if the widget is loading
      * @returns {boolean}
      *  */
-    isLoading() {
+    get isLoading() {
         return this.state.loading;
     }
 
@@ -51,6 +51,8 @@ class asyncWidget extends Component {
      *  */
     stopLoading() {
         this.state.loading = false;
+        console.log("stopLoading");
+        console.log(this.isLoading);
     }
 
     /**
@@ -88,7 +90,8 @@ export class VehiculeComponent extends asyncWidget {
             vehiculeId:undefined
         });
         onWillStart(() => {
-            this.runAsync(this.getOdooVehicule.bind(this));
+            // this.runAsync(this.getOdooVehicule());
+            this.getOdooVehicule()
         })
     }
 
@@ -108,14 +111,17 @@ export class VehiculeComponent extends asyncWidget {
     }
 
 
-    async getOdooVehicule() {
-        const res = await this.rpc("/getOdooVehicule", {
-            immatriculation: this.props.immatriculation,
-            vehicule: this.props.vehicule,
+    getOdooVehicule() {
+        console.log("getOdooVehicule");
+        this.runAsync(async () => {
+            const res = await this.rpc("/getOdooVehicule", {
+                immatriculation: this.props.immatriculation,
+                vehicule: this.props.vehicule,
+            })
+            console.log(res);
+            this.state.vehiculeExists = Boolean(res);
+            console.log(this.state.vehiculeExists);
         })
-        console.log(res);
-        this.state.vehiculeExists = Boolean(res);
-        console.log(this.state.vehiculeExists);
     }
 
     onClickCreateVehicule() {
