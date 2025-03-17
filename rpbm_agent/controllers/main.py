@@ -54,7 +54,7 @@ class AgentController(Controller):
             le véhicule n'existe pas, retourne False
         """
         _logger.info(f"getVehicule {vehicule}")
-        vehicules = request.env['fleet.vehicle'].search([('licence_plate', '=', immatriculation)])
+        vehicules = request.env['fleet.vehicle'].search([('license_plate', '=', immatriculation)])
         if vehicules:
             if len(vehicules) > 1:
                 _logger.warning(f"Plusieurs véhicules avec la même immatriculation {immatriculation}")
@@ -69,7 +69,7 @@ class AgentController(Controller):
             Permet de créer un véhicule en BDD de Odoo
         """
         _logger.info(f"getVehicule {vehicule}")
-        vehicules = request.env['fleet.vehicle'].search([('licence_plate', '=', immatriculation)])
+        vehicules = request.env['fleet.vehicle'].search([('license_plate', '=', immatriculation)])
         if vehicules:
             if len(vehicules) > 1:
                 _logger.warning(f"Plusieurs véhicules avec la même immatriculation {immatriculation}")
@@ -88,7 +88,7 @@ class AgentController(Controller):
                 })
             vehicule = request.env['fleet.vehicle'].create({
                 'model_id': modele.id,
-                'licence_plate': immatriculation,
+                'license_plate': immatriculation,
                 'description': vehicule.libelleCourt
             })
             _logger.info(f"Véhicule créé {vehicule}")
