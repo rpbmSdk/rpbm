@@ -8,13 +8,103 @@ import { onWillStart, useRef, useEffect } from "@odoo/owl";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
 
 
-export class VehiculeComponent extends Component {
+const asyncWidgetState = {
+    loading: false
+}
+
+class asyncWidget extends Component {
     static props = {
+        ...standardWidgetProps,
+    }
+    setup() {
+        super.setup();
+        this.rpc = useService("rpc");
+        this.orm = useService("orm");
+        this.record = this.props.record;
+        this.state = useState(asyncWidgetState);
+    }
+
+    /**
+     * Return true if the widget is loading
+     * @returns {boolean}
+     *  */
+    isLoading() {
+        return this.state.loading;
+    }
+
+    /**
+     * Toogle the loading state
+     *  */
+    toogleLoading() {
+        this.state.loading = !this.state.loading;
+    }
+
+    /**
+     * Set the loading state to true
+     *  */
+    startLoading() {
+        this.state.loading = true;
+    }
+
+    /**
+     * Set the loading state to false
+     *  */
+    stopLoading() {
+        this.state.loading = false;
+    }
+
+    /**
+     * Run an async function and set the loading state to true before and to false after
+     * @param {Function} fn - async function to run
+     */
+    async runAsync(fn) {
+        this.startLoading();
+        try {
+            await fn();
+        }
+        catch (e) {
+            console.error(e);
+        }
+        this.stopLoading();
+    }
+}
+
+
+export class VehiculeComponent extends asyncWidget {
+    static props = {
+        ...standardWidgetProps,
+        immatriculation : { type: String, optional: true },
         vehicule: { type: Object },
         selectedVehiculeId: { type: Number },
         // onSelectVehicule: {type: Function},
     }
     static template = "rpbm_agent.VehiculeComponent";
+
+    setup(){
+        super.setup();
+        this.state = useState({
+            ...this.state,
+            vehiculeExists: false,
+        });
+        onWillStart(() => {
+            this.runAsync(this.getOdooVehicule.bind(this));
+        })
+    }
+
+    async getOdooVehicule() {
+        const res = await this.rpc("/getOdooVehicule", {
+            immatriculation: this.props.immatriculation,
+            vehicule: this.props.vehicule,
+        })
+        console.log(res);
+        this.state.vehiculeExists = Boolean(res);
+        console.log(this.state.vehiculeExists);
+    }
+
+    onClickCreateVehicule() {
+        console.log("onClickCreateVehicule");
+
+    }
 
     get style() {
         return this.props.vehicule.id === this.props.selectedVehiculeId ? "background-color: azure !important;" : "";
@@ -79,10 +169,10 @@ export class AgentWidgetDialog extends Component {
         PieceComponent,
         ArticleComponent
     }
-    // static props = {
-    //     ...standardWidgetProps,
-    //     close: {type: Function, optional: true},
-    // }
+    static props = {
+        ...standardWidgetProps,
+        close: {type: Function, optional: true},
+    }
     static template = "rpbm_agent.AgentWidgetDialog";
 
     setup() {
@@ -108,9 +198,9 @@ export class AgentWidgetDialog extends Component {
             selectedArticleVsf: undefined,
         });
 
-        onWillStart(async () => {
-            await this.onWillStart();
-        })
+        // onWillStart(async () => {
+        //     await this.onWillStart();
+        // })
 
 
 

@@ -45,7 +45,7 @@ export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
         if(this.state.immatriculationValue){
             await this.onSearchImmatriculation()
             if (this.vehicules.length > 0){
-                this.onSelectVehicule(this.vehicules[0])
+                this.onSelectVehicule(this.vehicules[0].id)
                 await this.getPlanche()
                 this.calques.forEach(calque => console.log(calque.libelle))
             }

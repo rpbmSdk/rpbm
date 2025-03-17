@@ -18,8 +18,8 @@ export class AgentWidget extends Component {
 
     onOpenWindow() {
         const props = {
-            title: "Agent Widget",
-            size: "lg",
+            // title: "Agent Widget",
+            // size: "lg",
             record: this.props.record,
         };
         switch (this.props.record.resModel) {

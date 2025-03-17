@@ -32,5 +32,5 @@
 /**
  * @typedef {Object} Planche
  * @property {number} id
- * @property {string} calques
+ * @property {Calque[]} calques
  */

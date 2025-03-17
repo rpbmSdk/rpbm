@@ -51,7 +51,22 @@ class AgentController(Controller):
     def getVehicule(self,immatriculation:str, vehicule:xglass.XGlassVehicule):
         """
             Permet de retourner l'ID du véhicule enregistré en BDD de Odoo, si 
-            le véhicule n'existe pas, il sera créé. Si les données ne sont pas à jour
+            le véhicule n'existe pas, retourne False
+        """
+        _logger.info(f"getVehicule {vehicule}")
+        vehicules = request.env['fleet.vehicle'].search([('licence_plate', '=', immatriculation)])
+        if vehicules:
+            if len(vehicules) > 1:
+                _logger.warning(f"Plusieurs véhicules avec la même immatriculation {immatriculation}")
+            vehicule = vehicules[0]
+            return vehicule.id
+        else:
+            return False
+
+    @route('/createVehicule', auth='user', type='json')
+    def createVehicule(self,immatriculation:str, vehicule:xglass.XGlassVehicule):
+        """
+            Permet de créer un véhicule en BDD de Odoo
         """
         _logger.info(f"getVehicule {vehicule}")
         vehicules = request.env['fleet.vehicle'].search([('licence_plate', '=', immatriculation)])
@@ -78,7 +93,8 @@ class AgentController(Controller):
             })
             _logger.info(f"Véhicule créé {vehicule}")
 
-        return vehicule.id        
+        return vehicule.id
+
 
     @route('/getPlanche', auth='user', type='json')
     def getPlanche(self,vehiculeId:int):

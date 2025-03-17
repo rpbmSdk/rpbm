@@ -7,6 +7,9 @@
                 <h5 class="card-title">
                     <t t-esc="props.vehicule.libelleCourt"/>
                 </h5>
+                <button class="btn btn-primary" t-on-click.stop="onClickCreateVehicule">
+                    Créer
+                </button>
             </div>
         </div>
     </t>
@@ -78,7 +81,12 @@ h | Taux : <t t-esc="tempsList.taux"/>
         </button>
         <t t-if="vehicules.length > 0">
             <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
-                <VehiculeComponent vehicule="vehicule" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onSelectVehicule(vehicule.id)" />
+                <VehiculeComponent 
+                record="record" 
+                vehicule="vehicule"
+                immatriculation="immatriculationValue"
+                selectedVehiculeId="selectedVehiculeId" 
+                t-on-click="()=>this.onSelectVehicule(vehicule.id)" />
             </t>
             <button t-if="selectedVehicule" class="btn btn-primary" t-on-click="getPlanche">
                     getPlanche
