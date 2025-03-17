@@ -120,6 +120,9 @@ export class VehiculeComponent extends asyncWidget {
             })
             console.log(res);
             this.state.vehiculeExists = Boolean(res);
+            if (this.vehiculeExists) {
+                this.state.vehiculeId = res;
+            }
             console.log(this.state.vehiculeExists);
         })
     }
