@@ -101,13 +101,21 @@ export class SaleOrderArticleComponent extends ArticleComponent {
      * @returns {boolean}
      */
     get existsInOrder() {
-        return this.record.data.order_line.resIds.includes(this.product.id)
+        /** @type {Object[]} */
+        const records = this.record.data.order_line.records;
+        const productIds = records.filter(line=>line.data.product_id).map(record => record.data.product_id[0]);
+        return productIds.includes(this.product.id)
     }
 
     async addToSaleOrder(){
-        await this.record.data.order_line.addNewRecord({
-            product_id:this.product.id
-        })
+        const params = {
+            context:{
+                default_product_id: this.product.id,
+                default_product_uom_qty: 1,
+            }
+        }
+        const newLine = await this.record.data.order_line.addNewRecord(params)
+        newLine.dirty = true;
     }
 
 }
