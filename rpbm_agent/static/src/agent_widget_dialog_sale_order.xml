@@ -10,6 +10,18 @@
                         Voir
                     </a>
                 </p>
+                <p t-if="existsInOrder">
+                    Article déjà dans le devis
+                    <button class="btn btn-primary" t-on-click.stop="addToSaleOrder">
+                    Enlever
+                    </button>
+                </p>
+                <p t-else="">
+                    Article absent du devis
+                    <button class="btn btn-primary" t-on-click.stop="addToSaleOrder">
+                    Ajouter
+                    </button>
+                </p>
             </t>
             <t t-else="">
                 <button class="btn btn-primary" t-on-click.stop="createProduct">

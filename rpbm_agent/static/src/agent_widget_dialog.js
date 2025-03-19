@@ -199,7 +199,7 @@ export class AbstractRecord {
     get recordData() {
         return this.data;
     }
-    get id (){
+    get odooId (){
         return this.recordData.id;
     }
 }
