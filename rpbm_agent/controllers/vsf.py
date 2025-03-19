@@ -15,7 +15,9 @@ VSF_SEARCH_ARTICLES_URL = f"{VSF_BASE_URL}/catalogue/articles-client"
 
 
 class VSFArticle:
+    name:str
     code: str
+    url:str
     code_marque: str
     type_piece: str
     prix_vente: str

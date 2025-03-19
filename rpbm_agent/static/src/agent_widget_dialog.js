@@ -74,7 +74,7 @@ class asyncWidget extends Component {
 
 export class VehiculeComponent extends asyncWidget {
     static props = {
-        ...standardWidgetProps,
+        ...asyncWidget.props,
         immatriculation: { type: String, optional: true },
         vehicule: { type: Object },
         selectedVehiculeId: { type: Number },
@@ -172,8 +172,9 @@ export class PieceComponent extends Component {
     }
 }
 
-export class ArticleComponent extends Component {
+export class ArticleComponent extends asyncWidget {
     static props = {
+        ...asyncWidget.props,
         article: { type: Object },
         selectedArticleId: { type: Number },
     }
@@ -181,6 +182,13 @@ export class ArticleComponent extends Component {
 
     get style() {
         return this.props.article.id === this.props.selectedArticleId ? "background-color: azure !important;" : "";
+    }
+
+    /**
+     * @returns {ArticleVsf}
+     */
+    get article(){
+        return this.props.article;
     }
 }
 
@@ -190,6 +198,9 @@ export class AbstractRecord {
     }
     get recordData() {
         return this.data;
+    }
+    get id (){
+        return this.recordData.id;
     }
 }
 
@@ -287,6 +298,10 @@ export class AgentWidgetDialog extends asyncWidget {
 
     }
 
+    get agentsInitialized() {
+        return this.state.agentsInitialized;
+    }
+
     async onWillStart() {
         // this.toogleLoading();
         this.runAsync(async () => {
@@ -297,7 +312,7 @@ export class AgentWidgetDialog extends asyncWidget {
                 console.error(e);
                 await this.rpc("/rpbm_agent_auth")
             }
-            this.state.agentinitialized = true;
+            this.state.agentsInitialized = true;
         })
         // this.toogleLoading();
     }

@@ -94,6 +94,7 @@ h | Taux : <t t-esc="tempsList.taux"/>
             <div class="d-flex justify-content-center">
                 <i class="fa fa-spinner fa-spin fa-2x"></i>
             Chargement des agents...
+            <t t-esc="agentsInitialized"/>
             </div>
         </t>
         <t t-else="">
@@ -159,7 +160,7 @@ h | Taux : <t t-esc="tempsList.taux"/>
                     <div t-if="articlesVsf.length > 0">
                         <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
                             <div class="d-flex justify-content-between" style="flex-wrap: wrap;">
-                                <ArticleComponent article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
+                                <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
                                 <a t-att-href="articleVsf.url" target="_blank" class="btn btn-primary" style="height: fit-content;">Fiche technique</a>
                                 <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
                                     <img t-att-src="absoluteImgUrl" style="width: 100px; height: 100px; margin: 5px;" />

@@ -34,3 +34,18 @@
  * @property {number} id
  * @property {Calque[]} calques
  */
+
+/**
+ * @typedef {Object} ArticleVsf
+ * @property {string} name
+ * @property {string} code
+ * @property {number} prixVente
+ * @property {number} prixVenteRPBM
+ */
+
+/**
+ * @typedef {Object} Product
+ * @property {number} id
+ * @property {string} name
+ * @property {string} default_code
+ */

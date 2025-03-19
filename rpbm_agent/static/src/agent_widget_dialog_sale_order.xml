@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+
+    <t t-name="rpbm_agent.SaleOrderArticleComponent" t-inherit="rpbm_agent.ArticleComponent" t-inherit-mode="primary">
+        <xpath expr="//div[@class='card-body']" position="inside">
+            <t t-if='productExists'>
+                <p>
+                    Le produit existe en BDD
+                    <a class="btn btn-primary" t-att-href="productOdooUrl" target="_blank">
+                        Voir
+                    </a>
+                </p>
+            </t>
+            <t t-else="">
+                <button class="btn btn-primary" t-on-click.stop="createProduct">
+                    Créer
+                </button>
+            </t>
+        </xpath>
+    </t>
+
+
+    <t t-name="rpbm_agent.SaleOrderDialog" t-inherit="rpbm_agent.AgentWidgetDialog" t-inherit-mode="primary">
+        <xpath expr="//ArticleComponent" position="replace">
+            <SaleOrderArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
+        </xpath>
+    </t>
+</templates>

@@ -10,6 +10,8 @@ _logger = logging.getLogger(__name__)
 vsfAgent = vsf.VSFAgent()
 xglassAgent = xglass.XGLASS()
 
+VSF_PARTNER_ID = 5708
+
 class AgentController(Controller):
 
     @route('/rpbm_agent_auth', auth='user', type='json')
@@ -156,3 +158,49 @@ class AgentController(Controller):
         except Exception as e:
             _logger.warning(e)
             return []
+
+
+
+    @route('/doesProductExists', auth='user', type='json')
+    def doesProductExists(self,productCode:str):
+        _logger.info(f"doesProductExists {productCode}")
+        try:
+            product = request.env['product.product'].search_read([('default_code', '=', productCode)],['name','default_code'])
+            product = product[0]
+            return product
+        except Exception as e:
+            _logger.warning(e)
+            return False
+
+    @route('/createProduct', auth='user', type='json')
+    def createProduct(self,articleVsfInfo:dict):
+        _logger.info(f"createProduct {articleVsfInfo}")
+        articleVsf = vsf.VSFArticle(**articleVsfInfo)
+        productInfo = {
+            'name': articleVsf.name,
+            'default_code': articleVsf.code,
+            'list_price': articleVsf.prixVente,
+            'type': 'product',
+            # 'categ_id': 1,
+            # 'uom_id': 1,
+            # 'uom_po_id': 1,
+            'description': f"""Lien vers le produit: <a href="{articleVsf.url}">Lien</a>
+            <br/>
+            """,
+        }
+        product = request.env['product.product'].create(productInfo)
+        _logger.info(f"Produit créé {product}")
+
+        product_supplier_infoInfo = {
+            'partner_id': VSF_PARTNER_ID,
+            'product_id': product.id,
+            'delay': 1,
+            'min_qty': 0,
+            'price': articleVsf.prixVenteRPBM,
+        }
+        product_supplier_info = request.env['product.supplierinfo'].create(product_supplier_infoInfo)
+        _logger.info(f"Produit fournisseur créé {product_supplier_info}")
+
+        # return self.
+
+
