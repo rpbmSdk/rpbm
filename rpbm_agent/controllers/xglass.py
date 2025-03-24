@@ -280,21 +280,20 @@ class XGLASS:
             "j_password": XGLASS_PASS,
             "spring-security-redirect": "/mainMenu.html",
         }
-        r = self.post(
-            XGLASS_LOGIN_URL,
-            data=payload,
-            verify=False,
-            allow_redirects=False,
-        )
 
-        if r.request.url != XGLASS_MAIN_URL:
-            self.close()
-            r = self.post(
+        def meta_auth():
+            return self.post(
                 XGLASS_LOGIN_URL,
                 data=payload,
                 verify=False,
                 allow_redirects=False,
             )
+
+        r = meta_auth()
+
+        if r.request.url != XGLASS_MAIN_URL:
+            self.close()
+            r = meta_auth()
         if r.request.url != XGLASS_MAIN_URL:
             raise Exception("Login failed")
         return

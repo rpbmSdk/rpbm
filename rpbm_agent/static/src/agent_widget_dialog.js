@@ -9,7 +9,8 @@ import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
 
 
 const asyncWidgetState = {
-    loading: false
+    loading: false,
+    loadingMessage: "",
 }
 
 class asyncWidget extends Component {
@@ -30,6 +31,22 @@ class asyncWidget extends Component {
      *  */
     get isLoading() {
         return this.state.loading;
+    }
+
+    /**
+     * Return the loading message
+     * @returns {string}
+     *  */
+    get loadingMessage() {
+        return this.state.loadingMessage;
+    }
+
+    /**
+     * Set the loading message
+     * @param {string} message - the message to display
+     * */
+    setLoadingMessage(message) {
+        this.state.loadingMessage = message;
     }
 
     /**
@@ -59,8 +76,9 @@ class asyncWidget extends Component {
      * Run an async function and set the loading state to true before and to false after
      * @param {Function} fn - async function to run
      */
-    async runAsync(fn) {
+    async runAsync(fn, message="") {
         this.startLoading();
+        this.state.loadingMessage = message;
         try {
             await fn();
         }
@@ -302,19 +320,23 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.state.agentsInitialized;
     }
 
+
+
+
+
     async onWillStart() {
         // this.toogleLoading();
         this.runAsync(async () => {
-            try {
-                await this.rpc("/rpbm_agent_auth")
-            }
-            catch (e) {
-                console.error(e);
-                await this.rpc("/rpbm_agent_auth")
-            }
+            this.setLoadingMessage("Authentification des agents en cours...");
+            await this.auth_agents();
             this.state.agentsInitialized = true;
         })
         // this.toogleLoading();
+    }
+
+    async auth_agents(){
+        await this.rpc("/rpbm_agent_auth")
+
     }
 
 
