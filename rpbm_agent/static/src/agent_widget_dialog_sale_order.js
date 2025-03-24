@@ -111,7 +111,7 @@ export class SaleOrderArticleComponent extends ArticleComponent {
         const params = {
             context:{
                 default_product_id: this.product.id,
-                default_product_uom_qty: 1,
+                // default_product_uom_qty: 1,
             }
         }
         const newLine = await this.record.data.order_line.addNewRecord(params)
@@ -140,14 +140,21 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
 
         this.state.immatriculationValue = this.saleOrder.immatriculation;
 
-        onWillStart( async () => {
-            await this.onWillStart();
+        onWillStart( () => {
+            this.onWillStart();
         });
     }
 
     async onWillStart() {
-        await super.onWillStart();
-        await this.init()
+        // await super.onWillStart();
+        // await this.init()
+        this.runAsync(async () => {
+            this.setLoadingMessage("Authentification des agents en cours...");
+            await this.auth_agents();
+            this.state.agentsInitialized = true;
+            this.setLoadingMessage("Chargement des données du modèle...");
+            await this.loadFromRecord();
+        })
     }
 
     async onConfirm() {

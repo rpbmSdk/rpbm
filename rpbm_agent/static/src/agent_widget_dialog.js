@@ -336,10 +336,18 @@ export class AgentWidgetDialog extends asyncWidget {
 
     async auth_agents(){
         await this.rpc("/rpbm_agent_auth")
-
     }
 
-
+    async loadFromRecord(){
+        if (this.state.immatriculationValue) {
+            await this.onSearchImmatriculation()
+            if (this.vehicules.length > 0) {
+                this.onSelectVehicule(this.vehicules[0].id)
+                await this.getPlanche()
+                // this.calques.forEach(calque => console.log(calque.libelle))
+            }
+        }
+    }
 
     async init() {
         // console.log("override me");
@@ -433,6 +441,7 @@ export class AgentWidgetDialog extends asyncWidget {
         })
         console.log(res);
         this.state.planche = res;
+        this.calques.forEach(calque => console.log(calque.libelle))
         return res;
     }
 
@@ -464,6 +473,7 @@ export class AgentWidgetDialog extends asyncWidget {
     onClickCalque(calqueId) {
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
         console.log(this.selectedCalque);
+        this.getPieces();
     }
 
     get pieces() {
@@ -483,6 +493,7 @@ export class AgentWidgetDialog extends asyncWidget {
     onSelectPiece(pieceId) {
         this.state.selectedPiece = this.pieces.find(vehicule => vehicule.id === pieceId);
         console.log(this.state.selectedPiece);
+        this.getPieceAm();
     }
 
     get selectedPiece() {
@@ -504,6 +515,7 @@ export class AgentWidgetDialog extends asyncWidget {
             const basePieceAm = res[0].pieceAm;
             const reference = basePieceAm.reference;
             this.state.baseEurocode = reference.substring(0, 5);
+            this.onSearchBaseEurocode();
         }
         // this.state.piecesAm = res;
     }

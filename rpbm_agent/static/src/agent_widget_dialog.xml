@@ -40,8 +40,7 @@
         <div class="card" style="width:30%; margin: 5px;">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
-                    <t t-esc="props.article.name"/>
- -                    <t t-esc="props.article.code"/>
+                    <t t-esc="props.article.code"/> <t t-esc="props.article.name"/>
                 </h5>
                 <h6>
                     Prix: 

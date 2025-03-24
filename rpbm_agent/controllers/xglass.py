@@ -288,12 +288,16 @@ class XGLASS:
                 verify=False,
                 allow_redirects=False,
             )
-
+        _logger.info('First login')
         r = meta_auth()
+        _logger.info(f'res return url {r.request.url}')
 
         if r.request.url != XGLASS_MAIN_URL:
             self.close()
+            _logger.info('Second login')
+            # _logger.info(f'res return url {r.request.url}')
             r = meta_auth()
+            _logger.info(f'res return url {r.request.url}')
         if r.request.url != XGLASS_MAIN_URL:
             raise Exception("Login failed")
         return

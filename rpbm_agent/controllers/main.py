@@ -26,7 +26,11 @@ class AgentController(Controller):
         XGLASS_USER = request.env['ir.config_parameter'].sudo().get_param('XGLASS_USER')
         XGLASS_PASS = request.env['ir.config_parameter'].sudo().get_param('XGLASS_PASS')
         xglassAgent.close()
-        xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
+        try:
+            xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
+        except :
+            _logger.warning("Echec de connexion à XGLASS")
+            xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
         vsfAgent.auth(VSF_LOGIN, VSF_PASSWORD)
         _logger.info("rpbm_agent_auth done")
         return 

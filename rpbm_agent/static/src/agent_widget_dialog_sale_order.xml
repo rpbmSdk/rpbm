@@ -6,9 +6,12 @@
             <t t-if='productExists'>
                 <p>
                     Le produit existe en BDD
-                    <a class="btn btn-primary" t-att-href="productOdooUrl" target="_blank">
+                    <span t-on-click.stop="()=>{}">
+                        <a class="btn btn-primary" t-att-href="productOdooUrl" target="_blank">
                         Voir
-                    </a>
+                        </a>
+                    </span>
+
                 </p>
                 <p t-if="existsInOrder">
                     Article déjà dans le devis
