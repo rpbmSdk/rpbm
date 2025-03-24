@@ -454,6 +454,7 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async getPlanche() {
+        await this.getVehiculeMeta();
         const res = await this.rpc("/getPlanche", {
             vehiculeId: this.selectedVehicule.id,
         })

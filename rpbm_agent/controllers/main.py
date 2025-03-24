@@ -64,7 +64,7 @@ class AgentController(Controller):
             Permet de retourner l'ID du véhicule enregistré en BDD de Odoo, si 
             le véhicule n'existe pas, retourne False
         """
-        _logger.info(f"getVehicule {vehicule}")
+        # _logger.info(f"getVehicule {vehicule}")
         vehicules = request.env['fleet.vehicle'].search([('license_plate', '=', immatriculation)])
         if vehicules:
             if len(vehicules) > 1:
