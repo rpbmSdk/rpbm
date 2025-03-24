@@ -140,8 +140,8 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
 
         this.state.immatriculationValue = this.saleOrder.immatriculation;
 
-        onWillStart(() => {
-            this.onWillStart();
+        onWillStart( async () => {
+            await this.onWillStart();
         });
     }
 
