@@ -24,6 +24,13 @@
  */
 
 /**
+ * @typedef {Object} VehiculeMeta
+ * @property {string} vin
+ * @property {string} cnit
+ * @property {string} dateMec
+ */
+
+/**
  * @typedef {Object} Calque
  * @property {number} id
  * @property {string} libelle

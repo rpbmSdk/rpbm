@@ -264,6 +264,7 @@ class XGLASS:
     def __init__(self):
         self.session = requests.Session()
         self.initRecherche = False
+        self.selectedVehiculePage = None
         # self.auth()
 
     def get(self, url):
@@ -339,13 +340,54 @@ class XGLASS:
         _logger.info(data)
         listeDeVariantes = data.get('regroupementVariantes')[0].get('listeDeVariante')
         return [XGlassVehicule(**v) for v in listeDeVariantes]
+
     
-    def selectVehicule(self, idVehicule: str='397899'):
+    def getSelectedVehiculePage(self, idVehicule: str='397899'):
         r = self.post(
             "https://portail-xglass.com/selectVehicule.html",
             data={"sessionScopedBean.infoSelectionVehicule.variante.id": idVehicule},
         )
-        page = bs.BeautifulSoup(r.text, "html.parser")
+        self.selectedVehiculePage = bs.BeautifulSoup(r.text, "html.parser")
+        return self.selectedVehiculePage
+    
+    def getVehiculeMeta(self, idVehicule: str='397899'):
+        # r = self.post(
+        #     "https://portail-xglass.com/selectVehicule.html",
+        #     data={"sessionScopedBean.infoSelectionVehicule.variante.id": idVehicule},
+        # )
+        page = self.selectedVehiculePage if self.selectedVehiculePage else self.getSelectedVehiculePage(idVehicule)
+        scripts = page.find_all("script",src=False)
+        def extract_line_value(line, key):
+            if key in line:
+                line = line.replace(key, "").replace(':', "").replace(',', "").replace("'", '')
+                return line.strip()
+            return None
+
+        keys = ['vin', 'cnit', 'dateMec']
+        data = {}
+
+        for script in scripts:
+            try:
+                lines = script.text.splitlines()
+                for line in lines:
+                    for key in keys:
+                        value = extract_line_value(line, key)
+                        if value:
+                            data[key] = value
+                            # break
+                print(data)
+                return data
+            except Exception as e :
+                print(e)
+                pass
+    
+    def selectVehicule(self, idVehicule: str='397899'):
+        # r = self.post(
+        #     "https://portail-xglass.com/selectVehicule.html",
+        #     data={"sessionScopedBean.infoSelectionVehicule.variante.id": idVehicule},
+        # )
+        # page = bs.BeautifulSoup(r.text, "html.parser")
+        page = self.selectedVehiculePage if self.selectedVehiculePage else self.getSelectedVehiculePage(idVehicule)
         scripts = page.find_all("script",src=False)
         for script in scripts:
             try:

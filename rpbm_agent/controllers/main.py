@@ -53,8 +53,13 @@ class AgentController(Controller):
             _logger.warning(e)
             return []
 
+    @route('/rbm_agent/getVehiculeMeta', auth='user', type='json')
+    def getVehiculeMeta(self,vehiculeId:int):
+        _logger.info(f"getVehiculeMeta {vehiculeId}")
+        return xglassAgent.getVehiculeMeta(vehiculeId)
+
     @route('/getOdooVehicule', auth='user', type='json')
-    def getVehicule(self,immatriculation:str, vehicule:xglass.XGlassVehicule):
+    def getVehicule(self,immatriculation:str):
         """
             Permet de retourner l'ID du véhicule enregistré en BDD de Odoo, si 
             le véhicule n'existe pas, retourne False
