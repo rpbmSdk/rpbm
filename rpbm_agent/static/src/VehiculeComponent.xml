@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="rpbm_agent.VehiculeComponent">
+        <div class="card" style="width: 50%;margin: 15px;">
+            <div class="card-body" t-att-style="style">
+                <h5 class="card-title">
+                    <t t-esc="props.vehicule.libelleCourt"/>
+                </h5>
+                <p t-if="props.vehiculeMeta">
+                    VIN : <t t-esc="props.vehiculeMeta.vin"/> 
+                    <br/>
+                    CNIT : <t t-esc="props.vehiculeMeta.cnit"/>
+                    <br/>
+                    Date MeC : <t t-esc="props.vehiculeMeta.dateMec"/>
+                </p>
+                <t t-if="isLoading">
+                    <i class="fa fa-spinner fa-spin fa-2x me-2"></i>
+                </t>
+                <t t-else="">
+                    <t t-if="vehiculeExists">
+                        <p>
+                            Le véhicule existe en BDD 
+                            <a class="btn btn-primary" t-att-href="vehiculeOdooUrl" target="_blank">
+                                Voir
+                            </a>
+                        </p>
+                    </t>
+                    <t t-else="">
+                        <button class="btn btn-primary" t-on-click.stop="onClickCreateVehicule">
+                    Créer
+                        </button>
+                    </t>
+                </t>
+
+            </div>
+        </div>
+    </t>
+</templates>

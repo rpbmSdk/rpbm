@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    
+    <t t-name="rpbm_agent.CalqueComponent">
+        <button t-attf-class="{{class}}" style="margin: 5px;">
+            <t t-esc="props.calque.libelle"/>
+        </button>
+    </t>
+    
+</templates>

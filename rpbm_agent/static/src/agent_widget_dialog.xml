@@ -1,98 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
-    <t t-name="rpbm_agent.VehiculeComponent">
-        <div class="card" style="width: 50%;margin: 15px;">
-            <div class="card-body" t-att-style="style">
-                <h5 class="card-title">
-                    <t t-esc="props.vehicule.libelleCourt"/>
-                </h5>
-                <p t-if="props.vehiculeMeta">
-                    VIN : <t t-esc="props.vehiculeMeta.vin"/> 
-                    <br/>
-                    CNIT : <t t-esc="props.vehiculeMeta.cnit"/>
-                    <br/>
-                    Date MeC : <t t-esc="props.vehiculeMeta.dateMec"/>
-                </p>
-                <t t-if="isLoading">
-                    <i class="fa fa-spinner fa-spin fa-2x me-2"></i>
-                </t>
-                <t t-else="">
-                    <t t-if="vehiculeExists">
-                        <p>
-                            Le véhicule existe en BDD 
-                            <a class="btn btn-primary" t-att-href="vehiculeOdooUrl" target="_blank">
-                                Voir
-                            </a>
-                        </p>
-                    </t>
-                    <t t-else="">
-                        <button class="btn btn-primary" t-on-click.stop="onClickCreateVehicule">
-                    Créer
-                        </button>
-                    </t>
-                </t>
+    
 
-            </div>
-        </div>
-    </t>
+    
 
-    <t t-name="rpbm_agent.CalqueComponent">
-        <button t-attf-class="{{class}}" style="margin: 5px;">
-            <t t-esc="props.calque.libelle"/>
-        </button>
-    </t>
+    
 
-    <t t-name="rpbm_agent.ArticleComponent">
-        <div class="card" style="width:30%; margin: 5px;">
-            <div class="card-body" t-att-style="style">
-                <h5 class="card-title">
-                    <t t-esc="props.article.code"/> <t t-esc="props.article.name"/>
-                </h5>
-                <h6>
-                    Prix: 
-                    <t t-esc="props.article.prixVente"/>
- 
-    €
-                    <br/>
-    Coût: <t t-esc="props.article.prixVenteRPBM"/>
- €
-                </h6>
-                <p t-if="props.article.available">
-                    En stock: <t t-esc="props.article.stock"/>
-                <br/>
 
-            </p>
-        </div>
-    </div>
-</t>
-
-<t t-name="rpbm_agent.PieceComponent">
-    <div class="card" style="width:30%; margin: 5px;">
-        <div class="card-body" t-att-style="style">
-            <h5 class="card-title">
-                <t t-esc="props.piece.pieceOe.libelle"/>
-            </h5>
-            <p>
-                    Prix: <t t-esc="props.piece.pieceOe.prix"/>
- €
-            </p>
-            <t t-if="props.piece.tempsList">
-                <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.id">
-                    <li>
-                        <t t-esc="tempsList.operationTemps.libelle"/>
- :                        <t t-esc="tempsList.temps"/>
-h | Taux : <t t-esc="tempsList.taux"/>
-                    </li>
-                </t>
-            </t>
-            <ul>
-
-            </ul>
-
-        </div>
-    </div>
-</t>
 
 <t t-name="rpbm_agent.AgentWidgetDialog">
     <Dialog size="lg" title="Agent">
@@ -136,7 +51,7 @@ h | Taux : <t t-esc="tempsList.taux"/>
                         </select> -->
                         <div>
                             <button t-if="selectedCalque" class="btn btn-primary" t-on-click="getPieces">
-                            getPieces
+                            Charger les catégories
                             </button>
                         </div>
 
@@ -149,11 +64,11 @@ h | Taux : <t t-esc="tempsList.taux"/>
                             </t>
 
                         </div>
-                        <div t-if="selectedPiece">
+                        <!-- <div t-if="selectedPiece">
                             <button class="btn btn-primary" t-on-click="getPieceAm">
                                     getPieceAm
                             </button>
-                        </div>
+                        </div> -->
                     </div>
                     <div t-if="selectedPiece">
                         <label for="baseEurocode">baseEurocode</label>

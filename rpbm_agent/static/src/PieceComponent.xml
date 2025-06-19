@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="rpbm_agent.PieceComponent">
+        <div class="card" style="width:30%; margin: 5px;">
+            <div class="card-body" t-att-style="style">
+                <h5 class="card-title">
+                    <t t-esc="props.piece.pieceOe.libelle"/>
+                </h5>
+                <p>
+                    Prix: <t t-esc="props.piece.pieceOe.prix"/>
+ €
+                </p>
+                <t t-if="props.piece.tempsList">
+                    <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.id">
+                        <li>
+                            <t t-esc="tempsList.operationTemps.libelle"/>
+ :                            <t t-esc="tempsList.temps"/>
+h | Taux : <t t-esc="tempsList.taux"/>
+                        </li>
+                    </t>
+                </t>
+                <ul>
+
+                </ul>
+
+            </div>
+        </div>
+    </t>
+
+</templates>

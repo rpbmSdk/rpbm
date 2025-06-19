@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="rpbm_agent.ArticleComponent">
+        <div class="card" style="width:30%; margin: 5px;">
+            <div class="card-body" t-att-style="style">
+                <h5 class="card-title">
+                    <t t-esc="props.article.code"/> <t t-esc="props.article.name"/>
+                </h5>
+                <h6>
+                    Prix: 
+                    <t t-esc="props.article.prixVente"/>
+ 
+    €
+                    <br/>
+    Coût: <t t-esc="props.article.prixVenteRPBM"/>
+ €
+                </h6>
+                <p t-if="props.article.available">
+                    En stock: <t t-esc="props.article.stock"/>
+                <br/>
+
+            </p>
+        </div>
+    </div>
+</t>
+</templates>
