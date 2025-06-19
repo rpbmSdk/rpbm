@@ -2,6 +2,7 @@
 
 import { Component } from "@odoo/owl";
 import { asyncWidget } from "./utils";
+import { onWillStart, useRef, useEffect } from "@odoo/owl";
 
 export class ArticleComponent extends asyncWidget {
     static props = {

@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { Component } from "@odoo/owl";
+import { onWillStart, useRef, useEffect } from "@odoo/owl";
 
 export class PieceComponent extends Component {
     static props = {

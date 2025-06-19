@@ -4,6 +4,7 @@ import { useService } from "@web/core/utils/hooks";
 import { useState } from "@odoo/owl";
 
 import { asyncWidget } from "./utils";
+import { onWillStart, useRef, useEffect } from "@odoo/owl";
 
 export class VehiculeComponent extends asyncWidget {
     static props = {
