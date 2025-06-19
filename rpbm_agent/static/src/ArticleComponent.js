@@ -1,8 +1,9 @@
 /** @odoo-module **/
 
 import { Component } from "@odoo/owl";
+import { asyncWidget } from "./utils";
 
-export class ArticleComponent extends Component {
+export class ArticleComponent extends asyncWidget {
     static props = {
         ...asyncWidget.props,
         article: { type: Object },
