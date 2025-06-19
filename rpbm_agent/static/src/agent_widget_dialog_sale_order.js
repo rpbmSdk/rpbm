@@ -1,8 +1,10 @@
 /** @odoo-module **/
 
-import { AbstractRecord, AgentWidgetDialog, ArticleComponent } from "./agent_widget_dialog";
+import { AgentWidgetDialog } from "./agent_widget_dialog";
+import { AbstractRecord } from "./utils";
 import { onWillStart } from "@odoo/owl";
 import { useState, Component } from "@odoo/owl";
+import { ArticleComponent } from "./ArticleComponent";
 
 
 class SaleOrderLine extends AbstractRecord {
