@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
-import { AbstractRecord, AgentWidgetDialog } from "./agent_widget_dialog";
+import { AbstractRecord } from "./utils";
+import { AgentWidgetDialog } from "./agent_widget_dialog";
 import { onWillStart } from "@odoo/owl";
 // /**
 // @typedef {Object} CrmLead
