@@ -235,7 +235,7 @@ export class AgentWidgetDialog extends asyncWidget {
     }
     
     async getVehiculeMeta() {
-        const res = await this.rpc("/getVehiculeMeta", {
+        const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
             vehiculeId: this.selectedVehicule.id,
         })
         console.log(res);
