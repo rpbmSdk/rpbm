@@ -1,2 +1,2 @@
 beautifulsoup4
-python-dotenv
+# python-dotenv
