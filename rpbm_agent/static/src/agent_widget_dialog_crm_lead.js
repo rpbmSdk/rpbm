@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { AbstractRecord } from "./utils";
+import { AbstractRecord, AbstractWidgetRecord } from "./utils";
 import { AgentWidgetDialog } from "./agent_widget_dialog";
 import { onWillStart } from "@odoo/owl";
 // /**
@@ -9,7 +9,7 @@ import { onWillStart } from "@odoo/owl";
 
 //  */
 
-class CrmLead extends AbstractRecord{
+class CrmLead extends AbstractWidgetRecord{
     constructor(record) {
         super(record);
         this.immatriculationField = 'x_studio_field_NVioD'

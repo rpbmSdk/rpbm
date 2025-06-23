@@ -16,6 +16,15 @@ export class AbstractRecord {
     }
 }
 
+export class AbstractWidgetRecord extends AbstractRecord {
+    /** Modèles sur lesquels ont peut ajouter un widget et récupérer / éditer les données (ex. crm.lead, sale.order, etc) */
+    constructor(record, vehiculeField, immatriculationField) {
+        super(record);
+        this.vehiculeField = vehiculeField;
+        this.immatriculationField = immatriculationField;
+    }
+}
+
 const asyncWidgetState = {
     loading: false,
     loadingMessage: "",

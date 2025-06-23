@@ -54,66 +54,11 @@ export class AgentWidgetDialog extends asyncWidget {
             selectedArticleVsf: undefined,
         });
 
-        // onWillStart(async () => {
-        //     await this.onWillStart();
-        // })
-
-
-
-        // useEffect(()=>{
-        //     console.log("useEffect selectedVehicule changed ", this.selectedVehicule);
-        //     if(this.selectedVehicule){
-        //         // const planche = this.getPlanche();
-        //         // this.state.planche = planche;
-        //         // this.
-        //         this.getPlanche();
-        //     }
-        //     else{
-        //         this.state.planche = undefined;
-        //     }
-        // },()=>[this.selectedVehicule]);
-
-        // useEffect(()=>{
-        //     console.log("useEffect planche changed ", this.planche);
-        //     if(this.planche){
-        //         this.state.selectedCalque = this.planche.calques[0];
-        //     }
-        //     else{
-        //         this.state.selectedCalque = undefined;
-        //         // this.state.pieces = [];
-        //     }
-        // },()=>[this.planche]);
-
-        // useEffect(()=>{
-        //     console.log("useEffect selectedCalque changed ", this.selectedCalque);
-        //     if(this.selectedCalque){
-        //         // this.state.pieces = this.selectedCalque.pieces;
-        //         this.getPieces();
-        //     }
-        //     else{
-        //         this.state.pieces = [];
-        //     }
-        // },()=>[this.selectedCalque]);
-
-        // useEffect(()=>{
-        //     console.log("useEffect pieces changed ", this.pieces);
-        //     if(this.pieces.length > 0){
-        //         this.state.selectedPiece = this.pieces[0];
-        //     }
-        //     else{
-        //         this.state.selectedPiece = undefined;
-        //     }
-        // }, ()=>[this.pieces]);
-
-
     }
 
     get agentsInitialized() {
         return this.state.agentsInitialized;
     }
-
-
-
 
 
     async onWillStart() {
@@ -122,15 +67,16 @@ export class AgentWidgetDialog extends asyncWidget {
             this.setLoadingMessage("Authentification des agents en cours...");
             await this.auth_agents();
             this.state.agentsInitialized = true;
+            await this.init();
         })
         // this.toogleLoading();
     }
 
-    async auth_agents(){
+    async auth_agents() {
         await this.rpc("/rpbm_agent_auth")
     }
 
-    async loadFromRecord(){
+    async loadFromRecord() {
         if (this.state.immatriculationValue) {
             await this.onSearchImmatriculation()
             if (this.vehicules.length > 0) {
@@ -183,13 +129,18 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async onSearchImmatriculation() {
-        this.toogleLoading();
-        const res = await this.rpc("/searchImmatriculation", {
-            immatriculation: this.immatriculationValue,
+        this.runAsync(async () => {
+            this.setLoadingMessage("Recherche de l'immatriculation en cours...");
+            if (!this.immatriculationValue) {
+                this.state.vehicules = [];
+                return;
+            }
+            const res = await this.rpc("/searchImmatriculation", {
+                immatriculation: this.immatriculationValue,
+            })
+            console.log(res);
+            this.state.vehicules = res;
         })
-        console.log(res);
-        this.state.vehicules = res;
-        this.toogleLoading();
 
     }
 
@@ -233,7 +184,7 @@ export class AgentWidgetDialog extends asyncWidget {
     get vehiculeMeta() {
         return this.state.vehiculeMeta;
     }
-    
+
     async getVehiculeMeta() {
         const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
             vehiculeId: this.selectedVehicule.id,
