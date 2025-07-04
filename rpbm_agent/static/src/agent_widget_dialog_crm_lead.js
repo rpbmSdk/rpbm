@@ -44,8 +44,8 @@ export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
         await super.onConfirm();
         const data = {};
         data[this.crmLead.immatriculationField] = this.state.immatriculationValue;
-        const OdooVehiculeId = await this.getOdooVehicule()
-        data
+        const OdooVehicule = await this.getOdooVehicule()
+        
         data[this.crmLead.baseEurocodeField] = this.state.baseEurocode;
         
         this.record.update(data);

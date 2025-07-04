@@ -12,12 +12,12 @@ import { PieceComponent } from "./PieceComponent";
 import { ArticleComponent } from "./ArticleComponent";
 
 
-// /**
-//  * @typedef {import('./types').Vehicule}
-//  * @typedef {import('./types').Planche}
-//  * @typedef {import('./types').Calque}
-//  * @typedef {import('./types').OdooVehicule}
-//  */
+/**
+ * @typedef {import('./types').Vehicule}
+ * @typedef {import('./types').Planche}
+ * @typedef {import('./types').Calque}
+ * @typedef {import('./types').OdooVehicule}
+ */
 
 export class AgentWidgetDialog extends asyncWidget {
     static components = {
@@ -100,7 +100,7 @@ export class AgentWidgetDialog extends asyncWidget {
                 if (this.vehicules.length > 0) {
                     this.onSelectVehicule(this.vehicules[0].id)
                     await this.getPlanche()
-                    if (this.record.categorieXglass){
+                    if (this.record.categorieXglass) {
                         const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
                         if (calque) {
                             this.onClickCalque(calque.id);
@@ -125,8 +125,18 @@ export class AgentWidgetDialog extends asyncWidget {
 
         const data = {};
         data[this.record.immatriculationField] = this.immatriculationValue;
-        const OdooVehiculeId = await this.getOdooVehicule();
+        const OdooVehicule = await this.getOdooVehicule();
+        if (OdooVehicule) {
+            data[this.record.vehiculeField] = OdooVehicule.id;
+        }
 
+        if (this.selectedCalque) {
+            data[this.record.categorieXglassField] = this.selectedCalque.libelle;
+        }
+
+        if (this.baseEurocode) {
+            data[this.record.baseEurocodeField] = this.baseEurocode;
+        }
         this.props.close();
     }
 
@@ -254,6 +264,12 @@ export class AgentWidgetDialog extends asyncWidget {
     /** @returns {number} */
     get selectedCalqueId() {
         return this.selectedCalque ? this.selectedCalque.id : 0;
+    }
+
+    /**
+     * @returns {string} */
+    get baseEurocode() {
+        return this.state.baseEurocode;
     }
 
     onChangeCalque(ev) {

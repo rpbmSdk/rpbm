@@ -23,6 +23,7 @@ export class AbstractWidgetRecord extends AbstractRecord {
     vehiculeField = "x_studio_vehicle_id";
     immatriculationField = "x_studio_immatriculation";
     baseEurocodeField = "x_studio_base_eurocode";
+    // calqueField = "x_studio_calque";
 
     constructor(record, vehiculeField, immatriculationField) {
         super(record);
