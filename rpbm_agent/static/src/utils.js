@@ -11,18 +11,41 @@ export class AbstractRecord {
     get recordData() {
         return this.data;
     }
-    get odooId (){
+    get odooId() {
         return this.recordData.id;
     }
 }
 
 export class AbstractWidgetRecord extends AbstractRecord {
     /** Modèles sur lesquels ont peut ajouter un widget et récupérer / éditer les données (ex. crm.lead, sale.order, etc) */
+
+    categorieXglassField = "x_studio_categorie_xglass";
+    vehiculeField = "x_studio_vehicle_id";
+    immatriculationField = "x_studio_immatriculation";
+    baseEurocodeField = "x_studio_base_eurocode";
+
     constructor(record, vehiculeField, immatriculationField) {
         super(record);
         this.vehiculeField = vehiculeField;
         this.immatriculationField = immatriculationField;
     }
+
+    get immatriculation() {
+        return this.recordData[this.immatriculationField];
+    }
+
+    get calque() {
+        return this.recordData[this.calqueField];
+    }
+
+    get categorieXglass() {
+        return this.recordData[this.categorieXglassField];
+    }
+
+    get baseEurocode() {
+        return this.recordData[this.baseEurocodeField];
+    }
+
 }
 
 const asyncWidgetState = {
@@ -38,6 +61,7 @@ export class asyncWidget extends Component {
         super.setup();
         this.rpc = useService("rpc");
         this.orm = useService("orm");
+        /** @type {AbstractWidgetRecord} */
         this.record = this.props.record;
         this.state = useState(asyncWidgetState);
     }
@@ -93,7 +117,7 @@ export class asyncWidget extends Component {
      * Run an async function and set the loading state to true before and to false after
      * @param {Function} fn - async function to run
      */
-    async runAsync(fn, message="") {
+    async runAsync(fn, message = "") {
         this.startLoading();
         this.state.loadingMessage = message;
         try {

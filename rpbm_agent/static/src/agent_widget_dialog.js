@@ -12,7 +12,12 @@ import { PieceComponent } from "./PieceComponent";
 import { ArticleComponent } from "./ArticleComponent";
 
 
-
+// /**
+//  * @typedef {import('./types').Vehicule}
+//  * @typedef {import('./types').Planche}
+//  * @typedef {import('./types').Calque}
+//  * @typedef {import('./types').OdooVehicule}
+//  */
 
 export class AgentWidgetDialog extends asyncWidget {
     static components = {
@@ -91,10 +96,16 @@ export class AgentWidgetDialog extends asyncWidget {
         // console.log("override me");
         this.runAsync(async () => {
             if (this.state.immatriculationValue) {
-                await this.onSearchImmatriculation()
+                await this.searchImmatriculation()
                 if (this.vehicules.length > 0) {
                     this.onSelectVehicule(this.vehicules[0].id)
                     await this.getPlanche()
+                    if (this.record.categorieXglass){
+                        const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
+                        if (calque) {
+                            this.onClickCalque(calque.id);
+                        }
+                    }
                     this.calques.forEach(calque => console.log(calque.libelle))
                 }
             }
@@ -111,6 +122,11 @@ export class AgentWidgetDialog extends asyncWidget {
 
     async onConfirm() {
         await this.closeAgents();
+
+        const data = {};
+        data[this.record.immatriculationField] = this.immatriculationValue;
+        const OdooVehiculeId = await this.getOdooVehicule();
+
         this.props.close();
     }
 
@@ -128,20 +144,23 @@ export class AgentWidgetDialog extends asyncWidget {
         console.log(this.immatriculationValue);
     }
 
+    async searchImmatriculation() {
+        this.setLoadingMessage("Recherche de l'immatriculation en cours...");
+        if (!this.immatriculationValue) {
+            this.state.vehicules = [];
+            return;
+        }
+        const res = await this.rpc("/searchImmatriculation", {
+            immatriculation: this.immatriculationValue,
+        })
+        console.log(res);
+        this.state.vehicules = res;
+    }
+
     async onSearchImmatriculation() {
         this.runAsync(async () => {
-            this.setLoadingMessage("Recherche de l'immatriculation en cours...");
-            if (!this.immatriculationValue) {
-                this.state.vehicules = [];
-                return;
-            }
-            const res = await this.rpc("/searchImmatriculation", {
-                immatriculation: this.immatriculationValue,
-            })
-            console.log(res);
-            this.state.vehicules = res;
+            await this.searchImmatriculation();
         })
-
     }
 
     /**
@@ -167,6 +186,9 @@ export class AgentWidgetDialog extends asyncWidget {
         console.log(this.state.selectedVehicule);
     }
 
+    /**
+     * @returns {Promise<OdooVehicule|boolean>}
+     */
     async getOdooVehicule() {
         console.log("getOdooVehicule");
         if (!this.selectedVehicule) {
@@ -194,6 +216,8 @@ export class AgentWidgetDialog extends asyncWidget {
         return res;
     }
 
+
+
     async getPlanche() {
         await this.getVehiculeMeta();
         const res = await this.rpc("/getPlanche", {
@@ -203,6 +227,13 @@ export class AgentWidgetDialog extends asyncWidget {
         this.state.planche = res;
         this.calques.forEach(calque => console.log(calque.libelle))
         return res;
+    }
+
+    onGetPlanche() {
+        this.runAsync(async () => {
+            this.setLoadingMessage("Chargement de la planche en cours...");
+            await this.getPlanche();
+        })
     }
 
     /** @returns {Planche} */

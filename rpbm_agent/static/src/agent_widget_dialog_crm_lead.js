@@ -16,13 +16,7 @@ class CrmLead extends AbstractWidgetRecord{
         this.calqueField = 'x_studio_field_eENQz'
     }
 
-    get immatriculation(){
-        return this.recordData[this.immatriculationField];
-    }
-
-    get calque(){
-        return this.recordData[this.calqueField];
-    }
+    
 }
 
 export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
@@ -51,8 +45,9 @@ export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
         const data = {};
         data[this.crmLead.immatriculationField] = this.state.immatriculationValue;
         const OdooVehiculeId = await this.getOdooVehicule()
-        this.record.update({
-            [this.crmLead.immatriculationField]: this.state.immatriculationValue
-        });
+        data
+        data[this.crmLead.baseEurocodeField] = this.state.baseEurocode;
+        
+        this.record.update(data);
     }
 }

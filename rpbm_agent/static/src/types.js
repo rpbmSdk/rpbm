@@ -56,3 +56,8 @@
  * @property {string} name
  * @property {string} default_code
  */
+
+/**
+ * @typedef {Object} OdooVehicule
+ * @property {number} id
+ */
