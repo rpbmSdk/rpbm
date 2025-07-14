@@ -70,7 +70,7 @@ class AgentController(Controller):
             if len(vehicules) > 1:
                 _logger.warning(f"Plusieurs véhicules avec la même immatriculation {immatriculation}")
             vehicule = vehicules[0]
-            return vehicule.read()
+            return vehicule.read()[0]
         else:
             return False
 

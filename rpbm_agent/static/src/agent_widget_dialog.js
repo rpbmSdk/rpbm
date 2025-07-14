@@ -5,7 +5,7 @@ import { useState, Component } from "@odoo/owl";
 import { Dialog } from '@web/core/dialog/dialog';
 import { onWillStart, useRef, useEffect } from "@odoo/owl";
 
-import { asyncWidget } from "./utils";
+import { asyncWidget, AbstractWidgetRecord } from "./utils";
 import { VehiculeComponent } from "./VehiculeComponent";
 import { CalqueComponent } from "./CalqueComponent";
 import { PieceComponent } from "./PieceComponent";
@@ -17,6 +17,7 @@ import { ArticleComponent } from "./ArticleComponent";
  * @typedef {import('./types').Planche}
  * @typedef {import('./types').Calque}
  * @typedef {import('./types').OdooVehicule}
+ * @typedef 
  */
 
 export class AgentWidgetDialog extends asyncWidget {
@@ -37,7 +38,8 @@ export class AgentWidgetDialog extends asyncWidget {
         super.setup();
         this.rpc = useService("rpc");
         this.orm = useService("orm");
-        this.record = this.props.record;
+        /** @type {AbstractWidgetRecord} */
+        this.record = new AbstractWidgetRecord(this.props.record);
         this.state = useState({
             ...this.state,
             agentsInitialized: false,
@@ -137,6 +139,7 @@ export class AgentWidgetDialog extends asyncWidget {
         if (this.baseEurocode) {
             data[this.record.baseEurocodeField] = this.baseEurocode;
         }
+        this.props.record.update(data);
         this.props.close();
     }
 

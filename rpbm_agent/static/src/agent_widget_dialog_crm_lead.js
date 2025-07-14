@@ -13,7 +13,7 @@ class CrmLead extends AbstractWidgetRecord{
     constructor(record) {
         super(record);
         this.immatriculationField = 'x_studio_field_NVioD'
-        this.calqueField = 'x_studio_field_eENQz'
+        // this.calqueField = 'x_studio_field_eENQz'
     }
 
     
@@ -24,9 +24,9 @@ export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
         super.setup();
 
         /** @type {CrmLead} */
-        this.crmLead = new CrmLead(this.record);
+        this.record = new CrmLead(this.record);
 
-        this.state.immatriculationValue = this.crmLead.immatriculation;
+        this.state.immatriculationValue = this.record.immatriculation;
 
         onWillStart(async () => {
             await this.onWillStart();
@@ -42,12 +42,12 @@ export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
 
     async onConfirm() {
         await super.onConfirm();
-        const data = {};
-        data[this.crmLead.immatriculationField] = this.state.immatriculationValue;
-        const OdooVehicule = await this.getOdooVehicule()
+        // const data = {};
+        // data[this.crmLead.immatriculationField] = this.state.immatriculationValue;
+        // const OdooVehicule = await this.getOdooVehicule()
         
-        data[this.crmLead.baseEurocodeField] = this.state.baseEurocode;
+        // data[this.crmLead.baseEurocodeField] = this.state.baseEurocode;
         
-        this.record.update(data);
+        // this.record.update(data);
     }
 }
