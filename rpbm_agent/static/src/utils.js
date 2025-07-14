@@ -19,6 +19,7 @@ export class AbstractRecord {
 export class AbstractWidgetRecord extends AbstractRecord {
     /** Modèles sur lesquels ont peut ajouter un widget et récupérer / éditer les données (ex. crm.lead, sale.order, etc) */
 
+    partnerField = "partner_id";
     categorieXglassField = "x_studio_categorie_xglass";
     vehiculeField = "x_studio_vehicle_id";
     immatriculationField = "x_studio_immatriculation";
@@ -45,6 +46,10 @@ export class AbstractWidgetRecord extends AbstractRecord {
 
     get baseEurocode() {
         return this.recordData[this.baseEurocodeField];
+    }
+
+    get partnerId(){
+        return this.recordData[this.partnerField][0];
     }
 
 }

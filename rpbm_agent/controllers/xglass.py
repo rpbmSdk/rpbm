@@ -67,6 +67,9 @@ class XGlassVehicule():
     libelleCourt:str
     modele:dict
     xGlassModele:XGlassModele
+    puissanceKw:int
+    portesNbr:int
+    energieLibelle:str
 
     energieLibelle:str
     def __init__(self,**kwargs):

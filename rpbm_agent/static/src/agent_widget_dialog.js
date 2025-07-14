@@ -42,6 +42,7 @@ export class AgentWidgetDialog extends asyncWidget {
         this.record = new AbstractWidgetRecord(this.props.record);
         this.state = useState({
             ...this.state,
+            canConfim: false,
             agentsInitialized: false,
             // loading: false,
             immatriculationValue: "",
@@ -61,6 +62,10 @@ export class AgentWidgetDialog extends asyncWidget {
             selectedArticleVsf: undefined,
         });
 
+        useEffect(() => {
+            this.state.canConfim = this.canConfirm();
+        }, ()=> [this.selectedVehicule, this.planche, this.selectedCalque, this.baseEurocode])
+
     }
 
     get agentsInitialized() {
@@ -76,7 +81,6 @@ export class AgentWidgetDialog extends asyncWidget {
             this.state.agentsInitialized = true;
             await this.init();
         })
-        // this.toogleLoading();
     }
 
     async auth_agents() {
@@ -122,14 +126,32 @@ export class AgentWidgetDialog extends asyncWidget {
         await this.rpc("/rpbm_agent_close")
     }
 
-    async onConfirm() {
-        await this.closeAgents();
+    async createOdooVehicule() {
+        const res = await this.rpc("/createVehicule", {
+            immatriculation: this.state.immatriculationValue,
+            partner_id: this.record.partnerId,
+            vehicule_info: this.selectedVehicule,
+            vehicule_meta: this.vehiculeMeta,
+        })
+        console.log(res);
+        if (res) {
+            return await this.getOdooVehicule();
+        }
+        return res;
+    }
 
+    async getRecordData() {
         const data = {};
         data[this.record.immatriculationField] = this.immatriculationValue;
         const OdooVehicule = await this.getOdooVehicule();
+
         if (OdooVehicule) {
-            data[this.record.vehiculeField] = OdooVehicule.id;
+            data[this.record.vehiculeField] = [OdooVehicule.id, OdooVehicule.name];
+        }
+        else if (this.selectedVehicule) {
+            // Il y a un vehicule selectionné mais pas d'OdooVehicule encore créé
+            const newOdooVehicule = await this.createOdooVehicule();
+            data[this.record.vehiculeField] = [newOdooVehicule.id, newOdooVehicule.name];
         }
 
         if (this.selectedCalque) {
@@ -139,6 +161,15 @@ export class AgentWidgetDialog extends asyncWidget {
         if (this.baseEurocode) {
             data[this.record.baseEurocodeField] = this.baseEurocode;
         }
+        return data;
+    }
+
+    async onConfirm() {
+        await this.closeAgents();
+
+        const data = await this.getRecordData();
+        console.log(data);
+        
         this.props.record.update(data);
         this.props.close();
     }
@@ -192,6 +223,13 @@ export class AgentWidgetDialog extends asyncWidget {
 
     get selectedVehiculeId() {
         return this.selectedVehicule ? this.selectedVehicule.id : 0;
+    }
+
+    canConfirm() {
+        if (!this.selectedVehicule) {
+            return false;
+        }
+        return true;
     }
 
     onSelectVehicule(vehiculeId) {

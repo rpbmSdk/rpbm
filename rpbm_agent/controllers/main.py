@@ -1,4 +1,4 @@
-
+from odoo import fields
 from odoo.http import Controller, request, route
 import logging
 
@@ -75,7 +75,7 @@ class AgentController(Controller):
             return False
 
     @route('/createVehicule', auth='user', type='json')
-    def createVehicule(self,immatriculation:str, vehicule_info:dict):
+    def createVehicule(self,immatriculation:str, partner_id:int, vehicule_info:dict={}, vehicule_meta:dict={}):
         """
             Permet de créer un véhicule en BDD de Odoo
         """
@@ -98,10 +98,38 @@ class AgentController(Controller):
                     'name': vehicule.xGlassModele.gamme,
                     'brand_id': marque.id
                 })
+            data = {}
+            if vehicule_meta is not None:
+                vin = vehicule_meta.get('vin', False)
+                dateMec = vehicule_meta.get('dateMec', False)
+                if vin:
+                    data['vin_sn'] = vin
+                if dateMec:
+                    # convert %m/%Y to date format
+                    import datetime
+                    date:datetime.date = datetime.datetime.strptime(dateMec, '%m/%Y').date()
+                    data['x_studio_date_mec'] = fields.Date.from_string(date)
+            fuel_type = request.env['ir.model.fields.selection'].search([
+                ('field_id','=',11396),  # fuel_type field
+                ('name', '=', vehicule.energieLibelle)
+            ])
+            if not fuel_type:
+                fuel_type = request.env['ir.model.fields.selection'].create({
+                    'field_id': 11396,  # fuel_type field
+                    'name': vehicule.energieLibelle,
+                    'value': vehicule.energieLibelle,
+                })
             vehicule = request.env['fleet.vehicle'].create({
+                'driver_id': partner_id,
                 'model_id': modele.id,
                 'license_plate': immatriculation,
-                'description': vehicule.libelleCourt
+                'description': vehicule.libelleCourt,
+                'power': vehicule.puissanceKw,
+                'doors': vehicule.portesNbr,
+                'fuel_type': fuel_type.value,
+                'x_studio_detail_model':vehicule.libelleCourt,
+                **data,
+
             })
             _logger.info(f"Véhicule créé {vehicule}")
 
