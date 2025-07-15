@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import { AgentWidgetDialog } from "./agent_widget_dialog";
-import { AbstractRecord } from "./utils";
+import { AbstractRecord, AbstractWidgetRecord } from "./utils";
 import { onWillStart } from "@odoo/owl";
 import { useState, Component } from "@odoo/owl";
 import { ArticleComponent } from "./ArticleComponent";
@@ -133,9 +133,9 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         })
 
         /** @type {SaleOrder} */
-        this.saleOrder = new SaleOrder(this.record);
+        this.record = new SaleOrder(this.record);
 
-        this.state.immatriculationValue = this.saleOrder.immatriculation;
+        this.state.immatriculationValue = this.record.immatriculation;
 
         onWillStart( () => {
             this.onWillStart();
