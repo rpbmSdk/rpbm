@@ -76,7 +76,7 @@ class XGlassVehicule():
         for key, value in kwargs.items():
             setattr(self,key,value)
         self.energieLibelle = getLabel(f"lbl.energie.{self.__dict__.get('energie')}")
-        self.imgUrl = f"{XGLASS_URL}/images/image_modele/{self.imageRef}"
+        self.imgUrl = f"{XGLASS_URL}/images/images_modele/{self.imageRef}"
         self.xGlassModele = XGlassModele(**self.modele)
 
 

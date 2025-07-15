@@ -1,6 +1,7 @@
 from odoo import fields
 from odoo.http import Controller, request, route
 import logging
+import base64
 
 from . import vsf
 from . import xglass
@@ -119,6 +120,17 @@ class AgentController(Controller):
                     'name': vehicule.energieLibelle,
                     'value': vehicule.energieLibelle,
                 })
+            # Download the image from xglass
+            image = False
+            if vehicule.imgUrl:
+                response = xglassAgent.get(vehicule.imgUrl)
+                if response.status_code == 200:
+                    # image = image_process(response.content, verify_resolution=True)
+                    # image = response.content
+                    image = base64.b64encode(response.content).replace(b"\n", b"")
+                else:
+                    _logger.warning(response.text)
+                    _logger.warning(f"Image not found for {vehicule.imgUrl}")
             vehicule = request.env['fleet.vehicle'].create({
                 'driver_id': partner_id,
                 'model_id': modele.id,
@@ -128,6 +140,7 @@ class AgentController(Controller):
                 'doors': vehicule.portesNbr,
                 'fuel_type': fuel_type.value,
                 'x_studio_detail_model':vehicule.libelleCourt,
+                'image_1920': image,
                 **data,
 
             })

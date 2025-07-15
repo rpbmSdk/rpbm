@@ -25,15 +25,10 @@ class SaleOrderLine extends AbstractRecord {
     }
 }
 
-class SaleOrder extends AbstractRecord {
+class SaleOrder extends AbstractWidgetRecord {
     constructor(record) {
         super(record);
         this.immatriculationField = 'x_studio_immatriculation_'
-        this.calqueField = 'x_studio_field_eENQz'
-    }
-
-    get immatriculation() {
-        return this.recordData[this.immatriculationField];
     }
 
     get OrderlLines() {
@@ -148,15 +143,15 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
     }
 
     async onWillStart() {
-        // await super.onWillStart();
+        await super.onWillStart();
         // await this.init()
-        this.runAsync(async () => {
-            this.setLoadingMessage("Authentification des agents en cours...");
-            await this.auth_agents();
-            this.state.agentsInitialized = true;
-            this.setLoadingMessage("Chargement des données du modèle...");
-            await this.loadFromRecord();
-        })
+        // this.runAsync(async () => {
+        //     this.setLoadingMessage("Authentification des agents en cours...");
+        //     await this.auth_agents();
+        //     this.state.agentsInitialized = true;
+        //     this.setLoadingMessage("Chargement des données du modèle...");
+        //     await this.loadFromRecord();
+        // })
     }
 
     async onConfirm() {
