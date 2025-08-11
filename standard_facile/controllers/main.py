@@ -5,6 +5,10 @@ import base64
 import csv
 import io
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
 class StandardFacileController(http.Controller):
     @http.route('/standard_facile', type='http', auth='user', website=True)
     def standard_facile_form(self, **kwargs):
@@ -24,8 +28,8 @@ class StandardFacileController(http.Controller):
             try:
                 file_content = uploaded_file.read()
                 file_stream = io.StringIO(file_content.decode('utf-8'))
-                reader = csv.DictReader(file_stream)
-                
+                reader = csv.DictReader(file_stream, delimiter=';')
+
                 # Remplacer par la logique de création d'enregistrements
                 StandardFacileModel = request.env['x_studio_standard_facile_call']
                 csv_fields= {
@@ -39,6 +43,7 @@ class StandardFacileController(http.Controller):
                 }
                 for row in reader:
                     # Search for similar records based on fields x_studio_statut, x_studio_appel_entrant, x_studio_date, x_studio_hour
+                    _logger.info(f"Processing row: {row}")
                     existing_record = StandardFacileModel.search([
                         ('x_studio_statut', '=', row.get('STATUT')),
                         ('x_studio_appel_entrant', '=', row.get('APPEL ENTRANT')),
