@@ -11,6 +11,7 @@
             </div>
         </t>
         <form action="/standard_facile/upload" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
             <input type="file" name="uploaded_file" accept=".csv" required="required"/>
             <button type="submit" class="btn btn-primary">Importer</button>
         </form>
