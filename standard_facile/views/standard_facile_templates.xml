@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="upload_csv_template" name="Standard Facile Upload CSV">
+        <t t-if="errors">
+            <div class="alert alert-danger">
+                <ul>
+                    <t t-foreach="errors" t-as="error">
+                        <li><t t-esc="error"/></li>
+                    </t>
+                </ul>
+            </div>
+        </t>
+        <form action="/standard_facile/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="uploaded_file" accept=".csv" required="required"/>
+            <button type="submit" class="btn btn-primary">Importer</button>
+        </form>
+    </template>
+
+    <template id="success_template" name="Standard Facile Success">
+        <div class="alert alert-success">
+            Importation réussie ! Les enregistrements ont été créés.
+        </div>
+        <a href="/standard_facile" class="btn btn-secondary">Retour</a>
+    </template>
+</odoo>
