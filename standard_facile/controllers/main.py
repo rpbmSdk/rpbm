@@ -46,7 +46,7 @@ class StandardFacileController(http.Controller):
                     'JOUR': 'x_studio_date',
                     'HEURE': 'x_studio_hour',
                     'REDIRECTION': 'x_studio_appel_redirection',
-                    'DUR�E (en seconde)':'x_studio_appel_duree',
+                    'DURÉE (en seconde)':'x_studio_appel_duree',
                     'ANNOTATION':'x_studio_appel_note'
                 }
                 for row in reader:
@@ -65,7 +65,7 @@ class StandardFacileController(http.Controller):
                             'x_studio_date': row.get('JOUR'),
                             'x_studio_hour': row.get('HEURE'),
                             'x_studio_appel_redirection': row.get('REDIRECTION'),
-                            'x_studio_appel_duree': row.get('DUR�E (en seconde)'),
+                            'x_studio_appel_duree': row.get('DURÉE (en seconde)'),
                             'x_studio_appel_note': row.get('ANNOTATION')
                         })
                     else:
@@ -76,7 +76,7 @@ class StandardFacileController(http.Controller):
                             'x_studio_date': row.get('JOUR'),
                             'x_studio_hour': row.get('HEURE'),
                             'x_studio_appel_redirection': row.get('REDIRECTION'),
-                            'x_studio_appel_duree': row.get('DUR�E (en seconde)'),
+                            'x_studio_appel_duree': row.get('DURÉE (en seconde)'),
                             'x_studio_appel_note': row.get('ANNOTATION')
                         })
                 success = True
