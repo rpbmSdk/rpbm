@@ -27,7 +27,15 @@ class StandardFacileController(http.Controller):
         if uploaded_file:
             try:
                 file_content = uploaded_file.read()
-                file_stream = io.StringIO(file_content.decode('utf-8'))
+                # file_stream = io.StringIO(file_content.decode('utf-8'))
+                _logger.info(f"Received file of size: {len(file_content)} bytes")
+                # Find appropriate encoding
+                encoding = 'utf-8'
+                try:
+                    file_content.decode(encoding)
+                except UnicodeDecodeError:
+                    encoding = 'ISO-8859-1'
+                file_stream = io.StringIO(file_content.decode(encoding))
                 reader = csv.DictReader(file_stream, delimiter=';')
 
                 # Remplacer par la logique de création d'enregistrements
@@ -43,7 +51,6 @@ class StandardFacileController(http.Controller):
                 }
                 for row in reader:
                     # Search for similar records based on fields x_studio_statut, x_studio_appel_entrant, x_studio_date, x_studio_hour
-                    _logger.info(f"Processing row: {row}")
                     existing_record = StandardFacileModel.search([
                         ('x_studio_statut', '=', row.get('STATUT')),
                         ('x_studio_appel_entrant', '=', row.get('APPEL ENTRANT')),
