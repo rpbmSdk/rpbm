@@ -390,7 +390,8 @@ class XGLASS:
         #     data={"sessionScopedBean.infoSelectionVehicule.variante.id": idVehicule},
         # )
         # page = bs.BeautifulSoup(r.text, "html.parser")
-        page = self.selectedVehiculePage if self.selectedVehiculePage else self.getSelectedVehiculePage(idVehicule)
+        # page = self.selectedVehiculePage if self.selectedVehiculePage else self.getSelectedVehiculePage(idVehicule)
+        page = self.getSelectedVehiculePage(idVehicule)
         scripts = page.find_all("script",src=False)
         for script in scripts:
             try:

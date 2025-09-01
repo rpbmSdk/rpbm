@@ -57,6 +57,8 @@ class AgentController(Controller):
     @route('/rbm_agent/getVehiculeMeta', auth='user', type='json')
     def getVehiculeMeta(self,vehiculeId:str):
         _logger.info(f"getVehiculeMeta {vehiculeId}")
+        # Il faut d'abord réinitialiser la planche
+        self.getPlanche(int(vehiculeId))
         return xglassAgent.getVehiculeMeta(vehiculeId)
 
     @route('/getOdooVehicule', auth='user', type='json')
@@ -103,18 +105,23 @@ class AgentController(Controller):
             if vehicule_meta is not None:
                 vin = vehicule_meta.get('vin', False)
                 dateMec = vehicule_meta.get('dateMec', False)
+                _logger.info(f"vin {vin} dateMec {dateMec}")
                 if vin:
                     data['vin_sn'] = vin
                 if dateMec:
                     # convert %m/%Y to date format
                     import datetime
                     date:datetime.date = datetime.datetime.strptime(dateMec, '%m/%Y').date()
+                    _logger.info(f"date {date}")
                     data['x_studio_date_mec'] = fields.Date.from_string(date)
-            fuel_type_field = request.env['ir.model.fields'].search([('name', '=', 'fuel_type'),('model_id.name','=','fleet.vehicle')], limit=1)
+                    _logger.info(f"x_studio_date_mec {data['x_studio_date_mec']}")
+            fuel_type_field = request.env['ir.model.fields'].search([('name', '=', 'fuel_type'),('model_id.model','=','fleet.vehicle')], limit=1)
+            _logger.info(f"fuel_type_field {fuel_type_field}")
             fuel_type = request.env['ir.model.fields.selection'].search([
                 ('field_id','=',fuel_type_field.id),  # fuel_type field
                 ('name', '=', vehicule.energieLibelle)
             ])
+            _logger.info(f"fuel_type {fuel_type}")
             if not fuel_type:
                 fuel_type = request.env['ir.model.fields.selection'].create({
                     'field_id': fuel_type_field.id,  # fuel_type field
