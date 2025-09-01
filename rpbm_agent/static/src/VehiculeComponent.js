@@ -12,7 +12,7 @@ export class VehiculeComponent extends asyncWidget {
         immatriculation: { type: String, optional: true },
         vehicule: { type: Object },
         selectedVehiculeId: { type: Number },
-        vehiculeMeta : {type: Object, optional: true},
+        vehiculeMeta: { type: Object, optional: true },
         // onSelectVehicule: {type: Function},
     }
     static template = "rpbm_agent.VehiculeComponent";
@@ -53,12 +53,10 @@ export class VehiculeComponent extends asyncWidget {
                 immatriculation: this.props.immatriculation,
                 // vehicule: this.props.vehicule,
             })
-            console.log(res);
             this.state.vehiculeExists = Boolean(res);
             if (this.vehiculeExists) {
                 this.state.vehiculeId = res.id;
             }
-            console.log(this.state.vehiculeExists);
         })
     }
 
@@ -67,7 +65,9 @@ export class VehiculeComponent extends asyncWidget {
         this.runAsync(async () => {
             const vehiculeId = await this.rpc("/createVehicule", {
                 immatriculation: this.props.immatriculation,
+                partner_id: this.record.partnerId,
                 vehicule_info: this.props.vehicule,
+                vehicule_meta: this.vehiculeMeta,
             })
             this.state.vehiculeId = vehiculeId;
             await this.getOdooVehicule();

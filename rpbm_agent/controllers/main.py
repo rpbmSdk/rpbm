@@ -55,7 +55,7 @@ class AgentController(Controller):
             return []
 
     @route('/rbm_agent/getVehiculeMeta', auth='user', type='json')
-    def getVehiculeMeta(self,vehiculeId:int):
+    def getVehiculeMeta(self,vehiculeId:str):
         _logger.info(f"getVehiculeMeta {vehiculeId}")
         return xglassAgent.getVehiculeMeta(vehiculeId)
 
@@ -110,13 +110,14 @@ class AgentController(Controller):
                     import datetime
                     date:datetime.date = datetime.datetime.strptime(dateMec, '%m/%Y').date()
                     data['x_studio_date_mec'] = fields.Date.from_string(date)
+            fuel_type_field = request.env['ir.model.fields'].search([('name', '=', 'fuel_type'),('model_id.name','=','fleet.vehicle')], limit=1)
             fuel_type = request.env['ir.model.fields.selection'].search([
-                ('field_id','=',11396),  # fuel_type field
+                ('field_id','=',fuel_type_field.id),  # fuel_type field
                 ('name', '=', vehicule.energieLibelle)
             ])
             if not fuel_type:
                 fuel_type = request.env['ir.model.fields.selection'].create({
-                    'field_id': 11396,  # fuel_type field
+                    'field_id': fuel_type_field.id,  # fuel_type field
                     'name': vehicule.energieLibelle,
                     'value': vehicule.energieLibelle,
                 })

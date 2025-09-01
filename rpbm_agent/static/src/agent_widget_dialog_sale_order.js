@@ -12,14 +12,6 @@ class SaleOrderLine extends AbstractRecord {
         super(record);
     }
 
-    // get immatriculation(){
-    //     return this.recordData[this.immatriculationField];
-    // }
-
-    // get calque(){
-    //     return this.recordData[this.calqueField];
-    // }
-
     get productId() {
         return this.recordData.product_id;
     }
