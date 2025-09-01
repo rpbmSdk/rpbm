@@ -67,10 +67,11 @@ export class VehiculeComponent extends asyncWidget {
                 immatriculation: this.props.immatriculation,
                 partner_id: this.record.partnerId,
                 vehicule_info: this.props.vehicule,
-                vehicule_meta: this.vehiculeMeta,
+                vehicule_meta: this.props.vehiculeMeta,
             })
             this.state.vehiculeId = vehiculeId;
-            await this.getOdooVehicule();
+            this.state.vehiculeExists = true;
+            // await this.getOdooVehicule();
         })
     }
 
