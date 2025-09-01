@@ -66,6 +66,14 @@ export class AgentWidgetDialog extends asyncWidget {
             this.state.canConfim = this.canConfirm();
         }, ()=> [this.selectedVehicule, this.planche, this.selectedCalque, this.baseEurocode])
 
+        useEffect(() => {
+            this.state.selectedVehicule = undefined;
+        }, ()=> [this.vehicules])
+
+        useEffect(() => {
+            this.state.planche = undefined;
+        }, ()=> [this.selectedVehicule])
+
     }
 
     get agentsInitialized() {
@@ -251,26 +259,26 @@ export class AgentWidgetDialog extends asyncWidget {
         })
     }
 
-    /**
-     * @returns {VehiculeMeta}
-     * */
-    get vehiculeMeta() {
-        return this.state.vehiculeMeta;
-    }
+    // /**
+    //  * @returns {VehiculeMeta}
+    //  * */
+    // get vehiculeMeta() {
+    //     return this.state.vehiculeMeta;
+    // }
 
-    async getVehiculeMeta() {
-        const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
-            vehiculeId: this.selectedVehicule.id,
-        })
-        console.log(res);
-        this.state.vehiculeMeta = res;
-        return res;
-    }
+    // async getVehiculeMeta() {
+    //     const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
+    //         vehiculeId: this.selectedVehicule.id,
+    //     })
+    //     console.log(res);
+    //     this.state.vehiculeMeta = res;
+    //     return res;
+    // }
 
 
 
     async getPlanche() {
-        await this.getVehiculeMeta();
+        // await this.getVehiculeMeta();
         const res = await this.rpc("/getPlanche", {
             vehiculeId: this.selectedVehicule.id,
         })

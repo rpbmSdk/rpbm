@@ -6,12 +6,12 @@
                 <h5 class="card-title">
                     <t t-esc="props.vehicule.libelleCourt"/>
                 </h5>
-                <p t-if="props.vehiculeMeta">
-                    VIN : <t t-esc="props.vehiculeMeta.vin"/> 
+                <p t-if="vehiculeMeta">
+                    VIN : <t t-esc="vehiculeMeta.vin"/> 
                     <br/>
-                    CNIT : <t t-esc="props.vehiculeMeta.cnit"/>
+                    CNIT : <t t-esc="vehiculeMeta.cnit"/>
                     <br/>
-                    Date MeC : <t t-esc="props.vehiculeMeta.dateMec"/>
+                    Date MeC : <t t-esc="vehiculeMeta.dateMec"/>
                 </p>
                 <t t-if="isLoading">
                     <i class="fa fa-spinner fa-spin fa-2x me-2"></i>

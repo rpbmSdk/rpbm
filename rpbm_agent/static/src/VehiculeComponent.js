@@ -12,7 +12,7 @@ export class VehiculeComponent extends asyncWidget {
         immatriculation: { type: String, optional: true },
         vehicule: { type: Object },
         selectedVehiculeId: { type: Number },
-        vehiculeMeta: { type: Object, optional: true },
+        // vehiculeMeta: { type: Object, optional: true },
         // onSelectVehicule: {type: Function},
     }
     static template = "rpbm_agent.VehiculeComponent";
@@ -22,10 +22,12 @@ export class VehiculeComponent extends asyncWidget {
         this.state = useState({
             ...this.state,
             vehiculeExists: false,
-            vehiculeId: undefined
+            vehiculeId: undefined,
+            vehiculeMeta: undefined
         });
         onWillStart(() => {
             // this.runAsync(this.getOdooVehicule());
+            this.getVehiculeMeta();
             this.getOdooVehicule()
         })
     }
@@ -43,6 +45,22 @@ export class VehiculeComponent extends asyncWidget {
 
     get vehiculeOdooUrl() {
         return `/web#menu_id=684&action=929&model=fleet.vehicle&view_type=form&id=${this.vehiculeId}`;
+    }
+
+    /**
+     * @returns {VehiculeMeta}
+     * */
+    get vehiculeMeta() {
+        return this.state.vehiculeMeta;
+    }
+
+    async getVehiculeMeta() {
+        const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
+            vehiculeId: this.props.vehicule.id,
+        })
+        console.log(res);
+        this.state.vehiculeMeta = res;
+        return res;
     }
 
 
@@ -67,7 +85,7 @@ export class VehiculeComponent extends asyncWidget {
                 immatriculation: this.props.immatriculation,
                 partner_id: this.record.partnerId,
                 vehicule_info: this.props.vehicule,
-                vehicule_meta: this.props.vehiculeMeta,
+                vehicule_meta: this.vehiculeMeta,
             })
             this.state.vehiculeId = vehiculeId;
             this.state.vehiculeExists = true;

@@ -12,7 +12,7 @@
  €
                 </p>
                 <t t-if="props.piece.tempsList">
-                    <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.id">
+                    <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.operationTemps.id">
                         <li>
                             <t t-esc="tempsList.operationTemps.libelle"/>
  :                            <t t-esc="tempsList.temps"/>
