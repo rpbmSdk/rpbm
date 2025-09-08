@@ -23,7 +23,8 @@ export class VehiculeComponent extends asyncWidget {
             ...this.state,
             vehiculeExists: false,
             vehiculeId: undefined,
-            vehiculeMeta: undefined
+            vehiculeMeta: undefined,
+            vehiculeOdoo: undefined,
         });
         onWillStart(() => {
             // this.runAsync(this.getOdooVehicule());
@@ -54,6 +55,11 @@ export class VehiculeComponent extends asyncWidget {
         return this.state.vehiculeMeta;
     }
 
+    
+    get vehiculeOdoo() {
+        return this.state.vehiculeOdoo;
+    }
+
     async getVehiculeMeta() {
         const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
             vehiculeId: this.props.vehicule.id,
@@ -74,6 +80,7 @@ export class VehiculeComponent extends asyncWidget {
             this.state.vehiculeExists = Boolean(res);
             if (this.vehiculeExists) {
                 this.state.vehiculeId = res.id;
+                this.state.vehiculeOdoo = res;
             }
         })
     }

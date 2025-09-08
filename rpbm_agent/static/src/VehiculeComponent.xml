@@ -24,6 +24,10 @@
                                 Voir
                             </a>
                         </p>
+                        <p t-if="vehiculeOdoo">
+                            Conducteur : <t t-esc="vehiculeOdoo.partner_id[1]"/>
+
+                        </p>
                     </t>
                     <t t-else="">
                         <button class="btn btn-primary" t-on-click.stop="onClickCreateVehicule">
