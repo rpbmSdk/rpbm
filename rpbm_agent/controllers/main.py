@@ -239,6 +239,7 @@ class AgentController(Controller):
             'default_code': articleVsf.code,
             'list_price': articleVsf.prixVente,
             'type': 'product',
+            'x_studio_reference_constructeur': articleVsf.refConstructeur,
             # 'categ_id': 1,
             # 'uom_id': 1,
             # 'uom_po_id': 1,

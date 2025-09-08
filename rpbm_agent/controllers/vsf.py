@@ -33,6 +33,7 @@ class VSFArticle:
     prixVenteRPBM:float
     absoluteImgUrls: list
     imgUrls: list
+    refConstructeur: str
     # absoluteUrl:str
 
     def __init__(self, **kwargs):
@@ -106,6 +107,7 @@ class VSFAgent:
                             article['imgUrls'] = product_line['imgUrls']
                             article['url'] = product_line['url']
                             article['name'] = product_line['name']
+                            article['refConstructeur'] = product_line['refConstructeur']
                             break
                 return [VSFArticle(**article) for article in data]
         print(r.status_code)
