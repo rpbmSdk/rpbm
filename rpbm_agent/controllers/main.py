@@ -234,6 +234,15 @@ class AgentController(Controller):
     def createProduct(self,articleVsfInfo:dict):
         _logger.info(f"createProduct {articleVsfInfo}")
         articleVsf = vsf.VSFArticle(**articleVsfInfo)
+        image = False
+        if articleVsf.imgUrls and len(articleVsf.imgUrls) > 0:
+            response = vsfAgent.session.get(articleVsf.imgUrls[0])
+            if response.status_code == 200:
+                image = base64.b64encode(response.content).replace(b"\n", b"")
+            else:
+                _logger.warning(response.text)
+                _logger.warning(f"Image not found for {articleVsf.imgUrls[0]}")
+
         productInfo = {
             'name': articleVsf.name,
             'default_code': articleVsf.code,
@@ -243,7 +252,8 @@ class AgentController(Controller):
             # 'categ_id': 1,
             # 'uom_id': 1,
             # 'uom_po_id': 1,
-            'description': f"""Lien vers le produit: <a href="{articleVsf.url}">Lien</a>
+            'image_1920': image if image else False,
+            'description': f"""Lien vers le produit: <a href="{articleVsf.url}">Lien</a>,
             <br/>
             """,
         }
