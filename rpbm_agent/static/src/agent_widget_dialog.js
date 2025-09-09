@@ -67,11 +67,21 @@ export class AgentWidgetDialog extends asyncWidget {
         }, ()=> [this.selectedVehicule, this.planche, this.selectedCalque, this.baseEurocode])
 
         useEffect(() => {
-            this.state.selectedVehicule = undefined;
+            if (this.vehicules.length === 0) {
+                this.state.selectedVehicule = undefined;
+            }
+            else {
+                this.onSelectVehicule(this.vehicules[0].id);
+            }
         }, ()=> [this.vehicules])
 
         useEffect(() => {
-            this.state.planche = undefined;
+            if (this.selectedVehicule) {
+                this.onGetPlanche();
+            }
+            else {
+                this.state.planche = undefined;
+            }
         }, ()=> [this.selectedVehicule])
 
     }
@@ -111,17 +121,12 @@ export class AgentWidgetDialog extends asyncWidget {
         this.runAsync(async () => {
             if (this.state.immatriculationValue) {
                 await this.searchImmatriculation()
-                if (this.vehicules.length > 0) {
-                    this.onSelectVehicule(this.vehicules[0].id)
-                    await this.getPlanche()
-                    if (this.record.categorieXglass) {
+                if (this.record.categorieXglass) {
                         const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
                         if (calque) {
                             this.onClickCalque(calque.id);
                         }
                     }
-                    this.calques.forEach(calque => console.log(calque.libelle))
-                }
             }
         })
     }
