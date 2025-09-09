@@ -7,6 +7,9 @@
                     <t t-esc="props.article.code"/> <t t-esc="props.article.name"/>
                 </h5>
                 <h6>
+                    Référence constructeur: <t t-esc="props.article.refConstructeur"/>
+                </h6>
+                <h6>
                     Prix: 
                     <t t-esc="props.article.prixVente"/>
  
