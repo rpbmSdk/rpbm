@@ -84,6 +84,24 @@ export class AgentWidgetDialog extends asyncWidget {
             }
         }, ()=> [this.selectedVehicule])
 
+        useEffect(() => {
+            if (!this.planche) {
+                this.state.calques = [];
+            }
+            else{
+                // La planche a changé, on reset le calque sélectionné
+                if (this.record.categorieXglass) {
+                    const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
+                    if (calque) {
+                        this.onClickCalque(calque.id);
+                    }
+                }
+                else {
+                    this.state.selectedCalque = undefined;
+                }
+            }
+        }, ()=> [this.planche])
+
     }
 
     get agentsInitialized() {
@@ -287,9 +305,9 @@ export class AgentWidgetDialog extends asyncWidget {
         const res = await this.rpc("/getPlanche", {
             vehiculeId: this.selectedVehicule.id,
         })
-        console.log(res);
+        // console.log(res);
         this.state.planche = res;
-        this.calques.forEach(calque => console.log(calque.libelle))
+        // this.calques.forEach(calque => console.log(calque.libelle))
         return res;
     }
 
