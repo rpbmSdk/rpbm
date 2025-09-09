@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="rpbm_agent.PieceAMComponent">
+        <div class="card">
+            <div class="card-body" t-att-style="style">
+                <h5 class="card-title">
+                    <t t-esc="pieceAM.libelle"/>
+                </h5>
+                <p>
+                    Validité: <t t-esc="dateLibelle"/>
+                    <br/>
+                    Description: <t t-esc="pieceAM.description"/>
+                    <br/>
+                    Référence : <t t-esc="pieceAM.reference"/>
+                    <br/>
+                    Prix: <t t-esc="pieceAM.prix"/>
+                </p>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -40,6 +40,11 @@
                             <div t-if="pieces.length > 0" class="d-flex justify-content-between" style="flex-wrap: wrap;">
                                 <t t-foreach="pieces" t-as="piece" t-key="piece.id">
                                     <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)" />
+                                    <t t-if="piece.PiecesAM and piece.PiecesAM.length > 0" >
+                                        <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAM.id">
+                                            <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAM.id)" />
+                                        </t>
+                                    </t>
                                 </t>
 
                             </div>

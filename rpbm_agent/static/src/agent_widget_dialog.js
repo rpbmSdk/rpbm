@@ -10,14 +10,14 @@ import { VehiculeComponent } from "./VehiculeComponent";
 import { CalqueComponent } from "./CalqueComponent";
 import { PieceComponent } from "./PieceComponent";
 import { ArticleComponent } from "./ArticleComponent";
-
+import { PieceAMComponent } from "./PieceAMComponent";
 
 /**
  * @typedef {import('./types').Vehicule}
  * @typedef {import('./types').Planche}
  * @typedef {import('./types').Calque}
  * @typedef {import('./types').OdooVehicule}
- * @typedef 
+ * @typedef {import('./PieceAMComponent').MetaPieceAM}
  */
 
 export class AgentWidgetDialog extends asyncWidget {
@@ -26,6 +26,7 @@ export class AgentWidgetDialog extends asyncWidget {
         VehiculeComponent,
         CalqueComponent,
         PieceComponent,
+        PieceAMComponent,
         ArticleComponent
     }
     static props = {
@@ -64,7 +65,7 @@ export class AgentWidgetDialog extends asyncWidget {
 
         useEffect(() => {
             this.state.canConfim = this.canConfirm();
-        }, ()=> [this.selectedVehicule, this.planche, this.selectedCalque, this.baseEurocode])
+        }, () => [this.selectedVehicule, this.planche, this.selectedCalque, this.baseEurocode])
 
         useEffect(() => {
             if (this.vehicules.length === 0) {
@@ -73,7 +74,7 @@ export class AgentWidgetDialog extends asyncWidget {
             else {
                 this.onSelectVehicule(this.vehicules[0].id);
             }
-        }, ()=> [this.vehicules])
+        }, () => [this.vehicules])
 
         useEffect(() => {
             if (this.selectedVehicule) {
@@ -82,13 +83,13 @@ export class AgentWidgetDialog extends asyncWidget {
             else {
                 this.state.planche = undefined;
             }
-        }, ()=> [this.selectedVehicule])
+        }, () => [this.selectedVehicule])
 
         useEffect(() => {
             if (!this.planche) {
                 this.state.calques = [];
             }
-            else{
+            else {
                 // La planche a changé, on reset le calque sélectionné
                 if (this.record.categorieXglass) {
                     const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
@@ -100,7 +101,58 @@ export class AgentWidgetDialog extends asyncWidget {
                     this.state.selectedCalque = undefined;
                 }
             }
-        }, ()=> [this.planche])
+        }, () => [this.planche])
+
+        useEffect(() => {
+            if (!this.selectedCalque) {
+                this.state.pieces = [];
+            }
+            else {
+                this.getPieces();
+            }
+        }, () => [this.selectedCalque])
+
+        useEffect(() => {
+            if (this.pieces.length === 0) {
+                this.state.selectedPiece = undefined;
+            }
+            else {
+                // this.onSelectPiece(this.pieces[0].id);
+                if (this.selectedPiece) {
+                    const piece = this.pieces.find(piece => piece.id === this.selectedPiece.id);
+                    if (piece) {
+                        this.onSelectPiece(piece.id);
+                    }
+                    else {
+                        this.state.selectedPiece = undefined;
+                    }
+                }
+            }
+        }, () => [this.pieces])
+
+        useEffect(() => {
+            this.getSelectedPieceAm();
+        }, () => [this.selectedPiece])
+
+        useEffect(() => {
+            if (this.selectedPieceAm) {
+                const basePieceAm = this.selectedPieceAm.pieceAm;
+                const reference = basePieceAm.reference
+                this.state.baseEurocode = reference.substring(0, 5);
+            }
+            else {
+                this.state.pieceAm = undefined;
+            }
+        }, () => [this.selectedPieceAm])
+
+        useEffect(() => {
+            if (this.baseEurocode) {
+                this.onSearchBaseEurocode();
+            }
+            // else {
+            //     this.state.baseEurocode = undefined;
+            // }
+        }, () => [this.baseEurocode])
 
     }
 
@@ -139,12 +191,12 @@ export class AgentWidgetDialog extends asyncWidget {
         this.runAsync(async () => {
             if (this.state.immatriculationValue) {
                 await this.searchImmatriculation()
-                if (this.record.categorieXglass) {
-                        const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
-                        if (calque) {
-                            this.onClickCalque(calque.id);
-                        }
-                    }
+                // if (this.record.categorieXglass) {
+                //         const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
+                //         if (calque) {
+                //             this.onClickCalque(calque.id);
+                //         }
+                //     }
             }
         })
     }
@@ -200,7 +252,7 @@ export class AgentWidgetDialog extends asyncWidget {
 
         const data = await this.getRecordData();
         console.log(data);
-        
+
         this.props.record.update(data);
         this.props.close();
     }
@@ -254,6 +306,11 @@ export class AgentWidgetDialog extends asyncWidget {
 
     get selectedVehiculeId() {
         return this.selectedVehicule ? this.selectedVehicule.id : 0;
+    }
+
+    /** @returns {MetaPieceAM|undefined} */
+    get selectedPieceAm() {
+        return this.state.selectedPieceAm;
     }
 
     canConfirm() {
@@ -347,11 +404,11 @@ export class AgentWidgetDialog extends asyncWidget {
     onChangeCalque(ev) {
         const calqueId = parseInt(ev.target.value);
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
-        console.log(this.selectedCalque);
+        // console.log(this.selectedCalque);
     }
     onClickCalque(calqueId) {
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
-        console.log(this.selectedCalque);
+        // console.log(this.selectedCalque);
         this.getPieces();
     }
 
@@ -364,15 +421,15 @@ export class AgentWidgetDialog extends asyncWidget {
             plancheId: this.planche.id,
             calqueId: this.selectedCalque.id,
         })
-        console.log(res);
+        // console.log(res);
         this.state.pieces = res;
         // return res;
     }
 
     onSelectPiece(pieceId) {
-        this.state.selectedPiece = this.pieces.find(vehicule => vehicule.id === pieceId);
-        console.log(this.state.selectedPiece);
-        this.getPieceAm();
+        this.state.selectedPiece = this.pieces.find(piece => piece.id === pieceId);
+        // console.log(this.state.selectedPiece);
+        // this.getSelectedPieceAm();
     }
 
     get selectedPiece() {
@@ -383,12 +440,27 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.selectedPiece ? this.selectedPiece.id : 0;
     }
 
-    async getPieceAm() {
+    async getSelectedPieceAm() {
+        if (this.selectedPiece) {
+            const res = await this.getPieceAm(this.selectedPiece);
+            // if (res.length > 0) {
+            //     const basePieceAm = res[0].pieceAm;
+            //     const reference = basePieceAm.reference;
+            //     this.state.baseEurocode = reference.substring(0, 5);
+            //     this.onSearchBaseEurocode();
+            // }
+        }
+    }
+
+    async getPieceAm(piece) {
         const res = await this.rpc("/getPieceAm", {
-            element_withPiecesAm: this.selectedPiece['element.withPiecesAm'],
-            pieceId: this.selectedPiece.id,
-            elementSitId: this.selectedPiece.elementSitId,
+            element_withPiecesAm: piece['element.withPiecesAm'],
+            pieceId: piece.id,
+            elementSitId: piece.elementSitId,
         })
+        // this.state.pi
+        piece.PiecesAM = res;
+        return res;
         console.log(res);
         if (res.length > 0) {
             const basePieceAm = res[0].pieceAm;
@@ -397,6 +469,13 @@ export class AgentWidgetDialog extends asyncWidget {
             this.onSearchBaseEurocode();
         }
         // this.state.piecesAm = res;
+    }
+
+    onSelectPieceAM(pieceAmId) {
+        if (this.selectedPiece && this.selectedPiece.PiecesAM) {
+            this.state.selectedPieceAm = this.selectedPiece.PiecesAM.find(metaPieceAM => metaPieceAM.pieceAm.id === pieceAmId);
+            console.log(this.state.selectedPieceAm);
+        }
     }
 
     onChangeBaseEurocode(ev) {
