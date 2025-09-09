@@ -1,5 +1,6 @@
 /** @odoo-module **/
 
+import { Component } from "@odoo/owl";
 
 /**
  * @typedef {Object} CriterePiece
@@ -66,7 +67,7 @@
 export class PieceAMComponent extends Component {
     static props = {
         metaPieceAM: { type: Object },
-        selectedPieceAMId: { type: Number },
+        selectedPieceAMId: { type: Number, optional: true },
     }
     static template = "rpbm_agent.PieceAMComponent";
 
