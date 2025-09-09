@@ -86,13 +86,13 @@ export class AgentWidgetDialog extends asyncWidget {
         this.runAsync(async () => {
             this.setLoadingMessage("Authentification des agents en cours...");
             await this.auth_agents();
-            this.state.agentsInitialized = true;
             await this.init();
         })
     }
 
     async auth_agents() {
         await this.rpc("/rpbm_agent_auth")
+        this.state.agentsInitialized = true;
     }
 
     async loadFromRecord() {
