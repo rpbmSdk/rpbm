@@ -18,6 +18,8 @@ class SaleOrderLine extends AbstractRecord {
 }
 
 class SaleOrder extends AbstractWidgetRecord {
+    categorieXglassField = "x_studio_categorie_xglass";
+    eurocodeField = "x_studio_eurocode";
     constructor(record) {
         super(record);
         this.immatriculationField = 'x_studio_immatriculation_'
@@ -25,6 +27,10 @@ class SaleOrder extends AbstractWidgetRecord {
 
     get OrderlLines() {
         return this.recordData.order_line;
+    }
+
+    get eurocode(){
+        return this.recordData[this.eurocodeField];
     }
 }
 
