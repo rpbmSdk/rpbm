@@ -48,6 +48,7 @@
  * @property {string} code
  * @property {number} prixVente
  * @property {number} prixVenteRPBM
+ * @property {string} refConstructeur
  */
 
 /**
