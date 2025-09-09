@@ -3,9 +3,9 @@
     <t t-name="rpbm_agent.PieceAMComponent">
         <div class="card">
             <div class="card-body" t-att-style="style">
-                <h5 class="card-title">
+                <h6 class="card-title">
                     <t t-esc="pieceAM.libelle"/>
-                </h5>
+                </h6>
                 <p>
                     Validité: <t t-esc="dateLibelle"/>
                     <br/>
