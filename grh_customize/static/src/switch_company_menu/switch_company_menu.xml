@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="web.SwitchCompanyMenu" t-inherit-mode="extension">
+        <xpath expr="//t[@t-set-slot='toggler']" position="after">
+            <DropdownItem class="'p-0'">
+                <div role="button" t-on-click.stop="() => this.toogleAllCompanies()">
+                    <span class="company_label pe-3 text-900 fw-bold" style="padding-left:10px;">Tous</span>
+                </div>
+            </DropdownItem>
+
+        </xpath>
+    </t>
+</templates>
