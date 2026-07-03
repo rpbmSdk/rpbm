@@ -1,0 +1,4 @@
+[submodule "Stanadigme/paradigme_odoo_mcp_addons"]
+	path = Stanadigme/paradigme_odoo_mcp_addons
+	url = git@github.com:Stanadigme/paradigme_odoo_mcp_addons.git
+	branch = 17.0
