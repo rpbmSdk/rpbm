@@ -13,6 +13,7 @@ class CrmLead extends AbstractWidgetRecord{
     constructor(record) {
         super(record);
         this.immatriculationField = 'x_studio_field_NVioD'
+        this.baseEurocodeField = 'x_studio_field_ORIyy'
         // this.calqueField = 'x_studio_field_eENQz'
     }
 

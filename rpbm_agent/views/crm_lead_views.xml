@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_crm_lead_form_rpbm_agent" model="ir.ui.view">
+        <field name="name">crm.lead.form.rpbm.agent</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page name="rpbm_agent_xglass" string="Véhicule (X'Glass)">
+                    <group>
+                        <widget name="rpbm_agent_widget"/>
+                        <field name="x_studio_vehicle_id"/>
+                        <field name="x_studio_categorie_xglass"/>
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

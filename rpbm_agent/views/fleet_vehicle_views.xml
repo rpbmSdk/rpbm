@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fleet_vehicle_form_rpbm_agent" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.rpbm.agent</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page name="rpbm_agent_xglass" string="X'Glass">
+                    <group>
+                        <field name="x_studio_detail_model"/>
+                        <field name="x_studio_date_mec"/>
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

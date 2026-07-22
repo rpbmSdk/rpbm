@@ -95,6 +95,6 @@ sequenceDiagram
 
 ## Points d'attention transverses
 
-- **Aucune persistance de configuration versionnée** : les champs `x_studio_*` consommés par le code (frontend et backend) sont créés via Odoo Studio, donc dans la base de données de chaque instance Odoo, pas dans ce dépôt. Le module ne fonctionne pas "out of the box" sur une instance vierge sans avoir recréé ces champs (voir [configuration](configuration.md)).
+- **Champs `x_studio_*` désormais créés automatiquement** à l'installation par `pre_init_hook` (voir [configuration](configuration.md#champs-odoo-studio-requis)) : le module fonctionne "out of the box" sur une instance vierge pour les champs listés dans [technique/champs/](champs/README.md) ; les champs Studio historiques (immatriculation, eurocode complet/joint) restent créés à la main, préexistants à ce module.
 - **Aucune sécurité applicative dédiée** : les routes sont ouvertes à tout utilisateur connecté (`auth='user'`), sans groupe ni `ir.model.access.csv` propre au module.
-- **État de session partagé** : `vsfAgent`/`xglassAgent` sont des instances Python **au niveau module** (pas par utilisateur Odoo, pas par requête) — voir [backend](backend.md#état-de-session-partagé) et l'[état des lieux](../etat-des-lieux.md) pour l'implication en usage concurrent.
+- **État de session partagé** : `vsfAgent`/`xglassAgent` sont des instances Python **au niveau module** (pas par utilisateur Odoo, pas par requête) — voir [backend](backend.md#état-de-session-partagée) et l'[état des lieux](../etat-des-lieux.md) pour l'implication en usage concurrent.

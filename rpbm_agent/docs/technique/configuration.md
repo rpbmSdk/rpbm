@@ -30,64 +30,27 @@ Peuvent être créés manuellement ou par script (ex. `env['ir.config_parameter'
 
 ## Champs Odoo Studio requis
 
-Le module n'installe **aucun modèle, aucune vue, aucune donnée** (`__manifest__.py` ne déclare pas de clé `data`). Tous les champs `x_studio_*` consommés par le code doivent être créés manuellement via Odoo Studio sur chaque instance avant utilisation — voir le détail par modèle dans le [parcours utilisateur](../fonctionnel/parcours-utilisateur.md#prérequis-avant-utilisation).
+Les champs `x_studio_*` consommés par le code sont créés automatiquement à l'installation par `pre_init_hook` (`rpbm_agent/hooks.py`) — voir le mécanisme ci-dessous. État détaillé par modèle (quels champs, lesquels sont nouveaux vs déjà existants sur une instance donnée, related, obsolètes) : [technique/champs/](champs/README.md).
 
-Conséquence pratique : ces champs ne sont ni versionnés, ni reproductibles automatiquement d'une instance à l'autre (dev/staging/prod) sans procédure manuelle ou script d'installation dédié.
+### Mécanisme retenu : `pre_init_hook` + contexte Studio
 
-### État constaté sur `rpbm-preprod` (2026-07-22)
-
-Vérifié directement en base (`ir.model.fields`/`ir.model.data`) via MCP — sur 11 champs consommés par le code, seuls 5 existent :
-
-| Modèle | Champ | Type | Présent ? |
-|---|---|---|---|
-| `fleet.vehicle` | `x_studio_detail_model` | char | ❌ |
-| `fleet.vehicle` | `x_studio_date_mec` | date | ❌ |
-| `crm.lead` | `x_studio_field_NVioD` | char | ✅ |
-| `crm.lead` | `x_studio_vehicle_id` | many2one → `fleet.vehicle` | ❌ |
-| `crm.lead` | `x_studio_categorie_xglass` | char | ❌ |
-| `crm.lead` | `x_studio_field_ORIyy` ("Base Eurocode") | char | ✅ (existant, nom technique différent de celui attendu par le code — voir [structure Eurocode](../fonctionnel/parcours-utilisateur.md#structure-des-champs-eurocode-sur-crmlead)) |
-| `sale.order` | `x_studio_immatriculation_` | char (related) | ✅ |
-| `sale.order` | `x_studio_vehicle_id` | many2one → `fleet.vehicle` | ❌ |
-| `sale.order` | `x_studio_categorie_xglass` | char | ❌ |
-| `sale.order` | `x_studio_base_eurocode` | char (related) | ✅ |
-| `product.product` | `x_studio_reference_constructeur` | char | ❌ (`createProduct` est donc cassé aujourd'hui) |
-
-`x_studio_autre_infos`/`x_studio_note` (documentés dans le Readme historique) ne sont référencés dans aucun code actuel — pas nécessaires à recréer.
-
-### Mécanisme retenu pour un script de pré-installation
-
-Vérifié en base **et** dans le code source d'Odoo Enterprise (`D:\git\odoo_17\enterprise\web_studio`, voir [directives projet](../../../CLAUDE.md#code-source-odoo-vérification-de-méthodes)) : `ir.model.fields` hérite de `studio.mixin` (`web_studio/models/ir_model.py:598`). Ce mixin surcharge `create()`/`write()` : si le contexte contient `studio=True` (et pas `install_mode`), il appelle automatiquement `create_studio_model_data()`, qui :
+Vérifié dans le code source d'Odoo Enterprise (`D:\git\odoo_17\enterprise\web_studio`, voir [directives projet](../../../CLAUDE.md#code-source-odoo-vérification-de-méthodes)) : `ir.model.fields` hérite de `studio.mixin` (`web_studio/models/ir_model.py:598`). Ce mixin surcharge `create()`/`write()` : si le contexte contient `studio=True` (et pas `install_mode`), il appelle automatiquement `create_studio_model_data()`, qui :
 1. récupère (ou **crée**) le module `studio_customization` via `ir.module.module.get_studio_module()` — donc pas besoin qu'il préexiste ;
 2. crée l'`ir.model.data` correspondant (`module='studio_customization'`, flag `studio=True`, `noupdate` forcé à `True` dès la première modification ultérieure du champ).
 
-Il suffit donc de passer `studio=True` dans le contexte lors de la création — aucune manipulation manuelle d'`ir.model.data` :
-
-```python
-def post_init_hook(env):
-    Fields = env['ir.model.fields'].sudo().with_context(studio=True)
-    for model, name, desc, ttype, relation in FIELDS_TO_ENSURE:
-        if Fields.search_count([('model', '=', model), ('name', '=', name)]):
-            continue  # déjà créé (manuellement ou par une passe précédente)
-        vals = {'name': name, 'model_id': env['ir.model']._get_id(model),
-                'field_description': desc, 'ttype': ttype, 'state': 'manual'}
-        if relation:
-            vals['relation'] = relation
-        Fields.create(vals)
-```
+Il suffit donc de passer `studio=True` dans le contexte lors de la création — aucune manipulation manuelle d'`ir.model.data`. Implémenté dans [`hooks.py`](../../hooks.py) (`FIELDS_TO_ENSURE` + `pre_init_hook`, idempotent — ignore tout champ déjà présent).
 
 Conséquence : le champ est créé exactement comme le ferait un humain dans Studio (même mixin, même `ir.model.data`), et une désinstallation de `rpbm_agent` ne le supprime pas (seuls les `ir.model.data` rattachés au module désinstallé sont nettoyés).
 
-Vérifié également que `env` dans `post_init_hook` a un contexte vide (`odoo/modules/loading.py:426`, `env = api.Environment(cr, SUPERUSER_ID, {})`) — pas de risque que `install_mode` soit déjà présent et court-circuite le mixin.
+**Pourquoi `pre_init_hook` et pas `post_init_hook`** : ce module livre aussi des vues XML (`views/*.xml`, voir ci-dessous) qui référencent ces mêmes champs. Vérifié dans `odoo/modules/loading.py:189-247` : l'ordre réel est `pre_init_hook(env)` → chargement des modèles du module → chargement des données `data` (dont les vues) → `post_init_hook(env)` seulement en tout dernier. Avec un `post_init_hook`, les vues échoueraient à se charger (champ inconnu) puisqu'elles sont traitées avant lui. Vérifié également que `env` reçu par ces hooks a un contexte vide (`loading.py:426`, `api.Environment(cr, SUPERUSER_ID, {})`) — pas de risque que `install_mode` soit déjà présent et court-circuite le mécanisme Studio.
 
-**Limites** : ce comportement est fourni par `web_studio` (Enterprise) — sans ce module installé, `studio=True` n'a aucun effet particulier (le champ est quand même créé, juste sans traçage Studio, ce qui reste inoffensif pour l'objectif recherché ici) ; mécanisme interne non documenté publiquement par Odoo, sans garantie de stabilité inter-versions ; ne recrée que le champ, pas son emplacement dans les vues (le tag `<widget name="rpbm_agent_widget"/>` reste à poser manuellement par instance).
+**Limites** : ce comportement Studio est fourni par `web_studio` (Enterprise) — sans ce module installé, `studio=True` n'a aucun effet particulier (le champ est quand même créé, juste sans traçage Studio) ; mécanisme interne non documenté publiquement par Odoo, sans garantie de stabilité inter-versions.
 
 ## Intégration dans les vues
 
-Le widget s'ajoute à une vue formulaire avec :
-```xml
-<widget name="rpbm_agent_widget" />
-```
-Cette balise doit être ajoutée via Odoo Studio (aucune vue XML du module ne la déclare). Le comportement du widget s'adapte automatiquement selon `resModel` de l'enregistrement courant (`crm.lead`, `sale.order`, ou dialog générique pour tout autre modèle — voir [frontend](frontend.md)).
+Le widget et les champs `x_studio_vehicle_id`/`x_studio_categorie_xglass` sont ajoutés par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, `views/fleet_vehicle_views.xml`, `views/product_product_views.xml`), chacune héritant de la vue formulaire de base du modèle concerné et ajoutant un nouvel onglet. Le comportement du widget s'adapte automatiquement selon `resModel` de l'enregistrement courant (`crm.lead`, `sale.order`, ou dialog générique pour tout autre modèle — voir [frontend](frontend.md)).
+
+**Caveat de déploiement** : sur toute instance où le tag `<widget name="rpbm_agent_widget"/>` aurait déjà été ajouté à la main via Studio (probable en production, la documentation historique indiquant le widget déjà en usage), il faut le retirer de la vue Studio **avant** de déployer cette version du module, sous peine d'afficher le bouton en double. Vérification : `env['ir.ui.view'].search([('model','in',['crm.lead','sale.order'])]).filtered(lambda v: 'rpbm_agent_widget' in (v.arch_db or ''))`.
 
 ## Assets
 

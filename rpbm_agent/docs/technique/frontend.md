@@ -48,7 +48,7 @@ classDiagram
 
 `asyncWidget` (`utils.js`) est la classe de base fournissant les services `rpc`/`orm`, l'accès à `record`, et `runAsync(fn, message)` — wrapper try/catch qui bascule `state.loading` avant/après l'appel. **La gestion d'erreur de `runAsync` se limite à `console.error(e)`**, sans notification utilisateur.
 
-### Mapping des champs Odoo par modèle porteur
+### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 
 ```mermaid
 classDiagram
@@ -57,19 +57,14 @@ classDiagram
         +odooId
     }
     class AbstractWidgetRecord {
-        +partnerField = "partner_id"
-        +categorieXglassField = "x_studio_categorie_xglass"
-        +vehiculeField = "x_studio_vehicle_id"
-        +immatriculationField = "x_studio_immatriculation"
-        +baseEurocodeField = "x_studio_base_eurocode"
+        +partnerField
+        +categorieXglassField
+        +vehiculeField
+        +immatriculationField
+        +baseEurocodeField
     }
-    class CrmLead {
-        +immatriculationField = "x_studio_field_NVioD"
-    }
-    class SaleOrder {
-        +immatriculationField = "x_studio_immatriculation_"
-        +eurocodeField = "x_studio_eurocode"
-    }
+    class CrmLead
+    class SaleOrder
     class SaleOrderLine {
         +productId
     }
@@ -79,7 +74,7 @@ classDiagram
     AbstractWidgetRecord <|-- SaleOrder
 ```
 
-`CrmLead` ne surcharge que `immatriculationField`. `SaleOrder` surcharge `immatriculationField` (nom différent de la valeur par défaut héritée) et ajoute `eurocodeField`/`categorieXglassField` en plus des champs hérités — voir l'[état des lieux](../etat-des-lieux.md) pour les incohérences relevées sur ce point (champ `eurocode` non utilisé pour l'écriture réelle, qui passe par `baseEurocodeField` hérité).
+`CrmLead` et `SaleOrder` surchargent certaines de ces propriétés avec des noms de champs `x_studio_*` différents selon le modèle. Détail des noms de champs par classe/modèle, y compris quels champs sont effectivement lus/écrits (certains, comme `SaleOrder.eurocodeField`, sont morts) : voir [technique/champs/](champs/README.md) et l'[état des lieux](../etat-des-lieux.md).
 
 ## Chaîne réactive (`useEffect`) de `AgentWidgetDialog`
 
