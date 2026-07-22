@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Readme.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="objectif">Objectif</h1>
+<p>Outil de récupération des données des portails XGlass et VSF pour intégration dans le processus de vente</p>
+<h1 id="pr%C3%A9-requis">Pré requis</h1>
+<ul>
+<li>Créer les paramètres systèmes <code>ir.config_parameter</code> pour la connexion aux portails XGlass et VSF :
+<ul>
+<li><code>XGLASS_USER</code> : Utilisateur du portail XGlass</li>
+<li><code>XGLASS_PASS</code> : Mot de passe du portail XGlass</li>
+<li><code>VSF_LOGIN</code> : Utilisateur du portail VSF</li>
+<li><code>VSF_PASSWORD</code> : Mot de passe du portail VSF
+<strong>Note :</strong> Ces paramètres peuvent être créés par script ou manuellement dans l'interface d'administration d'Odoo.</li>
+</ul>
+</li>
+<li>Pour une utilisation optimale du module, il est nécessaire de créer les champs destinés à recevoir les données des portails XGlass et VSF :</li>
+</ul>
+<h2 id="v%C3%A9hicule">Véhicule</h2>
+<p>Modèle : <code>fleet.vehicle</code></p>
+<p>Chemin :</p>
+<p>Champs à créer (manuellement ou par script) :</p>
+<ul>
+<li><code>x_studio_detail_model</code> : Détail du modèle (ex: KIA PICANTO III PHASE 2 - 5P 2020-09-&gt; 1.2i 85)</li>
+<li><code>x_studio_date_mec</code>: Date de mise en circulation (ex: 2020-09-01)</li>
+<li><code>x_studio_autre_infos</code> : Autres informations (actuellement non utilisé)</li>
+<li><code>x_studio_note</code> : Champ HTML calculé qui permet d'afficher les informations générales du véhicule (ex: Détail du modèle, Date de mise en circulation, VIN, Autres informations, etc.)</li>
+</ul>
+<h2 id="piste--opportunit%C3%A9">Piste / Opportunité</h2>
+<p>Modèle : <code>crm.lead</code>
+Chemin :</p>
+<p>Champs existants modifiés :</p>
+<ul>
+<li><code>x_studio_field_NVioD</code> : Champ Immatriculation, on conserve ce champ dans l'architecture car il est lié à beaucoup d'autres (immatriculation dans les factures, ordres de vente, etc). En revanche on le rend calculé, dépendant de <code>x_studio_vehicle_id</code> pour récupérer l'immatriculation du véhicule associé.</li>
+<li><code>x_studio_field_KyCjB</code> et <code>x_studio_field_ZhaeY</code> : Champs pour les informations de marque et modèles de véhicules. Initialement ces champs étaient des champs liés à des modèles personnalisés, mais ils n'ont pas étés tenus avec rigueur (doublons, créations de nouveaux modèles, etc.). On les rend donc obsolètes en les marquant comme tels par l'ajout d'un de la mention '[Obsolète]' dans leur nom.</li>
+</ul>
+<p>Champs à créer (manuellement ou par script) :</p>
+<ul>
+<li><code>x_studio_vehicle_id</code> : Champ Many2one vers le modèle <code>fleet.vehicle</code> pour lier la piste à un véhicule</li>
+<li><code>x_studio_categorie_xglass</code> : Champ pour la catégorie Xglass (ex: Pare-brise, Optique, etc.)</li>
+<li><code>x_studio_base_eurocode</code> : Champ pour la base Eurocode (ex: 123456)</li>
+</ul>
+<h2 id="ordre-de-vente">Ordre de vente</h2>
+<p>Modèle : <code>sale.order</code>
+Chemin :
+Champs à créer (manuellement ou par script) :</p>
+<ul>
+<li><code>x_studio_vehicle_id</code> : Champ Many2one vers le modèle <code>fleet.vehicle</code> pour lier la commande à un véhicule, lié au champ <code>x_studio_vehicle_id</code> de la piste</li>
+<li><code>x_studio_categorie_xglass</code> : Champ pour la catégorie Xglass (ex: Pare-brise, Optique, etc.), lié au champ <code>x_studio_categorie_xglass</code> de la piste</li>
+<li><code>x_studio_base_eurocode</code> : Champ pour la base Eurocode (ex: 123456), lié au champ <code>x_studio_base_eurocode</code> de la piste</li>
+</ul>
+<h1 id="utilisation">Utilisation</h1>
+<h2 id="g%C3%A9n%C3%A9ralit%C3%A9s">Généralités</h2>
+<p>Le widget est ajouté à la vue formulaire via la balise <code>&lt;widget name=&quot;rpbm_agent_widget&quot; /&gt;</code>. Il est possible de le placer dans n'importe quelle vue formulaire d'un modèle Odoo et est symbolisé par une icône représentant une loupe (🔍).</p>
+<p>Lorsqu'un utilisateur clique sur l'icône, le widget affiche une fenêtre de dialogue et déclenche le chargement suivant :</p>
+<ol>
+<li>Chargement des agents : Pour chaque agent (Xglass et VSF), le système va se connecter aux portails respectifs</li>
+<li>Récupérations des données de l'enregistrement en cours : Le système va récupérer les données du modèle Odoo en cours (Piste/Opportunité ou Ordre de vente) et essayer de charger les informations associées :
+<ol>
+<li>Récupération de l'immatriculation sur le modèle Odoo. Si elle n'est pas renseignée, l'utilisateur peut la saisir manuellement et cliquer sur le bouton &quot;Rechercher&quot; pour lancer la recherche</li>
+<li>Si l'immatriculation est renseignée, le système va essayer de récupérer depuis Xglass les informations du véhicule
+<ul>
+<li>Une fois les informations du véhicule récupérées, le système va afficher les différentes véhicules disponibles dans le widget (si multiple véhicules)</li>
+<li>L'utilisateur peut sélectionner le véhicule souhaité en cliquant dessus, la case se colore alors en bleu clair.</li>
+<li>Pour chaque véhicule, le système va vérifier si le véhicule est déjà enregistré dans Odoo (recherche par immatriculation), si ce n'est pas le cas, il est possible de l'enregistrer en cliquant sur le bouton &quot;Créer&quot; (<strong>Note</strong> : Méthode à mettre à jour pour ajout du conducteur), sinon le widget précise que le véhicule est déjà enregistré et propose un bouton &quot;Voir&quot; pour ouvrir le formulaire du véhicule</li>
+</ul>
+</li>
+<li>Une fois le véhicule sélectionné, récupération de la Planche Xglass qui contient les différentes catégories de pièces disponibles pour le véhicule (peut être déclenché par l'utilisateur)</li>
+<li>Récupération de la catégorie sur le modèle Odoo, si elle n'est pas renseignée, l'utilisateur peut la saisir manuellement en cliquant sur la catégorie souhaitée.</li>
+<li>Lorsque la catégorie est sélectionnée, le système va essayer de récupérer depuis Xglass les Pièces Xglass disponibles et les afficher dans le widget</li>
+<li>L'utilisateur peut sélectionner la pièce souhaitée en cliquant dessus, le système va alors récupérer la base Eurocode associée à la pièce et l'afficher dans le champ de recherche Eurocode
+<ul>
+<li><strong>Il est possible que la pièce n'ait pas de base Eurocode associée, dans ce cas, le champ Eurocode sera vide</strong></li>
+</ul>
+</li>
+<li>Si la base Eurocode est renseignée, le système va essayer de récupérer depuis VSF les pièces VSF disponibles et les afficher dans le widget</li>
+</ol>
+</li>
+</ol>
+<h2 id="piste--opportunit%C3%A9">Piste / Opportunité</h2>
+<p>En cliquant sur confirmer, le système va :</p>
+<ol>
+<li>Enregistrer le véhicule sélectionné dans Odoo, si ce n'est pas déjà fait
+<ul>
+<li>Lors de la création du véhicule, le système va remplir les champs <code>x_studio_detail_model</code>, <code>x_studio_date_mec</code>, <code>x_studio_autre_infos</code> et <code>x_studio_note</code>, <code>vin_sn</code>, <code>driver_id</code>, <code>model_id</code>, <code>license_plate</code>, <code>power</code>, <code>doors</code>,<code>fuel_type</code> et <code>image_1920</code> avec les informations récupérées depuis Xglass</li>
+</ul>
+</li>
+<li>Lier le véhicule à la piste/Opportunité en remplissant les champs <code>x_studio_vehicle_id</code>, <code>x_studio_categorie_xglass</code> et <code>x_studio_base_eurocode</code></li>
+<li>Fermer la fenêtre de dialogue et mettre à jour la vue formulaire avec les informations du véhicule sélectionné</li>
+</ol>
+<h2 id="ordre-de-vente">Ordre de vente</h2>
+<p>Une fois les Pièces VSF sélectionnées, l'utilisateur peut créer les pièces dans la base de données Odoo en cliquant sur le bouton &quot;Créer&quot; ou ouvrir le formulaire de la pièce en cliquant sur le bouton &quot;Voir&quot; (si la pièce est déjà créée dans Odoo). Lors de la création de la pièce, le système va :</p>
+<ol>
+<li>Enregistrer la pièce en tant qu'Article (<code>product.template</code>) <strong>stockable</strong> avec en tant que prix de vente le prix récupéré depuis VSF, avec la référence de la pièce VSF</li>
+<li>Ajouter le prix de vente VSF dans les prix fournisseurs de l'article</li>
+</ol>
+<h2 id="m%C3%A9thodes">Méthodes</h2>
+<h3 id="cr%C3%A9ation-de-v%C3%A9hicule">Création de véhicule</h3>
+<p>Lors de la création du véhicule, le système va effectuer les actions suivantes :</p>
+<ul>
+<li>Création de la 'Marque de véhicule' si elle n'existe pas déjà dans la BDD</li>
+<li>Création du 'Modèle de véhicule' si il n'existe pas déjà dans la BDD</li>
+<li>Ajout du VIN dans le champ <code>vin_sn</code></li>
+<li>Ajout de la date de Mise en circulation dans le champ <code>x_studio_date_mec</code></li>
+<li>Ajout du type de carburant dans le champ <code>fuel_type</code>, si le type de carburant n'existe pas dans la sélection alors il est créé</li>
+<li>Ajout de l'image dans le champ <code>image_1920</code></li>
+<li>Ajout du conducteur dans le champ <code>driver_id</code> (récupéré depuis l'enregistrement en cours, champ Client)</li>
+<li>Ajout de la puissance dans le champ <code>power</code></li>
+<li>Ajout du libéllé court (ex. SUZUKI BALENO II - 5P 2016-04-&gt; 1.2i 90) dans les champs <code>description</code> et <code>x_studio_detail_model</code></li>
+<li>Ajout du nombre de portes dans le champ <code>doors</code></li>
+</ul>
+<h4 id="autres-infos-disponibles">Autres infos disponibles</h4>
+<pre class="hljs"><code><div>    {
+  <span class="hljs-string">"alimentation"</span>: <span class="hljs-number">188</span>,
+  <span class="hljs-string">"capaciteCarter"</span>: <span class="hljs-number">3.1</span>,
+  <span class="hljs-string">"carrosserie"</span>: <span class="hljs-number">203</span>,
+  <span class="hljs-string">"cylindreeCm3"</span>: <span class="hljs-number">1242</span>,
+  <span class="hljs-string">"cylindreeLit"</span>: <span class="hljs-string">"1.2"</span>,
+  <span class="hljs-string">"cylindresNbr"</span>: <span class="hljs-number">4</span>,
+  <span class="hljs-string">"dateDebut"</span>: <span class="hljs-string">"2016-04-01T00:00:00"</span>,
+  <span class="hljs-string">"dateFin"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"detailVariante"</span>: [
+    {}
+  ],
+  <span class="hljs-string">"distributionElement"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"distributionType"</span>: <span class="hljs-string">"PIGNONS"</span>,
+  <span class="hljs-string">"energie"</span>: <span class="hljs-number">233</span>,
+  <span class="hljs-string">"energieLibelle"</span>: <span class="hljs-string">"Essence"</span>,
+  <span class="hljs-string">"essieuMoteur"</span>: <span class="hljs-number">112</span>,
+  <span class="hljs-string">"fap"</span>: <span class="hljs-number">0</span>,
+  <span class="hljs-string">"id"</span>: <span class="hljs-number">431060</span>,
+  <span class="hljs-string">"imageRef"</span>: <span class="hljs-string">"40377.jpg"</span>,
+  <span class="hljs-string">"imgUrl"</span>: <span class="hljs-string">"https://portail-xglass.com/images/images_modele/40377.jpg"</span>,
+  <span class="hljs-string">"injection"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"libelleCourt"</span>: <span class="hljs-string">"SUZUKI BALENO II - 5P 2016-04-&gt; 1.2i 90"</span>,
+  <span class="hljs-string">"modele"</span>: {
+    <span class="hljs-string">"dateDebut"</span>: <span class="hljs-string">"2016-04-01T00:00:00"</span>,
+    <span class="hljs-string">"dateFin"</span>: <span class="hljs-literal">null</span>,
+    <span class="hljs-string">"gamme"</span>: <span class="hljs-string">"BALENO"</span>,
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">4267</span>,
+    <span class="hljs-string">"imageRef"</span>: <span class="hljs-string">"40377.jpg"</span>
+    <span class="hljs-comment">// ...other properties if needed</span>
+  },
+  <span class="hljs-string">"modeleCommercial"</span>: <span class="hljs-string">"BALENO II - 5P 2016-04-&gt;"</span>,
+  <span class="hljs-string">"nom"</span>: <span class="hljs-string">"1.2i 90"</span>,
+  <span class="hljs-string">"ordre"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"phase"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"portesNbr"</span>: <span class="hljs-number">5</span>,
+  <span class="hljs-string">"puissanceCom"</span>: <span class="hljs-number">90</span>,
+  <span class="hljs-string">"puissanceKw"</span>: <span class="hljs-number">66</span>,
+  <span class="hljs-string">"statut"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"typeBoiteVeitesses"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"typeEmpattement"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"typeHauteur"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-string">"typeMoteur"</span>: <span class="hljs-string">"K12C"</span>,
+  <span class="hljs-string">"typeVehicule"</span>: <span class="hljs-number">163</span>,
+  <span class="hljs-string">"vitessesBte"</span>: <span class="hljs-number">196</span>,
+  <span class="hljs-string">"vitessesNbr"</span>: <span class="hljs-number">5</span>,
+  <span class="hljs-string">"xGlassModele"</span>: <span class="hljs-string">"&lt;odoo.addons.rpbm_agent.controllers.xglass.XGlassModele object at 0x7c3b60b10a60&gt;"</span>
+}
+{
+  <span class="hljs-string">"cnit"</span>: <span class="hljs-string">"M10CPFVP000R017"</span>,
+  <span class="hljs-string">"dateMec"</span>: <span class="hljs-string">"02/2016"</span>,
+  <span class="hljs-string">"vin"</span>: <span class="hljs-string">"VF7SA9HPKFW589387"</span>
+}
+</div></code></pre>
+<h3 id="cr%C3%A9ation-darticle">Création d'Article</h3>
+<p>Lors de la création d'un Article le système va effectuer les actions suivantes :</p>
+<ul>
+<li>Création de l'Article en tant que produit (<code>product.product</code>) avec les informations récupérées depuis VSF :
+<ul>
+<li>Ajout du nom de l'article dans le champ <code>name</code></li>
+<li>Ajout de la référence de l'article dans le champ <code>default_code</code></li>
+<li>Ajout du prix de vente dans le champ <code>list_price</code></li>
+<li>Ajout de la description de l'article dans le champ <code>description</code></li>
+</ul>
+</li>
+<li>Ajout dans l'article d'un Prix fournisseur avec les informations récupérées depuis VSF :
+<ul>
+<li>Ajout du prix fournisseur dans le champ <code>price</code></li>
+<li>Ajout du fournisseur dans le champ <code>partner_id</code> (ID VSF = 5708)</li>
+<li>'delay' = 1</li>
+</ul>
+</li>
+</ul>
+<h4 id="autres-infos-darticle-disponibles">Autres infos d'article disponibles</h4>
+<pre class="hljs"><code><div>{
+  <span class="hljs-string">"absoluteImgUrls"</span>: [
+    <span class="hljs-string">"https://client.myvsf.fr/articles-photos/GREAT/EA01%E2%80%A6rq_gl.jpg?p=sm&amp;s=5a5a79f8ffda9f34ef132532c899ff5e"</span>
+  ],
+  <span class="hljs-string">"available"</span>: <span class="hljs-literal">true</span>,
+  <span class="hljs-string">"code"</span>: <span class="hljs-string">"EA01RGPR5RQ"</span>,
+  <span class="hljs-string">"code_marque"</span>: <span class="hljs-string">"DIVE"</span>,
+  <span class="hljs-string">"imgUrls"</span>: [
+    <span class="hljs-string">"/articles-photos/GREAT/EA01/EA01RGPR5RQ/ea01rgpr5rq_gl.jpg?p=sm&amp;s=5a5a79f8ffda9f34ef132532c899ff5e"</span>
+  ],
+  <span class="hljs-string">"name"</span>: <span class="hljs-string">"CUSTODE ARRIÈRE DROIT TEINTÉ VERT FONCÉ GREAT WALL HOVER  08-"</span>,
+  <span class="hljs-string">"prixHT"</span>: <span class="hljs-number">102.56</span>,
+  <span class="hljs-string">"prixVente"</span>: <span class="hljs-number">113.95</span>,
+  <span class="hljs-string">"prixVenteRPBM"</span>: <span class="hljs-number">91.16</span>,
+  <span class="hljs-string">"prix_ht"</span>: <span class="hljs-string">"102,56&amp;nbsp;€"</span>,
+  <span class="hljs-string">"prix_vente"</span>: <span class="hljs-string">"113,95&amp;nbsp;€"</span>,
+  <span class="hljs-string">"promo"</span>: <span class="hljs-literal">false</span>,
+  <span class="hljs-string">"remise"</span>: <span class="hljs-string">"10%"</span>,
+  <span class="hljs-string">"remiseRPBM"</span>: <span class="hljs-number">0.2</span>,
+  <span class="hljs-string">"stock"</span>: <span class="hljs-number">5</span>,
+  <span class="hljs-string">"stock_groupe"</span>: <span class="hljs-number">5</span>,
+  <span class="hljs-string">"type_piece"</span>: <span class="hljs-string">"LA"</span>,
+  <span class="hljs-string">"url"</span>: <span class="hljs-string">"https://client.myvsf.fr/catalogue/article/EA01RGPR5RQ"</span>
+}
+
+</div></code></pre>
+
+</body>
+</html>

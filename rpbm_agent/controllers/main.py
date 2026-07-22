@@ -235,13 +235,13 @@ class AgentController(Controller):
         _logger.info(f"createProduct {articleVsfInfo}")
         articleVsf = vsf.VSFArticle(**articleVsfInfo)
         image = False
-        if articleVsf.imgUrls and len(articleVsf.imgUrls) > 0:
-            response = vsfAgent.session.get(articleVsf.imgUrls[0])
+        if articleVsf.absoluteImgUrls and len(articleVsf.absoluteImgUrls) > 0:
+            response = vsfAgent.session.get(articleVsf.absoluteImgUrls[0])
             if response.status_code == 200:
                 image = base64.b64encode(response.content).replace(b"\n", b"")
             else:
                 _logger.warning(response.text)
-                _logger.warning(f"Image not found for {articleVsf.imgUrls[0]}")
+                _logger.warning(f"Image not found for {articleVsf.absoluteImgUrls[0]}")
 
         productInfo = {
             'name': articleVsf.name,

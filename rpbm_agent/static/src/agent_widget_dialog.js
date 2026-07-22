@@ -313,6 +313,10 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.state.selectedPieceAm;
     }
 
+    get selectedPieceAMId() {
+        return this.selectedPieceAm ? this.selectedPieceAm.pieceAm.id : 0;
+    }
+
     canConfirm() {
         if (!this.selectedVehicule) {
             return false;

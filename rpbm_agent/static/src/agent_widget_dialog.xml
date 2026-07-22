@@ -41,8 +41,8 @@
                                 <t t-foreach="pieces" t-as="piece" t-key="piece.id">
                                     <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)" />
                                     <t t-if="piece.PiecesAM and piece.PiecesAM.length > 0" >
-                                        <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAM.id">
-                                            <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAM.id)" />
+                                        <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAm.id">
+                                            <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAm.id)" />
                                         </t>
                                     </t>
                                 </t>
@@ -64,7 +64,7 @@
                                     <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
                                     <a t-att-href="articleVsf.url" target="_blank" class="btn btn-primary" style="height: fit-content;">Fiche technique</a>
                                     <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
-                                        <img t-att-src="absoluteImgUrl" style="width: 100px; height: 100px; margin: 5px;" />
+                                        <img t-att-src="absoluteImgUrl" style="max-width: 250px; max-height: 250px; margin: 5px;" />
                                     </t>
                                 </div>
                             </t>
