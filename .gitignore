@@ -6,3 +6,7 @@ Jobs/**/*.js
 *.csv
 *.ipynb
 Jobs
+!Jobs/
+!Jobs/Gestion Stock/
+!Jobs/Gestion Stock/**
+

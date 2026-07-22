@@ -61,7 +61,7 @@ Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardé
 - `x_studio_field_NVioD` (immatriculation)
 - `x_studio_vehicle_id` (véhicule lié)
 - `x_studio_categorie_xglass`
-- `x_studio_base_eurocode`
+- `x_studio_base_eurocode` — ⚠️ nom utilisé par le code (`AbstractWidgetRecord.baseEurocodeField`, `utils.js:26`), mais ce champ **n'existe pas** sur `crm.lead` ; le vrai champ "Base Eurocode" existant en base s'appelle `x_studio_field_ORIyy` (voir [structure Eurocode](#structure-des-champs-eurocode-sur-crmlead) ci-dessous). Contrairement à `immatriculationField`, `baseEurocodeField` n'est pas surchargé par modèle — l'écriture d'eurocode échoue donc aujourd'hui quand le widget est placé sur une Piste/Opportunité.
 
 ### Ordre de Vente (`sale.order`)
 
@@ -116,13 +116,26 @@ Le module ne déclare aucun modèle ni vue (voir [architecture](../technique/arc
 | `x_studio_field_KyCjB` / `x_studio_field_ZhaeY` | Marque/modèle véhicule — **obsolètes** (marqués `[Obsolète]`), non fiables historiquement (doublons, créations sauvages) |
 | `x_studio_vehicle_id` | Many2one vers `fleet.vehicle` |
 | `x_studio_categorie_xglass` | Catégorie X'Glass sélectionnée (ex : Pare-brise) |
-| `x_studio_base_eurocode` | Base Eurocode sélectionnée |
+| `x_studio_field_ORIyy` ("Base Eurocode") | Voir [structure des champs Eurocode](#structure-des-champs-eurocode-sur-crmlead) ci-dessous |
+| `x_studio_field_NwRik` ("Eurocode (Complet)") | idem |
+| `x_studio_eurocode_joint` ("Eurocode (Joint)") | idem |
 
 **Ordre de vente — `sale.order`**
 | Champ | Rôle |
 |---|---|
 | `x_studio_vehicle_id` | Many2one vers `fleet.vehicle`, lié à celui de la piste |
 | `x_studio_categorie_xglass` | Lié à celui de la piste |
-| `x_studio_base_eurocode` | Lié à celui de la piste |
+| `x_studio_base_eurocode` | Champ `related` → `opportunity_id.x_studio_field_ORIyy` (le nom technique diffère de celui de la piste) |
+| `x_studio_eurocode_joint` | Champ `related` → `opportunity_id.x_studio_eurocode_joint` |
 
 Détails d'installation complets : [configuration technique](../technique/configuration.md).
+
+#### Structure des champs Eurocode sur `crm.lead`
+
+Trois champs Eurocode distincts coexistent sur la Piste/Opportunité, correspondant à trois étapes du travail des utilisateurs (indépendamment du widget, cette convention préexiste à `rpbm_agent`) :
+
+1. **Base Eurocode** (`x_studio_field_ORIyy`) — les 5 premiers caractères de l'eurocode, saisis/déduits pour préfiltrer les articles VSF. C'est ce champ que le widget lit/écrit pour la recherche par eurocode (cf. [recherche et sélection](#recherche-et-sélection-commun-aux-deux-modèles)).
+2. **Eurocode (Complet)** (`x_studio_field_NwRik`) — l'eurocode complet, renseigné une fois la pièce exacte trouvée et la sélection confirmée par l'utilisateur.
+3. **Eurocode (Joint)** (`x_studio_eurocode_joint`) — renseigné en plus si un joint est nécessaire pour la pose de la pièce.
+
+Le code du widget (`baseEurocodeField` dans `utils.js`) cible aujourd'hui `x_studio_base_eurocode`, qui n'existe que sur `sale.order` (en tant que champ `related`) et pas sur `crm.lead` — voir l'avertissement dans la section [Finalisation](#piste--opportunité-crmlead) ci-dessus.
