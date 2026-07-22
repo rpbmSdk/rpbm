@@ -8,10 +8,10 @@ Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis inst
 
 | Fichier | Contenu |
 |---|---|
-| `__manifest__.py` → `external_dependencies.python` | `beautifulsoup4` uniquement |
-| `controllers/requirements.txt` | `beautifulsoup4` (actif), `python-dotenv` (commenté) |
+| `__manifest__.py` → `external_dependencies.python` | `beautifulsoup4`, `python-dotenv` |
+| `controllers/requirements.txt` | `beautifulsoup4`, `python-dotenv` (tous deux actifs) |
 
-**Incohérence actuelle** : le code (`vsf.py`, `xglass.py`) importe activement `requests` et `python-dotenv` (`dotenv.load_dotenv()`), qui ne sont déclarés nulle part comme dépendances installées — ils fonctionnent uniquement parce qu'ils sont déjà présents dans l'environnement Python d'Odoo par ailleurs. À corriger dans une passe ultérieure (voir [état des lieux](../etat-des-lieux.md)).
+**Incohérence restante** : le code (`vsf.py`, `xglass.py`) importe aussi activement `requests`, qui n'est déclaré nulle part comme dépendance installée — il fonctionne uniquement parce qu'il est déjà présent dans l'environnement Python d'Odoo par ailleurs. À corriger dans une passe ultérieure (voir [état des lieux](../etat-des-lieux.md)).
 
 `python-dotenv` / `.env` ne sont utiles qu'en **exécution standalone hors Odoo** (tests manuels des scripts `vsf.py`/`xglass.py`, notebooks) : en production, les identifiants viennent exclusivement de `ir.config_parameter` via `/rpbm_agent_auth`.
 

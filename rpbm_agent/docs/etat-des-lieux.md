@@ -32,7 +32,7 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 - **`except` nu** dans `/rpbm_agent_auth` (`main.py:30-34`) : masque la cause réelle d'un premier échec d'authentification X'Glass avant de retenter.
 - **Appel commenté cassé** : `# vsfAgent.close()` dans `/rpbm_agent_close` (`main.py:43`) — `VSFAgent` n'a pas de méthode `close()`, cet appel lèverait une exception s'il était décommenté tel quel.
 - **`getPieceData`/`getPiecesData`** (`xglass.py:421-462`) : deux implémentations quasi identiques (l'une orientée objets `XGlassPlanche`/`XGlassCalque`, l'autre orientée IDs bruts).
-- **`requirements.txt` incohérent** avec les imports réels (`requests` absent, `python-dotenv` commenté) et avec `__manifest__.py` (voir [configuration](technique/configuration.md)).
+- **`requirements.txt` partiellement incohérent** avec les imports réels (`requests` absent, `python-dotenv` désormais actif) et avec `__manifest__.py` (voir [configuration](technique/configuration.md)).
 - **Bloc `if __name__ == "__main__"`** de `xglass.py:486-501` obsolète : appelle `auth()` sans arguments alors que la méthode les exige désormais — lèverait un `TypeError`.
 - **Valeurs de test hardcodées** en défaut de paramètres de méthodes "production" : `immatriculation="DS808DZ"`, `idVehicule='397899'` (`xglass.py`), `eurocode="6539RGSH5RD"` (`vsf.py`).
 - **Absence de sécurité fine** : pas de `security/ir.model.access.csv` ni de groupe dédié — toutes les routes sont accessibles à n'importe quel utilisateur Odoo connecté.
@@ -82,7 +82,7 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 3. Corriger la route `/rbm_agent/getVehiculeMeta` → `/rpbm_agent/getVehiculeMeta` (ou l'aligner avec le style sans préfixe des autres routes).
 4. Retirer le bouton "Enlever" trompeur (ou implémenter la suppression réelle de la ligne).
 5. Réutiliser `XGLASS.getPieceAm()` dans `main.py` au lieu de dupliquer l'appel HTTP.
-6. Corriger `requirements.txt`/`external_dependencies` pour lister `requests` et activer `python-dotenv`.
+6. Corriger `requirements.txt`/`external_dependencies` pour lister `requests` (`python-dotenv` déjà fait).
 
 **Chantiers structurants (effort plus élevé)**
 1. Isoler la session portail par utilisateur Odoo (ou par requête) plutôt qu'un singleton global partagé — nécessaire pour un usage concurrent fiable.

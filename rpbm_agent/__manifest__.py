@@ -11,6 +11,6 @@
         ]
     },
     "external_dependencies": {
-        "python": ["beautifulsoup4"],
+        "python": ["beautifulsoup4", "python-dotenv"],
     },
 }
