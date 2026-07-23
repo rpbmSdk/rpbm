@@ -67,6 +67,7 @@ export class asyncWidget extends Component {
         super.setup();
         this.rpc = useService("rpc");
         this.orm = useService("orm");
+        this.notification = useService("notification");
         /** @type {AbstractWidgetRecord} */
         this.record = this.props.record;
         this.state = useState(asyncWidgetState);
@@ -131,6 +132,7 @@ export class asyncWidget extends Component {
         }
         catch (e) {
             console.error(e);
+            this.notification.add(e.data?.message || e.message || "Une erreur est survenue", { type: "danger" });
         }
         this.stopLoading();
     }

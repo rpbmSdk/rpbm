@@ -26,6 +26,15 @@ XGLASS_MAIN_URL = f"{XGLASS_URL}/mainMenu.html"
 
 XGLASS_searchImmat = f"{XGLASS_URL}/ajax/searchImmat.html"
 LOGOUT_URL = "https://portail-xglass.com/logout.html"
+REQUEST_TIMEOUT = 20  # secondes, appliqué à tous les appels vers le portail X'Glass
+
+
+class XGlassError(Exception):
+    """Erreur générique lors d'un échange avec le portail X'Glass."""
+
+
+class XGlassAuthError(XGlassError):
+    """Authentification X'Glass refusée après les deux tentatives, ou session expirée."""
 
 
 class XGlassMarque():
@@ -270,15 +279,22 @@ class XGLASS:
         self.selectedVehiculePage = None
         # self.auth()
 
-    def get(self, url):
-        return self.session.get(url)
+    def get(self, url, **kwargs):
+        kwargs.setdefault("timeout", REQUEST_TIMEOUT)
+        try:
+            return self.session.get(url, **kwargs)
+        except requests.exceptions.RequestException as e:
+            raise XGlassError(f"Erreur réseau X'Glass (GET {url}) : {e}") from e
 
     def post(self, url, data: dict = {}, **kwargs):
-        return self.session.post(url, data=data)
+        kwargs.setdefault("timeout", REQUEST_TIMEOUT)
+        try:
+            return self.session.post(url, data=data, **kwargs)
+        except requests.exceptions.RequestException as e:
+            raise XGlassError(f"Erreur réseau X'Glass (POST {url}) : {e}") from e
 
     def auth(self, XGLASS_USER:str, XGLASS_PASS:str):
         self.get(XGLASS_URL)
-        JSESSIONID = self.session.cookies.get_dict().get("JSESSIONID")
         payload = {
             "j_username": XGLASS_USER,
             "j_password": XGLASS_PASS,
@@ -286,11 +302,14 @@ class XGLASS:
         }
 
         def meta_auth():
+            # NB : allow_redirects=False volontairement retiré — le test de
+            # succès ci-dessous a besoin que la redirection soit suivie
+            # jusqu'à sa destination finale pour fonctionner (à reconfirmer
+            # contre le portail réel avant mise en prod).
             return self.post(
                 XGLASS_LOGIN_URL,
                 data=payload,
                 verify=False,
-                allow_redirects=False,
             )
         _logger.info('First login')
         r = meta_auth()
@@ -299,18 +318,22 @@ class XGLASS:
         if r.request.url != XGLASS_MAIN_URL:
             self.close()
             _logger.info('Second login')
-            # _logger.info(f'res return url {r.request.url}')
             r = meta_auth()
             _logger.info(f'res return url {r.request.url}')
         if r.request.url != XGLASS_MAIN_URL:
-            raise Exception("Login failed")
+            raise XGlassAuthError("Connexion X'Glass refusée après deux tentatives.")
         return
 
     def close(self):
-        r = self.get(LOGOUT_URL)
-        if self.login_form(r):
-            print("Logout success")
-        self.session.close()
+        # Best-effort : un échec de déconnexion ne doit jamais faire planter l'appelant.
+        try:
+            r = self.get(LOGOUT_URL)
+            if self.login_form(r):
+                _logger.debug("Déconnexion X'Glass confirmée")
+        except Exception as e:
+            _logger.warning("Échec de la déconnexion X'Glass (ignoré) : %s", e)
+        finally:
+            self.session.close()
 
     def login_form(self, r: requests.Response):
         login_form = bs.BeautifulSoup(r.text, "html.parser")
@@ -321,7 +344,7 @@ class XGLASS:
     def ensure_logged(self, r: requests.Response):
         if self.login_form(r):
             self.session.close()
-            raise Exception("Login failed")
+            raise XGlassAuthError("Session X'Glass expirée ou invalide.")
 
     def setInitRecherche(self):
         r = self.get("https://portail-xglass.com/initRechercheVehicule.html")
@@ -378,11 +401,9 @@ class XGLASS:
                         if value:
                             data[key] = value
                             # break
-                print(data)
                 return data
-            except Exception as e :
-                print(e)
-                pass
+            except Exception as e:
+                _logger.debug("getVehiculeMeta: script ignoré (%s)", e)
     
     def selectVehicule(self, idVehicule: str='397899'):
         # r = self.post(
@@ -402,8 +423,8 @@ class XGLASS:
                             raw = line.split("planche = ")[1]
                             raw = raw.replace(";", "")
                             return json.loads(raw)
-            except:
-                pass
+            except Exception as e:
+                _logger.debug("selectVehicule: script ignoré (%s)", e)
         return {}
 
     def getPlancheData(self, vehicule: XGlassVehicule):
@@ -428,14 +449,14 @@ class XGLASS:
                 if "var elementSitMapData =" in script.text:
                     lines = script.text.splitlines()
                     break
-            except:
-                pass
+            except Exception as e:
+                _logger.debug("getPieceData: script ignoré (%s)", e)
         for line in lines:
             if "var elementSitMapData =" in line:
                 raw = line.split("var elementSitMapData = ")[1]
                 raw = raw.replace(";", "")
                 return json.loads(raw)[0]
-        raise Exception("Piece not found")
+        raise XGlassError("Pièce introuvable (elementSitMapData absent de la réponse X'Glass).")
 
     def getPieces(self, planche:XGlassPlanche, calque:XGlassCalque):
         data = self.getPieceData(planche, calque)
@@ -452,14 +473,14 @@ class XGLASS:
                 if "var elementSitMapData =" in script.text:
                     lines = script.text.splitlines()
                     break
-            except:
-                pass
+            except Exception as e:
+                _logger.debug("getPieceData: script ignoré (%s)", e)
         for line in lines:
             if "var elementSitMapData =" in line:
                 raw = line.split("var elementSitMapData = ")[1]
                 raw = raw.replace(";", "")
                 return json.loads(raw)[0]
-        raise Exception("Piece not found")
+        raise XGlassError("Pièce introuvable (elementSitMapData absent de la réponse X'Glass).")
     
     def findSelectionsPiecesAmView(self, element:XGlassElement, piece:XGlassPiece = None):
         URL = 'https://portail-xglass.com/ajax/findSelectionsPiecesAmView.html'
@@ -487,7 +508,7 @@ if __name__ == "__main__":
     from pprint import pprint
 
     xglass = XGLASS()
-    r = xglass.auth()
+    xglass.auth(os.getenv("XGLASS_USER"), os.getenv("XGLASS_PASS"))
     try:
         vehicules = xglass.searchVehiculeImmat()
         vehicule = vehicules[0]

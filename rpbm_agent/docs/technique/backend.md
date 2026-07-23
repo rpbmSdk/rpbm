@@ -8,7 +8,7 @@ xglassAgent = xglass.XGLASS()
 VSF_PARTNER_ID = 5708
 ```
 
-`/rpbm_agent_auth` réinstancie ces deux objets puis authentifie chacun via les paramètres système `ir.config_parameter`. Voir [état de session partagé](#état-de-session-partagée) plus bas pour l'implication de ce pattern.
+`/rpbm_agent_auth` réinstancie ces deux objets puis authentifie chacun via les paramètres système `ir.config_parameter`. Voir [état de session partagée](#état-de-session-partagée) plus bas, et [verrou de concurrence](../technique/configuration.md#concurrence--verrou-de-session) pour le mécanisme qui sérialise désormais les sessions widget entre utilisateurs.
 
 ## Référence des routes
 
@@ -24,16 +24,12 @@ Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utili
 | `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle/carburant si besoin, télécharge l'image véhicule, crée le `fleet.vehicle` | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, `ir.model.fields`, `ir.model.fields.selection`, X'Glass (image) |
 | `/getPlanche` | `vehiculeId: int` | Récupère la "planche" (catégories/calques de pièces disponibles pour le véhicule) | X'Glass |
 | `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie | X'Glass |
-| `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce | X'Glass (appel direct dupliqué, voir [cohérence](#duplication-getpieceam)) |
+| `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce, via `XGLASS.findSelectionsPiecesAmView()` | X'Glass |
 | `/searchBaseEurocode` | `baseEurocode: str` | Recherche les articles VSF correspondant à une base eurocode | VSF |
 | `/doesProductExists` | `productCode: str` | Vérifie si un article VSF est déjà un produit Odoo (`default_code`) | `product.product` |
 | `/createProduct` | `articleVsfInfo: dict` | Crée le produit + son prix fournisseur VSF | `product.product`, `product.supplierinfo` |
 
 > Note de nommage : `/rbm_agent/getVehiculeMeta` est la seule route préfixée, avec une coquille (`rbm` au lieu de `rpbm`) — signalé dans l'[état des lieux](../etat-des-lieux.md).
-
-### Duplication `getPieceAm`
-
-`main.py::getPieceAm` reconstruit un POST direct vers `https://portail-xglass.com/ajax/findSelectionsPiecesAmView.html` avec la même URL et la même charge utile que `XGLASS.findSelectionsPiecesAmView()`/`XGLASS.getPieceAm()` déjà définies dans `xglass.py`, au lieu de réutiliser la classe.
 
 ## X'Glass (`controllers/xglass.py`)
 
@@ -48,7 +44,7 @@ stateDiagram-v2
     [*] --> NonConnecte
     NonConnecte --> Connecte: auth() réussi
     NonConnecte --> NonConnecte: échec du 1er essai → close() puis 2e tentative
-    NonConnecte --> [*]: échec du 2e essai → Exception("Login failed")
+    NonConnecte --> [*]: échec du 2e essai → XGlassAuthError
     Connecte --> RechercheInitialisee: setInitRecherche()\n(déclenché automatiquement par searchImmat)
     RechercheInitialisee --> RechercheInitialisee: searchImmat / selectVehicule /\naffichagePieces / findSelectionsPiecesAmView
     Connecte --> NonConnecte: close() (logout)
@@ -117,4 +113,4 @@ Exemple de payload `VSFArticle` :
 
 ## État de session partagée
 
-`vsfAgent` et `xglassAgent` sont des instances **au niveau du module Python**, donc partagées par tous les workers/requêtes/utilisateurs Odoo qui appellent ces routes sur le même processus serveur. Elles portent un état mutable (`self.session` de `requests`, `self.selectedVehiculePage`, `self.initRecherche`). Combiné à la contrainte "un seul utilisateur actif par identifiant" du portail X'Glass, deux utilisateurs Odoo utilisant le widget en même temps partagent la même session portail — voir l'[état des lieux](../etat-des-lieux.md) pour l'analyse de risque.
+`vsfAgent` et `xglassAgent` sont des instances **au niveau du module Python**, donc partagées par tous les workers/requêtes/utilisateurs Odoo qui appellent ces routes sur le même processus serveur (et réinstanciées à chaque `/rpbm_agent_auth`, ce qui donne une ardoise propre par session plutôt qu'un problème une fois combiné au verrou ci-dessous). Elles portent un état mutable (`self.session` de `requests`, `self.selectedVehiculePage`, `self.initRecherche`). Combiné à la contrainte "un seul utilisateur actif par identifiant" du portail X'Glass, deux utilisateurs Odoo utilisant le widget en même temps partageraient la même session portail sans coordination — désormais empêché par un verrou applicatif (`ir.config_parameter` `rpbm_agent.session_lock`, `main.py::acquire_agent_lock`/`touch_agent_lock`/`release_agent_lock`) qui sérialise des sessions widget complètes entre utilisateurs, avec expiration glissante de 15 min en filet de sécurité — voir [configuration](configuration.md#concurrence--verrou-de-session) pour le détail, et l'[état des lieux](../etat-des-lieux.md) pour l'historique du problème.

@@ -13,7 +13,7 @@ Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis inst
 
 **Incohérence restante** : le code (`vsf.py`, `xglass.py`) importe aussi activement `requests`, qui n'est déclaré nulle part comme dépendance installée — il fonctionne uniquement parce qu'il est déjà présent dans l'environnement Python d'Odoo par ailleurs. À corriger dans une passe ultérieure (voir [état des lieux](../etat-des-lieux.md)).
 
-`python-dotenv` / `.env` ne sont utiles qu'en **exécution standalone hors Odoo** (tests manuels des scripts `vsf.py`/`xglass.py`, notebooks) : en production, les identifiants viennent exclusivement de `ir.config_parameter` via `/rpbm_agent_auth`.
+`python-dotenv` / `.env` (racine du module) ne sont utiles qu'en **exécution standalone hors Odoo** (tests manuels des scripts `vsf.py`/`xglass.py`, notebooks, et [`push_credentials.py`](../../push_credentials.py)) : en production, les identifiants viennent exclusivement de `ir.config_parameter` via `/rpbm_agent_auth`.
 
 ## Paramètres système requis
 
@@ -26,7 +26,9 @@ Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis inst
 | `VSF_LOGIN` | Identifiant du portail VSF |
 | `VSF_PASSWORD` | Mot de passe du portail VSF |
 
-Peuvent être créés manuellement ou par script (ex. `env['ir.config_parameter'].sudo().set_param(...)`).
+Peuvent être créés manuellement, ou poussés via [`push_credentials.py`](../../push_credentials.py) (racine du module) : lit les 4 identifiants depuis `.env` (racine du module, déjà ignoré par git — mêmes clés que celles utilisées pour l'exécution standalone de `vsf.py`/`xglass.py`) et les écrit sur une instance Odoo cible via XML-RPC standard (`ir.config_parameter.set_param`). Le script lui-même ne contient aucun secret (suivi par git) ; les informations de connexion à l'instance cible (`ODOO_URL`/`ODOO_DB`/`ODOO_LOGIN`/`ODOO_PASSWORD`) peuvent être ajoutées à `.env` ou saisies de manière interactive. Le compte Odoo utilisé doit être administrateur (`base.group_system`), seul groupe ayant accès à `ir.config_parameter`.
+
+Un 5ᵉ paramètre système, `rpbm_agent.session_lock`, est créé et géré automatiquement par le module (verrou de concurrence, voir [ci-dessous](#concurrence--verrou-de-session)) — ne pas le modifier manuellement.
 
 ## Champs Odoo Studio requis
 
@@ -51,6 +53,24 @@ Conséquence : le champ est créé exactement comme le ferait un humain dans Stu
 Le widget et les champs `x_studio_vehicle_id`/`x_studio_categorie_xglass` sont ajoutés par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, `views/fleet_vehicle_views.xml`, `views/product_product_views.xml`), chacune héritant de la vue formulaire de base du modèle concerné et ajoutant un nouvel onglet. Le comportement du widget s'adapte automatiquement selon `resModel` de l'enregistrement courant (`crm.lead`, `sale.order`, ou dialog générique pour tout autre modèle — voir [frontend](frontend.md)).
 
 **Caveat de déploiement** : sur toute instance où le tag `<widget name="rpbm_agent_widget"/>` aurait déjà été ajouté à la main via Studio (probable en production, la documentation historique indiquant le widget déjà en usage), il faut le retirer de la vue Studio **avant** de déployer cette version du module, sous peine d'afficher le bouton en double. Vérification : `env['ir.ui.view'].search([('model','in',['crm.lead','sale.order'])]).filtered(lambda v: 'rpbm_agent_widget' in (v.arch_db or ''))`.
+
+## Gestion d'erreurs
+
+`vsf.py`/`xglass.py` exposent chacun une paire d'exceptions typées (`VSFError`/`VSFAuthError`, `XGlassError`/`XGlassAuthError`) plutôt que d'avaler silencieusement les échecs ou de lever des `Exception` nues :
+- Toutes les requêtes portail passent par des wrappers `get()`/`post()` avec timeout (20 s) et conversion des erreurs réseau (`requests.exceptions.RequestException`) en `VSFError`/`XGlassError`.
+- `auth()` vérifie réellement le succès de la connexion (statut HTTP + indices de page) au lieu de retourner une réponse jamais inspectée ; `XGLASS.auth()` garde son comportement de retry existant (fermeture puis nouvel essai, en réaction à la contrainte "un seul utilisateur actif par identifiant") mais lève désormais `XGlassAuthError` après les deux tentatives.
+- Les recherches (`searchImmatriculation`, `searchBaseEurocode`, `getPieceAm`) distinguent "recherche légitimement sans résultat" (`[]`, comportement inchangé) d'une vraie erreur portail, qui remonte en `odoo.exceptions.UserError` — visible nativement par l'utilisateur via l'infrastructure JSON-RPC standard d'Odoo.
+- Côté widget, `runAsync()` (`utils.js`) affiche désormais une notification (service Odoo `notification`, type `danger`) en plus du `console.error` existant.
+
+**Point d'attention** : le retrait du bug de transmission des kwargs de `XGLASS.post()` (qui ignorait silencieusement `verify`/`allow_redirects`) a nécessité de retirer `allow_redirects=False` de l'appel de login pour préserver le comportement réel de détection de succès — à valider par un test manuel contre le portail réel avant mise en production.
+
+## Concurrence — verrou de session
+
+Le portail X'Glass n'autorise qu'**une seule session active par identifiant**, et RPBM ne dispose que d'un seul identifiant partagé X'Glass et d'un seul VSF (pas de pool de comptes) — deux utilisateurs Odoo ne peuvent donc jamais utiliser le widget en même temps sans que l'un invalide la session de l'autre côté portail, et ce pour toute la durée d'une interaction (pas seulement l'instant du login).
+
+Solution retenue : un verrou applicatif réutilisant `ir.config_parameter` (`rpbm_agent.session_lock`, JSON `{uid, touched_at}`), avec compare-and-set atomique via `SELECT ... FOR UPDATE` (`main.py::_lock_row`) — pas de nouveau modèle/`ir.model.access.csv` pour un verrou global unique. `/rpbm_agent_auth` acquiert le verrou (rejette avec `UserError` "actuellement utilisé par X" si déjà tenu par un autre utilisateur et non expiré) ; `/rpbm_agent_close` le libère ; toutes les routes intermédiaires touchant `xglassAgent`/`vsfAgent` le rafraîchissent (décorateur `@_touch_agent_lock`). Expiration glissante de 15 minutes en filet de sécurité (session abandonnée sans passer par Confirmer/Annuler — crash navigateur, perte réseau).
+
+Alternative non retenue (business, pas technique) : un pool de plusieurs identifiants X'Glass/VSF permettrait une vraie concurrence sans file d'attente, mais dépend d'une démarche contractuelle auprès des portails — non disponible actuellement.
 
 ## Assets
 

@@ -1,10 +1,18 @@
-from odoo import fields
+import functools
+import json
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+
+from odoo import fields, _
+from odoo.exceptions import UserError
 from odoo.http import Controller, request, route
 import logging
 import base64
 
 from . import vsf
 from . import xglass
+from .vsf import VSFError
+from .xglass import XGlassError
 
 _logger = logging.getLogger(__name__)
 
@@ -13,12 +21,107 @@ xglassAgent = xglass.XGLASS()
 
 VSF_PARTNER_ID = 5708
 
+# --- Verrou de concurrence -------------------------------------------------
+# Le portail X'Glass n'autorise qu'une seule session active par identifiant,
+# et RPBM ne dispose que d'un seul identifiant partagé X'Glass/VSF pour toute
+# l'entreprise : deux utilisateurs Odoo ne peuvent donc jamais utiliser le
+# widget en même temps sans que l'un invalide la session de l'autre côté
+# portail. Ce verrou sérialise des sessions widget complètes (de
+# /rpbm_agent_auth à /rpbm_agent_close), pas seulement l'appel de login.
+# Réutilise ir.config_parameter (déjà restreint à base.group_system, déjà
+# utilisé pour les 4 identifiants) plutôt qu'un nouveau modèle dédié.
+LOCK_KEY = 'rpbm_agent.session_lock'
+AGENT_LOCK_TIMEOUT = timedelta(minutes=15)  # expiration glissante, filet de sécurité
+
+
+def _lock_row(cr):
+    """Garantit l'existence de la ligne puis la verrouille (FOR UPDATE) pour
+    la durée de la transaction courante — nécessaire pour un compare-and-set
+    atomique entre deux requêtes concurrentes. Le verrou ne peut pas, et n'a
+    pas besoin d'être maintenu à travers plusieurs requêtes HTTP : l'état
+    {uid, touched_at} persisté dans la ligne fait foi d'une requête à l'autre.
+    """
+    cr.execute(
+        "INSERT INTO ir_config_parameter (key, value) VALUES (%s, %s) ON CONFLICT (key) DO NOTHING",
+        (LOCK_KEY, ''),
+    )
+    cr.execute("SELECT value FROM ir_config_parameter WHERE key = %s FOR UPDATE", (LOCK_KEY,))
+    (raw,) = cr.fetchone()
+    try:
+        return json.loads(raw) if raw else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _write_lock_row(cr, state):
+    cr.execute(
+        "UPDATE ir_config_parameter SET value = %s WHERE key = %s",
+        (json.dumps(state) if state else '', LOCK_KEY),
+    )
+
+
+def _holder_name(env, uid):
+    user = env['res.users'].sudo().browse(uid)
+    return user.name if user.exists() else _("un autre utilisateur")
+
+
+def acquire_agent_lock(env):
+    cr, uid, now = env.cr, env.uid, datetime.now(timezone.utc)
+    state = _lock_row(cr)
+    if state and state['uid'] != uid:
+        expired = now - datetime.fromisoformat(state['touched_at']) > AGENT_LOCK_TIMEOUT
+        if not expired:
+            raise UserError(_(
+                "Le module véhicule/pièces est actuellement utilisé par %s. "
+                "Merci de réessayer dans quelques minutes."
+            ) % _holder_name(env, state['uid']))
+        _logger.warning(
+            "rpbm_agent: verrou expiré, récupéré de l'utilisateur #%s au profit de #%s",
+            state['uid'], uid,
+        )
+    _write_lock_row(cr, {'uid': uid, 'touched_at': now.isoformat()})
+    cr.commit()
+
+
+def touch_agent_lock(env):
+    cr, uid, now = env.cr, env.uid, datetime.now(timezone.utc)
+    state = _lock_row(cr)
+    if (not state or state['uid'] != uid
+            or now - datetime.fromisoformat(state['touched_at']) > AGENT_LOCK_TIMEOUT):
+        raise UserError(_(
+            "Votre session a expiré ou a été reprise par un autre utilisateur. "
+            "Merci de rouvrir le widget."
+        ))
+    state['touched_at'] = now.isoformat()
+    _write_lock_row(cr, state)
+    cr.commit()
+
+
+def release_agent_lock(env):
+    cr = env.cr
+    state = _lock_row(cr)
+    if state and state['uid'] == env.uid:
+        _write_lock_row(cr, None)
+    cr.commit()
+
+
+def _touch_agent_lock(f):
+    """À placer directement sous @route, pour que le UserError levé ici ne
+    soit jamais avalé par le try/except propre à certaines routes."""
+    @functools.wraps(f)
+    def wrapper(self, *args, **kwargs):
+        touch_agent_lock(request.env)
+        return f(self, *args, **kwargs)
+    return wrapper
+
+
 class AgentController(Controller):
 
     @route('/rpbm_agent_auth', auth='user', type='json')
     def rpbm_agent_auth(self):
         global vsfAgent
         global xglassAgent
+        acquire_agent_lock(request.env)
         vsfAgent = vsf.VSFAgent()
         xglassAgent = xglass.XGLASS()
         _logger.info("rpbm_agent_auth")
@@ -29,32 +132,48 @@ class AgentController(Controller):
         xglassAgent.close()
         try:
             xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
-        except :
-            _logger.warning("Echec de connexion à XGLASS")
-            xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
-        vsfAgent.auth(VSF_LOGIN, VSF_PASSWORD)
+        except XGlassError:
+            _logger.exception("Échec de connexion à X'Glass (1ère tentative), nouvel essai")
+            try:
+                xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
+            except XGlassError:
+                _logger.exception("Échec de connexion à X'Glass (2ᵉ tentative)")
+                release_agent_lock(request.env)
+                raise UserError(_(
+                    "Connexion au portail X'Glass impossible. Vérifiez les identifiants "
+                    "configurés, ou réessayez dans quelques instants."
+                ))
+        try:
+            vsfAgent.auth(VSF_LOGIN, VSF_PASSWORD)
+        except VSFError:
+            _logger.exception("Échec de connexion à VSF")
+            release_agent_lock(request.env)
+            raise UserError(_("Connexion au portail VSF impossible. Vérifiez les identifiants configurés."))
         _logger.info("rpbm_agent_auth done")
-        return 
-    
+        return
+
     @route('/rpbm_agent_close', auth='user', type='json')
     def rpbm_agent_close(self):
         _logger.info("rpbm_agent_close")
         xglassAgent.close()
         # vsfAgent.close()
+        release_agent_lock(request.env)
         _logger.info("rpbm_agent_close done")
         return
-    
+
     @route('/searchImmatriculation', auth='user', type='json')
+    @_touch_agent_lock
     def searchImmatriculation(self,immatriculation: str):
         _logger.info(f"searchImmatriculation {immatriculation}")
         try:
             vehicules = xglassAgent.searchVehiculeImmat(immatriculation)
             return [vehicule.__dict__ for vehicule in vehicules]
-        except Exception as e:
-            _logger.warning(e)
-            return []
+        except XGlassError:
+            _logger.exception("Erreur X'Glass lors de la recherche immatriculation %s", immatriculation)
+            raise UserError(_("Recherche impossible : le portail X'Glass est inaccessible ou la session a expiré."))
 
     @route('/rbm_agent/getVehiculeMeta', auth='user', type='json')
+    @_touch_agent_lock
     def getVehiculeMeta(self,vehiculeId:str):
         _logger.info(f"getVehiculeMeta {vehiculeId}")
         # Il faut d'abord réinitialiser la planche
@@ -78,6 +197,7 @@ class AgentController(Controller):
             return False
 
     @route('/createVehicule', auth='user', type='json')
+    @_touch_agent_lock
     def createVehicule(self,immatriculation:str, partner_id:int, vehicule_info:dict={}, vehicule_meta:dict={}):
         """
             Permet de créer un véhicule en BDD de Odoo
@@ -158,12 +278,14 @@ class AgentController(Controller):
 
 
     @route('/getPlanche', auth='user', type='json')
+    @_touch_agent_lock
     def getPlanche(self,vehiculeId:int):
         _logger.info(f"getPlanche {vehiculeId}")
         planche = xglassAgent.selectVehicule(str(vehiculeId))
         return planche
-    
+
     @route('/getPieces', auth='user', type='json')
+    @_touch_agent_lock
     def getPieces(self,plancheId:int, calqueId:int):
         _logger.info(f"getPieces {plancheId} {calqueId}")
         raw = xglassAgent.getPiecesData(plancheId, calqueId)
@@ -184,59 +306,48 @@ class AgentController(Controller):
         return pieces
 
     @route('/getPieceAm', auth='user', type='json')
+    @_touch_agent_lock
     def getPieceAm(self,element_withPiecesAm, pieceId:int=None, elementSitId:int=None):
         _logger.info(f"getPieceAm {element_withPiecesAm} {pieceId} {elementSitId}")
-        URL = 'https://portail-xglass.com/ajax/findSelectionsPiecesAmView.html'
-        data = {
-            'withPiecesAm':element_withPiecesAm,
-            'idDevis':''
-        }
-        if pieceId:
-            data['idPieceOe'] = pieceId
-        else:
-            data['idElementSit'] = elementSitId
-
-        r = xglassAgent.post(
-            URL,
-            data=data,
-        )
-        piecesData = r.json()
+        # Réutilise XGLASS.findSelectionsPiecesAmView() au lieu de dupliquer
+        # l'appel HTTP (URL/payload) — voir docs/etat-des-lieux.md. On ne
+        # réutilise pas XGLASS.getPieceAm() (qui construit des XGlassPieceAm)
+        # pour ne pas changer la forme de la réponse déjà consommée par le widget.
+        element = SimpleNamespace(withPiecesAm=element_withPiecesAm, elementSitId=elementSitId)
+        piece = SimpleNamespace(id=pieceId) if pieceId else None
         try:
-            return piecesData.get('selectionsPiecesAmView',[])
-        except Exception as e:
-            _logger.warning(e)
-            return [] 
-         
+            r = xglassAgent.findSelectionsPiecesAmView(element, piece)
+            return r.json().get('selectionsPiecesAmView', [])
+        except XGlassError:
+            _logger.exception("Erreur X'Glass lors de la recherche des pièces après-marché")
+            raise UserError(_("Recherche impossible : le portail X'Glass est inaccessible ou la session a expiré."))
+
     @route('/searchBaseEurocode', auth='user', type='json')
+    @_touch_agent_lock
     def searchBaseEurocode(self,baseEurocode:str):
         _logger.info(f"searchBaseEurocode {baseEurocode}")
         try:
             vsfArticles = vsfAgent.searchEurocodeArticlesClient(baseEurocode)
             return [vsfArticle.__dict__ for vsfArticle in vsfArticles]
-        except Exception as e:
-            _logger.warning(e)
-            return []
-
-
+        except VSFError:
+            _logger.exception("Erreur VSF lors de la recherche eurocode %s", baseEurocode)
+            raise UserError(_("Recherche impossible : le portail VSF est inaccessible ou la session a expiré."))
 
     @route('/doesProductExists', auth='user', type='json')
     def doesProductExists(self,productCode:str):
         _logger.info(f"doesProductExists {productCode}")
-        try:
-            product = request.env['product.product'].search_read([('default_code', '=', productCode)],['name','default_code'])
-            product = product[0]
-            return product
-        except Exception as e:
-            _logger.warning(e)
-            return False
+        product = request.env['product.product'].search_read(
+            [('default_code', '=', productCode)], ['name', 'default_code'], limit=1)
+        return product[0] if product else False
 
     @route('/createProduct', auth='user', type='json')
+    @_touch_agent_lock
     def createProduct(self,articleVsfInfo:dict):
         _logger.info(f"createProduct {articleVsfInfo}")
         articleVsf = vsf.VSFArticle(**articleVsfInfo)
         image = False
         if articleVsf.absoluteImgUrls and len(articleVsf.absoluteImgUrls) > 0:
-            response = vsfAgent.session.get(articleVsf.absoluteImgUrls[0])
+            response = vsfAgent.get(articleVsf.absoluteImgUrls[0])
             if response.status_code == 200:
                 image = base64.b64encode(response.content).replace(b"\n", b"")
             else:
