@@ -30,6 +30,13 @@ Peuvent être créés manuellement, ou poussés via [`push_credentials.py`](../.
 
 Un 5ᵉ paramètre système, `rpbm_agent.session_lock`, est créé et géré automatiquement par le module (verrou de concurrence, voir [ci-dessous](#concurrence--verrou-de-session)) — ne pas le modifier manuellement.
 
+Deux paramètres optionnels pilotent le traçage HTTP des portails (voir [Débogage des portails](#débogage-des-portails)) :
+
+| Clé | Description |
+|---|---|
+| `rpbm_agent.trace` | `1` pour journaliser chaque requête portail (défaut : inactif) |
+| `rpbm_agent.trace_dir` | Dossier serveur où écrire le corps des réponses (optionnel) |
+
 ## Champs Odoo Studio requis
 
 Les champs `x_studio_*` consommés par le code sont créés automatiquement à l'installation par `pre_init_hook` (`rpbm_agent/hooks.py`) — voir le mécanisme ci-dessous. État détaillé par modèle (quels champs, lesquels sont nouveaux vs déjà existants sur une instance donnée, related, obsolètes) : [technique/champs/](champs/README.md).
@@ -58,11 +65,37 @@ Le widget et les champs `x_studio_vehicle_id`/`x_studio_categorie_xglass` sont a
 
 `vsf.py`/`xglass.py` exposent chacun une paire d'exceptions typées (`VSFError`/`VSFAuthError`, `XGlassError`/`XGlassAuthError`) plutôt que d'avaler silencieusement les échecs ou de lever des `Exception` nues :
 - Toutes les requêtes portail passent par des wrappers `get()`/`post()` avec timeout (20 s) et conversion des erreurs réseau (`requests.exceptions.RequestException`) en `VSFError`/`XGlassError`.
-- `auth()` vérifie réellement le succès de la connexion (statut HTTP + indices de page) au lieu de retourner une réponse jamais inspectée ; `XGLASS.auth()` garde son comportement de retry existant (fermeture puis nouvel essai, en réaction à la contrainte "un seul utilisateur actif par identifiant") mais lève désormais `XGlassAuthError` après les deux tentatives.
+- `auth()` vérifie réellement le succès de la connexion (URL finale après redirections) au lieu de retourner une réponse jamais inspectée, et lève `XGlassAuthError`/`VSFAuthError` en cas d'échec — voir [Authentification des portails](#authentification-des-portails) pour le détail des deux mécanismes.
 - Les recherches (`searchImmatriculation`, `searchBaseEurocode`, `getPieceAm`) distinguent "recherche légitimement sans résultat" (`[]`, comportement inchangé) d'une vraie erreur portail, qui remonte en `odoo.exceptions.UserError` — visible nativement par l'utilisateur via l'infrastructure JSON-RPC standard d'Odoo.
 - Côté widget, `runAsync()` (`utils.js`) affiche désormais une notification (service Odoo `notification`, type `danger`) en plus du `console.error` existant.
 
-**Point d'attention** : le retrait du bug de transmission des kwargs de `XGLASS.post()` (qui ignorait silencieusement `verify`/`allow_redirects`) a nécessité de retirer `allow_redirects=False` de l'appel de login pour préserver le comportement réel de détection de succès — à valider par un test manuel contre le portail réel avant mise en production.
+## Authentification des portails
+
+Comportements vérifiés contre les portails réels (transcriptions HTTP obtenues via `debug_portals.py`, voir ci-dessous) — ne pas « corriger » ces mécanismes sans rejouer une trace :
+
+**X'Glass** (Spring Security)
+- Le POST de login exige un `JSESSIONID` déjà posé : sans GET préalable il échoue avec `errorCode=10`. `auth()` fait donc un GET `/mainMenu.html` avant chaque tentative.
+- Une seule session par identifiant : tant qu'une session est ouverte ailleurs, le login est refusé par une redirection vers `login.html?error=password.mismatch` — **message trompeur**, identique à celui d'un mauvais mot de passe. La tentative suivante évince la session restée ouverte et aboutit : `auth()` réessaie donc exactement une fois, puis lève `XGlassAuthError`.
+- Spring rejoue après login la dernière requête refusée. Le GET préalable doit viser une page inoffensive : appeler `close()` (GET `/logout.html`) entre deux tentatives — ce que faisait l'implémentation précédente — déconnectait aussitôt le login réussi et imposait une 3ᵉ tentative pour aboutir.
+- `/rpbm_agent_auth` ferme l'agent **précédent** (qui porte encore ses cookies, donc son logout aboutit) avant d'en instancier un nouveau, ce qui libère la session portail d'un widget fermé sans passer par `/rpbm_agent_close`.
+- Le certificat TLS de `portail-xglass.com` est valide (Let's Encrypt) : aucun `verify=False` n'est nécessaire. L'ancien `verify=False` sur le login désactivait durablement la vérification pour tout le pool de connexions de la session (urllib3 mémorise `cert_reqs` par hôte), d'où les `InsecureRequestWarning` avec trace complète sur *toutes* les requêtes X'Glass suivantes.
+
+**VSF** (Laravel)
+- Succès = redirection vers l'accueil ; échec = retour sur `/identification`. Le test porte donc sur l'URL finale.
+- Ne pas tester la présence d'un champ `_token` : les pages authentifiées en contiennent un aussi (formulaire de déconnexion), ce qui faisait échouer une connexion pourtant réussie.
+
+## Débogage des portails
+
+- `controllers/portal_trace.py` — traçage HTTP branché sur les sessions `requests` des deux agents : une ligne de log par requête (méthode, URL, statut, redirection, cookies posés, durée, taille), mots de passe et jetons masqués. Inactif par défaut ; activé sur une instance via `rpbm_agent.trace` (+ `rpbm_agent.trace_dir` pour écrire le corps des réponses), relu à chaque `/rpbm_agent_auth`.
+- [`debug_portals.py`](../../debug_portals.py) (racine du module) — rejoue authentification et scraping **hors Odoo**, avec les identifiants de `.env` :
+  ```
+  python debug_portals.py                          # auth des deux portails
+  python debug_portals.py --immat DS808DZ          # + recherche véhicule
+  python debug_portals.py --portal vsf --eurocode 6539R
+  python debug_portals.py --dump trace/            # + dump du HTML reçu
+  ```
+  Attention : X'Glass n'autorisant qu'une session par identifiant, lancer ce script pendant qu'un utilisateur se sert du widget invalide sa session.
+- [`test_portal_auth.py`](../../test_portal_auth.py) — vérifie la logique d'authentification sans réseau (portails simulés d'après les traces ci-dessus) : `python test_portal_auth.py`.
 
 ## Concurrence — verrou de session
 

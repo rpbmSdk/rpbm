@@ -6,6 +6,11 @@ import json
 
 import dotenv
 
+try:
+    from . import portal_trace
+except ImportError:
+    import portal_trace
+
 _logger = logging.getLogger(__name__)
 
 dotenv.load_dotenv()
@@ -38,7 +43,7 @@ class VSFArticle:
     prix_ht: str
     prixHT: float
     promo: bool
-    stock_groupe: int
+    total_stock: str
     stock: int
     available: bool
     remiseRPBM:float
@@ -53,16 +58,18 @@ class VSFArticle:
             setattr(self, key, value)
         self.prixVente = float(self.prix_vente.removesuffix("&nbsp;€").replace(",", "."))
         self.prixHT = float(self.prix_ht.removesuffix("&nbsp;€").replace(",", "."))
-        self.stock_groupe = int(self.stock_groupe)
-        self.stock = int(self.stock)
+        # VSF a renommé ses champs de stock : `stock`/`stock_groupe` ont disparu
+        # de la réponse au profit de `total_stock` (chaîne) et `availability`
+        # — vérifié contre le portail réel, voir `debug_portals.py`. On conserve
+        # `stock`/`available`, consommés par ArticleComponent.xml.
+        self.stock = int(getattr(self, 'total_stock', 0) or 0)
+        self.available = self.stock > 0
         self.remiseRPBM = 0.2
         self.prixVenteRPBM = self.prixVente * (1 - self.remiseRPBM)
         # TODO : recalculer le prix de vente avec la remise RPBM
-        self.absoluteImgUrls = []
-        for imgUrl in self.imgUrls:
-            self.absoluteImgUrls.append(f"{VSF_BASE_URL}{imgUrl}")
-        
-        pass
+        # imgUrls est absent quand l'article n'a pas de ligne correspondante
+        # dans la page de résultats (voir searchEurocodeArticlesClient).
+        self.absoluteImgUrls = [f"{VSF_BASE_URL}{u}" for u in getattr(self, 'imgUrls', [])]
 
 
 class VSFAgent:
@@ -73,6 +80,7 @@ class VSFAgent:
 
     def __init__(self):
         self.session = requests.Session()
+        portal_trace.attach(self.session, "vsf")
         self.session.headers.update(self.headers)
         # self.auth_r = self.auth()
 
@@ -106,10 +114,12 @@ class VSFAgent:
                 "customer_id": None,
             },
         )
-        # VSF réaffiche le formulaire de connexion (donc un champ _token à
-        # nouveau présent) en cas d'échec ; à reconfirmer contre le portail réel.
-        still_on_login_page = bs.BeautifulSoup(r.text, "html.parser").find("input", {"name": "_token"})
-        if r.status_code != 200 or still_on_login_page:
+        # Vérifié contre le portail réel (voir `debug_portals.py`) : en cas de
+        # succès VSF redirige vers l'accueil, en cas d'échec il réaffiche
+        # /identification. Ne pas se fier à la présence d'un champ `_token` :
+        # les pages authentifiées en contiennent un aussi (formulaire de
+        # déconnexion), ce qui faisait échouer une connexion pourtant réussie.
+        if r.status_code != 200 or r.url.rstrip("/") == VSF_LOGIN_URL:
             raise VSFAuthError("Échec de connexion à VSF : identifiants refusés ou page inattendue.")
         return r
 

@@ -9,10 +9,12 @@ import json
 from datetime import datetime
 
 try:
-    from . import xglass_lbl 
+    from . import xglass_lbl
     getLabel = xglass_lbl.getLabel
+    from . import portal_trace
 except:
     from xglass_lbl import getLabel
+    import portal_trace
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -275,6 +277,7 @@ class XGLASS:
 
     def __init__(self):
         self.session = requests.Session()
+        portal_trace.attach(self.session, "xglass")
         self.initRecherche = False
         self.selectedVehiculePage = None
         # self.auth()
@@ -294,35 +297,45 @@ class XGLASS:
             raise XGlassError(f"Erreur réseau X'Glass (POST {url}) : {e}") from e
 
     def auth(self, XGLASS_USER:str, XGLASS_PASS:str):
-        self.get(XGLASS_URL)
+        """Ouvre une session X'Glass, en évinçant au besoin une session restée
+        ouverte côté portail.
+
+        Comportement du portail vérifié contre l'instance réelle (voir
+        `debug_portals.py`) :
+        - le POST de login exige un JSESSIONID préalable, sinon il échoue avec
+          `errorCode=10` — d'où le GET qui précède chaque tentative ;
+        - X'Glass n'autorise qu'une session par identifiant : tant qu'une
+          session est ouverte ailleurs, le login est refusé avec un message
+          trompeur (`error=password.mismatch`, identique à un mauvais mot de
+          passe). La tentative suivante, elle, évince la session restée
+          ouverte et aboutit — d'où la reprise explicite ci-dessous ;
+        - Spring rejoue après login la dernière requête refusée : le GET
+          préalable doit donc viser une page inoffensive. L'implémentation
+          précédente appelait `close()` (GET /logout.html) entre les deux
+          tentatives, ce qui déconnectait aussitôt le login réussi et
+          imposait une 3ᵉ tentative pour aboutir.
+        """
         payload = {
             "j_username": XGLASS_USER,
             "j_password": XGLASS_PASS,
             "spring-security-redirect": "/mainMenu.html",
         }
 
-        def meta_auth():
-            # NB : allow_redirects=False volontairement retiré — le test de
-            # succès ci-dessous a besoin que la redirection soit suivie
-            # jusqu'à sa destination finale pour fonctionner (à reconfirmer
-            # contre le portail réel avant mise en prod).
-            return self.post(
-                XGLASS_LOGIN_URL,
-                data=payload,
-                verify=False,
-            )
-        _logger.info('First login')
-        r = meta_auth()
-        _logger.info(f'res return url {r.request.url}')
+        def login():
+            self.get(XGLASS_MAIN_URL)
+            r = self.post(XGLASS_LOGIN_URL, data=payload)
+            _logger.info("Login X'Glass : %s", r.url)
+            return r.url == XGLASS_MAIN_URL
 
-        if r.request.url != XGLASS_MAIN_URL:
-            self.close()
-            _logger.info('Second login')
-            r = meta_auth()
-            _logger.info(f'res return url {r.request.url}')
-        if r.request.url != XGLASS_MAIN_URL:
-            raise XGlassAuthError("Connexion X'Glass refusée après deux tentatives.")
-        return
+        if login():
+            return
+        _logger.info("Login X'Glass refusé (session déjà ouverte côté portail ?), reprise")
+        if login():
+            return
+        raise XGlassAuthError(
+            "Connexion X'Glass refusée après deux tentatives : identifiants "
+            "invalides, ou session encore ouverte côté portail."
+        )
 
     def close(self):
         # Best-effort : un échec de déconnexion ne doit jamais faire planter l'appelant.
@@ -362,8 +375,7 @@ class XGLASS:
     
     def searchVehiculeImmat(self, immatriculation: str = "DS808DZ") -> list[XGlassVehicule]:
         data = self.searchImmat(immatriculation)
-        print(data)
-        _logger.info(data)
+        _logger.debug("searchImmat %s : %s", immatriculation, data)
         listeDeVariantes = data.get('regroupementVariantes')[0].get('listeDeVariante')
         return [XGlassVehicule(**v) for v in listeDeVariantes]
 

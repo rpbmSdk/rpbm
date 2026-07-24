@@ -31,6 +31,9 @@ import dotenv
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 dotenv.load_dotenv(ENV_PATH)
 
+PROJECT_ENV_PATH = Path(__file__).resolve().parent.parent / ".env.local"
+dotenv.load_dotenv(PROJECT_ENV_PATH)
+
 CREDENTIAL_KEYS = ["XGLASS_USER", "XGLASS_PASS", "VSF_LOGIN", "VSF_PASSWORD"]
 
 
@@ -43,6 +46,7 @@ def _get_or_prompt(key: str, secret: bool = False) -> str:
 
 def main() -> None:
     print(f"Lecture depuis {ENV_PATH} (variables d'environnement / saisie manuelle en secours).")
+    print(f"Lecture depuis {PROJECT_ENV_PATH} (variables d'environnement / saisie manuelle en secours).")
 
     odoo_url = _get_or_prompt("ODOO_URL").rstrip("/")
     odoo_db = _get_or_prompt("ODOO_DB")

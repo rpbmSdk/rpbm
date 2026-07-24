@@ -9,6 +9,7 @@ from odoo.http import Controller, request, route
 import logging
 import base64
 
+from . import portal_trace
 from . import vsf
 from . import xglass
 from .vsf import VSFError
@@ -122,27 +123,34 @@ class AgentController(Controller):
         global vsfAgent
         global xglassAgent
         acquire_agent_lock(request.env)
+        _logger.info("rpbm_agent_auth")
+        params = request.env['ir.config_parameter'].sudo()
+        portal_trace.configure(
+            params.get_param('rpbm_agent.trace') in ('1', 'true', 'True'),
+            params.get_param('rpbm_agent.trace_dir'),
+        )
+        VSF_LOGIN = params.get_param('VSF_LOGIN')
+        VSF_PASSWORD = params.get_param('VSF_PASSWORD')
+        XGLASS_USER = params.get_param('XGLASS_USER')
+        XGLASS_PASS = params.get_param('XGLASS_PASS')
+        # Déconnecte la session portail précédente *avant* de repartir de zéro :
+        # l'agent encore en mémoire porte ses cookies, donc son logout aboutit.
+        # (Fermer un agent fraîchement construit, comme auparavant, ne
+        # déconnectait rien et laissait la session traîner côté X'Glass.)
+        xglassAgent.close()
         vsfAgent = vsf.VSFAgent()
         xglassAgent = xglass.XGLASS()
-        _logger.info("rpbm_agent_auth")
-        VSF_LOGIN = request.env['ir.config_parameter'].sudo().get_param('VSF_LOGIN')
-        VSF_PASSWORD = request.env['ir.config_parameter'].sudo().get_param('VSF_PASSWORD')
-        XGLASS_USER = request.env['ir.config_parameter'].sudo().get_param('XGLASS_USER')
-        XGLASS_PASS = request.env['ir.config_parameter'].sudo().get_param('XGLASS_PASS')
-        xglassAgent.close()
+        # Pas de nouvelle tentative ici : XGLASS.auth() gère déjà la reprise
+        # d'une session restée ouverte côté portail.
         try:
             xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
         except XGlassError:
-            _logger.exception("Échec de connexion à X'Glass (1ère tentative), nouvel essai")
-            try:
-                xglassAgent.auth(XGLASS_USER, XGLASS_PASS)
-            except XGlassError:
-                _logger.exception("Échec de connexion à X'Glass (2ᵉ tentative)")
-                release_agent_lock(request.env)
-                raise UserError(_(
-                    "Connexion au portail X'Glass impossible. Vérifiez les identifiants "
-                    "configurés, ou réessayez dans quelques instants."
-                ))
+            _logger.exception("Échec de connexion à X'Glass")
+            release_agent_lock(request.env)
+            raise UserError(_(
+                "Connexion au portail X'Glass impossible. Vérifiez les identifiants "
+                "configurés, ou réessayez dans quelques instants."
+            ))
         try:
             vsfAgent.auth(VSF_LOGIN, VSF_PASSWORD)
         except VSFError:
