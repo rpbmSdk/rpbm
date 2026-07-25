@@ -5,12 +5,12 @@ Modèle porteur de l'Ordre de Vente. Les champs eurocode/immatriculation sont de
 | Champ | Type | Related → | Origine | Rôle |
 |---|---|---|---|---|
 | `x_studio_immatriculation_` | char | `opportunity_id.x_studio_field_NVioD` | Studio (existant) | Immatriculation |
-| `x_studio_vehicle_id` | many2one → `fleet.vehicle` | — | `pre_init_hook` (nouveau) | Véhicule Odoo lié, lié à celui de la piste |
-| `x_studio_categorie_xglass` | char | — | `pre_init_hook` (nouveau) | Catégorie X'Glass, liée à celle de la piste |
+| `x_studio_vehicle_id` | many2one → `fleet.vehicle` | `opportunity_id.x_studio_vehicle_id` | `pre_init_hook` + migration | Véhicule Odoo lié, recopié depuis la piste |
+| `x_studio_categorie_xglass` | char | `opportunity_id.x_studio_categorie_xglass` | `pre_init_hook` + migration | Catégorie X'Glass, recopiée depuis la piste |
 | `x_studio_base_eurocode` | char | `opportunity_id.x_studio_field_ORIyy` | Studio (existant) | Base Eurocode — nom technique différent de celui de la piste, voir [crm-lead.md](crm-lead.md#structure-des-3-champs-eurocode) |
 | `x_studio_eurocode_joint` | char | `opportunity_id.x_studio_eurocode_joint` | Studio (existant) | Eurocode du joint |
 
-Note : `x_studio_vehicle_id`/`x_studio_categorie_xglass` sur `sale.order` sont des champs **indépendants** (pas `related`) — ils sont écrits séparément par le widget lors de la confirmation, pas automatiquement synchronisés depuis la piste liée.
+Les deux champs X'Glass suivent la convention de l'instance : l'opportunité est la source et le devis les lit via des champs `related` stockés. La migration `17.0.260725.6` remplace les anciens champs indépendants uniquement s'ils sont vides ; elle bloque l'upgrade au lieu d'effacer une valeur inattendue.
 
 ## `product.product`/`product.supplierinfo` créés depuis un article VSF
 

@@ -354,6 +354,11 @@ une vraie question de conception qui ne se résout pas par une simple table de c
 
 #### L1.2.a — Aligner `x_studio_vehicle_id`/`x_studio_categorie_xglass` sur la convention `related`
 
+> **Implémenté (2026-07-25)** — les nouvelles installations créent les deux champs `related`
+> stockés ; la migration `17.0.260725.6` recrée les champs existants seulement s'ils sont vides,
+> sinon elle bloque l'upgrade pour éviter toute perte de données. À vérifier en live après
+> déploiement.
+
 **Problème.** Cause racine (D). Ces deux champs sont les seuls du module créés comme paires
 indépendantes `crm.lead`/`sale.order` par `pre_init_hook`, alors que tout le reste de
 l'instance (immatriculation, les deux eurocodes, « Pièce concernée », « Pièce Trouvée »,

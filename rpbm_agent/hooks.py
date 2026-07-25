@@ -2,53 +2,144 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-# (modèle, nom du champ, description, ttype, relation)
-# Champs x_studio_* consommés par le widget/controller et manquants sur au moins
-# une instance connue (voir docs/technique/champs/ pour le détail complet).
+# Champs x_studio_* consommes par le widget/controller et manquants sur au
+# moins une instance connue (voir docs/technique/champs/ pour le detail
+# complet). Les champs sale.order lies a l'opportunite sont stockes afin de
+# suivre la convention Studio existante de l'instance.
 #
 # Volontairement absent de cette liste : crm.lead.x_studio_base_eurocode — le
-# widget cible le champ Studio déjà existant x_studio_field_ORIyy (voir
+# widget cible le champ Studio deja existant x_studio_field_ORIyy (voir
 # static/src/agent_widget_dialog_crm_lead.js), pas un nouveau champ disjoint
-# qui dupliquerait la notion de "Base Eurocode" sur ce modèle.
+# qui dupliquerait la notion de "Base Eurocode" sur ce modele.
 FIELDS_TO_ENSURE = [
-    ("fleet.vehicle", "x_studio_detail_model", "Détail du modèle", "char", None),
-    ("fleet.vehicle", "x_studio_date_mec", "Date de mise en circulation", "date", None),
-    ("crm.lead", "x_studio_vehicle_id", "Véhicule", "many2one", "fleet.vehicle"),
-    ("crm.lead", "x_studio_categorie_xglass", "Catégorie X'Glass", "char", None),
-    ("sale.order", "x_studio_vehicle_id", "Véhicule", "many2one", "fleet.vehicle"),
-    ("sale.order", "x_studio_categorie_xglass", "Catégorie X'Glass", "char", None),
-    ("product.product", "x_studio_reference_constructeur", "Référence constructeur", "char", None),
+    {
+        "model": "fleet.vehicle",
+        "name": "x_studio_detail_model",
+        "description": "D\u00e9tail du mod\u00e8le",
+        "ttype": "char",
+    },
+    {
+        "model": "fleet.vehicle",
+        "name": "x_studio_date_mec",
+        "description": "Date de mise en circulation",
+        "ttype": "date",
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_studio_vehicle_id",
+        "description": "V\u00e9hicule",
+        "ttype": "many2one",
+        "relation": "fleet.vehicle",
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_studio_categorie_xglass",
+        "description": "Cat\u00e9gorie X'Glass",
+        "ttype": "char",
+    },
+    {
+        "model": "sale.order",
+        "name": "x_studio_vehicle_id",
+        "description": "V\u00e9hicule",
+        "ttype": "many2one",
+        "relation": "fleet.vehicle",
+        "related": "opportunity_id.x_studio_vehicle_id",
+        "store": True,
+    },
+    {
+        "model": "sale.order",
+        "name": "x_studio_categorie_xglass",
+        "description": "Cat\u00e9gorie X'Glass",
+        "ttype": "char",
+        "related": "opportunity_id.x_studio_categorie_xglass",
+        "store": True,
+    },
+    {
+        "model": "product.product",
+        "name": "x_studio_reference_constructeur",
+        "description": "R\u00e9f\u00e9rence constructeur",
+        "ttype": "char",
+    },
 ]
 
 
-def pre_init_hook(env):
-    """Crée les champs x_studio_* manquants avant le chargement des vues du
-    module, qui les référencent (voir docs/technique/configuration.md).
+def _field_values(env, field_spec):
+    vals = {
+        "name": field_spec["name"],
+        "model_id": env["ir.model"]._get_id(field_spec["model"]),
+        "field_description": field_spec["description"],
+        "ttype": field_spec["ttype"],
+        "state": "manual",
+    }
+    for attribute in ("relation", "related", "store"):
+        if attribute in field_spec:
+            vals[attribute] = field_spec[attribute]
+    return vals
 
-    context={'studio': True} fait passer le champ créé par le mixin
-    web_studio.studio_mixin (Enterprise) s'il est installé : celui-ci trace
-    automatiquement le champ comme une customisation Studio (ir.model.data
-    rattaché au module studio_customization), exactement comme s'il avait été
-    créé à la main dans Studio — il survit donc à une désinstallation de ce
-    module. Sans web_studio, ce contexte est ignoré sans erreur.
+
+def _recreate_related_sale_order_fields(env):
+    """Remplace les anciens champs independants par des related stockes.
+
+    Une migration ne doit jamais effacer une valeur inattendue : le controle
+    explicite bloque l'upgrade si une instance possede des donnees a traiter.
     """
     Fields = env["ir.model.fields"].sudo().with_context(studio=True)
-    IrModel = env["ir.model"].sudo()
-
-    for model_name, field_name, description, ttype, relation in FIELDS_TO_ENSURE:
-        if Fields.search_count([("model", "=", model_name), ("name", "=", field_name)]):
-            _logger.info("rpbm_agent: %s.%s déjà présent, ignoré", model_name, field_name)
+    related_specs = [
+        spec
+        for spec in FIELDS_TO_ENSURE
+        if spec["model"] == "sale.order" and spec.get("related")
+    ]
+    for field_spec in related_specs:
+        field = Fields.search(
+            [("model", "=", field_spec["model"]), ("name", "=", field_spec["name"])],
+            limit=1,
+        )
+        if field and field.related == field_spec["related"] and field.store:
             continue
+        if field:
+            used_count = env[field_spec["model"]].with_context(active_test=False).search_count(
+                [(field_spec["name"], "!=", False)]
+            )
+            if used_count:
+                raise RuntimeError(
+                    "rpbm_agent: impossible de recreer %s.%s : %s valeur(s) existante(s)"
+                    % (field_spec["model"], field_spec["name"], used_count)
+                )
+            field.unlink()
+        Fields.create(_field_values(env, field_spec))
+        _logger.info(
+            "rpbm_agent: %s.%s recree comme related vers %s",
+            field_spec["model"],
+            field_spec["name"],
+            field_spec["related"],
+        )
 
-        vals = {
-            "name": field_name,
-            "model_id": IrModel._get_id(model_name),
-            "field_description": description,
-            "ttype": ttype,
-            "state": "manual",
-        }
-        if relation:
-            vals["relation"] = relation
 
-        Fields.create(vals)
-        _logger.info("rpbm_agent: %s.%s créé (pre_init_hook)", model_name, field_name)
+def pre_init_hook(env):
+    """Cree les champs x_studio_* manquants avant le chargement des vues.
+
+    context={'studio': True} fait passer le champ cree par le mixin
+    web_studio.studio_mixin (Enterprise) s'il est installe : celui-ci trace
+    automatiquement le champ comme une customisation Studio (ir.model.data
+    rattache au module studio_customization), exactement comme s'il avait ete
+    cree a la main dans Studio — il survit donc a une desinstallation de ce
+    module. Sans web_studio, ce contexte est ignore sans erreur.
+    """
+    Fields = env["ir.model.fields"].sudo().with_context(studio=True)
+
+    for field_spec in FIELDS_TO_ENSURE:
+        if Fields.search_count(
+            [("model", "=", field_spec["model"]), ("name", "=", field_spec["name"])]
+        ):
+            _logger.info(
+                "rpbm_agent: %s.%s deja present, ignore",
+                field_spec["model"],
+                field_spec["name"],
+            )
+            continue
+        Fields.create(_field_values(env, field_spec))
+        _logger.info(
+            "rpbm_agent: %s.%s cree (pre_init_hook)",
+            field_spec["model"],
+            field_spec["name"],
+        )
