@@ -106,6 +106,23 @@ def release_agent_lock(env):
     cr.commit()
 
 
+def has_active_agent_lock(env):
+    """Indique si l'appelant possède encore la session portail.
+
+    La création Odoo d'un véhicule ne doit pas dépendre de ce verrou : les
+    données métier nécessaires sont déjà envoyées par le widget. En revanche,
+    le téléchargement facultatif de l'image X'Glass ne peut être tenté que
+    pendant une session portail encore détenue par l'appelant.
+    """
+    state = _lock_row(env.cr)
+    if not state or state.get('uid') != env.uid:
+        return False
+    try:
+        return datetime.now(timezone.utc) - datetime.fromisoformat(state['touched_at']) <= AGENT_LOCK_TIMEOUT
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
 def _touch_agent_lock(f):
     """À placer directement sous @route, pour que le UserError levé ici ne
     soit jamais avalé par le try/except propre à certaines routes."""
@@ -205,10 +222,14 @@ class AgentController(Controller):
             return False
 
     @route('/createVehicule', auth='user', type='json')
-    @_touch_agent_lock
     def createVehicule(self,immatriculation:str, partner_id:int, vehicule_info:dict={}, vehicule_meta:dict={}):
         """
             Permet de créer un véhicule en BDD de Odoo
+
+            Cette route crée avant tout un enregistrement Odoo. Elle ne doit
+            pas échouer si un client obsolète a déjà fermé la session X'Glass :
+            l'image portail est facultative et les autres données ont déjà été
+            reçues dans ``vehicule_info``.
         """
         _logger.info(f"getVehicule {vehicule_info}")
         vehicule = xglass.XGlassVehicule(**vehicule_info)
@@ -256,17 +277,29 @@ class AgentController(Controller):
                     'name': vehicule.energieLibelle,
                     'value': vehicule.energieLibelle,
                 })
-            # Download the image from xglass
+            # L'image X'Glass est un enrichissement facultatif. Après la
+            # fermeture de la session portail, on crée tout de même le véhicule
+            # sans image plutôt que de transformer un cache d'asset frontend en
+            # erreur bloquante de création.
             image = False
-            if vehicule.imgUrl:
-                response = xglassAgent.get(vehicule.imgUrl)
-                if response.status_code == 200:
-                    # image = image_process(response.content, verify_resolution=True)
-                    # image = response.content
-                    image = base64.b64encode(response.content).replace(b"\n", b"")
-                else:
-                    _logger.warning(response.text)
-                    _logger.warning(f"Image not found for {vehicule.imgUrl}")
+            if vehicule.imgUrl and has_active_agent_lock(request.env):
+                try:
+                    response = xglassAgent.get(vehicule.imgUrl)
+                    xglassAgent.ensure_logged(response)
+                    if response.status_code == 200:
+                        image = base64.b64encode(response.content).replace(b"\n", b"")
+                    else:
+                        _logger.warning("Image X'Glass introuvable pour %s", vehicule.imgUrl)
+                except XGlassError:
+                    _logger.warning(
+                        "Image X'Glass indisponible pour %s ; véhicule créé sans image",
+                        immatriculation,
+                    )
+            elif vehicule.imgUrl:
+                _logger.info(
+                    "Session X'Glass déjà fermée : véhicule %s créé sans image",
+                    immatriculation,
+                )
             vehicule = request.env['fleet.vehicle'].create({
                 'driver_id': partner_id,
                 'model_id': modele.id,

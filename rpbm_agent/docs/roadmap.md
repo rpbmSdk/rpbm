@@ -276,10 +276,13 @@ d'implémenter [L1.3](#l13).
 
 ### L1.0 — Corriger l'ordonnancement de `onConfirm()` : créer avant de fermer {#l10}
 
-> **Implémenté (2026-07-25)** dans `static/src/agent_widget_dialog.js` — à **vérifier en live
-> après déploiement** sur `rpbm-pre-prod` (le module n'a pas de harnais de test JS ; la
-> vérification est le rejeu du parcours qui échouait). Nettoyage connexe (retrait des
-> `onConfirm()` des sous-classes qui ne font qu'appeler `super`) laissé à [L3.4](#l3).
+> **Correctif client implémenté (2026-07-25)** dans `static/src/agent_widget_dialog.js`, mais
+> le rejeu live a montré qu'un asset frontend obsolète pouvait encore appeler
+> `/rpbm_agent_close` avant `/createVehicule`. **Correctif serveur complémentaire implémenté
+> (2026-07-25)** dans `controllers/main.py` : la création Odoo ne dépend plus du verrou ni de
+> la session X'Glass ; seule l'image est ignorée si la session est déjà fermée. À vérifier en
+> live après déploiement. Nettoyage connexe (retrait des `onConfirm()` des sous-classes qui ne
+> font qu'appeler `super`) laissé à [L3.4](#l3).
 
 **Priorité maximale — bug bloquant confirmé en live (voir [§0 ①](#0-résultats-du-diagnostic-l01--l02-2026-07-25)).**
 C'est *le* défaut qui met à zéro toutes les écritures du widget sur `crm.lead`.
