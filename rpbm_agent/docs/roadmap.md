@@ -49,13 +49,12 @@ Les 4 champs sont **acceptés** par le Record (le many2one `x_studio_vehicle_id`
 l'id 3), tous présents dans la vue `crm.lead`. L'hypothèse « un champ absent de la vue est
 silencieusement ignoré » est donc **fausse** ici : le blocage est le bug ① en amont.
 
-**③ Le save final passe par la validation standard du formulaire.** `record.update()` rend le
-formulaire *dirty* mais ne sauvegarde pas ; l'enregistrement effectif est soumis aux
-contraintes du formulaire CRM. Sur la piste de test, le save était bloqué par deux champs
-**requis** vides sans rapport avec le widget (`x_studio_moyen_1er_contact` « Moyen 1er
-Contact », `x_studio_field_VGmbJ` « Comment Connu ? »). Sur une vraie piste ces champs sont
-remplis, donc sans impact — mais à noter : **les données du widget restent non sauvegardées
-tant que le formulaire n'est pas valide** (pas de feedback dédié côté widget).
+**③ Enregistrement explicite du widget — amélioré (2026-07-25).** `record.update()` reporte
+bien les valeurs dans le formulaire, mais ne les enregistre pas. Le bouton **Confirmer**
+conserve ce comportement : l'utilisateur peut continuer à compléter la fiche avant son save
+normal. Le bouton **Confirmer et enregistrer** ajoute un save natif Odoo sans navigation ni
+rechargement du formulaire ; il applique donc les validations habituelles, y compris les champs
+requis hors périmètre du widget.
 
 **④ Connexion portail X'Glass intermittente depuis Odoo.sh (fiabilité).** Au 1ᵉʳ essai,
 `/rpbm_agent_auth` a échoué (`RemoteDisconnected: Remote end closed connection without
@@ -280,9 +279,11 @@ d'implémenter [L1.3](#l13).
 > le rejeu live a montré qu'un asset frontend obsolète pouvait encore appeler
 > `/rpbm_agent_close` avant `/createVehicule`. **Correctif serveur complémentaire implémenté
 > (2026-07-25)** dans `controllers/main.py` : la création Odoo ne dépend plus du verrou ni de
-> la session X'Glass ; seule l'image est ignorée si la session est déjà fermée. À vérifier en
-> live après déploiement. Nettoyage connexe (retrait des `onConfirm()` des sous-classes qui ne
-> font qu'appeler `super`) laissé à [L3.4](#l3).
+> la session X'Glass ; seule l'image est ignorée si la session est déjà fermée. **Complément de
+> persistance implémenté (2026-07-25)** : le widget propose désormais **Confirmer et enregistrer**
+> en plus de **Confirmer** ; il s'appuie sur le save natif Odoo sans navigation ni rechargement
+> du formulaire. À vérifier en live après déploiement. Nettoyage connexe (retrait des `onConfirm()`
+> des sous-classes qui ne font qu'appeler `super`) laissé à [L3.4](#l3).
 
 **Priorité maximale — bug bloquant confirmé en live (voir [§0 ①](#0-résultats-du-diagnostic-l01--l02-2026-07-25)).**
 C'est *le* défaut qui met à zéro toutes les écritures du widget sur `crm.lead`.

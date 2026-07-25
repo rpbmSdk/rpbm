@@ -258,7 +258,13 @@ export class AgentWidgetDialog extends asyncWidget {
         return data;
     }
 
-    async onConfirm() {
+    /**
+     * Reporte les valeurs dans le formulaire, puis les enregistre seulement
+     * lorsque l'utilisateur le demande explicitement.
+     *
+     * @param {boolean} save sauvegarde via le mécanisme natif du formulaire
+     */
+    async confirmRecord(save = false) {
         // L1.0 — créer le véhicule / écrire les champs AVANT de fermer la session portail.
         // closeAgents() relâche le verrou de concurrence (les routes sont décorées
         // @_touch_agent_lock) ET déconnecte X'Glass ; or getRecordData() → createVehicule a
@@ -270,6 +276,15 @@ export class AgentWidgetDialog extends asyncWidget {
         await this.runAsync(async () => {
             const data = await this.getRecordData();
             await this.props.record.update(data);
+            if (save) {
+                // Record.save({ reload: false }) persiste sans navigation ni
+                // rechargement du formulaire. Il applique la validation Odoo
+                // habituelle, y compris les éventuels champs requis hors widget.
+                const saved = await this.props.record.save({ reload: false });
+                if (!saved) {
+                    throw new Error("Le formulaire n'a pas pu être enregistré. Complétez les champs requis puis réessayez.");
+                }
+            }
             await this.closeAgents();
             done = true;
         }, "Enregistrement en cours...");
@@ -279,6 +294,14 @@ export class AgentWidgetDialog extends asyncWidget {
         if (done) {
             this.props.close();
         }
+    }
+
+    async onConfirm() {
+        await this.confirmRecord();
+    }
+
+    async onConfirmAndSave() {
+        await this.confirmRecord(true);
     }
 
     async onDiscard() {
