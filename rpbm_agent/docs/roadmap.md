@@ -17,6 +17,84 @@ zéro du §1 sont donc une ligne de base, pas une régression.
 
 ---
 
+## 0. Résultats du diagnostic L0.1 / L0.2 (2026-07-25)
+
+Parcours complet rejoué sur `rpbm-pre-prod` via le MCP `chrome-devtools` (capture réseau +
+console), sur une piste de test jetable (plaque `DS808DZ`, supprimée après). Le traçage
+portail serveur n'a pas été nécessaire : la capture réseau navigateur donne directement les
+réponses JSON-RPC de chaque route. **La cause racine des compteurs à zéro est identifiée —
+un bug de code, pas un problème d'environnement.**
+
+**① Cause n°1 des écritures à zéro — ordonnancement du verrou dans `onConfirm()` (bloquant,
+nouveau).** `AgentWidgetDialog.onConfirm()` appelle `await this.closeAgents()` **avant**
+`getRecordData()`. Or `closeAgents()` → `/rpbm_agent_close` → `release_agent_lock()` (libère
+le verrou) **et** `xglassAgent.close()` (déconnecte la session X'Glass). Ensuite
+`getRecordData()` appelle `/createVehicule`, qui est décoré `@_touch_agent_lock` **et** a
+besoin de la session X'Glass vivante (il télécharge l'image véhicule via `xglassAgent.get()`).
+Résultat observé : `createVehicule` échoue **systématiquement** avec `UserError: "Votre
+session a expiré ou a été reprise par un autre utilisateur"`. Sur `crm.lead`, la création de
+véhicule au Confirm ne peut donc **jamais** aboutir → explique directement `fleet.vehicle = 0`
+et `x_studio_vehicle_id = 0`. De plus `onConfirm()` n'a **pas de `try/catch`** : l'échec
+remonte en `RPC_ERROR` non géré (handler global Odoo) au lieu de la notification typée du
+widget. → **[L1.0](#l10)**, priorité maximale.
+
+**② Le reste du chemin d'écriture fonctionne — hypothèse L0.2 « champs ignorés » écartée.**
+En pré-créant le `fleet.vehicle` (pour que `getRecordData` saute `createVehicule`), le Confirm
+aboutit : `record.update()` envoie les **4 champs** et l'`onchange` renvoie un succès —
+```json
+{"x_studio_field_NVioD":"DS808DZ","x_studio_vehicle_id":3,
+ "x_studio_categorie_xglass":"PARE-BRISE","x_studio_field_ORIyy":"6539R"}
+```
+Les 4 champs sont **acceptés** par le Record (le many2one `x_studio_vehicle_id` est bien lié à
+l'id 3), tous présents dans la vue `crm.lead`. L'hypothèse « un champ absent de la vue est
+silencieusement ignoré » est donc **fausse** ici : le blocage est le bug ① en amont.
+
+**③ Le save final passe par la validation standard du formulaire.** `record.update()` rend le
+formulaire *dirty* mais ne sauvegarde pas ; l'enregistrement effectif est soumis aux
+contraintes du formulaire CRM. Sur la piste de test, le save était bloqué par deux champs
+**requis** vides sans rapport avec le widget (`x_studio_moyen_1er_contact` « Moyen 1er
+Contact », `x_studio_field_VGmbJ` « Comment Connu ? »). Sur une vraie piste ces champs sont
+remplis, donc sans impact — mais à noter : **les données du widget restent non sauvegardées
+tant que le formulaire n'est pas valide** (pas de feedback dédié côté widget).
+
+**④ Connexion portail X'Glass intermittente depuis Odoo.sh (fiabilité).** Au 1ᵉʳ essai,
+`/rpbm_agent_auth` a échoué (`RemoteDisconnected: Remote end closed connection without
+response` sur `GET portail-xglass.com/mainMenu.html`) ; le 2ᵉ essai a réussi. Le portail
+répond depuis un autre réseau (vérifié) → ce n'est pas une panne portail mais une instabilité
+de la liaison Odoo.sh↔portail (IP datacenter filtrée par intermittence, vraisemblablement).
+La gestion d'erreur typée, elle, **fonctionne parfaitement en live** (XGlassError → UserError
+→ notification propre). Un parcours à 11 appels séquentiels est fragile face à cette
+instabilité — un léger *retry* réseau sur les `GET` X'Glass mériterait d'être évalué. À noter
+aussi : le débogage d'auth du 2026-07-24 (`debug_portals.py`) tournait **en local**, pas
+depuis Odoo.sh — d'où le fait que cette instabilité n'avait pas été vue.
+
+**⑤ Doubles appels confirmés en live** (réseau) : `getPlanche` ×2, `getPieces` ×2,
+`searchBaseEurocode` ×2 (onchange + clic bouton). `getVehiculeMeta` n'a tiré qu'une fois ici
+(un seul véhicule candidat — la course [L1.1](#l11) nécessite ≥ 2 candidats), mais le double
+`getPlanche` est bien visible. Confirme [L1.1](#l11), [L2.5](#l25)/L2.6.
+
+**⑥ `VSFArticle` sans champ `id` confirmé** dans le payload réel (`searchBaseEurocode` renvoie
+`code`/`name`/`refConstructeur`/`prixVente`/`prixHT`/`stock`/`prixVenteRPBM`/`absoluteImgUrls`,
+jamais d'`id`) → la sélection/surbrillance ([L1.3](#l13) prérequis, [L2.3](#l23)) est bien
+cassée.
+
+**⑦ `getPieceAm` peut renvoyer `[]`** (pièce OE sans pièce après-marché) → pas de déduction
+auto d'eurocode, saisie manuelle nécessaire. Le parcours le gère, mais la déduction auto n'est
+pas garantie.
+
+**⑧ Preuve directe pour [L1.2.b](#l12) et [L0.4](#l04) — libellés de calques réels.** La
+planche du HYUNDAI I20 remonte ~25 calques : `PARE-BRISE`, `GLACE AR`, `GLACE PORTE AR/AV`,
+`GLACE FIXE PORTE AR`, `GLACE RETROVISEUR`, mais aussi `FEU AR`, `PHARE`, `PHARE AB/LP`,
+`RETROVISEUR EXT/INTERIEUR`, `ESSUIE-GLACE AV/AR`, `MECANISME ESSUIE-GLACE(-AR)`,
+`TOIT OUVRANT`, `LEVE-GLACE PORTE AV/AR`, `ECLAIREUR PLAQUE POLICE`, `FEU REPETITEUR LATERAL`,
+`FEU STOP SUPPLEMENTAIRE`, `NECESSAIRE MONTAGE`, `JT/LECHEUR PORTE AV/AR`,
+`JT/ENJOLIVEUR PARE-BRISE`. **La grande majorité ne correspond à aucune des 4 valeurs de
+« Pièce concernée »** (`Pare-Brise`/`Lunette arrière`/`Glace Latérale`/`Autre...`), et `GLACE AR`
+est ambigu (lunette ou latérale ?). Confirme qu'un mapping automatique est intenable et valide
+l'approche « suggérer + faire valider » de [L1.2.b](#l12).
+
+---
+
 ## 1. Ligne de base (instance `rpbm-pre-prod`)
 
 Compteurs relevés le 2026-07-24. Colonne de gauche : ce que les équipes saisissent à la
@@ -99,13 +177,14 @@ en saisies assistées. L2 rend ce gain utilisable au quotidien. **L4 est une pis
 non bloquante** : elle ne conditionne pas L0/L1/L2/L3 et peut démarrer indépendamment
 (atelier métier), mais sa cartographie a intérêt à réutiliser celle de L0.4.
 
-| Lot | Objet | Effort |
-|---|---|---|
-| **L0** | Diagnostic bout-en-bout **+ cartographie des champs Studio** | M |
-| **L1** | Transfert vers Odoo — cible des champs, séquencement, écriture | L |
-| **L2** | UI/UX du widget | M |
-| **L3** | Hygiène : sécurité, configuration, dette résiduelle | M |
-| **L4** | Refonte du calcul du prix sur les mécanismes natifs Odoo — initiative séparée | XL |
+| Lot | Objet | Effort | État |
+|---|---|---|---|
+| **L0.1/L0.2** | Diagnostic bout-en-bout instrumenté | S | **Fait** (2026-07-25, voir [§0](#0-résultats-du-diagnostic-l01--l02-2026-07-25)) |
+| **L0.4** | Cartographie des champs Studio + `base.automation` | M | à faire |
+| **L1** | Transfert vers Odoo — cible des champs, séquencement, écriture | L | L1.0 identifié comme bloquant n°1 |
+| **L2** | UI/UX du widget | M | à faire |
+| **L3** | Hygiène : sécurité, configuration, dette résiduelle | M | à faire |
+| **L4** | Refonte du calcul du prix sur les mécanismes natifs Odoo — initiative séparée | XL | atelier métier |
 
 ---
 
@@ -187,6 +266,48 @@ d'implémenter [L1.3](#l13).
 ---
 
 ## L1 — Transfert vers Odoo
+
+### L1.0 — Corriger l'ordonnancement de `onConfirm()` : créer avant de fermer {#l10}
+
+**Priorité maximale — bug bloquant confirmé en live (voir [§0 ①](#0-résultats-du-diagnostic-l01--l02-2026-07-25)).**
+C'est *le* défaut qui met à zéro toutes les écritures du widget sur `crm.lead`.
+
+**Problème.** `AgentWidgetDialog.onConfirm()` :
+```js
+async onConfirm() {
+    await this.closeAgents();               // libère le verrou + logout X'Glass
+    const data = await this.getRecordData(); // → createVehicule : besoin du verrou ET de X'Glass
+    this.props.record.update(data);         // (non await)
+    this.props.close();
+}
+```
+`closeAgents()` est appelé **trop tôt** : il relâche le verrou (`@_touch_agent_lock` fait alors
+échouer `createVehicule`) et déconnecte X'Glass (dont `createVehicule` a besoin pour
+télécharger l'image). Échec systématique.
+
+**Correctif minimal.** Réordonner : construire les données (donc créer le véhicule) **avant**
+de fermer la session, envelopper dans `runAsync` (gestion d'erreur + notification, cf. le
+bug « pas de try/catch »), et n'appeler `closeAgents()` qu'à la fin :
+```js
+async onConfirm() {
+    await this.runAsync(async () => {
+        const data = await this.getRecordData();  // createVehicule pendant que la session vit
+        this.props.record.update(data);
+        await this.closeAgents();                 // libère verrou + X'Glass une fois fini
+        this.props.close();
+    });
+}
+```
+Attention à ne fermer/`close()` **que** si `getRecordData()` a réussi (sinon laisser la dialog
+ouverte pour réessai, verrou conservé). Vérifier aussi l'`onDiscard()` (lui appelle bien
+`closeAgents()` en premier, ce qui est correct puisqu'il n'écrit rien).
+
+**Fichiers.** `static/src/agent_widget_dialog.js` (+ `onConfirm` des sous-classes, qui ne font
+qu'appeler `super`).
+
+**Vérification.** Sur une piste sans véhicule Odoo préexistant : Confirm → un `fleet.vehicle`
+créé, `x_studio_vehicle_id` renseigné, **aucun** `RPC_ERROR` « session expirée ». C'est le
+scénario exact qui échouait au diagnostic.
 
 ### L1.1 — Supprimer la course sur la sélection véhicule X'Glass {#l11}
 
@@ -460,7 +581,7 @@ s'affiche sur **tous** les articles.
 **Vérification.** Sur une piste avec ≥ 2 articles VSF, une action sur l'un ne fait pas
 tourner le spinner des autres.
 
-### L2.5 — Uniformiser les retours de chargement
+### L2.5 — Uniformiser les retours de chargement {#l25}
 
 Certaines actions passent par `runAsync` (spinner + message), d'autres appellent la méthode
 brute : le bouton « Charger les pièces » appelle `getPieces` directement
