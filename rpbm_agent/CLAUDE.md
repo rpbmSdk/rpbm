@@ -6,6 +6,10 @@ Avant toute modification, consulter [`docs/etat-des-lieux.md`](docs/etat-des-lie
 
 Les travaux en cours sur l'UI et le transfert vers Odoo suivent [`docs/roadmap.md`](docs/roadmap.md), par lots ordonnés (L0 diagnostic → L1 transfert → L2 UI → L3 hygiène). Mettre à jour l'état des items au fur et à mesure des implémentations.
 
+## Déploiement : bumper la version du manifest
+
+**À chaque modification destinée à être déployée** (JS, XML, Python), incrémenter `version` dans [`__manifest__.py`](__manifest__.py) — sinon Odoo.sh ne recharge pas le module (surtout les assets JS/XML mis en cache). Format `17.0.AAMMJJ.N` (date + compteur du jour) : ex. `17.0.260725.1`. Le faire **systématiquement** avant de committer une modif à déployer.
+
 ## Débogage des portails X'Glass / VSF
 
 Ne jamais raisonner de mémoire sur le comportement des portails : rejouer une trace HTTP réelle avec [`debug_portals.py`](debug_portals.py) (`python debug_portals.py --immat DS808DZ --dump trace/`), qui trace chaque requête via `controllers/portal_trace.py`. Les mécanismes déjà vérifiés de cette manière (session unique X'Glass, rejeu de requête Spring, détection de succès VSF) sont documentés dans [`docs/technique/configuration.md`](docs/technique/configuration.md#authentification-des-portails) — les modifier sans nouvelle trace fait régresser l'authentification. `python test_portal_auth.py` vérifie cette logique sans réseau.
@@ -18,3 +22,5 @@ Pour exécuter `controllers/vsf.py` / `controllers/xglass.py` en standalone (hor
 - `VSF_LOGIN`, `VSF_PASSWORD` — identifiants du portail VSF
 
 Ne jamais afficher, logger ou recopier le contenu de ce fichier. En production (exécution via Odoo), ces mêmes identifiants sont configurés en tant que `ir.config_parameter` — voir [`docs/technique/configuration.md`](docs/technique/configuration.md) et [`push_credentials.py`](push_credentials.py) pour les pousser automatiquement depuis ce même `.env`.
+
+Le même `.env` contient aussi le **login web de l'instance de dév/staging** (`RPBM_DEV_WEB_URL`/`RPBM_DEV_WEB_LOGIN`/`RPBM_DEV_WEB_PASSWORD`, compte de test dédié) pour la connexion navigateur lors des vérifications via `chrome-devtools`. À distinguer du compte MCP XML-RPC (`RPBM_USERNAME`/`RPBM_PASSWORD` dans `~/.paradigme/.env`, avec clé API — inutilisable pour le login web). Ne jamais afficher ces identifiants.

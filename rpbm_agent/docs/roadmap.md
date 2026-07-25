@@ -180,7 +180,7 @@ non bloquante** : elle ne conditionne pas L0/L1/L2/L3 et peut démarrer indépen
 | Lot | Objet | Effort | État |
 |---|---|---|---|
 | **L0.1/L0.2** | Diagnostic bout-en-bout instrumenté | S | **Fait** (2026-07-25, voir [§0](#0-résultats-du-diagnostic-l01--l02-2026-07-25)) |
-| **L0.4** | Cartographie des champs Studio + `base.automation` | M | à faire |
+| **L0.4** | Cartographie des champs Studio + `base.automation` | M | **Fait** ([`docs/cartographie/`](../../docs/cartographie/README.md)) |
 | **L1** | Transfert vers Odoo — cible des champs, séquencement, écriture | L | L1.0 identifié comme bloquant n°1 |
 | **L2** | UI/UX du widget | M | à faire |
 | **L3** | Hygiène : sécurité, configuration, dette résiduelle | M | à faire |
@@ -210,6 +210,13 @@ sont la cible de référence pour chaque donnée normalisée.
 test, ou un diagnostic écrit expliquant pourquoi ça n'arrive pas.
 
 ### L0.4 — Cartographie complète des champs Studio `crm.lead` / `sale.order` {#l04}
+
+> **Fait (2026-07-25).** Livrée dans [`docs/cartographie/`](../../docs/cartographie/README.md)
+> (à la racine du dépôt) : inventaire exhaustif généré (`crm-lead.md` 265 champs, `sale-order.md`
+> 87), [`automatisations.md`](../../docs/cartographie/automatisations.md) (7 `base.automation`),
+> [`calques-mapping.md`](../../docs/cartographie/calques-mapping.md), et migration de
+> `prix-devis/`. Deux découvertes ont rétroagi sur L1 (voir L1.3 `refConstructeur`, L1.6
+> « Tarif x glass »). Le reste de cette section documente le cahier des charges initial.
 
 **Objet.** Livrable documentaire autonome, condition d'entrée de L1 : sans savoir quel champ
 porte réellement quelle donnée, « normaliser » revient à créer une série parallèle de plus.
@@ -268,6 +275,11 @@ d'implémenter [L1.3](#l13).
 ## L1 — Transfert vers Odoo
 
 ### L1.0 — Corriger l'ordonnancement de `onConfirm()` : créer avant de fermer {#l10}
+
+> **Implémenté (2026-07-25)** dans `static/src/agent_widget_dialog.js` — à **vérifier en live
+> après déploiement** sur `rpbm-pre-prod` (le module n'a pas de harnais de test JS ; la
+> vérification est le rejeu du parcours qui échouait). Nettoyage connexe (retrait des
+> `onConfirm()` des sous-classes qui ne font qu'appeler `super`) laissé à [L3.4](#l3).
 
 **Priorité maximale — bug bloquant confirmé en live (voir [§0 ①](#0-résultats-du-diagnostic-l01--l02-2026-07-25)).**
 C'est *le* défaut qui met à zéro toutes les écritures du widget sur `crm.lead`.
@@ -433,13 +445,18 @@ sur le même principe que `baseEurocodeField` déjà surchargé par `CrmLead`/`S
 | `code` | `x_studio_field_NwRik` | `x_studio_eurocode_complet` | Eurocode (Complet) |
 | `name` | `x_studio_field_j8eh3` | `x_studio_vsf_dsignation_1` | VSF - Désignation |
 | `stock` | `x_studio_field_BKtpw` | `x_studio_vsf_qt_dispo` | VSF - Qté Dispo |
-| `refConstructeur` | `x_studio_field_e6OAd` | **aucun miroir trouvé** | Autre Référence |
+| `refConstructeur` | `x_studio_field_e6OAd` **ou `_MNzfJ`** ⚠ | **aucun miroir trouvé** | Autre Référence / Code Constructeur |
 | `prixVenteRPBM` | `x_studio_field_F0zf7` | `x_studio_vsf_prix_vit_1` | VSF - Prix VIT ⚠ voir ci-dessous |
 
-`refConstructeur` n'a pas de champ `related` équivalent sur `sale.order` aujourd'hui — à
-trancher en [L0.4](#l04) : soit le widget n'écrit ce champ que depuis une Opportunité (gap
-mineur assumé), soit un nouveau champ `related` est créé sur `sale.order` pour parité avec
-le reste (même mécanisme que [L1.2.a](#l12)).
+> ⚠ **`refConstructeur` : cible à corriger (constat L0.4).** `x_studio_field_e6OAd`
+> « Autre Référence » n'est rempli que **43 fois** sur 10 364 pistes, alors que
+> `x_studio_field_MNzfJ` « Code Constructeur » l'est **3 411 fois** — c'est ce dernier que le
+> métier utilise réellement pour cette donnée. Cibler `MNzfJ` (à confirmer avec le métier), pas
+> `e6OAd`. Voir [cartographie/crm-lead.md](../../docs/cartographie/crm-lead.md).
+
+`refConstructeur` n'a pas de champ `related` équivalent sur `sale.order` aujourd'hui — soit le
+widget n'écrit ce champ que depuis une Opportunité (gap mineur assumé), soit un nouveau champ
+`related` est créé sur `sale.order` pour parité (même mécanisme que [L1.2.a](#l12)).
 
 Ne **jamais** écrire `x_studio_field_HJIi5` (Prix XGlass HT) ni `x_studio_field_h06UD`
 (RV Pièce) : vérifié `readonly=True` sur l'instance, ce sont des champs calculés.
@@ -519,11 +536,18 @@ puis force `newLine.dirty = true` — contournement d'API fragile, et la ligne n
 quantité explicite, ni le prix X'Glass alors que `sale.order.line.x_studio_prix_x_glass`
 existe sur l'instance. Le bouton « Enlever » appelle `addToSaleOrder()` (il ajoute).
 
+> **`x_studio_prix_x_glass` a un effet tarifaire automatique (constat L0.4).** Une
+> `base.automation` « Tarif x glass » (`on_create_or_write`, filtre `x_studio_prix_x_glass != 0`)
+> force `price_unit = x_studio_prix_x_glass × 1.5` sur la ligne. Renseigner ce champ **est**
+> donc le mécanisme de tarification de la ligne, pas une donnée d'affichage — à intégrer
+> explicitement (le prix unitaire n'est pas à poser à la main, l'automatisation s'en charge).
+> Voir [cartographie/automatisations.md](../../docs/cartographie/automatisations.md).
+
 **Correctif minimal.** Passer par l'API standard de la liste éditable (`addNewRecord` puis
-`update()` sur les champs, en laissant les `onchange` Odoo calculer prix et taxes),
-renseigner `x_studio_prix_x_glass` depuis la pièce OE sélectionnée si disponible, et
-**supprimer** le bouton « Enlever » (l'implémenter réellement est hors périmètre : la
-suppression de ligne existe déjà dans la liste du devis).
+`update()` sur les champs, en laissant les `onchange` Odoo calculer taxes),
+renseigner `x_studio_prix_x_glass` depuis la pièce OE sélectionnée (l'automatisation « Tarif x
+glass » en dérive le prix unitaire), et **supprimer** le bouton « Enlever » (l'implémenter
+réellement est hors périmètre : la suppression de ligne existe déjà dans la liste du devis).
 
 **Fichiers.** `static/src/agent_widget_dialog_sale_order.js` + template.
 

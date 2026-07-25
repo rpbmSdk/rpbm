@@ -248,13 +248,26 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async onConfirm() {
-        await this.closeAgents();
-
-        const data = await this.getRecordData();
-        console.log(data);
-
-        this.props.record.update(data);
-        this.props.close();
+        // L1.0 — créer le véhicule / écrire les champs AVANT de fermer la session portail.
+        // closeAgents() relâche le verrou de concurrence (les routes sont décorées
+        // @_touch_agent_lock) ET déconnecte X'Glass ; or getRecordData() → createVehicule a
+        // besoin des deux (le verrou, et la session vivante pour télécharger l'image véhicule).
+        // L'ancien ordre (close puis write) faisait échouer createVehicule à chaque fois.
+        // runAsync gère l'erreur (notification) : si getRecordData échoue, on NE ferme PAS —
+        // la dialog reste ouverte pour réessai, le verrou est conservé.
+        let done = false;
+        await this.runAsync(async () => {
+            const data = await this.getRecordData();
+            await this.props.record.update(data);
+            await this.closeAgents();
+            done = true;
+        }, "Enregistrement en cours...");
+        // close() hors du runAsync : il détruit le composant, or runAsync met à jour l'état
+        // (stopLoading) après le callback — fermer ici évite un update sur composant détruit.
+        // On ne ferme que si tout a réussi ; sinon la dialog reste ouverte pour réessai.
+        if (done) {
+            this.props.close();
+        }
     }
 
     async onDiscard() {
