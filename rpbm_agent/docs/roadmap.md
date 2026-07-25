@@ -323,6 +323,9 @@ scénario exact qui échouait au diagnostic.
 
 ### L1.1 — Supprimer la course sur la sélection véhicule X'Glass {#l11}
 
+> **Implémenté (2026-07-25)** — à vérifier en live après déploiement : les métadonnées sont
+> désormais chargées uniquement pour le véhicule sélectionné, puis transmises à sa carte.
+
 **Problème.** `VehiculeComponent.setup()` déclenche `getVehiculeMeta()` en `onWillStart`
 pour chaque véhicule candidat ; la route appelle `getPlanche()` → `selectVehicule()` côté
 portail, état global de la session. N candidats = N sélections concurrentes, puis la

@@ -78,9 +78,20 @@ export class AgentWidgetDialog extends asyncWidget {
 
         useEffect(() => {
             if (this.selectedVehicule) {
-                this.onGetPlanche();
+                const vehiculeId = this.selectedVehicule.id;
+                this.runAsync(async () => {
+                    // L1.1 — getVehiculeMeta() sélectionne un véhicule côté portail X'Glass.
+                    // La session portail est globale : sérialiser cette sélection avec le
+                    // chargement de la planche évite qu'une autre carte véhicule ne remplace
+                    // l'état entre les deux appels.
+                    await this.getVehiculeMeta(vehiculeId);
+                    if (this.selectedVehicule?.id === vehiculeId) {
+                        await this.getPlanche(vehiculeId);
+                    }
+                }, "Chargement du véhicule en cours...");
             }
             else {
+                this.state.vehiculeMeta = undefined;
                 this.state.planche = undefined;
             }
         }, () => [this.selectedVehicule])
@@ -356,32 +367,32 @@ export class AgentWidgetDialog extends asyncWidget {
         })
     }
 
-    // /**
-    //  * @returns {VehiculeMeta}
-    //  * */
-    // get vehiculeMeta() {
-    //     return this.state.vehiculeMeta;
-    // }
+    /**
+     * @returns {VehiculeMeta|undefined}
+     */
+    get vehiculeMeta() {
+        return this.state.vehiculeMeta;
+    }
 
-    // async getVehiculeMeta() {
-    //     const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
-    //         vehiculeId: this.selectedVehicule.id,
-    //     })
-    //     console.log(res);
-    //     this.state.vehiculeMeta = res;
-    //     return res;
-    // }
+    async getVehiculeMeta(vehiculeId = this.selectedVehicule.id) {
+        const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
+            vehiculeId,
+        });
+        if (this.selectedVehicule?.id === vehiculeId) {
+            this.state.vehiculeMeta = res;
+        }
+        return res;
+    }
 
 
 
-    async getPlanche() {
-        // await this.getVehiculeMeta();
+    async getPlanche(vehiculeId = this.selectedVehicule.id) {
         const res = await this.rpc("/getPlanche", {
-            vehiculeId: this.selectedVehicule.id,
+            vehiculeId,
         })
-        // console.log(res);
-        this.state.planche = res;
-        // this.calques.forEach(calque => console.log(calque.libelle))
+        if (this.selectedVehicule?.id === vehiculeId) {
+            this.state.planche = res;
+        }
         return res;
     }
 

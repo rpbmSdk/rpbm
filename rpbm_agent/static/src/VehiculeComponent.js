@@ -11,9 +11,8 @@ export class VehiculeComponent extends asyncWidget {
         ...asyncWidget.props,
         immatriculation: { type: String, optional: true },
         vehicule: { type: Object },
+        vehiculeMeta: { type: Object, optional: true },
         selectedVehiculeId: { type: Number },
-        // vehiculeMeta: { type: Object, optional: true },
-        // onSelectVehicule: {type: Function},
     }
     static template = "rpbm_agent.VehiculeComponent";
 
@@ -23,12 +22,9 @@ export class VehiculeComponent extends asyncWidget {
             ...this.state,
             vehiculeExists: false,
             vehiculeId: undefined,
-            vehiculeMeta: undefined,
             vehiculeOdoo: undefined,
         });
         onWillStart(() => {
-            // this.runAsync(this.getOdooVehicule());
-            this.getVehiculeMeta();
             this.getOdooVehicule()
         })
     }
@@ -52,24 +48,13 @@ export class VehiculeComponent extends asyncWidget {
      * @returns {VehiculeMeta}
      * */
     get vehiculeMeta() {
-        return this.state.vehiculeMeta;
+        return this.props.vehiculeMeta;
     }
 
     
     get vehiculeOdoo() {
         return this.state.vehiculeOdoo;
     }
-
-    async getVehiculeMeta() {
-        const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
-            vehiculeId: this.props.vehicule.id,
-        })
-        console.log(res);
-        this.state.vehiculeMeta = res;
-        return res;
-    }
-
-
     getOdooVehicule() {
         console.log("getOdooVehicule");
         this.runAsync(async () => {
