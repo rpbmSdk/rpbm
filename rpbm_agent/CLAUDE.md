@@ -4,6 +4,8 @@ Documentation complète du module : voir [`docs/README.md`](docs/README.md) (fon
 
 Avant toute modification, consulter [`docs/etat-des-lieux.md`](docs/etat-des-lieux.md) — liste les incohérences connues (duplications, code mort, valeurs hardcodées) pour éviter de les reproduire ou de les aggraver.
 
+Les travaux en cours sur l'UI et le transfert vers Odoo suivent [`docs/roadmap.md`](docs/roadmap.md), par lots ordonnés (L0 diagnostic → L1 transfert → L2 UI → L3 hygiène). Mettre à jour l'état des items au fur et à mesure des implémentations.
+
 ## Débogage des portails X'Glass / VSF
 
 Ne jamais raisonner de mémoire sur le comportement des portails : rejouer une trace HTTP réelle avec [`debug_portals.py`](debug_portals.py) (`python debug_portals.py --immat DS808DZ --dump trace/`), qui trace chaque requête via `controllers/portal_trace.py`. Les mécanismes déjà vérifiés de cette manière (session unique X'Glass, rejeu de requête Spring, détection de succès VSF) sont documentés dans [`docs/technique/configuration.md`](docs/technique/configuration.md#authentification-des-portails) — les modifier sans nouvelle trace fait régresser l'authentification. `python test_portal_auth.py` vérifie cette logique sans réseau.

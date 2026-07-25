@@ -15,6 +15,7 @@ Index de la documentation du module. À maintenir à jour à chaque évolution f
 - [`technique/configuration.md`](technique/configuration.md) — paramètres système, champs Studio (création automatique via `pre_init_hook`), dépendances Python, déploiement.
 - [`technique/champs/README.md`](technique/champs/README.md) — référence complète des champs Odoo (`x_studio_*` et standards) par modèle porteur : type, related, origine (`pre_init_hook` ou Studio), champs obsolètes.
 
-## Audit
+## Audit & pilotage
 
 - [`etat-des-lieux.md`](etat-des-lieux.md) — fonctionnalités implémentées, cohérence technique et métier, optimisation UI/UX, recommandations priorisées.
+- [`roadmap.md`](roadmap.md) — travaux à mener sur l'UI et le transfert vers Odoo, ordonnés par lots (L0 diagnostic → L1 transfert → L2 UI → L3 hygiène), établis sur les données réelles de l'instance.

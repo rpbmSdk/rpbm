@@ -1,6 +1,8 @@
 __pycache__
 *.pyc
 *.json
+!.vscode/
+!.vscode/settings.json
 .env
 Jobs/**/*.js
 *.csv
@@ -10,3 +12,7 @@ Jobs
 !Jobs/Gestion Stock/
 !Jobs/Gestion Stock/**
 
+.env.local
+rpbm_agent/push_credentials.py
+Jobs/Gestion Stock/__pycache__/prepare_migration_files.cpython-310.pyc
+.venv/
