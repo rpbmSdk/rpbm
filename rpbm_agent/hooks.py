@@ -77,11 +77,22 @@ def _field_values(env, field_spec):
     return vals
 
 
-def _recreate_related_sale_order_fields(env):
-    """Remplace les anciens champs independants par des related stockes.
+def _related_field_values(field_spec):
+    """Retourne les proprietes modifiables pour un champ related existant."""
+    vals = {"field_description": field_spec["description"]}
+    for attribute in ("relation", "related", "store"):
+        if attribute in field_spec:
+            vals[attribute] = field_spec[attribute]
+    return vals
 
-    Une migration ne doit jamais effacer une valeur inattendue : le controle
-    explicite bloque l'upgrade si une instance possede des donnees a traiter.
+
+def _align_related_sale_order_fields(env):
+    """Aligne les champs existants de sale.order sans les supprimer.
+
+    Les vues, y compris les vues Studio, referencent ces champs pendant une
+    migration. Les supprimer rendrait donc temporairement les vues invalides.
+    Une valeur stockee dans un ancien champ independant bloque l'upgrade pour
+    eviter qu'un changement de semantique ne l'ecrase.
     """
     Fields = env["ir.model.fields"].sudo().with_context(studio=True)
     related_specs = [
@@ -97,18 +108,33 @@ def _recreate_related_sale_order_fields(env):
         if field and field.related == field_spec["related"] and field.store:
             continue
         if field:
-            used_count = env[field_spec["model"]].with_context(active_test=False).search_count(
-                [(field_spec["name"], "!=", False)]
-            )
-            if used_count:
+            if (
+                field.ttype != field_spec["ttype"]
+                or field.relation != field_spec.get("relation")
+            ):
                 raise RuntimeError(
-                    "rpbm_agent: impossible de recreer %s.%s : %s valeur(s) existante(s)"
-                    % (field_spec["model"], field_spec["name"], used_count)
+                    "rpbm_agent: impossible d'aligner %s.%s : definition incompatible"
+                    % (field_spec["model"], field_spec["name"])
                 )
-            field.unlink()
-        Fields.create(_field_values(env, field_spec))
+            if field.related and field.related != field_spec["related"]:
+                raise RuntimeError(
+                    "rpbm_agent: impossible d'aligner %s.%s : related existant incompatible"
+                    % (field_spec["model"], field_spec["name"])
+                )
+            if not field.related:
+                used_count = env[field_spec["model"]].with_context(active_test=False).search_count(
+                    [(field_spec["name"], "!=", False)]
+                )
+                if used_count:
+                    raise RuntimeError(
+                        "rpbm_agent: impossible d'aligner %s.%s : %s valeur(s) existante(s)"
+                        % (field_spec["model"], field_spec["name"], used_count)
+                    )
+            field.write(_related_field_values(field_spec))
+        else:
+            Fields.create(_field_values(env, field_spec))
         _logger.info(
-            "rpbm_agent: %s.%s recree comme related vers %s",
+            "rpbm_agent: %s.%s aligne comme related vers %s",
             field_spec["model"],
             field_spec["name"],
             field_spec["related"],

@@ -2,9 +2,9 @@
 
 from odoo import SUPERUSER_ID, api
 
-from odoo.addons.rpbm_agent.hooks import _recreate_related_sale_order_fields
+from odoo.addons.rpbm_agent.hooks import _align_related_sale_order_fields
 
 
 def migrate(cr, installed_version):
     env = api.Environment(cr, SUPERUSER_ID, {})
-    _recreate_related_sale_order_fields(env)
+    _align_related_sale_order_fields(env)
