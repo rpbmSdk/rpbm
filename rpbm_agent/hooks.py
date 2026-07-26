@@ -108,9 +108,10 @@ def _align_related_sale_order_fields(env):
         if field and field.related == field_spec["related"] and field.store:
             continue
         if field:
+            expected_relation = field_spec.get("relation") or False
             if (
                 field.ttype != field_spec["ttype"]
-                or field.relation != field_spec.get("relation")
+                or (field.relation or False) != expected_relation
             ):
                 raise RuntimeError(
                     "rpbm_agent: impossible d'aligner %s.%s : definition incompatible"
