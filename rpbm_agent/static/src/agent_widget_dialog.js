@@ -62,6 +62,7 @@ export class AgentWidgetDialog extends asyncWidget {
             selectedPiece: undefined,
             piecesAm: [],
             selectedPieceAm: undefined,
+            showPieceAccessories: false,
             baseEurocode: undefined,
             articlesVsf: [],
             selectedArticleVsf: undefined,
@@ -478,6 +479,7 @@ export class AgentWidgetDialog extends asyncWidget {
     clearSelectedPiece() {
         this.state.selectedPiece = undefined;
         this.state.selectedPieceAm = undefined;
+        this.state.showPieceAccessories = false;
         this.state.baseEurocode = undefined;
         this.state.articlesVsf = [];
         this.state.selectedArticleVsf = undefined;
@@ -516,6 +518,12 @@ export class AgentWidgetDialog extends asyncWidget {
         // que OWL rerend aussi les pièces après-marché nouvellement reçues.
         this.state.pieces = [...this.pieces];
         return res;
+    }
+
+    onTogglePieceAccessories() {
+        if (this.selectedPiece?.PiecesAM?.length) {
+            this.state.showPieceAccessories = !this.state.showPieceAccessories;
+        }
     }
 
     onSelectPieceAM(pieceAmId) {

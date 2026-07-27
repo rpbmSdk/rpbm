@@ -56,7 +56,11 @@
                                         <span class="badge text-bg-primary">Pièce sélectionnée</span>
                                         <strong>Détails pour : <t t-esc="piece.pieceOe.libelle"/></strong>
                                     </div>
-                                    <div class="row g-2">
+                                    <button class="btn btn-outline-primary btn-sm mb-3" t-on-click="onTogglePieceAccessories">
+                                        <t t-if="state.showPieceAccessories">Masquer les accessoires compatibles</t>
+                                        <t t-else="">Voir les accessoires compatibles</t>
+                                    </button>
+                                    <div t-if="state.showPieceAccessories" class="row g-2">
                                         <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAm.id">
                                             <div class="col-12 col-md-6">
                                                 <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAm.id)"/>
@@ -82,7 +86,7 @@
                         <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
                             <div class="col-12 col-lg-6">
                                 <div class="d-flex flex-wrap gap-2">
-                                    <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)"/>
+                                    <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>this.onClickArticleVsf(articleVsf.code)"/>
                                     <a t-att-href="articleVsf.url" target="_blank" class="btn btn-outline-primary align-self-start">Fiche technique</a>
                                     <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
                                         <img t-att-src="absoluteImgUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px;"/>
