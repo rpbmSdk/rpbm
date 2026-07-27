@@ -56,11 +56,7 @@
                                         <span class="badge text-bg-primary">Pièce sélectionnée</span>
                                         <strong>Détails pour : <t t-esc="piece.pieceOe.libelle"/></strong>
                                     </div>
-                                    <button class="btn btn-outline-primary btn-sm mb-3" t-on-click="onTogglePieceAccessories">
-                                        <t t-if="state.showPieceAccessories">Masquer les accessoires compatibles</t>
-                                        <t t-else="">Voir les accessoires compatibles</t>
-                                    </button>
-                                    <div t-if="state.showPieceAccessories" class="row g-2">
+                                    <div class="row g-2">
                                         <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAm.id">
                                             <div class="col-12 col-md-6">
                                                 <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAm.id)"/>
