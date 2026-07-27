@@ -6,8 +6,9 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <notebook position="inside">
-                <page name="rpbm_agent_xglass" string="Véhicule (X'Glass)">
+                <page name="rpbm_agent_xglass" string="Véhicule (X'Glass)" invisible="not opportunity_id">
                     <group>
+                        <field name="opportunity_id" invisible="1"/>
                         <widget name="rpbm_agent_widget"/>
                         <field name="x_studio_vehicle_id"/>
                         <field name="x_studio_categorie_xglass"/>

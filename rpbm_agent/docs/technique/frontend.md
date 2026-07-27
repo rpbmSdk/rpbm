@@ -46,7 +46,10 @@ classDiagram
     Component <|-- PieceAMComponent
 ```
 
-`asyncWidget` (`utils.js`) est la classe de base fournissant les services `rpc`/`orm`, l'accès à `record`, et `runAsync(fn, message)` — wrapper try/catch qui bascule `state.loading` avant/après l'appel. **La gestion d'erreur de `runAsync` se limite à `console.error(e)`**, sans notification utilisateur.
+`asyncWidget` (`utils.js`) est la classe de base fournissant le service `rpc`, l'accès à
+`record`, et `runAsync(fn, message)` — wrapper try/catch qui bascule un état de chargement
+**propre à chaque composant** avant/après l'appel et affiche une notification Odoo en cas
+d'erreur.
 
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 
@@ -101,7 +104,9 @@ flowchart TD
     EUC --> SB["onSearchBaseEurocode() → GET /searchBaseEurocode"]
 ```
 
-Un `useEffect` séparé recalcule `state.canConfim` (sic) à chaque changement de `selectedVehicule`/`planche`/`selectedCalque`/`baseEurocode`, mais **cette valeur n'est branchée à aucun élément du template** (`t-att-disabled` commenté avec un `<!-- FIXME -->` explicite sur le bouton "Confirm").
+Un `useEffect` séparé recalcule `state.canConfirm` à chaque changement de véhicule ou de
+catégorie. Les boutons « Confirmer » et « Confirmer et enregistrer » restent désactivés tant
+que ces deux sélections ne sont pas présentes.
 
 ## Table des appels serveur
 
@@ -112,7 +117,7 @@ Un `useEffect` séparé recalcule `state.canConfim` (sic) à chaque changement d
 | `searchImmatriculation()` | `AgentWidgetDialog` | `/searchImmatriculation` | Recherche véhicule(s) par plaque |
 | `getOdooVehicule()` | `AgentWidgetDialog` **et** `VehiculeComponent` | `/getOdooVehicule` | Véhicule Odoo existant (appelé en double, voir [état des lieux](../etat-des-lieux.md)) |
 | `createOdooVehicule()` / `onClickCreateVehicule()` | `AgentWidgetDialog` et `VehiculeComponent` | `/createVehicule` | Création du véhicule |
-| `getVehiculeMeta()` | `VehiculeComponent` uniquement (code équivalent commenté dans la dialog) | `/rbm_agent/getVehiculeMeta` | VIN/CNIT/date MEC |
+| `getVehiculeMeta()` | `AgentWidgetDialog` pour le seul véhicule sélectionné | `/rpbm_agent/getVehiculeMeta` | VIN/CNIT/date MEC |
 | `getPlanche()` | `AgentWidgetDialog` | `/getPlanche` | Catégories/calques disponibles |
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce |
@@ -123,4 +128,9 @@ Un `useEffect` séparé recalcule `state.canConfim` (sic) à chaque changement d
 
 ## Écriture finale
 
-`AgentWidgetDialog.onConfirm()` construit un objet `data` (via `getRecordData()`) et appelle **`this.props.record.update(data)`** — mise à jour en mémoire du `Record` Odoo standard. L'écriture effective en base se fait ensuite via le mécanisme de sauvegarde standard du formulaire Odoo (bouton "Enregistrer"), pas via un `orm.write` explicite du module. Le service `orm` est injecté (`useService("orm")`) dans plusieurs classes mais n'est en réalité jamais appelé — tous les échanges passent par `rpc` vers les routes custom de `main.py`.
+`AgentWidgetDialog.onConfirm()` construit un objet `data` (via `getRecordData()`) et appelle
+**`this.props.record.update(data)`** — mise à jour en mémoire du `Record` Odoo standard.
+L'écriture effective en base se fait ensuite via le mécanisme de sauvegarde standard du
+formulaire Odoo (bouton « Enregistrer »), ou directement avec « Confirmer et enregistrer ».
+Le module n'utilise pas de `orm.write` : tous ses échanges serveur passent par `rpc` vers les
+routes custom de `main.py`.

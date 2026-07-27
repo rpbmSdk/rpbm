@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
 
     <t t-name="rpbm_agent.PieceComponent">
-        <div class="card" style="width:30%; margin: 5px;">
+        <div class="card h-100">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
                     <t t-esc="props.piece.pieceOe.libelle"/>

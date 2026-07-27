@@ -60,6 +60,12 @@ FIELDS_TO_ENSURE = [
         "description": "R\u00e9f\u00e9rence constructeur",
         "ttype": "char",
     },
+    {
+        "model": "product.template",
+        "name": "x_studio_eurocode",
+        "description": "Eurocode",
+        "ttype": "char",
+    },
 ]
 
 

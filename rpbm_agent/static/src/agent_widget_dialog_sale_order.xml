@@ -1,43 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<templates>
-
-    <t t-name="rpbm_agent.SaleOrderArticleComponent" t-inherit="rpbm_agent.ArticleComponent" t-inherit-mode="primary">
-        <xpath expr="//div[@class='card-body']" position="inside">
-            <t t-if='productExists'>
-                <p>
-                    Le produit existe en BDD
-                    <span t-on-click.stop="()=>{}">
-                        <a class="btn btn-primary" t-att-href="productOdooUrl" target="_blank">
-                        Voir
-                        </a>
-                    </span>
-
-                </p>
-                <p t-if="existsInOrder">
-                    Article déjà dans le devis
-                    <button class="btn btn-primary" t-on-click.stop="addToSaleOrder">
-                    Enlever
-                    </button>
-                </p>
-                <p t-else="">
-                    Article absent du devis
-                    <button class="btn btn-primary" t-on-click.stop="addToSaleOrder">
-                    Ajouter
-                    </button>
-                </p>
-            </t>
-            <t t-else="">
-                <button class="btn btn-primary" t-on-click.stop="createProduct">
-                    Créer
-                </button>
-            </t>
-        </xpath>
-    </t>
-
-
+<templates xml:space="preserve">
     <t t-name="rpbm_agent.SaleOrderDialog" t-inherit="rpbm_agent.AgentWidgetDialog" t-inherit-mode="primary">
-        <xpath expr="//ArticleComponent" position="replace">
-            <SaleOrderArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
+        <xpath expr="//div[@name='selected_article_actions']" position="inside">
+            <t t-if="selectedProduct">
+                <t t-if="selectedProductInOrder">
+                    <span class="ms-2">Article déjà présent dans le devis.</span>
+                </t>
+                <button t-else="" class="btn btn-primary btn-sm ms-2" t-on-click="addSelectedProductToSaleOrder">Ajouter au devis</button>
+            </t>
         </xpath>
     </t>
 </templates>

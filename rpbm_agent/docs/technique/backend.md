@@ -5,7 +5,6 @@
 ```python
 vsfAgent = vsf.VSFAgent()
 xglassAgent = xglass.XGLASS()
-VSF_PARTNER_ID = 5708
 ```
 
 `/rpbm_agent_auth` réinstancie ces deux objets puis authentifie chacun via les paramètres système `ir.config_parameter`. Voir [état de session partagée](#état-de-session-partagée) plus bas, et [verrou de concurrence](../technique/configuration.md#concurrence--verrou-de-session) pour le mécanisme qui sérialise désormais les sessions widget entre utilisateurs.
@@ -19,17 +18,17 @@ Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utili
 | `/rpbm_agent_auth` | — | Réinstancie et authentifie `vsfAgent`/`xglassAgent` depuis `ir.config_parameter` (`XGLASS_USER`, `XGLASS_PASS`, `VSF_LOGIN`, `VSF_PASSWORD`) | X'Glass, VSF, `ir.config_parameter` |
 | `/rpbm_agent_close` | — | Ferme la session X'Glass (`xglassAgent.close()`). La fermeture VSF est en commentaire et échouerait (`VSFAgent` n'a pas de méthode `close()`) | X'Glass |
 | `/searchImmatriculation` | `immatriculation: str` | Recherche véhicule(s) par plaque sur X'Glass | X'Glass |
-| `/rbm_agent/getVehiculeMeta` | `vehiculeId: str` | Réinitialise la planche (appel interne à `getPlanche`) puis retourne VIN/CNIT/date de mise en circulation | X'Glass |
+| `/rpbm_agent/getVehiculeMeta` | `vehiculeId: str` | Retourne VIN/CNIT/date de mise en circulation ; l'ancienne route `/rbm_agent/getVehiculeMeta` reste acceptée pour compatibilité | X'Glass |
 | `/getOdooVehicule` | `immatriculation: str` | Recherche un véhicule Odoo existant par plaque | `fleet.vehicle` |
 | `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle/carburant si besoin, puis le `fleet.vehicle`. L'image X'Glass est facultative et n'est tentée que si l'appelant détient encore le verrou portail. | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, `ir.model.fields`, `ir.model.fields.selection`, X'Glass (image facultative) |
 | `/getPlanche` | `vehiculeId: int` | Récupère la "planche" (catégories/calques de pièces disponibles pour le véhicule) | X'Glass |
 | `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie | X'Glass |
 | `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce, via `XGLASS.findSelectionsPiecesAmView()` | X'Glass |
 | `/searchBaseEurocode` | `baseEurocode: str` | Recherche les articles VSF correspondant à une base eurocode | VSF |
-| `/doesProductExists` | `productCode: str` | Vérifie si un article VSF est déjà un produit Odoo (`default_code`) | `product.product` |
-| `/createProduct` | `articleVsfInfo: dict` | Crée le produit + son prix fournisseur VSF | `product.product`, `product.supplierinfo` |
+| `/doesProductExists` | `articleVsfInfo: dict` | Recherche un produit par référence interne, eurocode, puis nom | `product.product`, `product.template` |
+| `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template | `product.product`, `product.template`, `product.supplierinfo` |
 
-> Note de nommage : `/rbm_agent/getVehiculeMeta` est la seule route préfixée, avec une coquille (`rbm` au lieu de `rpbm`) — signalé dans l'[état des lieux](../etat-des-lieux.md).
+La route canonique est `/rpbm_agent/getVehiculeMeta`. L'ancienne route avec la coquille `rbm` reste disponible afin de ne pas casser un asset frontend resté en cache.
 
 ## X'Glass (`controllers/xglass.py`)
 
@@ -94,7 +93,7 @@ Fichier statique : un dict `LIBS` (~1440 entrées) recopiant les libellés d'int
 - **Portail** : `https://client.myvsf.fr`, authentification formulaire classique avec jeton CSRF caché (`<input name="_token">`) + session cookie.
 - `VSFAgent` n'a **pas de méthode `close()`** (contrairement à `XGLASS`).
 - `searchEurocodeArticlesClient()` : récupère d'abord la liste d'IDs d'articles + un jeton CSRF meta depuis la page HTML de résultats, puis interroge l'endpoint AJAX `/catalogue/articles-client` (JSON), et fusionne ce JSON avec les informations extraites directement des lignes `<tr class="product-line">` de la page HTML (image, URL fiche, référence constructeur) — matching manuel sur le champ `code`.
-- `VSFArticle.__init__` calcule `prixVenteRPBM = prixVente * (1 - remiseRPBM)` avec **`remiseRPBM` hardcodée à 0.2 (20 %)**, accompagnée d'un `# TODO : recalculer le prix de vente avec la remise RPBM` laissé par le développeur. `VSFArticle` n'expose **aucun champ `id`** — seul `code` sert de clé (voir implication côté frontend dans l'[état des lieux](../etat-des-lieux.md)).
+- `VSFArticle.__init__` calcule `prixVenteRPBM = prixVente * (1 - remiseRPBM)` à partir de `rpbm_agent.vsf_discount` (défaut de compatibilité `0.2`). `VSFArticle` n'expose aucun champ `id` — seul `code` sert de clé (voir implication côté frontend dans l'[état des lieux](../etat-des-lieux.md)).
 
 Exemple de payload `VSFArticle` :
 ```json

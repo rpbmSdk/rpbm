@@ -56,6 +56,7 @@
  * @property {number} id
  * @property {string} name
  * @property {string} default_code
+ * @property {'reference_interne'|'eurocode'|'nom'|'créé'} [matched_by]
  */
 
 /**

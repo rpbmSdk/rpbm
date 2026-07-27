@@ -1,11 +1,16 @@
 /** @odoo-module **/
 
 import { useService } from "@web/core/utils/hooks";
-import { useState, Component } from "@odoo/owl";
+import { useState } from "@odoo/owl";
 import { Dialog } from '@web/core/dialog/dialog';
-import { onWillStart, useRef, useEffect } from "@odoo/owl";
+import { onWillUnmount, useEffect } from "@odoo/owl";
 
-import { asyncWidget, AbstractWidgetRecord } from "./utils";
+import {
+    asyncWidget,
+    AbstractWidgetRecord,
+    PIECE_CONCERNEE_OPTIONS,
+    suggestPieceConcernee,
+} from "./utils";
 import { VehiculeComponent } from "./VehiculeComponent";
 import { CalqueComponent } from "./CalqueComponent";
 import { PieceComponent } from "./PieceComponent";
@@ -38,12 +43,11 @@ export class AgentWidgetDialog extends asyncWidget {
     setup() {
         super.setup();
         this.rpc = useService("rpc");
-        this.orm = useService("orm");
         /** @type {AbstractWidgetRecord} */
         this.record = new AbstractWidgetRecord(this.props.record);
         this.state = useState({
             ...this.state,
-            canConfim: false,
+            canConfirm: false,
             agentsInitialized: false,
             // loading: false,
             immatriculationValue: "",
@@ -61,11 +65,24 @@ export class AgentWidgetDialog extends asyncWidget {
             baseEurocode: undefined,
             articlesVsf: [],
             selectedArticleVsf: undefined,
+            selectedProduct: undefined,
+            pieceConcernee: undefined,
+        });
+        this._agentLockReleased = false;
+        this._lastSearchedBaseEurocode = undefined;
+
+        // La croix de la dialog et Échap contournent onDiscard(). Le crochet de
+        // cycle de vie garantit que le verrou X'Glass est libéré quel que soit
+        // le moyen employé pour fermer la fenêtre.
+        onWillUnmount(() => {
+            this.closeAgents().catch((error) => {
+                console.warn("Impossible de libérer la session portail", error);
+            });
         });
 
         useEffect(() => {
-            this.state.canConfim = this.canConfirm();
-        }, () => [this.selectedVehicule, this.planche, this.selectedCalque, this.baseEurocode])
+            this.state.canConfirm = this.canConfirm();
+        }, () => [this.selectedVehicule, this.selectedCalque])
 
         useEffect(() => {
             if (this.vehicules.length === 0) {
@@ -119,7 +136,8 @@ export class AgentWidgetDialog extends asyncWidget {
                 this.state.pieces = [];
             }
             else {
-                this.getPieces();
+                this.state.pieceConcernee = suggestPieceConcernee(this.selectedCalque.libelle);
+                this.runAsync(() => this.getPieces(), "Chargement des pièces en cours...");
             }
         }, () => [this.selectedCalque])
 
@@ -142,7 +160,7 @@ export class AgentWidgetDialog extends asyncWidget {
         }, () => [this.pieces])
 
         useEffect(() => {
-            this.getSelectedPieceAm();
+            this.runAsync(() => this.getSelectedPieceAm(), "Chargement des pièces compatibles en cours...");
         }, () => [this.selectedPiece])
 
         useEffect(() => {
@@ -173,12 +191,11 @@ export class AgentWidgetDialog extends asyncWidget {
 
 
     async onWillStart() {
-        // this.toogleLoading();
-        this.runAsync(async () => {
+        await this.runAsync(async () => {
             this.setLoadingMessage("Authentification des agents en cours...");
             await this.auth_agents();
             await this.init();
-        })
+        });
     }
 
     async auth_agents() {
@@ -186,38 +203,26 @@ export class AgentWidgetDialog extends asyncWidget {
         this.state.agentsInitialized = true;
     }
 
-    async loadFromRecord() {
+    async init() {
         if (this.state.immatriculationValue) {
-            await this.onSearchImmatriculation()
-            if (this.vehicules.length > 0) {
-                this.onSelectVehicule(this.vehicules[0].id)
-                await this.getPlanche()
-                // this.calques.forEach(calque => console.log(calque.libelle))
-            }
+            await this.searchImmatriculation();
         }
     }
 
-    async init() {
-        // console.log("override me");
-        this.runAsync(async () => {
-            if (this.state.immatriculationValue) {
-                await this.searchImmatriculation()
-                // if (this.record.categorieXglass) {
-                //         const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
-                //         if (calque) {
-                //             this.onClickCalque(calque.id);
-                //         }
-                //     }
-            }
-        })
-    }
-
-    // toogleLoading() {
-    //     this.state.loading = !this.state.loading;
-    // }
-
     async closeAgents() {
-        await this.rpc("/rpbm_agent_close")
+        if (!this.agentsInitialized || this._agentLockReleased) {
+            return;
+        }
+        this._agentLockReleased = true;
+        try {
+            await this.rpc("/rpbm_agent_close")
+        }
+        catch (error) {
+            // Un nouvel essai reste possible depuis onWillUnmount ou le bouton
+            // Annuler si la requête de fermeture a échoué.
+            this._agentLockReleased = false;
+            throw error;
+        }
     }
 
     async createOdooVehicule() {
@@ -227,7 +232,6 @@ export class AgentWidgetDialog extends asyncWidget {
             vehicule_info: this.selectedVehicule,
             vehicule_meta: this.vehiculeMeta,
         })
-        console.log(res);
         if (res) {
             return await this.getOdooVehicule();
         }
@@ -250,6 +254,10 @@ export class AgentWidgetDialog extends asyncWidget {
 
         if (this.selectedCalque) {
             data[this.record.categorieXglassField] = this.selectedCalque.libelle;
+        }
+
+        if (this.pieceConcernee) {
+            data[this.record.pieceConcerneeField] = this.pieceConcernee;
         }
 
         if (this.baseEurocode) {
@@ -315,7 +323,6 @@ export class AgentWidgetDialog extends asyncWidget {
 
     onChangeImmatriculation(ev) {
         this.state.immatriculationValue = ev.target.value;
-        console.log(this.immatriculationValue);
     }
 
     async searchImmatriculation() {
@@ -327,14 +334,13 @@ export class AgentWidgetDialog extends asyncWidget {
         const res = await this.rpc("/searchImmatriculation", {
             immatriculation: this.immatriculationValue,
         })
-        console.log(res);
         this.state.vehicules = res;
     }
 
     async onSearchImmatriculation() {
-        this.runAsync(async () => {
+        await this.runAsync(async () => {
             await this.searchImmatriculation();
-        })
+        });
     }
 
     /**
@@ -365,22 +371,17 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     canConfirm() {
-        if (!this.selectedVehicule) {
-            return false;
-        }
-        return true;
+        return Boolean(this.selectedVehicule && this.selectedCalque);
     }
 
     onSelectVehicule(vehiculeId) {
         this.state.selectedVehicule = this.vehicules.find(vehicule => vehicule.id === vehiculeId);
-        console.log(this.state.selectedVehicule);
     }
 
     /**
      * @returns {Promise<OdooVehicule|boolean>}
      */
     async getOdooVehicule() {
-        console.log("getOdooVehicule");
         if (!this.selectedVehicule) {
             return false;
         }
@@ -398,7 +399,7 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async getVehiculeMeta(vehiculeId = this.selectedVehicule.id) {
-        const res = await this.rpc("/rbm_agent/getVehiculeMeta", {
+        const res = await this.rpc("/rpbm_agent/getVehiculeMeta", {
             vehiculeId,
         });
         if (this.selectedVehicule?.id === vehiculeId) {
@@ -417,13 +418,6 @@ export class AgentWidgetDialog extends asyncWidget {
             this.state.planche = res;
         }
         return res;
-    }
-
-    onGetPlanche() {
-        this.runAsync(async () => {
-            this.setLoadingMessage("Chargement de la planche en cours...");
-            await this.getPlanche();
-        })
     }
 
     /** @returns {Planche} */
@@ -452,15 +446,8 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.state.baseEurocode;
     }
 
-    onChangeCalque(ev) {
-        const calqueId = parseInt(ev.target.value);
-        this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
-        // console.log(this.selectedCalque);
-    }
     onClickCalque(calqueId) {
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
-        // console.log(this.selectedCalque);
-        this.getPieces();
     }
 
     get pieces() {
@@ -472,15 +459,11 @@ export class AgentWidgetDialog extends asyncWidget {
             plancheId: this.planche.id,
             calqueId: this.selectedCalque.id,
         })
-        // console.log(res);
         this.state.pieces = res;
-        // return res;
     }
 
     onSelectPiece(pieceId) {
         this.state.selectedPiece = this.pieces.find(piece => piece.id === pieceId);
-        // console.log(this.state.selectedPiece);
-        // this.getSelectedPieceAm();
     }
 
     get selectedPiece() {
@@ -509,62 +492,131 @@ export class AgentWidgetDialog extends asyncWidget {
             pieceId: piece.id,
             elementSitId: piece.elementSitId,
         })
-        // this.state.pi
         piece.PiecesAM = res;
+        // La propriété est enrichie en place : réassigner le tableau garantit
+        // que OWL rerend aussi les pièces après-marché nouvellement reçues.
+        this.state.pieces = [...this.pieces];
         return res;
-        console.log(res);
-        if (res.length > 0) {
-            const basePieceAm = res[0].pieceAm;
-            const reference = basePieceAm.reference;
-            this.state.baseEurocode = reference.substring(0, 5);
-            this.onSearchBaseEurocode();
-        }
-        // this.state.piecesAm = res;
     }
 
     onSelectPieceAM(pieceAmId) {
         if (this.selectedPiece && this.selectedPiece.PiecesAM) {
             this.state.selectedPieceAm = this.selectedPiece.PiecesAM.find(metaPieceAM => metaPieceAM.pieceAm.id === pieceAmId);
-            console.log(this.state.selectedPieceAm);
         }
     }
 
     onChangeBaseEurocode(ev) {
         this.state.baseEurocode = ev.target.value;
-        console.log(this.baseEurocode);
-    }
-
-    get baseEurocode() {
-        return this.state.baseEurocode
     }
 
     get articlesVsf() {
         return this.state.articlesVsf;
     }
 
-    async onSearchBaseEurocode() {
-        const res = await this.rpc("/searchBaseEurocode", {
-            baseEurocode: this.baseEurocode,
-        })
-        console.log(res);
-        this.state.articlesVsf = res;
-        // if (this.articlesVsf.length > 0) {
-        //     const baseEurocode = this.articlesVsf[0].baseEurocode;
-        // }
-        // this.state.piecesAm = res;
+    async searchBaseEurocode() {
+        const baseEurocode = (this.baseEurocode || "").trim();
+        if (!baseEurocode) {
+            this.state.articlesVsf = [];
+            this._lastSearchedBaseEurocode = undefined;
+            return;
+        }
+        if (baseEurocode === this._lastSearchedBaseEurocode) {
+            return;
+        }
+        this._lastSearchedBaseEurocode = baseEurocode;
+        try {
+            const res = await this.rpc("/searchBaseEurocode", {
+                baseEurocode,
+            });
+            this.state.articlesVsf = res;
+            this.state.selectedArticleVsf = undefined;
+        } catch (error) {
+            this._lastSearchedBaseEurocode = undefined;
+            throw error;
+        }
+    }
+
+    onSearchBaseEurocode() {
+        this.runAsync(() => this.searchBaseEurocode(), "Recherche des articles VSF en cours...");
     }
 
     get selectedArticleVsf() {
         return this.state.selectedArticleVsf;
     }
 
-    onClickArticleVsf(articleId) {
-        this.state.selectedArticleVsf = this.articlesVsf.find(article => article.id === articleId);
-        console.log(this.selectedArticleVsf);
+    get selectedProduct() {
+        return this.state.selectedProduct;
+    }
+
+    get productOdooUrl() {
+        return this.selectedProduct
+            ? `/web#id=${this.selectedProduct.id}&view_type=form&model=product.product&action=product.product_template_action`
+            : undefined;
+    }
+
+    get selectedProductMatchLabel() {
+        const labels = {
+            reference_interne: "référence interne",
+            eurocode: "eurocode",
+            nom: "nom",
+            créé: "créé à l'instant",
+        };
+        return labels[this.selectedProduct?.matched_by] || "correspondance confirmée";
+    }
+
+    get pieceConcerneeOptions() {
+        return PIECE_CONCERNEE_OPTIONS;
+    }
+
+    get pieceConcernee() {
+        return this.state.pieceConcernee;
+    }
+
+    onChangePieceConcernee(event) {
+        this.state.pieceConcernee = event.target.value;
+    }
+
+    async onClickArticleVsf(articleCode) {
+        this.state.selectedArticleVsf = this.articlesVsf.find(article => article.code === articleCode);
+        this.state.selectedProduct = undefined;
+        if (this.selectedArticleVsf) {
+            await this.runAsync(
+                () => this.findSelectedProduct(),
+                "Recherche de l'article dans Odoo en cours..."
+            );
+        }
+    }
+
+    async findSelectedProduct() {
+        const articleCode = this.selectedArticleVsf?.code;
+        if (!articleCode) {
+            return;
+        }
+        const product = await this.rpc("/doesProductExists", {
+            articleVsfInfo: this.selectedArticleVsf,
+        });
+        if (this.selectedArticleVsf?.code === articleCode) {
+            this.state.selectedProduct = product || undefined;
+        }
+    }
+
+    async createSelectedProduct() {
+        const articleCode = this.selectedArticleVsf?.code;
+        if (!articleCode) {
+            return;
+        }
+        await this.runAsync(async () => {
+            const product = await this.rpc("/createProduct", {
+                articleVsfInfo: this.selectedArticleVsf,
+            });
+            if (this.selectedArticleVsf?.code === articleCode) {
+                this.state.selectedProduct = product;
+            }
+        }, "Création du produit en cours...");
     }
 
     get selectedArticleId() {
-        return this.selectedArticleVsf ? this.selectedArticleVsf.id : 0;
+        return this.selectedArticleVsf ? this.selectedArticleVsf.code : undefined;
     }
 
 }

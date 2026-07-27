@@ -20,7 +20,9 @@ _logger = logging.getLogger(__name__)
 vsfAgent = vsf.VSFAgent()
 xglassAgent = xglass.XGLASS()
 
-VSF_PARTNER_ID = 5708
+VSF_PARTNER_PARAM = "rpbm_agent.vsf_partner_id"
+VSF_DISCOUNT_PARAM = "rpbm_agent.vsf_discount"
+DEFAULT_VSF_PARTNER_ID = 5708
 
 # --- Verrou de concurrence -------------------------------------------------
 # Le portail X'Glass n'autorise qu'une seule session active par identifiant,
@@ -123,6 +125,66 @@ def has_active_agent_lock(env):
         return False
 
 
+def _get_vsf_discount(env):
+    """Retourne la remise RPBM configurée, avec le défaut historique à 20 %."""
+    raw_value = env['ir.config_parameter'].sudo().get_param(
+        VSF_DISCOUNT_PARAM, str(vsf.DEFAULT_RPBM_DISCOUNT)
+    )
+    try:
+        discount = float(raw_value)
+    except (TypeError, ValueError) as error:
+        raise UserError(_("Le paramètre %s doit être un nombre compris entre 0 et 1.") % VSF_DISCOUNT_PARAM) from error
+    if not 0 <= discount <= 1:
+        raise UserError(_("Le paramètre %s doit être compris entre 0 et 1.") % VSF_DISCOUNT_PARAM)
+    return discount
+
+
+def _get_vsf_partner_id(env):
+    """Retourne le fournisseur VSF configuré et vérifie qu'il existe."""
+    raw_value = env['ir.config_parameter'].sudo().get_param(
+        VSF_PARTNER_PARAM, str(DEFAULT_VSF_PARTNER_ID)
+    )
+    try:
+        partner_id = int(raw_value)
+    except (TypeError, ValueError) as error:
+        raise UserError(_("Le paramètre %s doit contenir l'identifiant numérique d'un partenaire.") % VSF_PARTNER_PARAM) from error
+    if not env['res.partner'].browse(partner_id).exists():
+        raise UserError(_("Le fournisseur VSF configuré (%s) n'existe pas.") % partner_id)
+    return partner_id
+
+
+def _product_payload(product, matched_by=None):
+    """Forme de réponse partagée par la recherche et la création de produit."""
+    payload = {
+        'id': product.id,
+        'name': product.name,
+        'default_code': product.default_code,
+    }
+    if matched_by:
+        payload['matched_by'] = matched_by
+    return payload
+
+
+def _find_existing_product(env, product_code, eurocode, product_name):
+    """Recherche un produit dans l'ordre métier : référence, eurocode, nom."""
+    Product = env['product.product']
+    if product_code:
+        product = Product.search([('default_code', '=', product_code)], limit=1)
+        if product:
+            return product, 'reference_interne'
+    if eurocode:
+        product = Product.search(
+            [('product_tmpl_id.x_studio_eurocode', '=', eurocode)], limit=1
+        )
+        if product:
+            return product, 'eurocode'
+    if product_name:
+        product = Product.search([('name', '=ilike', product_name)], limit=1)
+        if product:
+            return product, 'nom'
+    return Product.browse(), None
+
+
 def _touch_agent_lock(f):
     """À placer directement sous @route, pour que le UserError levé ici ne
     soit jamais avalé par le try/except propre à certaines routes."""
@@ -197,7 +259,7 @@ class AgentController(Controller):
             _logger.exception("Erreur X'Glass lors de la recherche immatriculation %s", immatriculation)
             raise UserError(_("Recherche impossible : le portail X'Glass est inaccessible ou la session a expiré."))
 
-    @route('/rbm_agent/getVehiculeMeta', auth='user', type='json')
+    @route(['/rpbm_agent/getVehiculeMeta', '/rbm_agent/getVehiculeMeta'], auth='user', type='json')
     @_touch_agent_lock
     def getVehiculeMeta(self,vehiculeId:str):
         _logger.info(f"getVehiculeMeta {vehiculeId}")
@@ -368,60 +430,93 @@ class AgentController(Controller):
     def searchBaseEurocode(self,baseEurocode:str):
         _logger.info(f"searchBaseEurocode {baseEurocode}")
         try:
+            discount = _get_vsf_discount(request.env)
             vsfArticles = vsfAgent.searchEurocodeArticlesClient(baseEurocode)
+            for vsf_article in vsfArticles:
+                vsf_article.set_rpbm_discount(discount)
             return [vsfArticle.__dict__ for vsfArticle in vsfArticles]
         except VSFError:
             _logger.exception("Erreur VSF lors de la recherche eurocode %s", baseEurocode)
             raise UserError(_("Recherche impossible : le portail VSF est inaccessible ou la session a expiré."))
 
     @route('/doesProductExists', auth='user', type='json')
-    def doesProductExists(self,productCode:str):
-        _logger.info(f"doesProductExists {productCode}")
-        product = request.env['product.product'].search_read(
-            [('default_code', '=', productCode)], ['name', 'default_code'], limit=1)
-        return product[0] if product else False
+    def doesProductExists(self, articleVsfInfo=None, productCode=None):
+        """Cherche un produit VSF par référence interne, eurocode, puis nom.
+
+        ``productCode`` est conservé temporairement pour les anciens assets
+        frontend ; le contrat courant envoie l'article VSF complet.
+        """
+        article_info = articleVsfInfo or {'code': productCode}
+        product_code = str(article_info.get('code') or '').strip()
+        eurocode = str(article_info.get('code') or '').strip()
+        product_name = str(article_info.get('name') or '').strip()
+        product, matched_by = _find_existing_product(
+            request.env, product_code, eurocode, product_name
+        )
+        return _product_payload(product, matched_by) if product else False
 
     @route('/createProduct', auth='user', type='json')
     @_touch_agent_lock
     def createProduct(self,articleVsfInfo:dict):
         _logger.info(f"createProduct {articleVsfInfo}")
-        articleVsf = vsf.VSFArticle(**articleVsfInfo)
-        image = False
-        if articleVsf.absoluteImgUrls and len(articleVsf.absoluteImgUrls) > 0:
-            response = vsfAgent.get(articleVsf.absoluteImgUrls[0])
-            if response.status_code == 200:
-                image = base64.b64encode(response.content).replace(b"\n", b"")
-            else:
-                _logger.warning(response.text)
-                _logger.warning(f"Image not found for {articleVsf.absoluteImgUrls[0]}")
+        product_code = str(articleVsfInfo.get('code') or '').strip()
+        if not product_code:
+            raise UserError(_("Création impossible : le code VSF de l'article est absent."))
 
-        productInfo = {
-            'name': articleVsf.name,
-            'default_code': articleVsf.code,
-            'list_price': articleVsf.prixVente,
-            'type': 'product',
-            'x_studio_reference_constructeur': articleVsf.refConstructeur,
-            # 'categ_id': 1,
-            # 'uom_id': 1,
-            # 'uom_po_id': 1,
-            'image_1920': image if image else False,
-            'description': f"""Lien vers le produit: <a href="{articleVsf.url}">Lien</a>,
-            <br/>
-            """,
-        }
-        product = request.env['product.product'].create(productInfo)
-        _logger.info(f"Produit créé {product}")
+        # Sérialise les créations par code : un double-clic ou deux requêtes
+        # simultanées ne peuvent pas créer deux produits avec le même code.
+        request.env.cr.execute(
+            "SELECT pg_advisory_xact_lock(hashtext(%s))",
+            (f"rpbm_agent.product:{product_code}",),
+        )
+        existing_product, matched_by = _find_existing_product(
+            request.env,
+            product_code,
+            product_code,
+            str(articleVsfInfo.get('name') or '').strip(),
+        )
+        if existing_product:
+            return _product_payload(existing_product, matched_by)
 
-        product_supplier_infoInfo = {
-            'partner_id': VSF_PARTNER_ID,
-            'product_id': product.id,
-            'delay': 1,
-            'min_qty': 0,
-            'price': articleVsf.prixVenteRPBM,
-        }
-        product_supplier_info = request.env['product.supplierinfo'].create(product_supplier_infoInfo)
-        _logger.info(f"Produit fournisseur créé {product_supplier_info}")
+        try:
+            article_vsf = vsf.VSFArticle(
+                _rpbm_discount=_get_vsf_discount(request.env), **articleVsfInfo
+            )
+            image = False
+            if article_vsf.absoluteImgUrls:
+                try:
+                    response = vsfAgent.get(article_vsf.absoluteImgUrls[0])
+                    if response.status_code == 200:
+                        image = base64.b64encode(response.content).replace(b"\n", b"")
+                    else:
+                        _logger.warning("Image VSF introuvable pour %s", article_vsf.code)
+                except VSFError:
+                    _logger.warning("Image VSF indisponible pour %s ; produit créé sans image", article_vsf.code)
 
-        # return self.
+            product = request.env['product.product'].create({
+                'name': article_vsf.name,
+                'default_code': article_vsf.code,
+                'x_studio_eurocode': article_vsf.code,
+                'list_price': article_vsf.prixVente,
+                'type': 'product',
+                'x_studio_reference_constructeur': article_vsf.refConstructeur,
+                'image_1920': image or False,
+                'description': f"Lien vers le produit: <a href=\"{article_vsf.url}\">Lien</a>",
+            })
+            request.env['product.supplierinfo'].create({
+                'partner_id': _get_vsf_partner_id(request.env),
+                'product_id': product.id,
+                'delay': 1,
+                'min_qty': 0,
+                'price': article_vsf.prixVenteRPBM,
+            })
+        except UserError:
+            raise
+        except Exception as error:
+            _logger.exception("Erreur lors de la création du produit VSF %s", product_code)
+            raise UserError(_("Création impossible pour l'article VSF %s.") % product_code) from error
+
+        _logger.info("Produit VSF créé %s", product)
+        return _product_payload(product, 'créé')
 
 

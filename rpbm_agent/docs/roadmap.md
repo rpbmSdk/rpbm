@@ -9,6 +9,10 @@ Périmètre demandé : optimisation de l'UI du widget, et fiabilisation du trans
 Odoo (création de véhicule, champs Eurocode sur les opportunités, articles sur les
 ordres de vente).
 
+Les points exigeant une décision client sont centralisés dans le
+[registre des validations métier](validations-metier.md). Aucun point tarifaire marqué
+comme bloquant ne doit être codé avant validation.
+
 **Objectif du module.** Le widget n'est pas un outil de confort : sa finalité est
 d'**assainir la base** en y injectant des valeurs fiables et normalisées récupérées depuis
 X'Glass et VSF, à la place de saisies manuelles hétérogènes. Le module est encore en phase
@@ -388,6 +392,11 @@ devis lié.
 
 #### L1.2.b — Écrire « Pièce concernée » (`x_studio_field_eENQz`) — sous confirmation, pas en silence
 
+> **Implémenté (2026-07-27).** Le widget propose une valeur visible et modifiable :
+> `PARE-BRISE` → `Pare-Brise`, `GLACE AR` → `Lunette arrière`, glaces de porte/fixes →
+> `Glace Latérale`, le reste → `Autre...`. Seule la valeur affichée à l'utilisateur est écrite
+> à la confirmation, en parallèle du libellé X'Glass exact.
+
 **Problème.** Cause racine (A) : `x_studio_categorie_xglass` (0 utilisation) n'est pas la
 donnée qui compte pour le métier — c'est `x_studio_field_eENQz` « Pièce concernée »
 (9 980 utilisations), une sélection à 4 valeurs qui **pilote le forfait de pose** dans la
@@ -422,6 +431,11 @@ tombent sur `Autre...`, et si `Autre...` seul suffit pour le reste ou s'il faut 
 modifiable avant validation, jamais écrite sans passage par ce champ visible.
 
 ### L1.3 — Pousser l'article VSF sélectionné dans les champs Eurocode/VSF {#l13}
+
+> **Périmètre remplacé par décision métier (2026-07-27).** La sélection recherche d'abord un
+> produit par référence interne, eurocode puis nom ; si absent, elle propose sa création avec
+> `product.template.x_studio_eurocode`. Le stock Odoo et les champs CRM/VSF historiques ne sont
+> pas mis à jour par ce flux.
 
 **Problème.** C'est le gain le plus direct de la demande « définition des champs Eurocode
 sur les opportunités ». Une fois un article VSF sélectionné, le widget connaît le code
@@ -500,6 +514,9 @@ la piste, et pas d'erreur sur un article sans image/stock.
 
 ### L1.4 — Traiter explicitement le cas `sale.order` sans opportunité {#l14}
 
+> **Implémenté selon décision métier (2026-07-27).** La page du widget est masquée sur les
+> devis sans opportunité liée ; aucun parcours dégradé ni écriture silencieuse n'est proposé.
+
 **Problème.** Cause racine (B), élargie par [L1.2.a](#l12) : immatriculation, eurocodes,
 « Pièce concernée », et désormais `x_studio_vehicle_id`/`x_studio_categorie_xglass` sont
 tous des `related` vers `opportunity_id.*`. Écrire depuis le devis mute l'opportunité sans
@@ -520,7 +537,12 @@ seulement pour les eurocodes, mais pour la totalité de ce qu'écrit le widget.
 **Vérification.** Un devis avec opportunité (champs propagés, visibles sur l'opportunité)
 et un devis sans (avertissement affiché, pas de perte silencieuse).
 
-### L1.5 — Fiabiliser `/createProduct` {#l15}
+### L1.5 — Fiabiliser `/createProduct` — fait (2026-07-26) {#l15}
+
+**Implémenté.** La route retourne désormais le produit existant ou créé dans le même format que
+`/doesProductExists`. Un verrou transactionnel PostgreSQL par `default_code` sérialise les
+doubles clics et les requêtes concurrentes ; une seule fiche fournisseur est alors créée. Le
+frontend consomme directement ce retour et affiche le bouton « Voir » sans seconde recherche.
 
 **Problèmes cumulés** (`controllers/main.py:351-393`) :
 - la route ne fait **aucun `return`** → le frontend ne peut pas distinguer succès et échec ;
@@ -542,12 +564,18 @@ faire un `search` avant `create` et retourner l'existant le cas échéant, et le
 **Vérification.** Double clic sur « Créer » → un seul produit, une seule
 `product.supplierinfo` ; le bouton bascule sur « Voir » sans rechargement.
 
-### L1.6 — Fiabiliser l'ajout de ligne au devis
+### L1.6 — Fiabiliser l'ajout de ligne au devis — fait (2026-07-27)
 
-**Problèmes.** `addToSaleOrder()` fait `order_line.addNewRecord({context: {default_product_id}})`
-puis force `newLine.dirty = true` — contournement d'API fragile, et la ligne ne reçoit ni
-quantité explicite, ni le prix X'Glass alors que `sale.order.line.x_studio_prix_x_glass`
-existe sur l'instance. Le bouton « Enlever » appelle `addToSaleOrder()` (il ajoute).
+**Correction livrée.** Le bouton trompeur « Enlever » a été retiré : il appelait
+en réalité `addToSaleOrder()` et créait une ligne supplémentaire. La suppression d'une
+ligne reste assurée par l'interface native du devis.
+
+**Correction complémentaire livrée.** `addToSaleOrder()` utilise désormais `addNewRecord()`
+puis `newLine.update({ product_uom_qty: 1 })` : plus de mutation manuelle de `dirty`, et les
+`onchange` Odoo restent responsables des taxes et calculs dépendants.
+
+**Tarification validée.** La ligne reçoit `articleVsf.prixVenteRPBM` dans
+`sale.order.line.x_studio_prix_x_glass` ; le prix de la pièce OE n'est pas utilisé.
 
 > **`x_studio_prix_x_glass` a un effet tarifaire automatique (constat L0.4).** Une
 > `base.automation` « Tarif x glass » (`on_create_or_write`, filtre `x_studio_prix_x_glass != 0`)
@@ -556,11 +584,8 @@ existe sur l'instance. Le bouton « Enlever » appelle `addToSaleOrder()` (il aj
 > explicitement (le prix unitaire n'est pas à poser à la main, l'automatisation s'en charge).
 > Voir [cartographie/automatisations.md](../../docs/cartographie/automatisations.md).
 
-**Correctif minimal.** Passer par l'API standard de la liste éditable (`addNewRecord` puis
-`update()` sur les champs, en laissant les `onchange` Odoo calculer taxes),
-renseigner `x_studio_prix_x_glass` depuis la pièce OE sélectionnée (l'automatisation « Tarif x
-glass » en dérive le prix unitaire), et **supprimer** le bouton « Enlever » (l'implémenter
-réellement est hors périmètre : la suppression de ligne existe déjà dans la liste du devis).
+L'automatisation « Tarif x glass » dérive ensuite le prix unitaire. La suppression de ligne
+reste disponible dans la liste native du devis.
 
 **Fichiers.** `static/src/agent_widget_dialog_sale_order.js` + template.
 
@@ -572,6 +597,9 @@ calculés par Odoo, sauvegarde du devis sans erreur.
 ## L2 — UI/UX du widget
 
 ### L2.1 — Structurer la dialog en étapes
+
+> **Fait (2026-07-26).** Dialog `xl`, quatre sections titrées et pièces après-marché visuellement
+> rattachées à leur pièce OE ; aucune dépendance ou feuille de style supplémentaire.
 
 **Problème.** Le template est une suite de `div` avec styles inline, sans hiérarchie
 visuelle : véhicules, calques, pièces, pièces AM et articles VSF s'empilent dans une
@@ -590,6 +618,9 @@ Aucune feuille de style nouvelle, aucune dépendance.
 
 ### L2.2 — Rebrancher l'état du bouton Confirm
 
+> **Fait (2026-07-26).** L'état est renommé `canConfirm`, branché sur les deux boutons de
+> confirmation et exige une sélection de véhicule et de catégorie.
+
 `t-att-disabled="!state.canConfirm"` est commenté avec un `<!-- FIXME -->`
 (`agent_widget_dialog.xml:75`) alors que `canConfirm()` et le `useEffect` qui le recalcule
 existent. Deux détails à corriger en même temps : la faute de frappe `canConfim` (état) vs
@@ -601,11 +632,16 @@ place (véhicule **et** catégorie requis).
 
 ### L2.3 — Corriger la surbrillance des articles VSF {#l23}
 
+> **Fait (2026-07-26).** La sélection et le style utilisent `code`, identifiant réellement
+> fourni par VSF.
+
 Même correctif que le prérequis de [L1.3](#l13) : comparer sur `code`. Aujourd'hui la
 sélection d'un article n'est jamais visible, alors qu'elle l'est pour les véhicules,
 calques et pièces.
 
 ### L2.4 — Corriger l'état de chargement partagé entre composants
+
+> **Fait (2026-07-26).** Chaque composant instancie désormais son propre état réactif.
 
 **Problème réel, pas cosmétique.** `utils.js:57-60` définit `asyncWidgetState` comme un
 objet **au niveau du module**, et `asyncWidget.setup()` fait `useState(asyncWidgetState)`
@@ -620,6 +656,9 @@ tourner le spinner des autres.
 
 ### L2.5 — Uniformiser les retours de chargement {#l25}
 
+> **Fait (2026-07-26).** Le bouton redondant est supprimé ; le chargement déclenché par la
+> sélection de catégorie passe par `runAsync()` avec un message utilisateur.
+
 Certaines actions passent par `runAsync` (spinner + message), d'autres appellent la méthode
 brute : le bouton « Charger les pièces » appelle `getPieces` directement
 (`agent_widget_dialog.xml:32`), sans indicateur — et fait double emploi avec le `useEffect`
@@ -632,18 +671,22 @@ utilisateur par `runAsync` avec un message.
 
 ### L2.6 — Débounce sur le champ Base Eurocode
 
+> **Fait (2026-07-26).** La dernière base recherchée est mémorisée ; une valeur inchangée ne
+> déclenche plus d'appel VSF supplémentaire.
+
 `onChangeBaseEurocode` déclenche, via le `useEffect` sur `baseEurocode`, une requête VSF à
 chaque `change`. Acceptable sur `change` (pas `input`), mais la déduction automatique depuis
 la pièce AM peut relancer une recherche identique à celle en cours. Garder la dernière
 valeur recherchée et ne pas relancer si elle est inchangée — trois lignes, pas de
 bibliothèque de debounce.
 
-### L2.7 — Nettoyage d'état à la fermeture
+### L2.7 — Nettoyage d'état à la fermeture — fait (2026-07-26)
 
 `onDiscard()`/`onConfirm()` ferment sans réinitialiser, et surtout : si l'utilisateur ferme
 la dialog par la croix ou `Échap`, **`/rpbm_agent_close` n'est jamais appelé** et le verrou
 de session reste posé jusqu'à son expiration glissante de 15 min — un autre utilisateur est
-bloqué pour rien. Ajouter un `onWillUnmount` qui appelle `closeAgents()`.
+bloqué pour rien. **Corrigé** : `onWillUnmount` appelle désormais `closeAgents()` ; la méthode
+est idempotente afin de ne pas fermer deux fois la même session.
 
 **Vérification.** Ouvrir le widget, fermer par `Échap`, vérifier que
 `ir.config_parameter` `rpbm_agent.session_lock` est vidé.
@@ -652,23 +695,21 @@ bloqué pour rien. Ajouter un `onWillUnmount` qui appelle `closeAgents()`.
 
 ## L3 — Hygiène
 
-- **L3.1 — Sécurité (M).** Aucun `security/`, toutes les routes en `auth='user'` : n'importe
-  quel utilisateur interne peut créer des véhicules/produits et consommer la session
-  portail unique. Ajouter un groupe dédié (`rpbm_agent.group_user`) et le vérifier dans les
-  routes ; conditionner l'affichage du widget à ce groupe dans les vues.
-- **L3.2 — Configuration (S).** Sortir du code : `VSF_PARTNER_ID = 5708` (`main.py:23` —
-  vérifié, correspond bien à « VSF - VITRO SERVICE FRANCE » sur cette instance) et
-  `remiseRPBM = 0.2` (`vsf.py`), tous deux en `ir.config_parameter`, cohérent avec les 4
-  identifiants déjà gérés ainsi.
-- **L3.3 — `requirements.txt` / `external_dependencies` (S).** `requests` manquant dans les
-  deux.
-- **L3.4 — Code mort (S).** À faire au passage sur chaque fichier touché, pas en chantier
-  dédié : bloc après `return` dans `getPieceAm()` (`agent_widget_dialog.js:468-476`), getter
-  `baseEurocode` défini deux fois (`:404` et `:490`), `SaleOrder.eurocodeField`/`get eurocode()`
-  inutilisés, service `orm` injecté jamais appelé, `onConfirm()` des sous-classes qui ne font
-  qu'appeler `super`.
-- **L3.5 — Outputs de notebooks (S).** Cookies `XSRF-TOKEN`/`myvsf_session` en clair dans
-  `controllers/vsf.ipynb` committé — effacer les outputs.
+- **L3.1 — Sécurité (décision métier).** L'absence de groupe dédié est volontaire : le
+  widget et ses routes restent accessibles aux utilisateurs Odoo connectés disposant des
+  droits usuels sur les objets concernés. Ce n'est pas un chantier planifié ; toute
+  restriction future devra être une décision d'organisation explicite.
+- **L3.2 — Configuration (S) — fait (2026-07-26).** `rpbm_agent.vsf_partner_id` et
+  `rpbm_agent.vsf_discount` remplacent les constantes ; leurs défauts historiques (`5708`,
+  `0.2`) restent compatibles et les valeurs invalides échouent explicitement.
+- **L3.3 — `requirements.txt` / `external_dependencies` (S) — fait (2026-07-26).** `requests`
+  est déclaré dans les deux fichiers.
+- **L3.4 — Code mort (S) — fait pour les fichiers touchés (2026-07-26).** Le bloc inatteignable,
+  le getter dupliqué, les propriétés `SaleOrder` mortes, le service `orm` inutilisé et les
+  surcharges `onConfirm()` sans valeur ont été retirés.
+- **L3.5 — Outputs de notebooks (S) — fait (2026-07-26).** Les outputs et compteurs
+  d'exécution de `controllers/vsf.ipynb` ont été effacés ; aucun cookie de session VSF ne
+  reste dans le fichier versionné.
 
 ---
 

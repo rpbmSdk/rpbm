@@ -1,90 +1,106 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-
     <t t-name="rpbm_agent.AgentWidgetDialog">
-        <Dialog size="lg" title="Agent">
+        <Dialog size="xl" title="Assistant véhicule et pièces">
             <t t-if="!agentsInitialized">
                 <div class="d-flex justify-content-center">
-                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <i class="fa fa-spinner fa-spin fa-2x me-2"/>
                     <t t-esc="loadingMessage"/>
-                    <!-- <t t-esc="agentsInitialized"/> -->
                 </div>
             </t>
             <t t-else="">
-                <label for="immatriculation">Immatriculation</label>
-                <input class="o_input" id="immatriculation" t-att-value="immatriculationValue" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation" style="text-transform: uppercase;margin: 10px;" />
-                <button class="btn btn-primary" t-on-click="onSearchImmatriculation">
-                    Search
-                </button>
-                <t t-if="vehicules.length > 0">
-                    <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
-                        <VehiculeComponent record="record" vehicule="vehicule" vehiculeMeta="vehicule.id === selectedVehiculeId ? vehiculeMeta : undefined" immatriculation="immatriculationValue" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onSelectVehicule(vehicule.id)" />
-                    </t>
-                    <button t-if="selectedVehicule" class="btn btn-primary" t-on-click="onGetPlanche">
-                    Rechercher les Catégories
-                    </button>
-                    <t t-if="planche">
+                <section class="mb-4">
+                    <h5>1. Véhicule</h5>
+                    <div class="d-flex flex-wrap gap-2 align-items-end">
                         <div>
-                            <t t-foreach="calques" t-as="calque" t-key="calque.id">
-                                <CalqueComponent calque="calque" selectedCalqueId="selectedCalqueId" t-on-click="()=>this.onClickCalque(calque.id)" />
+                            <label for="immatriculation" class="form-label">Immatriculation</label>
+                            <input class="o_input text-uppercase" id="immatriculation" t-att-value="immatriculationValue" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation"/>
+                        </div>
+                        <button class="btn btn-primary" t-on-click="onSearchImmatriculation">Rechercher</button>
+                    </div>
+                    <div t-if="vehicules.length > 0" class="row mt-2 g-2">
+                        <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
+                            <div class="col-12 col-md-6">
+                                <VehiculeComponent record="record" vehicule="vehicule" vehiculeMeta="vehicule.id === selectedVehiculeId ? vehiculeMeta : undefined" immatriculation="immatriculationValue" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onSelectVehicule(vehicule.id)"/>
+                            </div>
+                        </t>
+                    </div>
+                </section>
+
+                <section t-if="planche" class="mb-4">
+                    <h5>2. Catégorie</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <t t-foreach="calques" t-as="calque" t-key="calque.id">
+                            <CalqueComponent calque="calque" selectedCalqueId="selectedCalqueId" t-on-click="()=>this.onClickCalque(calque.id)"/>
+                        </t>
+                    </div>
+                    <div t-if="selectedCalque" class="mt-3">
+                        <label for="pieceConcernee" class="form-label">Pièce concernée</label>
+                        <select id="pieceConcernee" class="o_input" t-att-value="pieceConcernee" t-on-change="onChangePieceConcernee">
+                            <t t-foreach="pieceConcerneeOptions" t-as="option" t-key="option">
+                                <option t-att-value="option" t-att-selected="option === pieceConcernee"><t t-esc="option"/></option>
                             </t>
-                            <div>
-                                <button t-if="selectedCalque" class="btn btn-primary" t-on-click="getPieces">
-                            Charger les pièces
-                                </button>
-                            </div>
+                        </select>
+                        <div class="form-text">Suggestion modifiable avant confirmation ; elle alimente le calcul legacy de pose.</div>
+                    </div>
+                </section>
 
-                        </div>
-                        <div>
-
-                            <div t-if="pieces.length > 0" class="d-flex justify-content-between" style="flex-wrap: wrap;">
-                                <t t-foreach="pieces" t-as="piece" t-key="piece.id">
-                                    <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)" />
-                                    <t t-if="piece.PiecesAM and piece.PiecesAM.length > 0" >
-                                        <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAm.id">
-                                            <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAm.id)" />
-                                        </t>
-                                    </t>
-                                </t>
-
-                            </div>
-
-                        </div>
-                        <div t-if="selectedPiece">
-                            <label for="baseEurocode">baseEurocode</label>
-                            <input class="o_input" id="baseEurocode" t-att-value="baseEurocode" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-change="onChangeBaseEurocode" style="margin: 10px;" />
-                            <button class="btn btn-primary" t-on-click="onSearchBaseEurocode">
-                            Rechercher sur VSF
-                            </button>
-                        </div>
-
-                        <div t-if="articlesVsf.length > 0">
-                            <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
-                                <div class="d-flex justify-content-between" style="flex-wrap: wrap;">
-                                    <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)" />
-                                    <a t-att-href="articleVsf.url" target="_blank" class="btn btn-primary" style="height: fit-content;">Fiche technique</a>
-                                    <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
-                                        <img t-att-src="absoluteImgUrl" style="max-width: 250px; max-height: 250px; margin: 5px;" />
+                <section t-if="selectedCalque" class="mb-4">
+                    <h5>3. Pièce</h5>
+                    <div t-if="pieces.length > 0" class="row g-2">
+                        <t t-foreach="pieces" t-as="piece" t-key="piece.id">
+                            <div class="col-12 col-lg-6">
+                                <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)"/>
+                                <div t-if="piece.PiecesAM and piece.PiecesAM.length > 0" class="ms-3 mt-2 d-flex flex-wrap gap-2">
+                                    <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAm.id">
+                                        <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAm.id)"/>
                                     </t>
                                 </div>
-                            </t>
-                        </div>
-                    </t>
-                </t>
-                <t t-set-slot="footer">
-                        <button class="btn btn-primary" t-on-click="onConfirm" > <!-- FIXME: t-att-disabled="!state.canConfirm" -->
-                            Confirmer
-                        </button>
-                        <button class="btn btn-secondary" t-on-click="onConfirmAndSave" >
-                            Confirmer et enregistrer
-                        </button>
+                            </div>
+                        </t>
+                    </div>
+                </section>
 
-                    <button class="btn btn-secondary" t-on-click="onDiscard">
-                        Cancel
-                    </button>
+                <section t-if="selectedPiece" class="mb-4">
+                    <h5>4. Article VSF</h5>
+                    <div class="d-flex flex-wrap gap-2 align-items-end">
+                        <div>
+                            <label for="baseEurocode" class="form-label">Base Eurocode</label>
+                            <input class="o_input" id="baseEurocode" t-att-value="baseEurocode" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-change="onChangeBaseEurocode"/>
+                        </div>
+                        <button class="btn btn-primary" t-on-click="onSearchBaseEurocode">Rechercher sur VSF</button>
+                    </div>
+                    <div t-if="articlesVsf.length > 0" class="row g-2 mt-2">
+                        <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
+                            <div class="col-12 col-lg-6">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>onClickArticleVsf(articleVsf.code)"/>
+                                    <a t-att-href="articleVsf.url" target="_blank" class="btn btn-outline-primary align-self-start">Fiche technique</a>
+                                    <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
+                                        <img t-att-src="absoluteImgUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px;"/>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                    <div t-if="selectedArticleVsf" name="selected_article_actions" class="alert alert-light border mt-3 mb-0">
+                        <t t-if="selectedProduct">
+                            <span>Produit Odoo trouvé (<t t-esc="selectedProductMatchLabel"/>).</span>
+                            <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl" target="_blank">Voir le produit</a>
+                        </t>
+                        <t t-else="">
+                            <span>Article absent de la base Odoo.</span>
+                            <button class="btn btn-primary btn-sm ms-2" t-on-click="createSelectedProduct">Créer le produit</button>
+                        </t>
+                    </div>
+                </section>
+
+                <t t-set-slot="footer">
+                    <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!state.canConfirm">Confirmer</button>
+                    <button class="btn btn-secondary" t-on-click="onConfirmAndSave" t-att-disabled="!state.canConfirm">Confirmer et enregistrer</button>
+                    <button class="btn btn-outline-secondary" t-on-click="onDiscard">Annuler</button>
                 </t>
             </t>
         </Dialog>
-
     </t>
 </templates>

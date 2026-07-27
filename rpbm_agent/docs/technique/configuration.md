@@ -8,10 +8,8 @@ Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis inst
 
 | Fichier | Contenu |
 |---|---|
-| `__manifest__.py` → `external_dependencies.python` | `beautifulsoup4`, `python-dotenv` |
-| `controllers/requirements.txt` | `beautifulsoup4`, `python-dotenv` (tous deux actifs) |
-
-**Incohérence restante** : le code (`vsf.py`, `xglass.py`) importe aussi activement `requests`, qui n'est déclaré nulle part comme dépendance installée — il fonctionne uniquement parce qu'il est déjà présent dans l'environnement Python d'Odoo par ailleurs. À corriger dans une passe ultérieure (voir [état des lieux](../etat-des-lieux.md)).
+| `__manifest__.py` → `external_dependencies.python` | `beautifulsoup4`, `python-dotenv`, `requests` |
+| `controllers/requirements.txt` | `beautifulsoup4`, `python-dotenv`, `requests` |
 
 `python-dotenv` / `.env` (racine du module) ne sont utiles qu'en **exécution standalone hors Odoo** (tests manuels des scripts `vsf.py`/`xglass.py`, notebooks, et [`push_credentials.py`](../../push_credentials.py)) : en production, les identifiants viennent exclusivement de `ir.config_parameter` via `/rpbm_agent_auth`.
 
@@ -25,6 +23,10 @@ Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis inst
 | `XGLASS_PASS` | Mot de passe du portail X'Glass |
 | `VSF_LOGIN` | Identifiant du portail VSF |
 | `VSF_PASSWORD` | Mot de passe du portail VSF |
+| `rpbm_agent.vsf_partner_id` | Identifiant du partenaire fournisseur VSF ; défaut de compatibilité : `5708` |
+| `rpbm_agent.vsf_discount` | Remise RPBM décimale entre `0` et `1` ; défaut de compatibilité : `0.2` |
+
+Les deux paramètres `rpbm_agent.vsf_*` sont lus à chaque recherche VSF et création de produit. Une valeur absente conserve le comportement historique ; une valeur invalide produit une erreur explicite et n'est jamais appliquée silencieusement.
 
 Peuvent être créés manuellement, ou poussés via [`push_credentials.py`](../../push_credentials.py) (racine du module) : lit les 4 identifiants depuis `.env` (racine du module, déjà ignoré par git — mêmes clés que celles utilisées pour l'exécution standalone de `vsf.py`/`xglass.py`) et les écrit sur une instance Odoo cible via XML-RPC standard (`ir.config_parameter.set_param`). Le script lui-même ne contient aucun secret (suivi par git) ; les informations de connexion à l'instance cible (`ODOO_URL`/`ODOO_DB`/`ODOO_LOGIN`/`ODOO_PASSWORD`) peuvent être ajoutées à `.env` ou saisies de manière interactive. Le compte Odoo utilisé doit être administrateur (`base.group_system`), seul groupe ayant accès à `ir.config_parameter`.
 

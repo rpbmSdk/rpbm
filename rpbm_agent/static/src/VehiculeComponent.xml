@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.VehiculeComponent">
-        <div class="card" style="width: 50%;margin: 15px;">
+        <div class="card h-100">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
                     <t t-esc="props.vehicule.libelleCourt"/>

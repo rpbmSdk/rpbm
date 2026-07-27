@@ -21,6 +21,7 @@ VSF_LOGIN_URL = f"{VSF_BASE_URL}/identification"
 VSF_SEARCH_URL = f"{VSF_BASE_URL}/catalogue/vitrage"
 VSF_SEARCH_ARTICLES_URL = f"{VSF_BASE_URL}/catalogue/articles-client"
 REQUEST_TIMEOUT = 20  # secondes, appliqué à tous les appels vers le portail VSF
+DEFAULT_RPBM_DISCOUNT = 0.2
 
 
 class VSFError(Exception):
@@ -54,6 +55,7 @@ class VSFArticle:
     # absoluteUrl:str
 
     def __init__(self, **kwargs):
+        rpbm_discount = kwargs.pop('_rpbm_discount', DEFAULT_RPBM_DISCOUNT)
         for key, value in kwargs.items():
             setattr(self, key, value)
         self.prixVente = float(self.prix_vente.removesuffix("&nbsp;€").replace(",", "."))
@@ -64,12 +66,21 @@ class VSFArticle:
         # `stock`/`available`, consommés par ArticleComponent.xml.
         self.stock = int(getattr(self, 'total_stock', 0) or 0)
         self.available = self.stock > 0
-        self.remiseRPBM = 0.2
-        self.prixVenteRPBM = self.prixVente * (1 - self.remiseRPBM)
-        # TODO : recalculer le prix de vente avec la remise RPBM
+        self.set_rpbm_discount(rpbm_discount)
         # imgUrls est absent quand l'article n'a pas de ligne correspondante
         # dans la page de résultats (voir searchEurocodeArticlesClient).
         self.absoluteImgUrls = [f"{VSF_BASE_URL}{u}" for u in getattr(self, 'imgUrls', [])]
+
+    def set_rpbm_discount(self, discount):
+        """Applique la remise RPBM configurée et valide sa plage."""
+        try:
+            discount = float(discount)
+        except (TypeError, ValueError) as error:
+            raise VSFError("La remise RPBM doit être un nombre décimal compris entre 0 et 1.") from error
+        if not 0 <= discount <= 1:
+            raise VSFError("La remise RPBM doit être comprise entre 0 et 1.")
+        self.remiseRPBM = discount
+        self.prixVenteRPBM = self.prixVente * (1 - self.remiseRPBM)
 
 
 class VSFAgent:
@@ -176,4 +187,3 @@ class VSFAgent:
             'refConstructeur': refConstructeur,
             'name': name
         }
-        

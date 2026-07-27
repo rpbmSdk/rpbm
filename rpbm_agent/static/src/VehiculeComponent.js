@@ -56,7 +56,6 @@ export class VehiculeComponent extends asyncWidget {
         return this.state.vehiculeOdoo;
     }
     getOdooVehicule() {
-        console.log("getOdooVehicule");
         this.runAsync(async () => {
             const res = await this.rpc("/getOdooVehicule", {
                 immatriculation: this.props.immatriculation,
@@ -71,7 +70,6 @@ export class VehiculeComponent extends asyncWidget {
     }
 
     onClickCreateVehicule() {
-        console.log("onClickCreateVehicule");
         this.runAsync(async () => {
             const vehiculeId = await this.rpc("/createVehicule", {
                 immatriculation: this.props.immatriculation,

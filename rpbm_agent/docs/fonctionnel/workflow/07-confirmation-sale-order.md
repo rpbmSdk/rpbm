@@ -1,5 +1,8 @@
 # 7 — Confirmation sur Ordre de Vente (`sale.order`)
 
+Le notebook « Véhicule (X'Glass) » est masqué si le devis ne possède pas d'opportunité liée.
+Le widget n'est donc jamais ouvert dans un contexte où ses champs `related` seraient perdus.
+
 - **Déclencheur** : clic sur "Confirmer" dans la fenêtre du widget, ouverte depuis une fiche `sale.order`.
 - **Code** : même `getRecordData()` que pour `crm.lead` (`agent_widget_dialog.js:226-258`) — seuls les noms de champs diffèrent, via la classe `SaleOrder` (`agent_widget_dialog_sale_order.js`).
 

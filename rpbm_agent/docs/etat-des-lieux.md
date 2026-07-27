@@ -45,23 +45,18 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 ## 4. Cohérence technique — frontend
 
 - **Appels réseau dupliqués** : `getOdooVehicule` (et potentiellement `createVehicule`) sont appelés indépendamment par `AgentWidgetDialog` et par chaque `VehiculeComponent` affiché, sans partage d'état.
-- **Double déclenchement de `getPieces()`** : le clic sur une `CalqueComponent` appelle `onClickCalque()` qui invoque directement `getPieces()` (`agent_widget_dialog.js:413-417`), alors que le `useEffect` sur `selectedCalque` (`agent_widget_dialog.js:106-113`) le refait automatiquement juste après.
-- **Getter `baseEurocode` défini deux fois** dans `AgentWidgetDialog` (`agent_widget_dialog.js:404` et `:490`) — la seconde définition écrase silencieusement la première (valide en JS, source de confusion à la lecture).
-- **Code mort après un `return`** : dans `getPieceAm()` (`agent_widget_dialog.js:459-476`), un bloc de log + recalcul de `baseEurocode` se trouve après `return res;`, donc jamais exécuté (logique de toute façon redondante avec le `useEffect` sur `selectedPieceAm`).
-- **Bouton "Confirm" jamais désactivé** malgré un état `canConfim` calculé à chaque changement pertinent : `t-att-disabled="!state.canConfirm"` est commenté avec un `<!-- FIXME -->` explicite dans `agent_widget_dialog.xml:75`. L'utilisateur peut cliquer "Confirm" sans véhicule sélectionné.
-- **Sélection visuelle des articles VSF non fonctionnelle** : `onClickArticleVsf(articleId)` (`agent_widget_dialog.js:514-517`) compare `article.id === articleId`, mais est appelé avec `articleVsf.code` (`agent_widget_dialog.xml:64`) alors que `VSFArticle` (`vsf.py`) **n'expose aucun champ `id`** — la comparaison échoue systématiquement, donc `selectedArticleVsf` n'est jamais renseigné et la mise en surbrillance (fond azur) au clic sur un article VSF ne s'active jamais. Sans conséquence sur la création/l'ajout au devis (qui utilisent les props de l'article directement), mais visuellement trompeur.
-- **Bouton "Enlever" trompeur** (`agent_widget_dialog_sale_order.xml:18-20`) : affiché quand l'article est déjà dans le devis, mais son gestionnaire pointe vers `addToSaleOrder()`, qui ne fait qu'ajouter une nouvelle ligne — aucune logique de suppression n'existe.
-- **Service `orm` importé et instancié mais jamais utilisé** (`agent_widget_dialog.js`, `utils.js`) : tous les échanges serveur passent par `rpc` vers des routes JSON custom.
-- **Champs de classe redondants/incohérents** : `SaleOrder.categorieXglassField` (`agent_widget_dialog_sale_order.js:21`) redéfinit la même valeur héritée par défaut ; `SaleOrder.eurocodeField`/`get eurocode()` (lignes 22, 32-34) ne sont utilisés nulle part — l'écriture réelle passe par `baseEurocodeField`, hérité de `AbstractWidgetRecord`.
+- **Chargement des pièces, code mort et getter dupliqué** — **corrigés (2026-07-26)** : le `useEffect` est l'unique déclencheur de `getPieces()`, le bloc inatteignable de `getPieceAm()` est retiré et `baseEurocode` n'a plus qu'un getter.
+- **Bouton « Confirmer » et sélection VSF** — **corrigés (2026-07-26)** : `canConfirm` désactive les boutons tant que véhicule et catégorie ne sont pas sélectionnés ; la sélection d'article et sa surbrillance utilisent désormais `code`, clé réellement fournie par VSF.
+- **Bouton "Enlever" trompeur** — **corrigé (2026-07-26)** : retiré de la dialog, car son gestionnaire appelait `addToSaleOrder()` et ajoutait une ligne. La suppression reste disponible dans la liste native du devis.
+- **Service `orm` et propriétés `SaleOrder` mortes** — **retirés (2026-07-26)** : tous les échanges serveur passent par `rpc` vers des routes JSON custom.
 - **`baseEurocodeField` non surchargé par modèle** (`utils.js:26`, valeur par défaut `x_studio_base_eurocode`) : contrairement à `immatriculationField`, ce champ n'était pas redéfini dans `AgentWidgetDialogCrmLead`. Or `x_studio_base_eurocode` n'existe que sur `sale.order` (champ `related` vers `opportunity_id.x_studio_field_ORIyy`) — sur `crm.lead`, le vrai champ "Base Eurocode" s'appelle `x_studio_field_ORIyy`. Conséquence : l'écriture de l'eurocode échouait silencieusement quand le widget était placé sur une Piste/Opportunité (cf. [technique/champs/crm-lead.md](technique/champs/crm-lead.md#structure-des-3-champs-eurocode) pour le détail des 3 champs Eurocode existants sur `crm.lead`). **Corrigé** : `CrmLead` surcharge désormais `baseEurocodeField = 'x_studio_field_ORIyy'` (`agent_widget_dialog_crm_lead.js`).
 - **Refactoring inachevé visible** : `AgentWidgetDialogCrmLead.onConfirm()` et `AgentWidgetDialogSaleOrder.onConfirm()` ne font qu'appeler `super.onConfirm()`, avec du code métier spécifique laissé en commentaire dans les deux fichiers.
-- **Typos multiples** (non bloquantes, révélatrices d'un manque de relecture) : `canConfim` (état, pour "canConfirm"), `toogleLoading` (`utils.js`), `OrderlLines` (getter de `SaleOrder`).
-- **Absence de nettoyage d'état à la fermeture** : `onDiscard()`/`onConfirm()` ferment la dialog sans réinitialiser `vehicules`/`pieces`/`articlesVsf` — sans impact tant que la dialog est détruite et recréée à chaque ouverture, mais aucun `onWillUnmount` explicite.
+- **Typos `canConfim`/`toogleLoading`/`OrderlLines`** — **corrigées ou retirées (2026-07-26)**.
+- **Fermeture par croix/Échap** — **corrigé (2026-07-26)** : `onWillUnmount()` libère désormais le verrou portail même quand `onDiscard()` n'est pas appelé. L'état frontend est ensuite détruit avec la dialog.
 
 ## 5. Cohérence métier
 
-- **Remise RPBM hardcodée à 20 %** (`vsf.py:46-48`, `self.remiseRPBM = 0.2`) avec un `# TODO : recalculer le prix de vente avec la remise RPBM` laissé par le développeur — non configurable sans modifier le code.
-- **`VSF_PARTNER_ID = 5708` hardcodé** (`main.py:14`) plutôt que configuré (paramètre système ou champ de configuration module).
+- **Remise RPBM et fournisseur VSF** — **configurables (2026-07-26)** par `rpbm_agent.vsf_discount` et `rpbm_agent.vsf_partner_id`, avec les défauts historiques `0.2` et `5708` et une validation explicite des valeurs.
 - **Champs CRM historiques marqués `[Obsolète]`** plutôt que supprimés (`x_studio_field_KyCjB`, `x_studio_field_ZhaeY` — cf. [parcours utilisateur](fonctionnel/parcours-utilisateur.md)) : dette déjà identifiée et documentée par l'équipe elle-même, non résolue.
 - **Contrainte de session mono-utilisateur du portail X'Glass** — **corrigé** : désormais gérée explicitement par un verrou applicatif (cf. §3) plutôt que subie ; RPBM ne disposant que d'un seul identifiant partagé X'Glass/VSF (confirmé), la solution retenue sérialise les utilisateurs (message "occupé par X") plutôt que d'isoler par utilisateur, ce qui ne résoudrait pas la contrainte portail elle-même.
 - **Champs Studio non versionnés** — **corrigé** : les champs `x_studio_*` manquants sont désormais créés automatiquement par `pre_init_hook` (`hooks.py`), reproductible sur toute instance (voir [configuration](technique/configuration.md) et [technique/champs/](technique/champs/README.md)).
@@ -69,14 +64,12 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 ## 6. UI/UX
 
 - **Aucune notification utilisateur en cas d'erreur** — **corrigé** : `runAsync()` (`utils.js`) affiche désormais une notification (service `notification` Odoo, type `danger`) en plus du `console.error`. Côté serveur, `/rpbm_agent_auth`, `/searchImmatriculation`, `/searchBaseEurocode`, `/getPieceAm` lèvent des exceptions typées (`XGlassError`/`VSFError`) converties en `UserError` explicite au lieu d'avaler silencieusement vers `[]`/`False` — voir [configuration](technique/configuration.md#gestion-derreurs). `doesProductExists` ne catchait en réalité qu'un cas normal ("produit non trouvé"), simplifié en `if`/`else` sans `try`/`except`.
-- **Retour de chargement incohérent d'un bouton à l'autre** : certaines actions passent par `runAsync` (spinner + message), d'autres appellent la méthode brute directement (ex. bouton "Charger les pièces" → `getPieces` sans indicateur de chargement, cf. §4).
-- **Bouton "Confirm" toujours actif** (cf. §4) alors qu'un état de validation existe déjà côté code — laisse la porte ouverte à une confirmation sans véhicule sélectionné.
-- **Mise en surbrillance des articles VSF non fonctionnelle** (cf. §4) — petite incohérence visuelle par rapport aux véhicules/catégories/pièces, où la sélection est bien visible.
+- **Retours de chargement, activation de confirmation et surbrillance VSF** — **corrigés (2026-07-26)** : les parcours concernés passent par `runAsync`, le bouton redondant de chargement a disparu et les états de sélection sont visibles.
 - **Documentation "Chemin" vide** pour chaque champ Studio dans le README fonctionnel — **partiellement corrigé** : `x_studio_vehicle_id`/`x_studio_categorie_xglass` (et les champs équivalents sur `fleet.vehicle`/`product.product`) ont désormais un emplacement versionné et documenté (`views/*.xml`) ; les champs Studio historiques (immatriculation, eurocode) restent placés à la main sur chaque instance, sans emplacement tracé.
 
 ## 7. Hygiène / sécurité mineure
 
-- **Tokens de session en clair dans les outputs commités** de `controllers/vsf.ipynb` (cookies `XSRF-TOKEN`, `myvsf_session` visibles dans les cellules exécutées et committées) — à nettoyer (effacer les outputs) avant tout partage plus large du dépôt, même si ces tokens sont a priori expirés.
+- **Tokens de session dans `controllers/vsf.ipynb`** — **corrigé (2026-07-26)** : toutes les sorties et compteurs d'exécution ont été effacés ; aucun cookie n'est conservé dans le notebook versionné.
 - **`.env` local correctement ignoré par git** (`.gitignore:4`, pattern sans slash donc actif à tout niveau de dossier) — vérifié : le fichier `.env` (racine du module) n'est ni suivi ni présent dans l'historique. Pas de fuite d'identifiants constatée.
 - **Notebooks de reverse engineering** (`vsf.ipynb`, `xglass.ipynb`) : utiles comme documentation vivante des contraintes portail (ex. nécessité de charger `initRechercheVehicule.html` avant une recherche X'Glass, cf. [backend](technique/backend.md)), mais mélangent essais-erreurs obsolètes et scénarios de référence — un nettoyage éditorial les rendrait plus exploitables en documentation à part entière.
 
@@ -84,15 +77,15 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 
 **Quick wins (faible effort, gain immédiat)**
 1. ~~Ajouter des notifications utilisateur...~~ **Fait** — service `notification` Odoo dans `runAsync()`.
-2. Rebrancher `t-att-disabled="!state.canConfirm"` sur le bouton "Confirm" (le state existe déjà).
-3. Corriger la route `/rbm_agent/getVehiculeMeta` → `/rpbm_agent/getVehiculeMeta` (ou l'aligner avec le style sans préfixe des autres routes).
-4. Retirer le bouton "Enlever" trompeur (ou implémenter la suppression réelle de la ligne).
+2. ~~Rebrancher `t-att-disabled="!state.canConfirm"` sur le bouton "Confirm".~~ **Fait** — véhicule et catégorie sont requis.
+3. ~~Corriger la route `/rbm_agent/getVehiculeMeta` → `/rpbm_agent/getVehiculeMeta`.~~ **Fait** — route canonique corrigée, ancienne URL conservée temporairement.
+4. ~~Retirer le bouton "Enlever" trompeur (ou implémenter la suppression réelle de la ligne).~~ **Fait** — le retrait est retenu ; la suppression native des lignes de devis reste la référence.
 5. ~~Réutiliser `XGLASS.getPieceAm()`...~~ **Fait** — `main.py::getPieceAm` réutilise `findSelectionsPiecesAmView()`.
-6. Corriger `requirements.txt`/`external_dependencies` pour lister `requests` (`python-dotenv` déjà fait).
+6. ~~Corriger `requirements.txt`/`external_dependencies` pour lister `requests`.~~ **Fait**.
 
 **Chantiers structurants (effort plus élevé)**
 1. ~~Isoler la session portail par utilisateur Odoo...~~ **Fait**, avec une solution différente de celle envisagée ici : un seul identifiant X'Glass/VSF partagé étant confirmé (pas de pool de comptes), l'isolation par utilisateur ne réglerait pas la contrainte portail — la solution retenue sérialise les sessions widget complètes via un verrou applicatif (`ir.config_parameter`, voir [configuration](technique/configuration.md#concurrence--verrou-de-session)).
 2. ~~Formaliser la création des champs `x_studio_*` manquants...~~ **Fait** : `pre_init_hook` idempotent (`hooks.py`) créant les `ir.model.fields` avec `context={'studio': True}` (mécanisme du mixin `web_studio`, vérifié dans le code source Odoo — voir [configuration](technique/configuration.md#mécanisme-retenu--pre_init_hook--contexte-studio)), plus les vues versionnées `views/*.xml` plaçant le widget et les champs correspondants.
-3. Rendre la remise VSF (`remiseRPBM`) configurable (paramètre système ou champ) plutôt que hardcodée.
+3. ~~Rendre la remise VSF (`remiseRPBM`) configurable.~~ **Fait** — paramètres système documentés.
 4. Ajouter une politique de sécurité minimale (`ir.model.access.csv`, groupe dédié) plutôt que de s'appuyer uniquement sur `auth='user'`.
 5. Fournir un moyen reproductible de pousser les identifiants portails (`XGLASS_USER`/`XGLASS_PASS`/`VSF_LOGIN`/`VSF_PASSWORD`) — **fait**, [`push_credentials.py`](../push_credentials.py) (racine du module, lit `.env`, pousse vers `ir.config_parameter` via XML-RPC).

@@ -4,6 +4,32 @@ import { useService } from "@web/core/utils/hooks";
 import { useState, Component } from "@odoo/owl";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
 
+export const PIECE_CONCERNEE_OPTIONS = [
+    "Pare-Brise",
+    "Lunette arrière",
+    "Glace Latérale",
+    "Autre...",
+];
+
+/**
+ * Propose une valeur de tarification legacy à partir du libellé X'Glass.
+ * La valeur reste visible et modifiable dans la dialog avant tout enregistrement.
+ */
+export function suggestPieceConcernee(calqueLabel) {
+    switch ((calqueLabel || "").trim().toUpperCase()) {
+        case "PARE-BRISE":
+            return "Pare-Brise";
+        case "GLACE AR":
+            return "Lunette arrière";
+        case "GLACE PORTE AV":
+        case "GLACE PORTE AR":
+        case "GLACE FIXE PORTE AR":
+            return "Glace Latérale";
+        default:
+            return "Autre...";
+    }
+}
+
 export class AbstractRecord {
     constructor(record) {
         Object.assign(this, record);
@@ -24,7 +50,7 @@ export class AbstractWidgetRecord extends AbstractRecord {
     vehiculeField = "x_studio_vehicle_id";
     immatriculationField = "x_studio_immatriculation";
     baseEurocodeField = "x_studio_base_eurocode";
-    // calqueField = "x_studio_calque";
+    pieceConcerneeField = "x_studio_field_eENQz";
 
     constructor(record) {
         super(record);
@@ -36,10 +62,6 @@ export class AbstractWidgetRecord extends AbstractRecord {
         return this.recordData[this.immatriculationField];
     }
 
-    get calque() {
-        return this.recordData[this.calqueField];
-    }
-
     get categorieXglass() {
         return this.recordData[this.categorieXglassField];
     }
@@ -48,13 +70,17 @@ export class AbstractWidgetRecord extends AbstractRecord {
         return this.recordData[this.baseEurocodeField];
     }
 
+    get pieceConcernee() {
+        return this.recordData[this.pieceConcerneeField];
+    }
+
     get partnerId(){
         return this.recordData[this.partnerField][0];
     }
 
 }
 
-const asyncWidgetState = {
+const initialAsyncWidgetState = {
     loading: false,
     loadingMessage: "",
 }
@@ -66,11 +92,13 @@ export class asyncWidget extends Component {
     setup() {
         super.setup();
         this.rpc = useService("rpc");
-        this.orm = useService("orm");
         this.notification = useService("notification");
         /** @type {AbstractWidgetRecord} */
         this.record = this.props.record;
-        this.state = useState(asyncWidgetState);
+        // Chaque composant doit posséder son propre état réactif. Partager le
+        // même proxy faisait afficher le chargement d'un article sur tous les
+        // autres articles de la dialog.
+        this.state = useState({ ...initialAsyncWidgetState });
     }
 
     /**
@@ -98,13 +126,6 @@ export class asyncWidget extends Component {
     }
 
     /**
-     * Toogle the loading state
-     *  */
-    toogleLoading() {
-        this.state.loading = !this.state.loading;
-    }
-
-    /**
      * Set the loading state to true
      *  */
     startLoading() {
@@ -116,8 +137,6 @@ export class asyncWidget extends Component {
      *  */
     stopLoading() {
         this.state.loading = false;
-        console.log("stopLoading");
-        console.log(this.isLoading);
     }
 
     /**
