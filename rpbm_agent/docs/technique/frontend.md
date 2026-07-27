@@ -51,6 +51,10 @@ d'erreur.
 
 ## Détails discriminants des pièces OE
 
+Les pièces après-marché ne sont affichées que sous la pièce OE active, dans un encadré portant
+explicitement son libellé. Cliquer de nouveau sur cette pièce la désélectionne et efface les
+données qui en dépendent (pièce après-marché, eurocode, résultats et article VSF).
+
 `PieceComponent` affiche les données déjà reçues par `/getPieces`, sans nouvel appel vers
 X'Glass : référence OE, détail technique ou complément de libellé, couleur et caractéristiques
 typées marquées discriminantes par le portail. L'affichage est limité à quatre lignes pour

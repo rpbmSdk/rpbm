@@ -134,9 +134,12 @@ export class AgentWidgetDialog extends asyncWidget {
         useEffect(() => {
             if (!this.selectedCalque) {
                 this.state.pieces = [];
+                this.clearSelectedPiece();
             }
             else {
                 this.state.pieceConcernee = suggestPieceConcernee(this.selectedCalque.libelle);
+                this.state.pieces = [];
+                this.clearSelectedPiece();
                 this.runAsync(() => this.getPieces(), "Chargement des pièces en cours...");
             }
         }, () => [this.selectedCalque])
@@ -149,18 +152,15 @@ export class AgentWidgetDialog extends asyncWidget {
                 // this.onSelectPiece(this.pieces[0].id);
                 if (this.selectedPiece) {
                     const piece = this.pieces.find(piece => piece.id === this.selectedPiece.id);
-                    if (piece) {
-                        this.onSelectPiece(piece.id);
-                    }
-                    else {
-                        this.state.selectedPiece = undefined;
-                    }
+                    this.state.selectedPiece = piece;
                 }
             }
         }, () => [this.pieces])
 
         useEffect(() => {
-            this.runAsync(() => this.getSelectedPieceAm(), "Chargement des pièces compatibles en cours...");
+            if (this.selectedPiece) {
+                this.runAsync(() => this.getSelectedPieceAm(), "Chargement des pièces compatibles en cours...");
+            }
         }, () => [this.selectedPiece])
 
         useEffect(() => {
@@ -170,7 +170,7 @@ export class AgentWidgetDialog extends asyncWidget {
                 this.state.baseEurocode = reference.substring(0, 5);
             }
             else {
-                this.state.pieceAm = undefined;
+                this.state.baseEurocode = undefined;
             }
         }, () => [this.selectedPieceAm])
 
@@ -463,7 +463,26 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     onSelectPiece(pieceId) {
+        if (this.selectedPiece?.id === pieceId) {
+            this.clearSelectedPiece();
+            return;
+        }
+        this.clearSelectedPiece();
         this.state.selectedPiece = this.pieces.find(piece => piece.id === pieceId);
+    }
+
+    /**
+     * Réinitialise les données dépendant de la pièce OE sélectionnée pour ne
+     * pas afficher ou réutiliser les détails d'une sélection précédente.
+     */
+    clearSelectedPiece() {
+        this.state.selectedPiece = undefined;
+        this.state.selectedPieceAm = undefined;
+        this.state.baseEurocode = undefined;
+        this.state.articlesVsf = [];
+        this.state.selectedArticleVsf = undefined;
+        this.state.selectedProduct = undefined;
+        this._lastSearchedBaseEurocode = undefined;
     }
 
     get selectedPiece() {

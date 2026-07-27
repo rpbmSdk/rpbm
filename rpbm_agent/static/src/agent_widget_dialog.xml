@@ -51,10 +51,18 @@
                         <t t-foreach="pieces" t-as="piece" t-key="piece.id">
                             <div class="col-12 col-lg-6">
                                 <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)"/>
-                                <div t-if="piece.PiecesAM and piece.PiecesAM.length > 0" class="ms-3 mt-2 d-flex flex-wrap gap-2">
-                                    <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAm.id">
-                                        <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAm.id)"/>
-                                    </t>
+                                <div t-if="piece.id === selectedPieceId and piece.PiecesAM and piece.PiecesAM.length > 0" class="mt-3 border rounded bg-light p-3">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge text-bg-primary">Pièce sélectionnée</span>
+                                        <strong>Détails pour : <t t-esc="piece.pieceOe.libelle"/></strong>
+                                    </div>
+                                    <div class="row g-2">
+                                        <t t-foreach="piece.PiecesAM" t-as="metaPieceAM" t-key="metaPieceAM.pieceAm.id">
+                                            <div class="col-12 col-md-6">
+                                                <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM.pieceAm.id)"/>
+                                            </div>
+                                        </t>
+                                    </div>
                                 </div>
                             </div>
                         </t>
