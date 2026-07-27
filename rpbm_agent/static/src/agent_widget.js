@@ -12,6 +12,7 @@ export class AgentWidget extends Component {
 
     static props = {
         record: { type: Object },
+        readonly: { type: Boolean, optional: true },
     };
     static template = "rpbm_agent.AgentWidget";
 
