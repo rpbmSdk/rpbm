@@ -52,12 +52,12 @@ flowchart TD
     V --> W{Le véhicule sélectionné existe-t-il déjà dans Odoo ?}
     W -->|Non| X[Création du véhicule dans fleet.vehicle]
     W -->|Oui| Y[Réutilisation du véhicule existant]
-    X --> Z[Écriture immatriculation + véhicule + catégorie + eurocode sur la piste]
+    X --> Z[Écriture immatriculation + véhicule + catégorie + pièce concernée + eurocode sur la piste]
     Y --> Z
     Z --> AA[Fermeture de la fenêtre — la piste affiche les nouvelles données]
 ```
 
-Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardés au clic sur "Enregistrer" comme tout formulaire Odoo standard) : immatriculation, véhicule lié, catégorie X'Glass, Base Eurocode — détail exact des champs et de leurs conditions d'écriture dans [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md).
+Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardés au clic sur "Enregistrer" — ou immédiatement via "Confirmer et enregistrer") : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode — détail exact des champs et de leurs conditions d'écriture dans [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md).
 
 ### Ordre de Vente (`sale.order`)
 
@@ -73,7 +73,7 @@ flowchart TD
     W5 --> W6[Clic sur Confirmer pour finaliser véhicule/catégorie/eurocode sur le devis]
 ```
 
-Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Base Eurocode — détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md). L'ajout au devis (`addToSaleOrder`) est **indépendant** du bouton "Confirm" de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail de la création de produit dans [9 — Création du produit](workflow/09-creation-produit.md).
+Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode — détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md). Le notebook du widget est masqué sur un devis sans opportunité liée. L'ajout au devis (`addToSaleOrder`) est **indépendant** du bouton "Confirm" de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail de la création de produit dans [9 — Création du produit](workflow/09-creation-produit.md).
 
 ## Prérequis avant utilisation
 

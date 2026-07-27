@@ -2,10 +2,10 @@
 
 ## Stack
 
-- **Odoo 17** (`__manifest__.py` : `version: "17.0.250623.1"`), module `rpbm_agent`, dépend de `crm`, `fleet`, `sale_crm`.
-- **Backend** : un seul controller Odoo (`AgentController`, `controllers/main.py`), toutes les routes en JSON-RPC (`type='json'`, `auth='user'`). Pas de modèle Python custom, pas de vue XML, pas de règle de sécurité (`ir.model.access.csv`) dans le module.
+- **Odoo 17**, module `rpbm_agent` (version courante dans [`__manifest__.py`](../../__manifest__.py), bumpée à chaque déploiement), dépend de `crm`, `fleet`, `sale_crm`.
+- **Backend** : un seul controller Odoo (`AgentController`, `controllers/main.py`), toutes les routes en JSON-RPC (`type='json'`, `auth='user'`). Pas de modèle Python custom, pas de règle de sécurité (`ir.model.access.csv`) dans le module.
 - **Intégration portails externes** : `requests.Session()` + `BeautifulSoup4` (scraping HTML/formulaires + quelques endpoints AJAX internes renvoyant du JSON). **Aucune API officielle**, aucun Selenium/Playwright.
-- **Frontend** : composants OWL (framework de vues Odoo), déclarés en `web.assets_backend` (glob `rpbm_agent/static/src/*`). Le widget est injecté dans les vues formulaire **via Odoo Studio**, pas via des vues XML versionnées dans ce module.
+- **Frontend** : composants OWL (framework de vues Odoo), déclarés en `web.assets_backend` (glob `rpbm_agent/static/src/*`). Le widget et les champs `x_studio_*` sont placés par les **vues XML versionnées** du module (`views/*.xml`, voir [configuration](configuration.md#intégration-dans-les-vues)) ; le comportement s'adapte selon `resModel` (`crm.lead`, `sale.order`, ou dialog générique).
 
 ## Vue d'ensemble des composants
 
@@ -85,12 +85,20 @@ sequenceDiagram
     U->>FE: Clic "Créer" sur un article (sale.order)
     FE->>BE: /createProduct
     BE->>ORM: create product.product + product.supplierinfo
-    U->>FE: Clic "Confirm"
+    U->>FE: Clic "Confirmer" (ou "Confirmer et enregistrer")
+    Note over FE: confirmRecord() — écrire AVANT de fermer la session
+    FE->>BE: /getOdooVehicule (+ /createVehicule si absent)
+    BE->>ORM: recherche/création fleet.vehicle
+    FE->>FE: record.update(data) — écriture en mémoire du formulaire
+    opt "Confirmer et enregistrer"
+        FE->>ORM: record.save() — sauvegarde effective en base
+    end
     FE->>BE: /rpbm_agent_close
     BE->>XG: GET /logout.html
-    FE->>FE: record.update(data) — écriture en mémoire du formulaire
-    U->>FE: Enregistrement du formulaire (bouton standard Odoo)
-    FE->>ORM: write (sauvegarde effective en base)
+    opt "Confirmer" seul
+        U->>FE: Enregistrement du formulaire (bouton standard Odoo)
+        FE->>ORM: write (sauvegarde effective en base)
+    end
 ```
 
 ## Points d'attention transverses

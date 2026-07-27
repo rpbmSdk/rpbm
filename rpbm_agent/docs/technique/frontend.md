@@ -1,6 +1,6 @@
 # Frontend (OWL)
 
-Aucune vue XML n'est versionnée dans le module : le placement du widget dans les formulaires (`<widget name="rpbm_agent_widget" />`) se fait via Odoo Studio, en base de données de chaque instance.
+Le placement du widget dans les formulaires (`<widget name="rpbm_agent_widget" />`) se fait par les **vues XML versionnées** du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, etc. — voir [configuration](configuration.md#intégration-dans-les-vues)), chacune héritant de la vue formulaire de base du modèle.
 
 ## Arborescence des composants
 
@@ -15,7 +15,7 @@ flowchart TD
     Base --> CC[CalqueComponent]
     Base --> PC[PieceComponent]
     PC --> PAC[PieceAMComponent]
-    Base --> AC["ArticleComponent<br/>(SaleOrderArticleComponent en sale.order)"]
+    Base --> AC["ArticleComponent<br/>(utilisé tel quel sur les deux modèles)"]
 ```
 
 ## Hiérarchie des classes
@@ -29,7 +29,6 @@ classDiagram
     class AgentWidgetDialogSaleOrder
     class VehiculeComponent
     class ArticleComponent
-    class SaleOrderArticleComponent
     class CalqueComponent
     class PieceComponent
     class PieceAMComponent
@@ -40,7 +39,6 @@ classDiagram
     AgentWidgetDialog <|-- AgentWidgetDialogSaleOrder
     asyncWidget <|-- VehiculeComponent
     asyncWidget <|-- ArticleComponent
-    ArticleComponent <|-- SaleOrderArticleComponent
     Component <|-- CalqueComponent
     Component <|-- PieceComponent
     Component <|-- PieceAMComponent
@@ -65,19 +63,16 @@ classDiagram
         +vehiculeField
         +immatriculationField
         +baseEurocodeField
+        +pieceConcerneeField
     }
     class CrmLead
     class SaleOrder
-    class SaleOrderLine {
-        +productId
-    }
     AbstractRecord <|-- AbstractWidgetRecord
-    AbstractRecord <|-- SaleOrderLine
     AbstractWidgetRecord <|-- CrmLead
     AbstractWidgetRecord <|-- SaleOrder
 ```
 
-`CrmLead` et `SaleOrder` surchargent certaines de ces propriétés avec des noms de champs `x_studio_*` différents selon le modèle. Détail des noms de champs par classe/modèle, y compris quels champs sont effectivement lus/écrits (certains, comme `SaleOrder.eurocodeField`, sont morts) : voir [technique/champs/](champs/README.md) et l'[état des lieux](../etat-des-lieux.md).
+`CrmLead` et `SaleOrder` surchargent certaines de ces propriétés avec des noms de champs `x_studio_*` différents selon le modèle (ex. `immatriculationField`, `baseEurocodeField`). Détail des noms de champs par classe/modèle : voir [technique/champs/](champs/README.md).
 
 ## Chaîne réactive (`useEffect`) de `AgentWidgetDialog`
 
@@ -122,14 +117,16 @@ que ces deux sélections ne sont pas présentes.
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce |
 | `onSearchBaseEurocode()` | `AgentWidgetDialog` | `/searchBaseEurocode` | Articles VSF par eurocode |
-| `doesProductExists()` | `SaleOrderArticleComponent` | `/doesProductExists` | Vérifie l'existence du produit |
-| `createProduct()` | `SaleOrderArticleComponent` | `/createProduct` | Crée le produit + prix fournisseur |
-| `addToSaleOrder()` | `SaleOrderArticleComponent` | — (pas de route, manipulation directe de `record.data.order_line.addNewRecord`) | Ajoute une ligne au devis |
+| `findSelectedProduct()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant (référence/eurocode/nom) |
+| `createSelectedProduct()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur |
+| `addSelectedProductToSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` + `update`) | Ajoute une ligne au devis |
 
 ## Écriture finale
 
-`AgentWidgetDialog.onConfirm()` construit un objet `data` (via `getRecordData()`) et appelle
-**`this.props.record.update(data)`** — mise à jour en mémoire du `Record` Odoo standard.
+`AgentWidgetDialog.onConfirm()` / `onConfirmAndSave()` délèguent à `confirmRecord(save)`, qui
+construit un objet `data` (via `getRecordData()`) et appelle
+**`this.props.record.update(data)`** — mise à jour en mémoire du `Record` Odoo standard —
+**avant** de fermer la session portail (`closeAgents()`, cf. correctif L1.0).
 L'écriture effective en base se fait ensuite via le mécanisme de sauvegarde standard du
 formulaire Odoo (bouton « Enregistrer »), ou directement avec « Confirmer et enregistrer ».
 Le module n'utilise pas de `orm.write` : tous ses échanges serveur passent par `rpc` vers les

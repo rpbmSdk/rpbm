@@ -3,18 +3,18 @@
 Le notebook « Véhicule (X'Glass) » est masqué si le devis ne possède pas d'opportunité liée.
 Le widget n'est donc jamais ouvert dans un contexte où ses champs `related` seraient perdus.
 
-- **Déclencheur** : clic sur "Confirmer" dans la fenêtre du widget, ouverte depuis une fiche `sale.order`.
-- **Code** : même `getRecordData()` que pour `crm.lead` (`agent_widget_dialog.js:226-258`) — seuls les noms de champs diffèrent, via la classe `SaleOrder` (`agent_widget_dialog_sale_order.js`).
+- **Déclencheur** : clic sur "Confirmer" (ou "Confirmer et enregistrer") dans la fenêtre du widget, ouverte depuis une fiche `sale.order`.
+- **Code** : même `confirmRecord()` → `getRecordData()` que pour `crm.lead` — seuls les noms de champs diffèrent, via la classe `SaleOrder` (`agent_widget_dialog_sale_order.js`, qui ne surcharge que `immatriculationField`).
 
 | Champ écrit | Valeur source | Condition |
 |---|---|---|
 | `x_studio_immatriculation_` | `state.immatriculationValue` | toujours |
 | `x_studio_vehicle_id` | véhicule Odoo réutilisé ou créé (cf. [8 — Création du véhicule](08-creation-vehicule.md)) | si un véhicule est sélectionné |
 | `x_studio_categorie_xglass` | `selectedCalque.libelle` | si une catégorie est sélectionnée |
+| `x_studio_field_eENQz` (Pièce concernée) | suggestion X'Glass visible et modifiable | si une catégorie est sélectionnée — champ `related` vers l'opportunité |
 | `x_studio_base_eurocode` | `state.baseEurocode` | si un eurocode est renseigné — fonctionne nativement ici, ce champ `related` porte déjà ce nom exact |
 
-- **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur "Enregistrer".
-- `SaleOrder.eurocodeField` (`x_studio_eurocode`) et `SaleOrder.OrderlLines` sont des propriétés **mortes**, jamais utilisées dans `getRecordData()` (voir [état des lieux](../../etat-des-lieux.md)).
-- L'ajout d'un article au devis (`addToSaleOrder()`) est **indépendant** de cette étape de confirmation — voir [9 — Création du produit](09-creation-produit.md).
+- **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur "Enregistrer" (bouton "Confirmer") ou immédiate via `record.save()` (bouton "Confirmer et enregistrer").
+- L'ajout d'un article au devis (`addSelectedProductToSaleOrder()`) est **indépendant** de cette étape de confirmation — voir [9 — Création du produit](09-creation-produit.md).
 
 Détail de chaque champ : [technique/champs/sale-order.md](../../technique/champs/sale-order.md).
