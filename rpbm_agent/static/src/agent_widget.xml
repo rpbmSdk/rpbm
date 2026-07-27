@@ -2,8 +2,12 @@
 <templates xml:space="preserve">
 
     <t t-name="rpbm_agent.AgentWidget">
-        <button class="btn btn-sm btn-secondary" t-on-click="onOpenWindow">
-            <i class="oi oi-search me-2"/>
+        <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                title="Ouvrir l'assistant véhicule et pièces"
+                aria-label="Ouvrir l'assistant véhicule et pièces"
+                t-on-click="onOpenWindow">
+            <i class="oi oi-search"/>
+            <span>Assistant véhicule</span>
         </button>
     </t>
 

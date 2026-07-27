@@ -10,6 +10,9 @@ import { AgentWidgetDialogSaleOrder } from "./agent_widget_dialog_sale_order";
 
 export class AgentWidget extends Component {
 
+    static props = {
+        record: { type: Object },
+    };
     static template = "rpbm_agent.AgentWidget";
 
     setup() {

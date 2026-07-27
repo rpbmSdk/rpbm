@@ -12,8 +12,8 @@
                 <section class="mb-4">
                     <h5>1. Véhicule</h5>
                     <div class="d-flex flex-wrap gap-2 align-items-end">
-                        <div>
-                            <label for="immatriculation" class="form-label">Immatriculation</label>
+                        <div class="d-flex flex-column">
+                            <label for="immatriculation" class="form-label mb-1">Immatriculation</label>
                             <input class="o_input text-uppercase" id="immatriculation" t-att-value="immatriculationValue" placeholder="Immatriculation" t-ref="immatriculation" t-on-change="onChangeImmatriculation"/>
                         </div>
                         <button class="btn btn-primary" t-on-click="onSearchImmatriculation">Rechercher</button>

@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
 
     <t t-name="rpbm_agent.PieceComponent">
-        <div class="card h-100">
+        <div class="card">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
                     <t t-esc="props.piece.pieceOe.libelle"/>
@@ -11,6 +11,14 @@
                     Prix: <t t-esc="props.piece.pieceOe.prix"/>
  €
                 </p>
+                <div t-if="displayAttributes.length" class="small text-muted mb-2">
+                    <t t-foreach="displayAttributes" t-as="attribute" t-key="attribute.key">
+                        <div>
+                            <span class="fw-semibold"><t t-esc="attribute.label"/> : </span>
+                            <t t-esc="attribute.value"/>
+                        </div>
+                    </t>
+                </div>
                 <t t-if="props.piece.tempsList">
                     <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.operationTemps.id">
                         <li>

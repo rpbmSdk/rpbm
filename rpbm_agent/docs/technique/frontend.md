@@ -49,6 +49,14 @@ classDiagram
 **propre à chaque composant** avant/après l'appel et affiche une notification Odoo en cas
 d'erreur.
 
+## Détails discriminants des pièces OE
+
+`PieceComponent` affiche les données déjà reçues par `/getPieces`, sans nouvel appel vers
+X'Glass : référence OE, détail technique ou complément de libellé, couleur et caractéristiques
+typées marquées discriminantes par le portail. L'affichage est limité à quatre lignes pour
+préserver la lisibilité des cartes ; ces éléments distinguent notamment les capteurs, teintes,
+chauffage, acoustique et états de livraison.
+
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 
 ```mermaid

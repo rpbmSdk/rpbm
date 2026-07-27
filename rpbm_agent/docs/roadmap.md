@@ -601,6 +601,14 @@ calculés par Odoo, sauvegarde du devis sans erreur.
 > **Fait (2026-07-26).** Dialog `xl`, quatre sections titrées et pièces après-marché visuellement
 > rattachées à leur pièce OE ; aucune dépendance ou feuille de style supplémentaire.
 
+> **Correctif de flux (2026-07-27).** La carte de pièce OE ne force plus `h-100` : lorsqu'une
+> pièce est sélectionnée, ses pièces compatibles restent visibles sous elle sans être recouvertes
+> par les cartes suivantes.
+
+> **Différenciation des pièces (2026-07-27).** Les cartes affichent désormais les données déjà
+> fournies par X'Glass : référence OE, détail technique, couleur et jusqu'à quatre caractéristiques
+> discriminantes. Aucun appel portail supplémentaire n'est ajouté.
+
 **Problème.** Le template est une suite de `div` avec styles inline, sans hiérarchie
 visuelle : véhicules, calques, pièces, pièces AM et articles VSF s'empilent dans une
 `Dialog size="lg"`. Les `PieceAMComponent` sont rendus comme **frères** des
