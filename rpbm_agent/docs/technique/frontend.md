@@ -61,6 +61,10 @@ typées marquées discriminantes par le portail. L'affichage est limité à quat
 préserver la lisibilité des cartes ; ces éléments distinguent notamment les capteurs, teintes,
 chauffage, acoustique et états de livraison.
 
+Dans la liste VSF, l'encart de création ou de consultation Odoo est rendu sous l'article VSF
+sélectionné. Les miniatures sont des liens d'aperçu : un clic ouvre l'image dans un nouvel onglet
+pour l'examiner à sa taille disponible.
+
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 
 ```mermaid

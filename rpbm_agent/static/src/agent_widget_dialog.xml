@@ -85,20 +85,22 @@
                                     <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>this.onClickArticleVsf(articleVsf.code)"/>
                                     <a t-att-href="articleVsf.url" target="_blank" class="btn btn-outline-primary align-self-start">Fiche technique</a>
                                     <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
-                                        <img t-att-src="absoluteImgUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px;"/>
+                                        <a t-att-href="absoluteImgUrl" target="_blank" rel="noopener" title="Agrandir l'image de l'article">
+                                            <img t-att-src="absoluteImgUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px; cursor: zoom-in;"/>
+                                        </a>
+                                    </t>
+                                </div>
+                                <div t-if="articleVsf.code === selectedArticleId" name="selected_article_actions" class="alert alert-light border mt-2 mb-0">
+                                    <t t-if="selectedProduct">
+                                        <span>Produit Odoo trouv&#233; (<t t-esc="selectedProductMatchLabel"/>).</span>
+                                        <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl" target="_blank">Voir le produit</a>
+                                    </t>
+                                    <t t-else="">
+                                        <span>Article absent de la base Odoo.</span>
+                                        <button class="btn btn-primary btn-sm ms-2" t-on-click="createSelectedProduct">Cr&#233;er le produit</button>
                                     </t>
                                 </div>
                             </div>
-                        </t>
-                    </div>
-                    <div t-if="selectedArticleVsf" name="selected_article_actions" class="alert alert-light border mt-3 mb-0">
-                        <t t-if="selectedProduct">
-                            <span>Produit Odoo trouvé (<t t-esc="selectedProductMatchLabel"/>).</span>
-                            <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl" target="_blank">Voir le produit</a>
-                        </t>
-                        <t t-else="">
-                            <span>Article absent de la base Odoo.</span>
-                            <button class="btn btn-primary btn-sm ms-2" t-on-click="createSelectedProduct">Créer le produit</button>
                         </t>
                     </div>
                 </section>
