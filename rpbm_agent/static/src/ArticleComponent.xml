@@ -6,10 +6,10 @@
                 <h5 class="card-title">
                     <t t-esc="props.article.code"/> <t t-esc="props.article.name"/>
                 </h5>
-                <h6>
+                <h6 t-if="props.article.refConstructeur">
                     Référence constructeur: <t t-esc="props.article.refConstructeur"/>
                 </h6>
-                <h6>
+                <h6 t-if="props.article.prixVente !== undefined and props.article.prixVente !== null">
                     Prix: 
                     <t t-esc="props.article.prixVente"/>
  

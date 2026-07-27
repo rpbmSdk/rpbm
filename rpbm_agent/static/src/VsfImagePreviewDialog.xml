@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="rpbm_agent.VsfImagePreviewDialog">
+        <Dialog size="'xl'" title="'Aperçu de l’image VSF'">
+            <div class="text-center">
+                <img t-att-src="props.imageUrl" class="img-fluid" style="max-height: 80vh;" alt="Image article VSF en taille réelle"/>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="props.close">Fermer</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

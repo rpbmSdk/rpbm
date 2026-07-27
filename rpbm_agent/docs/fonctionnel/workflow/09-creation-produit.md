@@ -11,13 +11,15 @@ en l'absence de résultat, l'utilisateur peut créer le produit.
 | Champ écrit (`product.product`) | Source |
 |---|---|
 | `name` | `articleVsf.name` |
-| `default_code` | `articleVsf.code` |
+| `default_code` | `articleVsf.refConstructeur`, ou `articleVsf.code` si la référence constructeur est absente |
 | `product.template.x_studio_eurocode` | `articleVsf.code` |
+| `product.template.x_studio_largeur_mm` | Largeur de fiche VSF normalisée en millimètres |
+| `product.template.x_studio_longueur_mm` | Longueur de fiche VSF normalisée en millimètres |
 | `list_price` | `articleVsf.prixVente` |
 | `type` | `'product'` (littéral) |
 | `x_studio_reference_constructeur` | `articleVsf.refConstructeur` |
-| `image_1920` | image téléchargée depuis VSF (premier `absoluteImgUrls`, si HTTP 200) |
-| `description` | lien HTML vers la fiche VSF |
+| `image_1920` | image pleine taille signée par VSF (`p=xlg`), avec repli sur la miniature si elle est indisponible |
+| `description` | note interne HTML structurée : lien fiche VSF et caractéristiques techniques extraites |
 
 | Champ écrit (`product.supplierinfo`) | Source |
 |---|---|

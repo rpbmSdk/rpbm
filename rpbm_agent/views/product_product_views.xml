@@ -7,6 +7,8 @@
         <field name="arch" type="xml">
             <field name="default_code" position="after">
                 <field name="x_studio_eurocode"/>
+                <field name="x_studio_largeur_mm"/>
+                <field name="x_studio_longueur_mm"/>
             </field>
             <notebook position="inside">
                 <page name="rpbm_agent_xglass" string="VSF">

@@ -1,4 +1,5 @@
 import functools
+import html
 import json
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -183,6 +184,36 @@ def _find_existing_product(env, product_code, eurocode, product_name):
         if product:
             return product, 'nom'
     return Product.browse(), None
+
+
+def _article_constructor_reference(article_info):
+    """Référence interne attendue par le métier, avec repli VSF stable."""
+    return str(
+        article_info.get('refConstructeur')
+        or article_info.get('code')
+        or ''
+    ).strip()
+
+
+def _vsf_product_description(article):
+    """Construit une note interne depuis les valeurs textuelles déjà parsées."""
+    lines = [
+        '<section class="rpbm-vsf-note">',
+        '<h3>Informations VSF</h3>',
+        '<p><a href="%s" target="_blank" rel="noopener">Voir la fiche VSF</a></p>'
+        % html.escape(article.url or '', quote=True),
+    ]
+    details = list(getattr(article, 'technicalDetails', []) or [])
+    if details:
+        lines.append('<ul>')
+        for detail in details:
+            label = html.escape(str(detail.get('label') or 'Information'))
+            value = html.escape(str(detail.get('value') or ''))
+            if value:
+                lines.append(f'<li><strong>{label} :</strong> {value}</li>')
+        lines.append('</ul>')
+    lines.append('</section>')
+    return ''.join(lines)
 
 
 def _touch_agent_lock(f):
@@ -447,13 +478,31 @@ class AgentController(Controller):
         frontend ; le contrat courant envoie l'article VSF complet.
         """
         article_info = articleVsfInfo or {'code': productCode}
-        product_code = str(article_info.get('code') or '').strip()
+        product_code = _article_constructor_reference(article_info)
         eurocode = str(article_info.get('code') or '').strip()
         product_name = str(article_info.get('name') or '').strip()
         product, matched_by = _find_existing_product(
             request.env, product_code, eurocode, product_name
         )
         return _product_payload(product, matched_by) if product else False
+
+    @route('/getVsfArticleDetails', auth='user', type='json')
+    @_touch_agent_lock
+    def get_vsf_article_details(self, articleVsfInfo=None):
+        """Retourne les détails de fiche nécessaires au widget, sans écriture Odoo."""
+        article_info = articleVsfInfo or {}
+        code = str(article_info.get('code') or '').strip()
+        if not code:
+            raise UserError(_("Lecture impossible : le code VSF de l'article est absent."))
+        try:
+            details = vsfAgent.getArticleDetails(article_info)
+            article = vsf.VSFArticle(
+                _rpbm_discount=_get_vsf_discount(request.env), **details
+            )
+            return article.__dict__
+        except VSFError:
+            _logger.exception("Erreur VSF lors de la lecture de l'article %s", code)
+            raise UserError(_("Lecture impossible : la fiche article VSF est inaccessible."))
 
     @route('/createProduct', auth='user', type='json')
     @_touch_agent_lock
@@ -469,23 +518,28 @@ class AgentController(Controller):
             "SELECT pg_advisory_xact_lock(hashtext(%s))",
             (f"rpbm_agent.product:{product_code}",),
         )
-        existing_product, matched_by = _find_existing_product(
-            request.env,
-            product_code,
-            product_code,
-            str(articleVsfInfo.get('name') or '').strip(),
-        )
-        if existing_product:
-            return _product_payload(existing_product, matched_by)
-
         try:
+            article_details = vsfAgent.getArticleDetails(articleVsfInfo)
             article_vsf = vsf.VSFArticle(
-                _rpbm_discount=_get_vsf_discount(request.env), **articleVsfInfo
+                _rpbm_discount=_get_vsf_discount(request.env), **article_details
             )
+            constructor_reference = _article_constructor_reference(article_vsf.__dict__)
+            existing_product, matched_by = _find_existing_product(
+                request.env,
+                constructor_reference,
+                article_vsf.code,
+                str(article_vsf.name or '').strip(),
+            )
+            if existing_product:
+                return _product_payload(existing_product, matched_by)
+            if article_vsf.prixVente is None or article_vsf.prixVenteRPBM is None:
+                raise UserError(_("Création impossible : le prix de l'article VSF est absent."))
+
             image = False
-            if article_vsf.absoluteImgUrls:
+            image_urls = article_vsf.fullImageUrls or article_vsf.absoluteImgUrls
+            if image_urls:
                 try:
-                    response = vsfAgent.get(article_vsf.absoluteImgUrls[0])
+                    response = vsfAgent.get(image_urls[0])
                     if response.status_code == 200:
                         image = base64.b64encode(response.content).replace(b"\n", b"")
                     else:
@@ -493,16 +547,13 @@ class AgentController(Controller):
                 except VSFError:
                     _logger.warning("Image VSF indisponible pour %s ; produit créé sans image", article_vsf.code)
 
-            product = request.env['product.product'].create({
-                'name': article_vsf.name,
-                'default_code': article_vsf.code,
-                'x_studio_eurocode': article_vsf.code,
-                'list_price': article_vsf.prixVente,
-                'type': 'product',
-                'x_studio_reference_constructeur': article_vsf.refConstructeur,
-                'image_1920': image or False,
-                'description': f"Lien vers le produit: <a href=\"{article_vsf.url}\">Lien</a>",
-            })
+            product = request.env['product.product'].create(
+                vsf.product_creation_values(
+                    article_vsf,
+                    _vsf_product_description(article_vsf),
+                    image=image,
+                )
+            )
             request.env['product.supplierinfo'].create({
                 'partner_id': _get_vsf_partner_id(request.env),
                 'product_id': product.id,

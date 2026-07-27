@@ -66,6 +66,18 @@ FIELDS_TO_ENSURE = [
         "description": "Eurocode",
         "ttype": "char",
     },
+    {
+        "model": "product.template",
+        "name": "x_studio_largeur_mm",
+        "description": "Largeur (mm)",
+        "ttype": "float",
+    },
+    {
+        "model": "product.template",
+        "name": "x_studio_longueur_mm",
+        "description": "Longueur (mm)",
+        "ttype": "float",
+    },
 ]
 
 

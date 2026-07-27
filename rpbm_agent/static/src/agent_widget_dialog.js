@@ -16,6 +16,7 @@ import { CalqueComponent } from "./CalqueComponent";
 import { PieceComponent } from "./PieceComponent";
 import { ArticleComponent } from "./ArticleComponent";
 import { PieceAMComponent } from "./PieceAMComponent";
+import { VsfImagePreviewDialog } from "./VsfImagePreviewDialog";
 
 /**
  * @typedef {import('./types').Vehicule}
@@ -43,6 +44,7 @@ export class AgentWidgetDialog extends asyncWidget {
     setup() {
         super.setup();
         this.rpc = useService("rpc");
+        this.dialog = useService("dialog");
         /** @type {AbstractWidgetRecord} */
         this.record = new AbstractWidgetRecord(this.props.record);
         this.state = useState({
@@ -596,14 +598,40 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async onClickArticleVsf(articleCode) {
-        this.state.selectedArticleVsf = this.articlesVsf.find(article => article.code === articleCode);
-        this.state.selectedProduct = undefined;
-        if (this.selectedArticleVsf) {
-            await this.runAsync(
-                () => this.findSelectedProduct(),
-                "Recherche de l'article dans Odoo en cours..."
-            );
+        const article = this.articlesVsf.find(article => article.code === articleCode);
+        await this.selectVsfArticle(article);
+    }
+
+    async onClickSuggestedArticle(article) {
+        if (!article) {
+            return;
         }
+        if (!this.articlesVsf.some(candidate => candidate.code === article.code)) {
+            this.state.articlesVsf = [...this.articlesVsf, article];
+        }
+        await this.selectVsfArticle(article);
+    }
+
+    async selectVsfArticle(article) {
+        if (!article?.code) {
+            return;
+        }
+        const articleCode = article.code;
+        this.state.selectedArticleVsf = article;
+        this.state.selectedProduct = undefined;
+        await this.runAsync(async () => {
+            const details = await this.rpc("/getVsfArticleDetails", {
+                articleVsfInfo: article,
+            });
+            if (this.selectedArticleVsf?.code !== articleCode) {
+                return;
+            }
+            this.state.selectedArticleVsf = details;
+            this.state.articlesVsf = this.articlesVsf.map((candidate) =>
+                candidate.code === articleCode ? details : candidate
+            );
+            await this.findSelectedProduct();
+        }, "Chargement de la fiche article VSF en cours...");
     }
 
     async findSelectedProduct() {
@@ -632,6 +660,12 @@ export class AgentWidgetDialog extends asyncWidget {
                 this.state.selectedProduct = product;
             }
         }, "Création du produit en cours...");
+    }
+
+    openImagePreview(imageUrl) {
+        if (imageUrl) {
+            this.dialog.add(VsfImagePreviewDialog, { imageUrl });
+        }
     }
 
     get selectedArticleId() {

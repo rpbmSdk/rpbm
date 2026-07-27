@@ -62,8 +62,12 @@ préserver la lisibilité des cartes ; ces éléments distinguent notamment les 
 chauffage, acoustique et états de livraison.
 
 Dans la liste VSF, l'encart de création ou de consultation Odoo est rendu sous l'article VSF
-sélectionné. Les miniatures sont des liens d'aperçu : un clic ouvre l'image dans un nouvel onglet
-pour l'examiner à sa taille disponible.
+sélectionné.
+
+Au clic sur un article, le widget lit sa fiche VSF afin d'afficher les suggestions du carrousel
+« références complémentaires ». Ces suggestions sont sélectionnables comme un résultat VSF
+normal. Les miniatures disposant d'une URL pleine taille signée par VSF ouvrent une prévisualisation
+dans une dialog Odoo ; les miniatures seules restent non cliquables.
 
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 

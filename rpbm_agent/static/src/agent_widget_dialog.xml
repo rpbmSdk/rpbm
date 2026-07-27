@@ -84,10 +84,11 @@
                                 <div class="d-flex flex-wrap gap-2">
                                     <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>this.onClickArticleVsf(articleVsf.code)"/>
                                     <a t-att-href="articleVsf.url" target="_blank" class="btn btn-outline-primary align-self-start">Fiche technique</a>
-                                    <t t-foreach="articleVsf.absoluteImgUrls" t-as="absoluteImgUrl" t-key="absoluteImgUrl">
-                                        <a t-att-href="absoluteImgUrl" target="_blank" rel="noopener" title="Agrandir l'image de l'article">
-                                            <img t-att-src="absoluteImgUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px; cursor: zoom-in;"/>
-                                        </a>
+                                    <t t-foreach="articleVsf.images || []" t-as="image" t-key="image.thumbnailUrl">
+                                        <button t-if="image.fullUrl" type="button" class="btn p-0 border-0 bg-transparent" title="Agrandir l'image de l'article" t-on-click="()=>this.openImagePreview(image.fullUrl)">
+                                            <img t-att-src="image.thumbnailUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px; cursor: zoom-in;"/>
+                                        </button>
+                                        <img t-else="" t-att-src="image.thumbnailUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px;"/>
                                     </t>
                                 </div>
                                 <div t-if="articleVsf.code === selectedArticleId" name="selected_article_actions" class="alert alert-light border mt-2 mb-0">
@@ -99,6 +100,16 @@
                                         <span>Article absent de la base Odoo.</span>
                                         <button class="btn btn-primary btn-sm ms-2" t-on-click="createSelectedProduct">Cr&#233;er le produit</button>
                                     </t>
+                                </div>
+                                <div t-if="articleVsf.code === selectedArticleId and selectedArticleVsf.suggestedArticles and selectedArticleVsf.suggestedArticles.length" class="border rounded mt-2 p-3">
+                                    <h6 class="mb-3">Articles suggérés par VSF</h6>
+                                    <div class="row g-2">
+                                        <t t-foreach="selectedArticleVsf.suggestedArticles" t-as="suggestion" t-key="suggestion.code">
+                                            <div class="col-12 col-md-6">
+                                                <ArticleComponent record="record" article="suggestion" selectedArticleId="selectedArticleId" t-on-click="()=>this.onClickSuggestedArticle(suggestion)"/>
+                                            </div>
+                                        </t>
+                                    </div>
                                 </div>
                             </div>
                         </t>
