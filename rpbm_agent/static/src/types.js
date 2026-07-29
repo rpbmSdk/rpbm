@@ -49,12 +49,17 @@
  * @property {number} prixVente
  * @property {number} prixVenteRPBM
  * @property {string} refConstructeur
+ * @property {number|null} prixHT
+ * @property {number} stock
+ * @property {boolean} available
  * @property {{thumbnailUrl: string, fullUrl?: string}[]} images
  * @property {string[]} fullImageUrls
  * @property {{label: string, value: string}[]} technicalDetails
  * @property {number|null} largeurMm
  * @property {number|null} longueurMm
  * @property {ArticleVsf[]} suggestedArticles
+ * @property {boolean} [detailsLoaded]
+ * @property {boolean} [detailsUnavailable]
  */
 
 /**

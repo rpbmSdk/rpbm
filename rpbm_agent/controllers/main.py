@@ -203,17 +203,42 @@ def _vsf_product_description(article):
         '<p><a href="%s" target="_blank" rel="noopener">Voir la fiche VSF</a></p>'
         % html.escape(article.url or '', quote=True),
     ]
-    details = list(getattr(article, 'technicalDetails', []) or [])
-    if details:
-        lines.append('<ul>')
-        for detail in details:
-            label = html.escape(str(detail.get('label') or 'Information'))
-            value = html.escape(str(detail.get('value') or ''))
-            if value:
-                lines.append(f'<li><strong>{label} :</strong> {value}</li>')
-        lines.append('</ul>')
+    details = [
+        ('Eurocode', getattr(article, 'code', None)),
+        ('Référence constructeur', getattr(article, 'refConstructeur', None)),
+        ('Prix de vente VSF', getattr(article, 'prixVente', None)),
+        ('Prix HT VSF', getattr(article, 'prixHT', None)),
+        ('Stock disponible', getattr(article, 'stock', None)),
+        ('Largeur (mm)', getattr(article, 'largeurMm', None)),
+        ('Longueur (mm)', getattr(article, 'longueurMm', None)),
+    ]
+    details.extend(
+        (detail.get('label') or 'Information', detail.get('value'))
+        for detail in getattr(article, 'technicalDetails', []) or []
+    )
+    seen_labels = set()
+    lines.append('<ul>')
+    for raw_label, raw_value in details:
+        label_key = str(raw_label).strip().casefold()
+        if not label_key or label_key in seen_labels or raw_value in (None, ''):
+            continue
+        seen_labels.add(label_key)
+        label = html.escape(str(raw_label))
+        value = html.escape(str(raw_value))
+        lines.append(f'<li><strong>{label} :</strong> {value}</li>')
+    lines.append('</ul>')
     lines.append('</section>')
     return ''.join(lines)
+
+
+def _vsf_article_payload(article_details, discount):
+    """Normalise aussi les suggestions pour que le frontend ait un contrat unique."""
+    article = vsf.VSFArticle(_rpbm_discount=discount, **article_details)
+    article.suggestedArticles = [
+        vsf.VSFArticle(_rpbm_discount=discount, **suggestion).__dict__
+        for suggestion in article.suggestedArticles
+    ]
+    return article
 
 
 def _touch_agent_lock(f):
@@ -488,17 +513,20 @@ class AgentController(Controller):
 
     @route('/getVsfArticleDetails', auth='user', type='json')
     @_touch_agent_lock
-    def get_vsf_article_details(self, articleVsfInfo=None):
+    def get_vsf_article_details(self, articleVsfInfo=None, enrichSuggestions=True):
         """Retourne les détails de fiche nécessaires au widget, sans écriture Odoo."""
         article_info = articleVsfInfo or {}
         code = str(article_info.get('code') or '').strip()
         if not code:
             raise UserError(_("Lecture impossible : le code VSF de l'article est absent."))
         try:
-            details = vsfAgent.getArticleDetails(article_info)
-            article = vsf.VSFArticle(
-                _rpbm_discount=_get_vsf_discount(request.env), **details
+            discount = _get_vsf_discount(request.env)
+            details = vsfAgent.getArticleDetails(
+                article_info,
+                include_suggestions=bool(enrichSuggestions),
+                enrich_suggestions=bool(enrichSuggestions),
             )
+            article = _vsf_article_payload(details, discount)
             return article.__dict__
         except VSFError:
             _logger.exception("Erreur VSF lors de la lecture de l'article %s", code)
@@ -519,7 +547,9 @@ class AgentController(Controller):
             (f"rpbm_agent.product:{product_code}",),
         )
         try:
-            article_details = vsfAgent.getArticleDetails(articleVsfInfo)
+            article_details = vsfAgent.getArticleDetails(
+                articleVsfInfo, include_suggestions=False
+            )
             article_vsf = vsf.VSFArticle(
                 _rpbm_discount=_get_vsf_discount(request.env), **article_details
             )

@@ -66,8 +66,9 @@ export class AgentWidgetDialog extends asyncWidget {
             selectedPieceAm: undefined,
             baseEurocode: undefined,
             articlesVsf: [],
-            selectedArticleVsf: undefined,
-            selectedProduct: undefined,
+            selectedArticleCodes: {},
+            articleProducts: {},
+            articleLoadingCodes: {},
             pieceConcernee: undefined,
         });
         this._agentLockReleased = false;
@@ -482,8 +483,7 @@ export class AgentWidgetDialog extends asyncWidget {
         this.state.selectedPieceAm = undefined;
         this.state.baseEurocode = undefined;
         this.state.articlesVsf = [];
-        this.state.selectedArticleVsf = undefined;
-        this.state.selectedProduct = undefined;
+        this.resetVsfSelection();
         this._lastSearchedBaseEurocode = undefined;
     }
 
@@ -538,6 +538,7 @@ export class AgentWidgetDialog extends asyncWidget {
         const baseEurocode = (this.baseEurocode || "").trim();
         if (!baseEurocode) {
             this.state.articlesVsf = [];
+            this.resetVsfSelection();
             this._lastSearchedBaseEurocode = undefined;
             return;
         }
@@ -550,7 +551,7 @@ export class AgentWidgetDialog extends asyncWidget {
                 baseEurocode,
             });
             this.state.articlesVsf = res;
-            this.state.selectedArticleVsf = undefined;
+            this.resetVsfSelection();
         } catch (error) {
             this._lastSearchedBaseEurocode = undefined;
             throw error;
@@ -561,28 +562,71 @@ export class AgentWidgetDialog extends asyncWidget {
         this.runAsync(() => this.searchBaseEurocode(), "Recherche des articles VSF en cours...");
     }
 
-    get selectedArticleVsf() {
-        return this.state.selectedArticleVsf;
+    resetVsfSelection() {
+        this.state.selectedArticleCodes = {};
+        this.state.articleProducts = {};
+        this.state.articleLoadingCodes = {};
     }
 
-    get selectedProduct() {
-        return this.state.selectedProduct;
+    isArticleSelected(articleCode) {
+        return Boolean(this.state.selectedArticleCodes[articleCode]);
     }
 
-    get productOdooUrl() {
-        return this.selectedProduct
-            ? `/web#id=${this.selectedProduct.id}&view_type=form&model=product.product&action=product.product_template_action`
+    isArticleLoading(articleCode) {
+        return Boolean(this.state.articleLoadingCodes[articleCode]);
+    }
+
+    getArticleByCode(articleCode) {
+        for (const article of this.articlesVsf) {
+            if (article.code === articleCode) {
+                return article;
+            }
+            const suggestion = (article.suggestedArticles || []).find(
+                candidate => candidate.code === articleCode
+            );
+            if (suggestion) {
+                return suggestion;
+            }
+        }
+        return undefined;
+    }
+
+    replaceArticle(articleCode, details) {
+        this.state.articlesVsf = this.articlesVsf.map((article) => {
+            if (article.code === articleCode) {
+                return details;
+            }
+            const suggestions = article.suggestedArticles || [];
+            if (!suggestions.some(candidate => candidate.code === articleCode)) {
+                return article;
+            }
+            return {
+                ...article,
+                suggestedArticles: suggestions.map((candidate) =>
+                    candidate.code === articleCode ? details : candidate
+                ),
+            };
+        });
+    }
+
+    getProductForArticle(articleCode) {
+        return this.state.articleProducts[articleCode];
+    }
+
+    productOdooUrl(product) {
+        return product
+            ? `/web#id=${product.id}&view_type=form&model=product.product&action=product.product_template_action`
             : undefined;
     }
 
-    get selectedProductMatchLabel() {
+    productMatchLabel(product) {
         const labels = {
             reference_interne: "référence interne",
             eurocode: "eurocode",
             nom: "nom",
             créé: "créé à l'instant",
         };
-        return labels[this.selectedProduct?.matched_by] || "correspondance confirmée";
+        return labels[product?.matched_by] || "correspondance confirmée";
     }
 
     get pieceConcerneeOptions() {
@@ -598,66 +642,104 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async onClickArticleVsf(articleCode) {
-        const article = this.articlesVsf.find(article => article.code === articleCode);
-        await this.selectVsfArticle(article);
+        await this.toggleVsfArticle(articleCode);
     }
 
-    async onClickSuggestedArticle(article) {
-        if (!article) {
-            return;
-        }
-        if (!this.articlesVsf.some(candidate => candidate.code === article.code)) {
-            this.state.articlesVsf = [...this.articlesVsf, article];
-        }
-        await this.selectVsfArticle(article);
+    async onClickSuggestedArticle(articleCode, parentArticleCode) {
+        await this.toggleVsfArticle(articleCode, parentArticleCode);
     }
 
-    async selectVsfArticle(article) {
+    deselectArticles(articleCodes) {
+        const selectedArticleCodes = { ...this.state.selectedArticleCodes };
+        const articleProducts = { ...this.state.articleProducts };
+        const articleLoadingCodes = { ...this.state.articleLoadingCodes };
+        for (const code of articleCodes) {
+            delete selectedArticleCodes[code];
+            delete articleProducts[code];
+            delete articleLoadingCodes[code];
+        }
+        this.state.selectedArticleCodes = selectedArticleCodes;
+        this.state.articleProducts = articleProducts;
+        this.state.articleLoadingCodes = articleLoadingCodes;
+    }
+
+    async toggleVsfArticle(articleCode, parentArticleCode = undefined) {
+        const article = this.getArticleByCode(articleCode);
         if (!article?.code) {
             return;
         }
+        if (this.isArticleSelected(articleCode)) {
+            const codesToDeselect = [articleCode];
+            if (!parentArticleCode) {
+                codesToDeselect.push(
+                    ...(article.suggestedArticles || []).map(suggestion => suggestion.code)
+                );
+            }
+            this.deselectArticles(codesToDeselect);
+            return;
+        }
+        this.state.selectedArticleCodes = {
+            ...this.state.selectedArticleCodes,
+            [articleCode]: true,
+        };
+        if (article.detailsLoaded) {
+            await this.findProductForArticle(article);
+        } else {
+            await this.loadArticleDetails(article, !parentArticleCode);
+        }
+    }
+
+    async loadArticleDetails(article, enrichSuggestions) {
         const articleCode = article.code;
-        this.state.selectedArticleVsf = article;
-        this.state.selectedProduct = undefined;
+        this.state.articleLoadingCodes = {
+            ...this.state.articleLoadingCodes,
+            [articleCode]: true,
+        };
         await this.runAsync(async () => {
             const details = await this.rpc("/getVsfArticleDetails", {
                 articleVsfInfo: article,
+                enrichSuggestions,
             });
-            if (this.selectedArticleVsf?.code !== articleCode) {
+            if (!this.isArticleSelected(articleCode)) {
                 return;
             }
-            this.state.selectedArticleVsf = details;
-            this.state.articlesVsf = this.articlesVsf.map((candidate) =>
-                candidate.code === articleCode ? details : candidate
-            );
-            await this.findSelectedProduct();
+            this.replaceArticle(articleCode, details);
+            await this.findProductForArticle(details);
         }, "Chargement de la fiche article VSF en cours...");
+        const loadingCodes = { ...this.state.articleLoadingCodes };
+        delete loadingCodes[articleCode];
+        this.state.articleLoadingCodes = loadingCodes;
     }
 
-    async findSelectedProduct() {
-        const articleCode = this.selectedArticleVsf?.code;
-        if (!articleCode) {
+    async findProductForArticle(article) {
+        if (!article?.code) {
             return;
         }
         const product = await this.rpc("/doesProductExists", {
-            articleVsfInfo: this.selectedArticleVsf,
+            articleVsfInfo: article,
         });
-        if (this.selectedArticleVsf?.code === articleCode) {
-            this.state.selectedProduct = product || undefined;
+        if (this.isArticleSelected(article.code)) {
+            this.state.articleProducts = {
+                ...this.state.articleProducts,
+                [article.code]: product || undefined,
+            };
         }
     }
 
-    async createSelectedProduct() {
-        const articleCode = this.selectedArticleVsf?.code;
-        if (!articleCode) {
+    async createProductForArticle(articleCode) {
+        const article = this.getArticleByCode(articleCode);
+        if (!article) {
             return;
         }
         await this.runAsync(async () => {
             const product = await this.rpc("/createProduct", {
-                articleVsfInfo: this.selectedArticleVsf,
+                articleVsfInfo: article,
             });
-            if (this.selectedArticleVsf?.code === articleCode) {
-                this.state.selectedProduct = product;
+            if (this.isArticleSelected(articleCode)) {
+                this.state.articleProducts = {
+                    ...this.state.articleProducts,
+                    [articleCode]: product,
+                };
             }
         }, "Création du produit en cours...");
     }
@@ -666,10 +748,6 @@ export class AgentWidgetDialog extends asyncWidget {
         if (imageUrl) {
             this.dialog.add(VsfImagePreviewDialog, { imageUrl });
         }
-    }
-
-    get selectedArticleId() {
-        return this.selectedArticleVsf ? this.selectedArticleVsf.code : undefined;
     }
 
 }

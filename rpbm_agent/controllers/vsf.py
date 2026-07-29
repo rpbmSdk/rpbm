@@ -45,13 +45,25 @@ def _text(node):
     return node.get_text(" ", strip=True) if node else ""
 
 
-def _parse_dimension_mm(value):
-    """Convertit une dimension VSF explicite en millimètres, sinon None."""
+def _parse_dimension_mm(value, default_unit=None):
+    """Convertit une dimension VSF en millimètres.
+
+    Les fiches VSF affichent parfois les dimensions sans unité dans le bloc
+    ``Dimensions``. Dans ce contexte précis, ``default_unit='mm'`` explicite
+    la convention du portail sans accepter aveuglément tout nombre du HTML.
+    """
     match = re.search(r"(-?\d+(?:[\s,.]\d+)?)\s*(mm|cm|m)\b", value or "", re.I)
-    if not match:
+    if match:
+        number, unit = match.groups()
+    elif default_unit:
+        match = re.search(r"-?\d+(?:[\s,.]\d+)?", value or "")
+        if not match:
+            return None
+        number, unit = match.group(0), default_unit
+    else:
         return None
-    number = float(match.group(1).replace(" ", "").replace(",", "."))
-    unit = match.group(2).casefold()
+    number = float(number.replace(" ", "").replace(",", "."))
+    unit = unit.casefold()
     multiplier = {"mm": 1, "cm": 10, "m": 1000}[unit]
     return number * multiplier
 
@@ -143,8 +155,10 @@ class VSFArticle:
             return None
         if isinstance(value, (int, float)):
             return float(value)
-        normalized = str(value).replace("&nbsp;", "").replace("€", "")
-        normalized = normalized.replace(" ", "").replace(",", ".")
+        match = re.search(r"-?\d+(?:[\s,.]\d+)?", str(value).replace("&nbsp;", ""))
+        if not match:
+            return None
+        normalized = match.group(0).replace(" ", "").replace(",", ".")
         try:
             return float(normalized)
         except ValueError:
@@ -271,7 +285,7 @@ class VSFAgent:
             'name': name
         }
 
-    def getArticleDetails(self, article_info):
+    def getArticleDetails(self, article_info, include_suggestions=True, enrich_suggestions=False):
         """Enrichit un article à partir de sa fiche VSF authentifiée."""
         code = str(article_info.get("code") or "").strip()
         url = _absolute_url(article_info.get("url") or f"/catalogue/article/{code}")
@@ -284,21 +298,56 @@ class VSFAgent:
         if getattr(response, "url", "").rstrip("/") == VSF_LOGIN_URL:
             raise VSFAuthError("Session VSF expirée lors de la lecture de la fiche article.")
         page = bs.BeautifulSoup(response.text, "html.parser")
-        return self.extractArticleDetails(page, article_info, url)
+        details = self.extractArticleDetails(
+            page, article_info, url, include_suggestions=include_suggestions
+        )
+        if enrich_suggestions:
+            enriched_suggestions = []
+            for suggestion in details["suggestedArticles"]:
+                try:
+                    enriched_suggestions.append(
+                        self.getArticleDetails(
+                            suggestion, include_suggestions=False, enrich_suggestions=False
+                        )
+                    )
+                except VSFError:
+                    # Une fiche complémentaire indisponible ne doit pas faire
+                    # disparaître les autres suggestions ni l'article principal.
+                    _logger.warning(
+                        "Fiche VSF indisponible pour la suggestion %s",
+                        suggestion.get("code"),
+                    )
+                    suggestion["detailsUnavailable"] = True
+                    enriched_suggestions.append(suggestion)
+            details["suggestedArticles"] = enriched_suggestions
+        return details
 
-    def extractArticleDetails(self, page, article_info, url):
+    def extractArticleDetails(self, page, article_info, url, include_suggestions=True):
         """Extrait le contrat utile d'une fiche article VSF déjà téléchargée."""
         details = dict(article_info)
         details["url"] = url
+        details["detailsLoaded"] = True
         technical_details = self._extractTechnicalDetails(page)
+        stock_from_page = self._extractStock(page)
+        if stock_from_page and not any(
+            _normalise_label(item["label"]) in {"stock", "stock disponible"}
+            for item in technical_details
+        ):
+            technical_details.insert(
+                0, {"label": "Stock disponible", "value": stock_from_page}
+            )
         details["technicalDetails"] = technical_details
 
         by_label = {
             _normalise_label(item["label"]): item["value"]
             for item in technical_details
         }
-        details["largeurMm"] = _parse_dimension_mm(by_label.get("largeur"))
-        details["longueurMm"] = _parse_dimension_mm(by_label.get("longueur"))
+        details["largeurMm"] = _parse_dimension_mm(
+            by_label.get("largeur"), default_unit="mm"
+        )
+        details["longueurMm"] = _parse_dimension_mm(
+            by_label.get("longueur"), default_unit="mm"
+        )
         if not details.get("prix_vente"):
             details["prix_vente"] = (
                 by_label.get("prix de vente")
@@ -307,11 +356,15 @@ class VSFAgent:
             )
         if not details.get("prix_ht"):
             details["prix_ht"] = by_label.get("prix ht")
-        if not details.get("total_stock"):
-            details["total_stock"] = by_label.get("stock") or 0
+        stock_value = by_label.get("stock") or by_label.get("stock disponible")
+        stock_match = re.search(r"\d+", stock_value or "")
+        if stock_match:
+            details["total_stock"] = stock_match.group(0)
+        elif not details.get("total_stock"):
+            details["total_stock"] = 0
         details["refConstructeur"] = (
-            details.get("refConstructeur")
-            or by_label.get("reference constructeur")
+            by_label.get("reference constructeur")
+            or details.get("refConstructeur")
             or by_label.get("reference")
             or ""
         )
@@ -335,7 +388,11 @@ class VSFAgent:
             if index >= len(thumbnails):
                 details["images"].append({"thumbnailUrl": full_url, "fullUrl": full_url})
 
-        details["suggestedArticles"] = self._extractSuggestedArticles(page, details.get("code"))
+        details["suggestedArticles"] = (
+            self._extractSuggestedArticles(page, details.get("code"))
+            if include_suggestions
+            else []
+        )
         return details
 
     @staticmethod
@@ -349,7 +406,32 @@ class VSFAgent:
             if not key or not value or (key, value) in seen:
                 return
             seen.add((key, value))
-            details.append({"label": label.rstrip(":"), "value": value})
+            details.append({"label": label.rstrip(":").strip(), "value": value})
+
+        def add_inline_pairs(node):
+            for line in node.get_text("\n", strip=True).split("\n"):
+                if ":" not in line:
+                    continue
+                label, value = line.split(":", 1)
+                if len(label.strip()) <= 80:
+                    add(label, value)
+
+        # Structure observée sur les fiches article actuelles : les données sont
+        # présentées dans des lignes Bootstrap, y compris le bloc Dimensions.
+        for card in page.select(".article-card"):
+            for row in card.select(".row"):
+                columns = row.find_all("div", recursive=False)
+                if len(columns) != 2 or not all(
+                    "col-xs-6" in (column.get("class") or []) for column in columns
+                ):
+                    continue
+                label, value_node = _text(columns[0]), columns[1]
+                if not label or len(label) > 80:
+                    continue
+                if _normalise_label(label).rstrip(":").strip() == "dimensions":
+                    add_inline_pairs(value_node)
+                else:
+                    add(label, _text(value_node))
 
         for row in page.select("tr"):
             cells = row.find_all(["th", "td"], recursive=False)
@@ -367,6 +449,18 @@ class VSFAgent:
                 if len(label) <= 80:
                     add(label, value)
         return details
+
+    @staticmethod
+    def _extractStock(page):
+        """Lit le total injecté par le script VSF de badge de stock."""
+        for script in page.select("script"):
+            match = re.search(
+                r"setupStockBadge\s*\(\s*\$\(\s*['\"]#stock-dispo['\"]\s*\)\s*,\s*\d+\s*,\s*['\"]?(\d+)",
+                script.get_text(" ", strip=True),
+            )
+            if match:
+                return match.group(1)
+        return None
 
     @staticmethod
     def _extractFullImageUrls(page):
@@ -405,14 +499,31 @@ class VSFAgent:
             if code == current_code or code in seen:
                 continue
             seen.add(code)
-            card = link.find_parent(["article", "li", "div"]) or link
+            card = link.find_parent("div", class_=lambda value: value and "col-" in " ".join(value if isinstance(value, list) else [value])) or link
             image = card.find("img")
-            name = _text(link) or (image.get("alt") if image else "") or code
+            article_button = card.select_one("button[data-article]")
+            article_data = {}
+            if article_button:
+                try:
+                    article_data = json.loads(article_button.get("data-article") or "{}")
+                except json.JSONDecodeError:
+                    _logger.warning("Métadonnées invalides pour la suggestion VSF %s", code)
+            price_node = card.select_one("div[style*='font-size'] b")
+            name = (
+                article_data.get("designation_translated")
+                or article_data.get("designation")
+                or _text(link)
+                or (image.get("alt") if image else "")
+                or code
+            )
             suggestions.append({
                 "code": code,
                 "name": name,
                 "url": url,
-                "refConstructeur": "",
+                "refConstructeur": article_data.get("constructor_reference") or "",
                 "imgUrls": [image.get("src")] if image and image.get("src") else [],
+                "prix_vente": _text(price_node) if price_node else None,
+                "prix_ht": article_data.get("base_price"),
+                "technicalDetails": [],
             })
         return suggestions

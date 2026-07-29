@@ -3,8 +3,8 @@
 Le notebook « Véhicule (X'Glass) » est masqué si le devis ne possède pas d'opportunité liée.
 Le widget n'est donc jamais ouvert dans un contexte où ses champs `related` seraient perdus.
 
-- **Déclencheur** : clic sur "Confirmer" (ou "Confirmer et enregistrer") dans la fenêtre du widget, ouverte depuis une fiche `sale.order`.
-- **Code** : même `confirmRecord()` → `getRecordData()` que pour `crm.lead` — seuls les noms de champs diffèrent, via la classe `SaleOrder` (`agent_widget_dialog_sale_order.js`, qui ne surcharge que `immatriculationField`).
+- **Déclencheur** : clic sur « Confirmer » (ou « Confirmer et enregistrer ») dans la fenêtre du widget, ouverte depuis une fiche `sale.order`.
+- **Code** : même `confirmRecord()` → `getRecordData()` que pour `crm.lead` ; seuls les noms de champs diffèrent, via la classe `SaleOrder` (`agent_widget_dialog_sale_order.js`, qui ne surcharge que `immatriculationField`).
 
 | Champ écrit | Valeur source | Condition |
 |---|---|---|
@@ -14,7 +14,7 @@ Le widget n'est donc jamais ouvert dans un contexte où ses champs `related` ser
 | `x_studio_field_eENQz` (Pièce concernée) | suggestion X'Glass visible et modifiable | si une catégorie est sélectionnée — champ `related` vers l'opportunité |
 | `x_studio_base_eurocode` | `state.baseEurocode` | si un eurocode est renseigné — fonctionne nativement ici, ce champ `related` porte déjà ce nom exact |
 
-- **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur "Enregistrer" (bouton "Confirmer") ou immédiate via `record.save()` (bouton "Confirmer et enregistrer").
-- L'ajout d'un article au devis (`addSelectedProductToSaleOrder()`) est **indépendant** de cette étape de confirmation — voir [9 — Création du produit](09-creation-produit.md).
+- **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
+- L'ajout ou le retrait d'un article au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape. Seule une ligne créée par le widget dans la dialog courante peut être retirée — voir [9 — Création du produit](09-creation-produit.md).
 
 Détail de chaque champ : [technique/champs/sale-order.md](../../technique/champs/sale-order.md).

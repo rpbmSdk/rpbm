@@ -1,5 +1,7 @@
 # Roadmap — UI & transfert vers Odoo
 
+> **Fait (2026-07-29).** Les cartes VSF supportent désormais la sélection multiple par code, les suggestions sont enrichies depuis leurs fiches, et chaque carte sélectionnée porte ses propres actions produit/devis. Les dimensions sans unité du bloc VSF « Dimensions » sont normalisées en millimètres et la description produit conserve les informations visibles de la fiche. Le retrait du devis est limité aux lignes ajoutées par le widget pendant la dialog.
+
 Établie le 2026-07-24, sur lecture intégrale du module + interrogation de l'instance
 `rpbm-preprod` (profil `paradigme-mcp` `rpbm-preprod`, Odoo 17). Complète
 [`etat-des-lieux.md`](etat-des-lieux.md) : celui-ci auditait le **code**, celle-ci part
@@ -722,6 +724,14 @@ est idempotente afin de ne pas fermer deux fois la même session.
 ---
 
 ## L4 — Refonte du calcul du prix sur les mécanismes natifs Odoo {#l4}
+
+> **Coordination avec la migration stock.** La migration stock (`Jobs/Gestion Stock/`)
+> construit en parallèle une arborescence de catégories produit et pose déjà la question du prix
+> de vente en renvoyant vers « les formules existantes dans Odoo » — c'est ce chantier L4. Avant
+> de démarrer L4, voir la réconciliation croisée entre les deux chantiers dans
+> [`docs/cartographie/reconciliation-stock-rpbm-agent.md`](../../docs/cartographie/reconciliation-stock-rpbm-agent.md)
+> (clé produit, catégorie, coût à la création — P0 à trancher avant que le widget et la
+> migration écrivent tous deux en production).
 
 **Initiative distincte, hors périmètre initial (optimisation UI + transfert), tracée ici à la
 demande explicite du métier.** Constat partagé : la cascade actuelle (`prix_devis/README.md`)

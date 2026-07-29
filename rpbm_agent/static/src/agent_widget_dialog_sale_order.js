@@ -20,6 +20,7 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         super.setup();
         this.record = new SaleOrder(this.record);
         this.state.immatriculationValue = this.record.immatriculation;
+        this._widgetOrderLinesByArticleCode = new Map();
         onWillStart(() => this.onWillStart());
     }
 
@@ -27,28 +28,40 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         await super.onWillStart();
     }
 
-    get selectedProductInOrder() {
-        if (!this.selectedProduct) {
+    getWidgetOrderLine(articleCode) {
+        const line = this._widgetOrderLinesByArticleCode.get(articleCode);
+        return this.props.record.data.order_line.records.includes(line) ? line : undefined;
+    }
+
+    isWidgetArticleInOrder(articleCode) {
+        return Boolean(this.getWidgetOrderLine(articleCode));
+    }
+
+    isArticleAlreadyInOrder(articleCode) {
+        const product = this.getProductForArticle(articleCode);
+        if (!product) {
             return false;
         }
         const records = this.props.record.data.order_line.records;
         return records
             .filter((line) => line.data.product_id)
-            .some((line) => line.data.product_id[0] === this.selectedProduct.id);
+            .some((line) => line.data.product_id[0] === product.id);
     }
 
-    async addSelectedProductToSaleOrder() {
-        if (!this.selectedProduct || !this.selectedArticleVsf) {
+    async addArticleToSaleOrder(articleCode) {
+        const product = this.getProductForArticle(articleCode);
+        const article = this.getArticleByCode(articleCode);
+        if (!product || !article || this.isArticleAlreadyInOrder(articleCode)) {
             return;
         }
-        const xglassPrice = Number(this.selectedArticleVsf.prixVenteRPBM);
+        const xglassPrice = Number(article.prixVenteRPBM);
         if (!Number.isFinite(xglassPrice)) {
             this.notification.add("Le prix RPBM de l'article VSF est invalide.", { type: "danger" });
             return;
         }
         await this.runAsync(async () => {
             const newLine = await this.props.record.data.order_line.addNewRecord({
-                context: { default_product_id: this.selectedProduct.id },
+                context: { default_product_id: product.id },
             });
             // L'automatisation Studio « Tarif x glass » calcule price_unit à
             // partir de ce champ. Ne jamais renseigner price_unit à la main.
@@ -56,6 +69,18 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
                 product_uom_qty: 1,
                 x_studio_prix_x_glass: xglassPrice,
             });
+            this._widgetOrderLinesByArticleCode.set(articleCode, newLine);
         }, "Ajout de l'article au devis en cours...");
+    }
+
+    async removeArticleFromSaleOrder(articleCode) {
+        const line = this.getWidgetOrderLine(articleCode);
+        if (!line) {
+            return;
+        }
+        await this.runAsync(async () => {
+            await this.props.record.data.order_line.delete(line);
+            this._widgetOrderLinesByArticleCode.delete(articleCode);
+        }, "Retrait de l'article du devis en cours...");
     }
 }

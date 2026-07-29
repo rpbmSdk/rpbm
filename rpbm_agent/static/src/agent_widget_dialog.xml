@@ -81,32 +81,51 @@
                     <div t-if="articlesVsf.length > 0" class="row g-2 mt-2">
                         <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
                             <div class="col-12 col-lg-6">
-                                <div class="d-flex flex-wrap gap-2">
-                                    <ArticleComponent record="record" article="articleVsf" selectedArticleId="selectedArticleId" t-on-click="()=>this.onClickArticleVsf(articleVsf.code)"/>
-                                    <a t-att-href="articleVsf.url" target="_blank" class="btn btn-outline-primary align-self-start">Fiche technique</a>
-                                    <t t-foreach="articleVsf.images || []" t-as="image" t-key="image.thumbnailUrl">
-                                        <button t-if="image.fullUrl" type="button" class="btn p-0 border-0 bg-transparent" title="Agrandir l'image de l'article" t-on-click="()=>this.openImagePreview(image.fullUrl)">
-                                            <img t-att-src="image.thumbnailUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px; cursor: zoom-in;"/>
-                                        </button>
-                                        <img t-else="" t-att-src="image.thumbnailUrl" class="img-thumbnail" style="max-width: 250px; max-height: 250px;"/>
-                                    </t>
-                                </div>
-                                <div t-if="articleVsf.code === selectedArticleId" name="selected_article_actions" class="alert alert-light border mt-2 mb-0">
-                                    <t t-if="selectedProduct">
-                                        <span>Produit Odoo trouv&#233; (<t t-esc="selectedProductMatchLabel"/>).</span>
-                                        <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl" target="_blank">Voir le produit</a>
-                                    </t>
-                                    <t t-else="">
-                                        <span>Article absent de la base Odoo.</span>
-                                        <button class="btn btn-primary btn-sm ms-2" t-on-click="createSelectedProduct">Cr&#233;er le produit</button>
-                                    </t>
-                                </div>
-                                <div t-if="articleVsf.code === selectedArticleId and selectedArticleVsf.suggestedArticles and selectedArticleVsf.suggestedArticles.length" class="border rounded mt-2 p-3">
+                                <ArticleComponent record="record" article="articleVsf" selected="isArticleSelected(articleVsf.code)" onOpenImage.bind="openImagePreview" t-on-click="()=>this.onClickArticleVsf(articleVsf.code)"/>
+                                <t t-if="isArticleSelected(articleVsf.code)">
+                                    <t t-set="actionArticle" t-value="articleVsf"/>
+                                    <div name="selected_article_actions" class="alert alert-light border mt-2 mb-0">
+                                        <t t-if="isArticleLoading(actionArticle.code)">
+                                            <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
+                                        </t>
+                                        <t t-else="">
+                                            <t t-set="articleProduct" t-value="getProductForArticle(actionArticle.code)"/>
+                                            <t t-if="articleProduct">
+                                                <span>Produit Odoo trouvé (<t t-esc="productMatchLabel(articleProduct)"/>).</span>
+                                                <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl(articleProduct)" target="_blank">Voir le produit</a>
+                                            </t>
+                                            <t t-else="">
+                                                <span>Article absent de la base Odoo.</span>
+                                                <button class="btn btn-primary btn-sm ms-2" t-att-disabled="isArticleLoading(actionArticle.code)" t-on-click="()=>this.createProductForArticle(actionArticle.code)">Créer le produit</button>
+                                            </t>
+                                        </t>
+                                    </div>
+                                </t>
+                                <div t-if="isArticleSelected(articleVsf.code) and articleVsf.suggestedArticles and articleVsf.suggestedArticles.length" class="border rounded mt-2 p-3">
                                     <h6 class="mb-3">Articles suggérés par VSF</h6>
                                     <div class="row g-2">
-                                        <t t-foreach="selectedArticleVsf.suggestedArticles" t-as="suggestion" t-key="suggestion.code">
+                                        <t t-foreach="articleVsf.suggestedArticles" t-as="suggestion" t-key="suggestion.code">
                                             <div class="col-12 col-md-6">
-                                                <ArticleComponent record="record" article="suggestion" selectedArticleId="selectedArticleId" t-on-click="()=>this.onClickSuggestedArticle(suggestion)"/>
+                                                <ArticleComponent record="record" article="suggestion" selected="isArticleSelected(suggestion.code)" onOpenImage.bind="openImagePreview" t-on-click="()=>this.onClickSuggestedArticle(suggestion.code, articleVsf.code)"/>
+                                                <t t-if="isArticleSelected(suggestion.code)">
+                                                    <t t-set="actionArticle" t-value="suggestion"/>
+                                                    <div name="selected_article_actions" class="alert alert-light border mt-2 mb-0">
+                                                        <t t-if="isArticleLoading(actionArticle.code)">
+                                                            <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
+                                                        </t>
+                                                        <t t-else="">
+                                                            <t t-set="articleProduct" t-value="getProductForArticle(actionArticle.code)"/>
+                                                            <t t-if="articleProduct">
+                                                                <span>Produit Odoo trouvé (<t t-esc="productMatchLabel(articleProduct)"/>).</span>
+                                                                <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl(articleProduct)" target="_blank">Voir le produit</a>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span>Article absent de la base Odoo.</span>
+                                                                <button class="btn btn-primary btn-sm ms-2" t-att-disabled="isArticleLoading(actionArticle.code)" t-on-click="()=>this.createProductForArticle(actionArticle.code)">Créer le produit</button>
+                                                            </t>
+                                                        </t>
+                                                    </div>
+                                                </t>
                                             </div>
                                         </t>
                                     </div>

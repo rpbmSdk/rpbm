@@ -1,5 +1,17 @@
 # Frontend (OWL)
 
+## Articles VSF et suggestions
+
+`AgentWidgetDialog` garde les sélections dans `selectedArticleCodes`, indexé par code VSF, et les produits Odoo dans `articleProducts`, également par code. Une carte sélectionnée possède donc son propre chargement, sa recherche/création produit et, sur un devis, son ajout ou retrait.
+
+La sélection d'un article principal charge sa fiche et hydrate ses suggestions à un seul niveau. Les suggestions ne rejoignent jamais `articlesVsf` : elles restent sous leur principal. Désélectionner le principal retire les sélections de ce groupe. `AgentWidgetDialogSaleOrder` mémorise uniquement les lignes qu'il a ajoutées pendant la dialog et appelle `order_line.delete(line)` pour les retirer sans toucher aux lignes préexistantes.
+
+| Méthode JS | Composant | Usage |
+|---|---|---|
+| `toggleVsfArticle()` | `AgentWidgetDialog` | Sélection/désélection d'une carte et désélection du groupe parent |
+| `findProductForArticle()` / `createProductForArticle()` | `AgentWidgetDialog` | Recherche ou création du produit de la carte concernée |
+| `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | Ajout/retrait sûr d'une ligne créée par le widget |
+
 Le placement du widget dans les formulaires (`<widget name="rpbm_agent_widget" />`) se fait par les **vues XML versionnées** du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, etc. — voir [configuration](configuration.md#intégration-dans-les-vues)), chacune héritant de la vue formulaire de base du modèle.
 
 ## Arborescence des composants
@@ -61,13 +73,15 @@ typées marquées discriminantes par le portail. L'affichage est limité à quat
 préserver la lisibilité des cartes ; ces éléments distinguent notamment les capteurs, teintes,
 chauffage, acoustique et états de livraison.
 
-Dans la liste VSF, l'encart de création ou de consultation Odoo est rendu sous l'article VSF
-sélectionné.
+Dans la liste VSF, chaque article sélectionné possède son propre encart de création ou de
+consultation Odoo. Une sélection par code permet de conserver plusieurs cartes en parallèle ;
+retirer un principal retire aussi les suggestions de son groupe.
 
-Au clic sur un article, le widget lit sa fiche VSF afin d'afficher les suggestions du carrousel
-« références complémentaires ». Ces suggestions sont sélectionnables comme un résultat VSF
-normal. Les miniatures disposant d'une URL pleine taille signée par VSF ouvrent une prévisualisation
-dans une dialog Odoo ; les miniatures seules restent non cliquables.
+Au clic sur un article principal, le widget lit sa fiche VSF et hydrate les cartes de son
+carrousel « références complémentaires » sans les ajouter aux résultats principaux. Les cartes
+principales et suggérées partagent le même contenu (photo, référence, prix, stock et
+caractéristiques) ; les suggestions ne sont pas développées récursivement. Les miniatures avec
+une URL pleine taille signée par VSF ouvrent une prévisualisation dans une dialog Odoo.
 
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 
@@ -137,9 +151,9 @@ que ces deux sélections ne sont pas présentes.
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce |
 | `onSearchBaseEurocode()` | `AgentWidgetDialog` | `/searchBaseEurocode` | Articles VSF par eurocode |
-| `findSelectedProduct()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant (référence/eurocode/nom) |
-| `createSelectedProduct()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur |
-| `addSelectedProductToSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` + `update`) | Ajoute une ligne au devis |
+| `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour une carte VSF donnée |
+| `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cette carte |
+| `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget |
 
 ## Écriture finale
 

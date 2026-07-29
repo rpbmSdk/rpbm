@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.ArticleComponent">
-        <div class="card h-100 flex-grow-1">
+        <div class="card h-100 flex-grow-1" t-att-class="props.selected ? 'border-primary shadow-sm' : ''">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
                     <t t-esc="props.article.code"/> <t t-esc="props.article.name"/>
@@ -18,11 +18,26 @@
     Coût: <t t-esc="props.article.prixVenteRPBM"/>
  €
                 </h6>
-                <p t-if="props.article.available">
-                    En stock: <t t-esc="props.article.stock"/>
-                <br/>
-
-            </p>
+                <p t-if="props.article.available !== undefined" class="mb-2">
+                    <t t-if="props.article.available">En stock: <t t-esc="props.article.stock"/></t>
+                    <t t-else="">Indisponible</t>
+                </p>
+                <div t-if="props.article.images and props.article.images.length" class="d-flex flex-wrap gap-2 mb-2">
+                    <t t-foreach="props.article.images" t-as="image" t-key="image.thumbnailUrl">
+                        <button t-if="image.fullUrl" type="button" class="btn p-0 border-0 bg-transparent" title="Agrandir l'image de l'article" t-on-click.stop="()=>this.openImage(image.fullUrl)">
+                            <img t-att-src="image.thumbnailUrl" class="img-thumbnail" style="max-width: 160px; max-height: 160px; cursor: zoom-in;" alt="Image article VSF"/>
+                        </button>
+                        <img t-else="" t-att-src="image.thumbnailUrl" class="img-thumbnail" style="max-width: 160px; max-height: 160px;" alt="Image article VSF"/>
+                    </t>
+                </div>
+                <dl t-if="props.article.technicalDetails and props.article.technicalDetails.length" class="mb-0 small">
+                    <t t-foreach="props.article.technicalDetails" t-as="detail" t-key="detail.label + detail.value">
+                        <dt><t t-esc="detail.label"/></dt>
+                        <dd><t t-esc="detail.value"/></dd>
+                    </t>
+                </dl>
+                <a t-if="props.article.url" t-att-href="props.article.url" target="_blank" class="btn btn-outline-primary btn-sm mt-2" t-on-click.stop="">Fiche technique</a>
+                <p t-if="props.article.detailsUnavailable" class="text-warning small mt-2 mb-0">Détails VSF indisponibles pour cet article.</p>
         </div>
     </div>
 </t>

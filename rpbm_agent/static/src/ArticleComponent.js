@@ -6,12 +6,13 @@ export class ArticleComponent extends asyncWidget {
     static props = {
         ...asyncWidget.props,
         article: { type: Object },
-        selectedArticleId: { type: String, optional: true },
+        selected: { type: Boolean, optional: true },
+        onOpenImage: { type: Function, optional: true },
     }
     static template = "rpbm_agent.ArticleComponent";
 
     get style() {
-        return this.props.article.code === this.props.selectedArticleId ? "background-color: azure !important;" : "";
+        return this.props.selected ? "background-color: azure !important;" : "";
     }
 
     /**
@@ -19,5 +20,11 @@ export class ArticleComponent extends asyncWidget {
      */
     get article(){
         return this.props.article;
+    }
+
+    openImage(imageUrl) {
+        if (imageUrl && this.props.onOpenImage) {
+            this.props.onOpenImage(imageUrl);
+        }
     }
 }
