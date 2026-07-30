@@ -114,7 +114,7 @@ class ProductTemplate(models.Model):
         if not code:
             raise UserError(_("Synchronisation impossible : l'eurocode VSF est absent."))
 
-        details = agent.getArticleDetails({"code": code}, include_suggestions=False)
+        details = agent.getArticleDetailsByCode(code)
         article = vsf.VSFArticle(_rpbm_discount=discount, **details)
         if article.prixVente is None or article.prixVenteRPBM is None:
             raise UserError(_("Synchronisation impossible : le prix de l'article VSF est absent."))

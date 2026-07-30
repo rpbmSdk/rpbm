@@ -413,6 +413,22 @@ class VSFAgent:
             details["suggestedArticles"] = enriched_suggestions
         return details
 
+    def getArticleDetailsByCode(self, code):
+        """Lit une fiche avec le résultat de recherche qui porte son prix VSF.
+
+        La fiche HTML ne présente pas systématiquement le prix. La recherche
+        ``catalogue/articles-client`` reste donc la source de ce champ avant
+        l'enrichissement des dimensions et caractéristiques par la fiche.
+        """
+        code = str(code or "").strip()
+        articles = self.searchEurocodeArticlesClient(code)
+        article = next(
+            (item for item in articles if str(item.code or "").strip() == code), None
+        )
+        if not article:
+            raise VSFError("Article VSF introuvable pour l'eurocode %s." % code)
+        return self.getArticleDetails(article.__dict__, include_suggestions=False)
+
     def extractArticleDetails(self, page, article_info, url, include_suggestions=True):
         """Extrait le contrat utile d'une fiche article VSF déjà téléchargée."""
         details = dict(article_info)

@@ -393,6 +393,34 @@ def test_vsf_valeurs_fournisseur_completes():
     }
 
 
+def test_vsf_fiche_par_code_conserve_le_prix_issu_de_la_recherche():
+    class FakeArticleAgent(vsf.VSFAgent):
+        def searchEurocodeArticlesClient(self, code):
+            return [
+                vsf.VSFArticle(
+                    code="AUTRE-CODE",
+                    name="Autre article",
+                    prix_vente="50,00 €",
+                    total_stock="1",
+                ),
+                vsf.VSFArticle(
+                    code=code,
+                    name="Article recherché",
+                    prix_vente="100,00 €",
+                    total_stock="1",
+                    url=f"https://client.myvsf.fr/catalogue/article/{code}",
+                ),
+            ]
+
+        def getArticleDetails(self, article_info, include_suggestions=True, enrich_suggestions=False):
+            assert include_suggestions is False
+            return {**article_info, "technicalDetails": []}
+
+    details = FakeArticleAgent().getArticleDetailsByCode("6571AGRCHIMVZ")
+    article = vsf.VSFArticle(**details)
+    assert article.prixVente == 100.0
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):

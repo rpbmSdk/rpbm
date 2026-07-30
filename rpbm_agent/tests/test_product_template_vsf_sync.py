@@ -84,7 +84,7 @@ class TestProductTemplateVSFSync(TransactionCase):
         valid = self._template(list_price=1.0)
         invalid = self.env["product.template"].create({"name": "Sans eurocode"})
         agent = agent_class.return_value
-        agent.getArticleDetails.return_value = {
+        agent.getArticleDetailsByCode.return_value = {
             "code": "6571AGRCHIMVZ",
             "name": "Désignation VSF",
             "prix_vente": "100,00 €",
