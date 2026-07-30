@@ -1,5 +1,4 @@
 import functools
-import html
 import json
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -204,42 +203,6 @@ def _article_constructor_reference(article_info):
     return vsf.constructor_reference_or_vsf_code(
         article_info.get('refConstructeur'), article_info.get('code')
     ).strip()
-
-
-def _vsf_product_description(article):
-    """Construit une note interne depuis les valeurs textuelles déjà parsées."""
-    lines = [
-        '<section class="rpbm-vsf-note">',
-        '<h3>Informations VSF</h3>',
-        '<p><a href="%s" target="_blank" rel="noopener">Voir la fiche VSF</a></p>'
-        % html.escape(article.url or '', quote=True),
-    ]
-    details = [
-        ('Eurocode', getattr(article, 'code', None)),
-        ('Référence constructeur', getattr(article, 'refConstructeur', None)),
-        ('Prix de vente VSF', getattr(article, 'prixVente', None)),
-        ('Prix HT VSF', getattr(article, 'prixHT', None)),
-        ('Stock disponible', getattr(article, 'stock', None)),
-        ('Largeur (mm)', getattr(article, 'largeurMm', None)),
-        ('Longueur (mm)', getattr(article, 'longueurMm', None)),
-    ]
-    details.extend(
-        (detail.get('label') or 'Information', detail.get('value'))
-        for detail in getattr(article, 'technicalDetails', []) or []
-    )
-    seen_labels = set()
-    lines.append('<ul>')
-    for raw_label, raw_value in details:
-        label_key = str(raw_label).strip().casefold()
-        if not label_key or label_key in seen_labels or raw_value in (None, ''):
-            continue
-        seen_labels.add(label_key)
-        label = html.escape(str(raw_label))
-        value = html.escape(str(raw_value))
-        lines.append(f'<li><strong>{label} :</strong> {value}</li>')
-    lines.append('</ul>')
-    lines.append('</section>')
-    return ''.join(lines)
 
 
 def _vsf_article_payload(article_details, discount):
@@ -625,17 +588,18 @@ class AgentController(Controller):
             product = request.env['product.product'].create(
                 vsf.product_creation_values(
                     article_vsf,
-                    _vsf_product_description(article_vsf),
+                    vsf.product_description(article_vsf),
                     image=image,
                 )
             )
-            request.env['product.supplierinfo'].create({
-                'partner_id': _get_vsf_partner_id(request.env),
-                'product_id': product.id,
-                'delay': 1,
-                'min_qty': 0,
-                'price': article_vsf.prixVenteRPBM,
-            })
+            request.env['product.supplierinfo'].create(
+                vsf.product_supplierinfo_values(
+                    article_vsf,
+                    _get_vsf_partner_id(request.env),
+                    product_id=product.id,
+                    date_start=fields.Date.today(),
+                )
+            )
         except VSFError as error:
             _raise_portal_error(
                 error,

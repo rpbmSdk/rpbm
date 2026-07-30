@@ -345,6 +345,54 @@ def test_vsf_reference_constructeur_absente_utilise_le_code_vsf():
     assert vsf.constructor_reference_or_vsf_code("-", "6571AGRCHIMVZ") == "6571AGRCHIMVZ"
 
 
+def test_vsf_valeurs_de_synchronisation_produit_preservent_identite_et_medias():
+    article = vsf.VSFArticle(
+        code="6571AGRCHIMVZ",
+        name="Désignation VSF",
+        prix_vente="100,00 €",
+        total_stock="1",
+        largeurMm=1240,
+        longueurMm=560,
+        url="https://client.myvsf.fr/catalogue/article/6571AGRCHIMVZ",
+    )
+    values = vsf.product_sync_values(article, vsf.product_description(article))
+    assert values == {
+        "x_studio_largeur_mm": 1240,
+        "x_studio_longueur_mm": 560,
+        "list_price": 100.0,
+        "description": values["description"],
+    }
+    assert "name" not in values
+    assert "x_studio_eurocode" not in values
+    assert "image_1920" not in values
+    assert "Informations VSF" in values["description"]
+
+
+def test_vsf_valeurs_fournisseur_completes():
+    article = vsf.VSFArticle(
+        code="6571AGRCHIMVZ",
+        name="Désignation VSF",
+        prix_vente="100,00 €",
+        total_stock="1",
+    )
+    values = vsf.product_supplierinfo_values(
+        article,
+        5708,
+        product_tmpl_id=42,
+        date_start="2026-07-30",
+    )
+    assert values == {
+        "partner_id": 5708,
+        "product_name": "Désignation VSF",
+        "product_code": "6571AGRCHIMVZ",
+        "delay": 1,
+        "min_qty": 0,
+        "price": 80.0,
+        "product_tmpl_id": 42,
+        "date_start": "2026-07-30",
+    }
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):

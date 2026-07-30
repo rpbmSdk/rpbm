@@ -11,7 +11,13 @@ Article recherché puis, si nécessaire, créé depuis un résultat VSF sélecti
 
 Champs standards également écrits à la création (non `x_studio_*`, pour mémoire) : `name`, `default_code` (référence constructeur, ou code VSF de repli lorsque VSF fournit `None`, une valeur vide ou `"-"`), `list_price`, `type`, `image_1920`, `description` (note interne structurée issue de la fiche VSF). Le stock n'est jamais écrit par le widget : il reste géré par les mécanismes internes Odoo.
 
-Un `product.supplierinfo` associé est créé dans la foulée (`partner_id` = fournisseur VSF, `price` = prix d'achat remisé RPBM) — aucun champ `x_studio_*` sur ce modèle.
+Un `product.supplierinfo` associé est créé dans la foulée (`partner_id` = fournisseur VSF, `product_name` = désignation VSF, `product_code` = code VSF, `price` = prix d'achat remisé RPBM, `date_start` = date de création) — aucun champ `x_studio_*` sur ce modèle.
+
+## Synchronisation VSF du modèle
+
+`product.template.sync_vsf_information()` peut être appelé sur un ou plusieurs modèles. Il lit `x_studio_eurocode` comme identifiant VSF sans le modifier et met à jour uniquement `list_price`, `x_studio_largeur_mm`, `x_studio_longueur_mm`, `description` et le prix fournisseur VSF. La désignation commerciale `name`, l'image, le type, le stock et les champs de variante restent inchangés.
+
+La ligne fournisseur VSF active est enrichie avec la désignation et le code VSF si son prix est identique. Lors d'un changement de prix, elle est clôturée à J-1 et une nouvelle ligne complète démarre à J. Chaque modèle est isolé dans un lot : une fiche VSF inaccessible n'annule pas les autres synchronisations.
 
 Avant ce module : `createProduct` (`main.py`) était cassé sur toute instance sans `x_studio_reference_constructeur` créé manuellement — voir [état des lieux](../../etat-des-lieux.md).
 

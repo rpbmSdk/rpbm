@@ -5,6 +5,7 @@ import bs4 as bs
 import json
 import re
 import unicodedata
+import html
 from urllib.parse import parse_qs, urljoin, urlparse
 
 import dotenv
@@ -98,6 +99,73 @@ def product_creation_values(article, description, image=False):
         "image_1920": image or False,
         "description": description,
     }
+
+
+def product_sync_values(article, description):
+    """Valeurs de fiche pouvant être rafraîchies sans modifier son identité."""
+    return {
+        "x_studio_largeur_mm": getattr(article, "largeurMm", None) or False,
+        "x_studio_longueur_mm": getattr(article, "longueurMm", None) or False,
+        "list_price": article.prixVente,
+        "description": description,
+    }
+
+
+def product_supplierinfo_values(
+    article, partner_id, *, product_id=None, product_tmpl_id=None, date_start=None
+):
+    """Construit une ligne fournisseur VSF complète et traçable."""
+    values = {
+        "partner_id": partner_id,
+        "product_name": article.name,
+        "product_code": article.code,
+        "delay": 1,
+        "min_qty": 0,
+        "price": article.prixVenteRPBM,
+    }
+    if product_id:
+        values["product_id"] = product_id
+    if product_tmpl_id:
+        values["product_tmpl_id"] = product_tmpl_id
+    if date_start:
+        values["date_start"] = date_start
+    return values
+
+
+def product_description(article):
+    """Construit une note interne depuis les valeurs textuelles parsées par VSF."""
+    lines = [
+        '<section class="rpbm-vsf-note">',
+        '<h3>Informations VSF</h3>',
+        '<p><a href="%s" target="_blank" rel="noopener">Voir la fiche VSF</a></p>'
+        % html.escape(article.url or '', quote=True),
+    ]
+    details = [
+        ('Eurocode', getattr(article, 'code', None)),
+        ('Référence constructeur', getattr(article, 'refConstructeur', None)),
+        ('Prix de vente VSF', getattr(article, 'prixVente', None)),
+        ('Prix HT VSF', getattr(article, 'prixHT', None)),
+        ('Stock disponible', getattr(article, 'stock', None)),
+        ('Largeur (mm)', getattr(article, 'largeurMm', None)),
+        ('Longueur (mm)', getattr(article, 'longueurMm', None)),
+    ]
+    details.extend(
+        (detail.get('label') or 'Information', detail.get('value'))
+        for detail in getattr(article, 'technicalDetails', []) or []
+    )
+    seen_labels = set()
+    lines.append('<ul>')
+    for raw_label, raw_value in details:
+        label_key = str(raw_label).strip().casefold()
+        if not label_key or label_key in seen_labels or raw_value in (None, ''):
+            continue
+        seen_labels.add(label_key)
+        label = html.escape(str(raw_label))
+        value = html.escape(str(raw_value))
+        lines.append(f'<li><strong>{label} :</strong> {value}</li>')
+    lines.append('</ul>')
+    lines.append('</section>')
+    return ''.join(lines)
 
 
 class VSFError(Exception):

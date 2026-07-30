@@ -2,8 +2,8 @@
 
 ## Stack
 
-- **Odoo 17**, module `rpbm_agent` (version courante dans [`__manifest__.py`](../../__manifest__.py), bumpée à chaque déploiement), dépend de `crm`, `fleet`, `sale_crm`.
-- **Backend** : un seul controller Odoo (`AgentController`, `controllers/main.py`), toutes les routes en JSON-RPC (`type='json'`, `auth='user'`). Pas de modèle Python custom, pas de règle de sécurité (`ir.model.access.csv`) dans le module.
+- **Odoo 17**, module `rpbm_agent` (version courante dans [`__manifest__.py`](../../__manifest__.py), bumpée à chaque déploiement), dépend de `crm`, `fleet`, `product`, `sale_crm`.
+- **Backend** : un controller Odoo (`AgentController`, `controllers/main.py`) pour le widget JSON-RPC et une extension ORM `product.template` pour la synchronisation batch VSF. Pas de règle de sécurité (`ir.model.access.csv`) dans le module.
 - **Intégration portails externes** : `requests.Session()` + `BeautifulSoup4` (scraping HTML/formulaires + quelques endpoints AJAX internes renvoyant du JSON). **Aucune API officielle**, aucun Selenium/Playwright.
 - **Frontend** : composants OWL (framework de vues Odoo), déclarés en `web.assets_backend` (glob `rpbm_agent/static/src/*`). Le widget et les champs `x_studio_*` sont placés par les **vues XML versionnées** du module (`views/*.xml`, voir [configuration](configuration.md#intégration-dans-les-vues)) ; le comportement s'adapte selon `resModel` (`crm.lead`, `sale.order`, ou dialog générique).
 
@@ -18,6 +18,8 @@ flowchart LR
         Controller --> VSFAgent
         Controller --> XGlassAgent
         Controller --> Models[("fleet.vehicle, crm.lead,<br/>sale.order, product.product,<br/>product.supplierinfo")]
+        ProductSync["product.template<br/>sync_vsf_information()"] --> VSFAgent
+        ProductSync --> Models
     end
 
     subgraph Frontend["Odoo Web — OWL (assets_backend)"]

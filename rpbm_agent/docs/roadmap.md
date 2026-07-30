@@ -15,6 +15,12 @@
 > désormais traitée comme absente : les nouveaux produits utilisent leur code VSF comme
 > référence interne, sans créer ni rechercher de produit sous le code `"-"`.
 
+> **Fait (2026-07-30).** Les modèles produit peuvent désormais synchroniser par lot leur
+> prix, dimensions, note interne et tarif fournisseur depuis VSF, à partir de leur eurocode
+> existant. La désignation commerciale et les médias Odoo restent préservés ; les changements
+> de prix fournisseur sont historisés. Le bouton correspondant reste masqué en attente d'une
+> ouverture métier.
+
 Établie le 2026-07-24, sur lecture intégrale du module + interrogation de l'instance
 `rpbm-preprod` (profil `paradigme-mcp` `rpbm-preprod`, Odoo 17). Complète
 [`etat-des-lieux.md`](etat-des-lieux.md) : celui-ci auditait le **code**, celle-ci part

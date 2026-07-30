@@ -25,6 +25,12 @@ Après la sélection d'un article VSF, le widget le cherche dans Odoo dans cet o
 | `delay` / `min_qty` | `1` / `0` (littéraux) |
 | `price` | `articleVsf.prixVenteRPBM` (remise `rpbm_agent.vsf_discount`, défaut `0.2`) |
 
+## Synchronisation ultérieure d'un article existant
+
+La méthode batch `product.template.sync_vsf_information()` relit la fiche à partir de `x_studio_eurocode`. Elle ne modifie ni cet identifiant, ni `name`, ni l'image. Elle actualise le prix de vente, les dimensions, la note interne `description` et la ligne fournisseur VSF.
+
+Le prix fournisseur est historisé : une ligne active au même prix est conservée et enrichie (`product_name`/`product_code`) ; un nouveau prix clôture la ligne existante à la veille et démarre une nouvelle ligne à la date du jour. Le bouton de fiche correspondant est livré masqué (`base.group_no_one`) en attente d'une décision d'ouverture aux utilisateurs.
+
 Sur un devis lié à une opportunité, le bouton « Ajouter au devis » ajoute une nouvelle ligne `sale.order.line` avec `default_product_id`, `product_uom_qty = 1` et `x_studio_prix_x_glass = articleVsf.prixVenteRPBM`. Les `onchange` Odoo calculent les champs dépendants ; l'automatisation Studio « Tarif x glass » calcule ensuite le prix unitaire. Le widget ne met jamais à jour le stock du produit.
 
 Les dimensions sans unité du bloc VSF « Dimensions » sont interprétées en millimètres ; les unités explicites restent converties vers cette même unité.
