@@ -371,6 +371,7 @@ class XGLASS:
             XGLASS_searchImmat,
             data={"selectionsCriteres.immatriculation": immatriculation},
         )
+        self.ensure_logged(r)
         return r.json()
     
     def searchVehiculeImmat(self, immatriculation: str = "DS808DZ") -> list[XGlassVehicule]:
@@ -385,6 +386,7 @@ class XGLASS:
             "https://portail-xglass.com/selectVehicule.html",
             data={"sessionScopedBean.infoSelectionVehicule.variante.id": idVehicule},
         )
+        self.ensure_logged(r)
         self.selectedVehiculePage = bs.BeautifulSoup(r.text, "html.parser")
         return self.selectedVehiculePage
     
@@ -449,7 +451,9 @@ class XGLASS:
         return XGlassPlanche(**raw)
 
     def affichagePieces(self, planche:XGlassPlanche, calque:XGlassCalque)->requests.Response:
-        return self.get(f'https://portail-xglass.com/affichagePieces.html?planche.id={planche.id}&calque.id={calque.id}&filtrageVinButtonClickedForDevisRapide=true')
+        response = self.get(f'https://portail-xglass.com/affichagePieces.html?planche.id={planche.id}&calque.id={calque.id}&filtrageVinButtonClickedForDevisRapide=true')
+        self.ensure_logged(response)
+        return response
 
     def getPieceData(self, planche:XGlassPlanche, calque:XGlassCalque)->dict:
         html = self.affichagePieces(planche, calque).text
@@ -476,7 +480,9 @@ class XGLASS:
         self.elements_complementaires = [XGlassElement(**p) for p in data.get('ELEMENTSIT_COMPLEMENTAIRES')]
 
     def getPiecesData (self, plancheId:int, calqueId:int):
-        html = self.get(f'https://portail-xglass.com/affichagePieces.html?planche.id={plancheId}&calque.id={calqueId}&filtrageVinButtonClickedForDevisRapide=true').text
+        response = self.get(f'https://portail-xglass.com/affichagePieces.html?planche.id={plancheId}&calque.id={calqueId}&filtrageVinButtonClickedForDevisRapide=true')
+        self.ensure_logged(response)
+        html = response.text
         page = bs.BeautifulSoup(html, "html.parser")
         scripts = page.find_all("script",src=False)
         lines : list[str] = []
@@ -509,6 +515,7 @@ class XGLASS:
             URL,
             data=data,
         )
+        self.ensure_logged(r)
         return r
     
     def getPieceAm(self, element:XGlassElement, piece:XGlassPiece=None):

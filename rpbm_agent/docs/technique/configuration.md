@@ -107,6 +107,14 @@ Solution retenue : un verrou applicatif réutilisant `ir.config_parameter` (`rpb
 
 Alternative non retenue (business, pas technique) : un pool de plusieurs identifiants X'Glass/VSF permettrait une vraie concurrence sans file d'attente, mais dépend d'une démarche contractuelle auprès des portails — non disponible actuellement.
 
+## Reconnexion à chaud
+
+L'expiration du verrou ou d'une session authentifiée est remontée au widget sous le type
+JSON-RPC `AgentSessionExpiredError`. Le widget peut alors appeler à nouveau
+`/rpbm_agent_auth` : le verrou est repris par le même utilisateur, les agents sont recréés et
+le véhicule déjà sélectionné est réactivé côté X'Glass. Une erreur réseau, une erreur de
+parsing ou des identifiants refusés ne sont pas considérés comme récupérables automatiquement.
+
 ## Assets
 
 ```python

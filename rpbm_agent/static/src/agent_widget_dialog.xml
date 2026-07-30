@@ -9,6 +9,11 @@
                 </div>
             </t>
             <t t-else="">
+                <div t-att-class="isReconnecting ? 'pe-none opacity-50' : ''" t-att-aria-busy="isReconnecting">
+                    <div t-if="isReconnecting" class="alert alert-warning d-flex align-items-center gap-2" role="status">
+                        <i class="fa fa-spinner fa-spin"/>
+                        Reconnexion aux portails et restauration du contexte en cours...
+                    </div>
                 <section class="mb-4">
                     <h5>1. Véhicule</h5>
                     <div class="d-flex flex-wrap gap-2 align-items-end">
@@ -140,12 +145,16 @@
                         </t>
                     </div>
                 </section>
-
-                <t t-set-slot="footer">
-                    <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!state.canConfirm">Confirmer</button>
-                    <button class="btn btn-secondary" t-on-click="onConfirmAndSave" t-att-disabled="!state.canConfirm">Confirmer et enregistrer</button>
-                    <button class="btn btn-outline-secondary" t-on-click="onDiscard">Annuler</button>
-                </t>
+                </div>
+            </t>
+            <t t-set-slot="footer">
+                <button t-if="reconnectRequired" class="btn btn-warning" t-on-click="onReconnect" t-att-disabled="isReconnecting">
+                    <i t-if="isReconnecting" class="fa fa-spinner fa-spin me-1"/>
+                    Reconnecter
+                </button>
+                <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!state.canConfirm or isReconnecting">Confirmer</button>
+                <button class="btn btn-secondary" t-on-click="onConfirmAndSave" t-att-disabled="!state.canConfirm or isReconnecting">Confirmer et enregistrer</button>
+                <button class="btn btn-outline-secondary" t-on-click="onDiscard" t-att-disabled="isReconnecting">Annuler</button>
             </t>
         </Dialog>
     </t>

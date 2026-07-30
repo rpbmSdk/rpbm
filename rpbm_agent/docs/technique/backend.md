@@ -115,3 +115,9 @@ Exemple de payload `VSFArticle` :
 ## État de session partagée
 
 `vsfAgent` et `xglassAgent` sont des instances **au niveau du module Python**, donc partagées par tous les workers/requêtes/utilisateurs Odoo qui appellent ces routes sur le même processus serveur (et réinstanciées à chaque `/rpbm_agent_auth`, ce qui donne une ardoise propre par session plutôt qu'un problème une fois combiné au verrou ci-dessous). Elles portent un état mutable (`self.session` de `requests`, `self.selectedVehiculePage`, `self.initRecherche`). Combiné à la contrainte "un seul utilisateur actif par identifiant" du portail X'Glass, deux utilisateurs Odoo utilisant le widget en même temps partageraient la même session portail sans coordination — désormais empêché par un verrou applicatif (`ir.config_parameter` `rpbm_agent.session_lock`, `main.py::acquire_agent_lock`/`touch_agent_lock`/`release_agent_lock`) qui sérialise des sessions widget complètes entre utilisateurs, avec expiration glissante de 15 min en filet de sécurité — voir [configuration](configuration.md#concurrence--verrou-de-session) pour le détail, et l'[état des lieux](../etat-des-lieux.md) pour l'historique du problème.
+
+Une expiration détectée dans X'Glass (`XGlassAuthError`), VSF (`VSFAuthError`) ou le verrou
+local est convertie en `AgentSessionExpiredError`, sous-classe de `UserError`. Son nom est le
+marqueur JSON-RPC consommé par le widget ; il ne dépend pas du message affiché. Les autres
+erreurs portail restent des `UserError` fonctionnels. `/rpbm_agent_auth` reste l'unique route
+de (re)connexion et réinstancie les deux agents avant de les authentifier.

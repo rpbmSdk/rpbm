@@ -171,3 +171,15 @@ L'écriture effective en base se fait ensuite via le mécanisme de sauvegarde st
 formulaire Odoo (bouton « Enregistrer »), ou directement avec « Confirmer et enregistrer ».
 Le module n'utilise pas de `orm.write` : tous ses échanges serveur passent par `rpc` vers les
 routes custom de `main.py`.
+
+## Reconnexion à chaud des portails
+
+Les appels dépendants de X'Glass ou VSF passent par `callPortal()`. Lorsqu'une erreur
+JSON-RPC `AgentSessionExpiredError` remonte, la dialog réauthentifie une fois les deux agents,
+rejoue silencieusement `/getPlanche` pour restaurer la sélection serveur du véhicule courant,
+puis rejoue une seule fois l'appel interrompu. Cette restauration n'écrit pas dans l'état Owl :
+véhicule, catégorie, pièces, articles et sélections affichés restent inchangés.
+
+Si la reconnexion ou le rejeu échoue à nouveau, `reconnectRequired` affiche le bouton
+« Reconnecter » dans le footer. Le bouton conserve le contexte mais ne relance pas l'action
+initiale. Les erreurs réseau, métier ou d'identifiants ne déclenchent pas ce bouton.

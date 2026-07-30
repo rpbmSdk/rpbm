@@ -2,6 +2,11 @@
 
 > **Fait (2026-07-29).** Les cartes VSF supportent désormais la sélection multiple par code, les suggestions sont enrichies depuis leurs fiches, et chaque carte sélectionnée porte ses propres actions produit/devis. Une sélection principale occupe toute la largeur de la grille : ses suggestions compactes restent immédiatement visibles. Les dimensions sans unité du bloc VSF « Dimensions » sont normalisées en millimètres et la description produit conserve les informations visibles de la fiche. Le retrait du devis est limité aux lignes ajoutées par le widget pendant la dialog.
 
+> **Fait (2026-07-30).** Une expiration X'Glass, VSF ou du verrou local est désormais
+> récupérée à chaud : le widget reconnecte les agents, restaure le véhicule côté portail et
+> rejoue une fois l'action interrompue sans effacer son contexte. En cas d'échec, le footer
+> propose « Reconnecter » sans fermer la dialog.
+
 Établie le 2026-07-24, sur lecture intégrale du module + interrogation de l'instance
 `rpbm-preprod` (profil `paradigme-mcp` `rpbm-preprod`, Odoo 17). Complète
 [`etat-des-lieux.md`](etat-des-lieux.md) : celui-ci auditait le **code**, celle-ci part

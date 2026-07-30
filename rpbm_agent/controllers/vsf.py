@@ -206,6 +206,11 @@ class VSFAgent:
         except requests.exceptions.RequestException as e:
             raise VSFError(f"Erreur réseau VSF (POST {url}) : {e}") from e
 
+    def ensure_logged(self, response):
+        """Détecte une redirection vers le formulaire VSF avant tout parsing."""
+        if getattr(response, "url", "").rstrip("/") == VSF_LOGIN_URL:
+            raise VSFAuthError("Session VSF expirée ou invalide.")
+
     def auth(self, login:str, password:str):
         r = self.get(VSF_LOGIN_URL, headers=self.headers)
         page = bs.BeautifulSoup(r.text, "html.parser")
@@ -233,6 +238,7 @@ class VSFAgent:
 
     def searchEurocodePage(self, eurocode: str = "6539RGSH5RD"):
         r = self.get(VSF_SEARCH_URL, params={"search": eurocode})
+        self.ensure_logged(r)
         page = bs.BeautifulSoup(r.text, "html.parser")
         return page
 
@@ -252,6 +258,7 @@ class VSFAgent:
             params={"articlesIds[]": articlesIds},
             headers={"x-requested-with": "XMLHttpRequest", "X-CSRF-TOKEN": csrf_tag["content"]},
         )
+        self.ensure_logged(r)
         if r.status_code != 200:
             raise VSFError(f"Réponse HTTP {r.status_code} inattendue de VSF (eurocode={eurocode}).")
         data = r.json()
@@ -293,10 +300,9 @@ class VSFAgent:
         if parsed.scheme != "https" or parsed.netloc != urlparse(VSF_BASE_URL).netloc:
             raise VSFError("URL de fiche article VSF invalide.")
         response = self.get(url)
+        self.ensure_logged(response)
         if response.status_code != 200:
             raise VSFError(f"Réponse HTTP {response.status_code} inattendue pour l'article VSF {code}.")
-        if getattr(response, "url", "").rstrip("/") == VSF_LOGIN_URL:
-            raise VSFAuthError("Session VSF expirée lors de la lecture de la fiche article.")
         page = bs.BeautifulSoup(response.text, "html.parser")
         details = self.extractArticleDetails(
             page, article_info, url, include_suggestions=include_suggestions
@@ -310,6 +316,8 @@ class VSFAgent:
                             suggestion, include_suggestions=False, enrich_suggestions=False
                         )
                     )
+                except VSFAuthError:
+                    raise
                 except VSFError:
                     # Une fiche complémentaire indisponible ne doit pas faire
                     # disparaître les autres suggestions ni l'article principal.

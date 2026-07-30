@@ -75,6 +75,33 @@ def test_xglass_mauvais_identifiants():
     assert len([c for c in portal.calls if c[0] == "POST"]) == 2, portal.calls
 
 
+def test_xglass_releve_la_page_de_login_avant_le_json():
+    agent = xglass.XGLASS()
+    agent.initRecherche = True
+    agent.post = lambda *args, **kwargs: SimpleNamespace(
+        url=xglass.XGLASS_MAIN_URL, text="<form/>", json=lambda: {}
+    )
+    try:
+        agent.searchImmat("DS808DZ")
+    except xglass.XGlassAuthError:
+        pass
+    else:
+        raise AssertionError("XGlassAuthError attendue pour une page de login expirée")
+
+
+def test_xglass_releve_la_page_de_login_avant_les_pieces():
+    agent = xglass.XGLASS()
+    agent.get = lambda *args, **kwargs: SimpleNamespace(
+        url=xglass.XGLASS_MAIN_URL, text="<form/>"
+    )
+    try:
+        agent.getPiecesData(1, 2)
+    except xglass.XGlassAuthError:
+        pass
+    else:
+        raise AssertionError("XGlassAuthError attendue pour les pièces expirées")
+
+
 class FakeVSF:
     """Laravel : `_token` est présent aussi bien sur la page de connexion que
     sur les pages authentifiées (formulaire de déconnexion)."""
@@ -109,6 +136,32 @@ def test_vsf_echec_si_retour_sur_la_page_de_connexion():
         pass
     else:
         raise AssertionError("VSFAuthError attendue")
+
+
+def test_vsf_releve_la_redirection_login_avant_la_recherche():
+    agent = vsf.VSFAgent()
+    agent.get = lambda *args, **kwargs: SimpleNamespace(
+        url=vsf.VSF_LOGIN_URL, text=FakeVSF.PAGE, status_code=200
+    )
+    try:
+        agent.searchEurocodePage("6539R")
+    except vsf.VSFAuthError:
+        pass
+    else:
+        raise AssertionError("VSFAuthError attendue pour une session VSF expirée")
+
+
+def test_vsf_releve_la_redirection_login_avant_la_fiche():
+    agent = vsf.VSFAgent()
+    agent.get = lambda *args, **kwargs: SimpleNamespace(
+        url=vsf.VSF_LOGIN_URL, text=FakeVSF.PAGE, status_code=200
+    )
+    try:
+        agent.getArticleDetails({"code": "6539RGSH5RD"})
+    except vsf.VSFAuthError:
+        pass
+    else:
+        raise AssertionError("VSFAuthError attendue pour une fiche VSF expirée")
 
 
 def test_vsf_article_stock_renomme():

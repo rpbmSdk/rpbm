@@ -51,6 +51,8 @@ export class AgentWidgetDialog extends asyncWidget {
             ...this.state,
             canConfirm: false,
             agentsInitialized: false,
+            isReconnecting: false,
+            reconnectRequired: false,
             // loading: false,
             immatriculationValue: "",
             vehicules: [],
@@ -73,6 +75,7 @@ export class AgentWidgetDialog extends asyncWidget {
         });
         this._agentLockReleased = false;
         this._lastSearchedBaseEurocode = undefined;
+        this._reconnectPromise = undefined;
 
         // La croix de la dialog et Échap contournent onDiscard(). Le crochet de
         // cycle de vie garantit que le verrou X'Glass est libéré quel que soit
@@ -192,6 +195,14 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.state.agentsInitialized;
     }
 
+    get isReconnecting() {
+        return this.state.isReconnecting;
+    }
+
+    get reconnectRequired() {
+        return this.state.reconnectRequired;
+    }
+
 
     async onWillStart() {
         await this.runAsync(async () => {
@@ -202,8 +213,77 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async auth_agents() {
-        await this.rpc("/rpbm_agent_auth")
+        await this.rpc("/rpbm_agent_auth");
         this.state.agentsInitialized = true;
+        this.state.reconnectRequired = false;
+        this._agentLockReleased = false;
+    }
+
+    isSessionExpiredError(error) {
+        const errorName = error?.data?.name || "";
+        return errorName === "AgentSessionExpiredError"
+            || errorName.endsWith(".AgentSessionExpiredError");
+    }
+
+    async restorePortalContext() {
+        if (!this.selectedVehicule) {
+            return;
+        }
+        // X'Glass garde le véhicule sélectionné côté serveur. Réchauffer cette
+        // sélection après le login sans réassigner la planche dans l'état Owl :
+        // toutes les données déjà visibles restent ainsi intactes.
+        await this.rpc("/getPlanche", { vehiculeId: this.selectedVehicule.id });
+    }
+
+    async reconnectAgents() {
+        if (this._reconnectPromise) {
+            return this._reconnectPromise;
+        }
+        this._reconnectPromise = (async () => {
+            this.state.isReconnecting = true;
+            this.state.reconnectRequired = false;
+            this.setLoadingMessage("Reconnexion aux portails en cours...");
+            try {
+                await this.auth_agents();
+                await this.restorePortalContext();
+            } catch (error) {
+                this.state.reconnectRequired = true;
+                throw error;
+            } finally {
+                this.state.isReconnecting = false;
+            }
+        })();
+        try {
+            return await this._reconnectPromise;
+        } finally {
+            this._reconnectPromise = undefined;
+        }
+    }
+
+    async callPortal(route, params = {}) {
+        try {
+            return await this.rpc(route, params);
+        } catch (error) {
+            if (!this.isSessionExpiredError(error)) {
+                throw error;
+            }
+        }
+        await this.reconnectAgents();
+        try {
+            return await this.rpc(route, params);
+        } catch (error) {
+            if (this.isSessionExpiredError(error)) {
+                this.state.reconnectRequired = true;
+            }
+            throw error;
+        }
+    }
+
+    async onReconnect() {
+        await this.runAsync(
+            () => this.reconnectAgents(),
+            "Reconnexion aux portails en cours..."
+        );
     }
 
     async init() {
@@ -334,7 +414,7 @@ export class AgentWidgetDialog extends asyncWidget {
             this.state.vehicules = [];
             return;
         }
-        const res = await this.rpc("/searchImmatriculation", {
+        const res = await this.callPortal("/searchImmatriculation", {
             immatriculation: this.immatriculationValue,
         })
         this.state.vehicules = res;
@@ -402,7 +482,7 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async getVehiculeMeta(vehiculeId = this.selectedVehicule.id) {
-        const res = await this.rpc("/rpbm_agent/getVehiculeMeta", {
+        const res = await this.callPortal("/rpbm_agent/getVehiculeMeta", {
             vehiculeId,
         });
         if (this.selectedVehicule?.id === vehiculeId) {
@@ -414,7 +494,7 @@ export class AgentWidgetDialog extends asyncWidget {
 
 
     async getPlanche(vehiculeId = this.selectedVehicule.id) {
-        const res = await this.rpc("/getPlanche", {
+        const res = await this.callPortal("/getPlanche", {
             vehiculeId,
         })
         if (this.selectedVehicule?.id === vehiculeId) {
@@ -458,7 +538,7 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async getPieces() {
-        const res = await this.rpc("/getPieces", {
+        const res = await this.callPortal("/getPieces", {
             plancheId: this.planche.id,
             calqueId: this.selectedCalque.id,
         })
@@ -508,7 +588,7 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     async getPieceAm(piece) {
-        const res = await this.rpc("/getPieceAm", {
+        const res = await this.callPortal("/getPieceAm", {
             element_withPiecesAm: piece['element.withPiecesAm'],
             pieceId: piece.id,
             elementSitId: piece.elementSitId,
@@ -547,7 +627,7 @@ export class AgentWidgetDialog extends asyncWidget {
         }
         this._lastSearchedBaseEurocode = baseEurocode;
         try {
-            const res = await this.rpc("/searchBaseEurocode", {
+            const res = await this.callPortal("/searchBaseEurocode", {
                 baseEurocode,
             });
             this.state.articlesVsf = res;
@@ -696,7 +776,7 @@ export class AgentWidgetDialog extends asyncWidget {
             [articleCode]: true,
         };
         await this.runAsync(async () => {
-            const details = await this.rpc("/getVsfArticleDetails", {
+            const details = await this.callPortal("/getVsfArticleDetails", {
                 articleVsfInfo: article,
                 enrichSuggestions,
             });
@@ -732,7 +812,7 @@ export class AgentWidgetDialog extends asyncWidget {
             return;
         }
         await this.runAsync(async () => {
-            const product = await this.rpc("/createProduct", {
+            const product = await this.callPortal("/createProduct", {
                 articleVsfInfo: article,
             });
             if (this.isArticleSelected(articleCode)) {

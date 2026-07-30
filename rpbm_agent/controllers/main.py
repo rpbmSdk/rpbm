@@ -13,8 +13,8 @@ import base64
 from . import portal_trace
 from . import vsf
 from . import xglass
-from .vsf import VSFError
-from .xglass import XGlassError
+from .vsf import VSFError, VSFAuthError
+from .xglass import XGlassError, XGlassAuthError
 
 _logger = logging.getLogger(__name__)
 
@@ -36,6 +36,20 @@ DEFAULT_VSF_PARTNER_ID = 5708
 # utilisé pour les 4 identifiants) plutôt qu'un nouveau modèle dédié.
 LOCK_KEY = 'rpbm_agent.session_lock'
 AGENT_LOCK_TIMEOUT = timedelta(minutes=15)  # expiration glissante, filet de sécurité
+
+
+class AgentSessionExpiredError(UserError):
+    """Erreur JSON-RPC récupérable par le widget sans lire un texte traduit."""
+
+
+def _raise_portal_error(error, user_message, log_message):
+    """Préserve un marqueur stable pour une authentification portail expirée."""
+    _logger.exception(log_message)
+    if isinstance(error, (XGlassAuthError, VSFAuthError)):
+        raise AgentSessionExpiredError(_(
+            "La session des portails a expiré. Reconnexion nécessaire."
+        )) from error
+    raise UserError(user_message) from error
 
 
 def _lock_row(cr):
@@ -92,9 +106,8 @@ def touch_agent_lock(env):
     state = _lock_row(cr)
     if (not state or state['uid'] != uid
             or now - datetime.fromisoformat(state['touched_at']) > AGENT_LOCK_TIMEOUT):
-        raise UserError(_(
-            "Votre session a expiré ou a été reprise par un autre utilisateur. "
-            "Merci de rouvrir le widget."
+        raise AgentSessionExpiredError(_(
+            "Votre session des portails a expiré ou a été reprise par un autre utilisateur."
         ))
     state['touched_at'] = now.isoformat()
     _write_lock_row(cr, state)
@@ -311,17 +324,27 @@ class AgentController(Controller):
         try:
             vehicules = xglassAgent.searchVehiculeImmat(immatriculation)
             return [vehicule.__dict__ for vehicule in vehicules]
-        except XGlassError:
-            _logger.exception("Erreur X'Glass lors de la recherche immatriculation %s", immatriculation)
-            raise UserError(_("Recherche impossible : le portail X'Glass est inaccessible ou la session a expiré."))
+        except XGlassError as error:
+            _raise_portal_error(
+                error,
+                _("Recherche impossible : le portail X'Glass est inaccessible."),
+                "Erreur X'Glass lors de la recherche immatriculation %s" % immatriculation,
+            )
 
     @route(['/rpbm_agent/getVehiculeMeta', '/rbm_agent/getVehiculeMeta'], auth='user', type='json')
     @_touch_agent_lock
     def getVehiculeMeta(self,vehiculeId:str):
         _logger.info(f"getVehiculeMeta {vehiculeId}")
-        # Il faut d'abord réinitialiser la planche
-        self.getPlanche(int(vehiculeId))
-        return xglassAgent.getVehiculeMeta(vehiculeId)
+        try:
+            # Il faut d'abord réinitialiser la planche.
+            self.getPlanche(int(vehiculeId))
+            return xglassAgent.getVehiculeMeta(vehiculeId)
+        except XGlassError as error:
+            _raise_portal_error(
+                error,
+                _("Lecture impossible : le portail X'Glass est inaccessible."),
+                "Erreur X'Glass lors de la lecture des métadonnées véhicule %s" % vehiculeId,
+            )
 
     @route('/getOdooVehicule', auth='user', type='json')
     def getVehicule(self,immatriculation:str):
@@ -440,14 +463,27 @@ class AgentController(Controller):
     @_touch_agent_lock
     def getPlanche(self,vehiculeId:int):
         _logger.info(f"getPlanche {vehiculeId}")
-        planche = xglassAgent.selectVehicule(str(vehiculeId))
-        return planche
+        try:
+            return xglassAgent.selectVehicule(str(vehiculeId))
+        except XGlassError as error:
+            _raise_portal_error(
+                error,
+                _("Chargement impossible : le portail X'Glass est inaccessible."),
+                "Erreur X'Glass lors du chargement de la planche véhicule %s" % vehiculeId,
+            )
 
     @route('/getPieces', auth='user', type='json')
     @_touch_agent_lock
     def getPieces(self,plancheId:int, calqueId:int):
         _logger.info(f"getPieces {plancheId} {calqueId}")
-        raw = xglassAgent.getPiecesData(plancheId, calqueId)
+        try:
+            raw = xglassAgent.getPiecesData(plancheId, calqueId)
+        except XGlassError as error:
+            _raise_portal_error(
+                error,
+                _("Recherche impossible : le portail X'Glass est inaccessible."),
+                "Erreur X'Glass lors de la recherche des pièces",
+            )
         rawData = {
             'ELEMENTSIT_PRINCIPAUX': [xglass.XGlassElement(**element) for element in raw.get('ELEMENTSIT_PRINCIPAUX', [])],
             'ELEMENTSIT_COMPLEMENTAIRES': [xglass.XGlassElement(**element) for element in raw.get('ELEMENTSIT_COMPLEMENTAIRES', [])],
@@ -477,9 +513,12 @@ class AgentController(Controller):
         try:
             r = xglassAgent.findSelectionsPiecesAmView(element, piece)
             return r.json().get('selectionsPiecesAmView', [])
-        except XGlassError:
-            _logger.exception("Erreur X'Glass lors de la recherche des pièces après-marché")
-            raise UserError(_("Recherche impossible : le portail X'Glass est inaccessible ou la session a expiré."))
+        except XGlassError as error:
+            _raise_portal_error(
+                error,
+                _("Recherche impossible : le portail X'Glass est inaccessible."),
+                "Erreur X'Glass lors de la recherche des pièces après-marché",
+            )
 
     @route('/searchBaseEurocode', auth='user', type='json')
     @_touch_agent_lock
@@ -491,9 +530,12 @@ class AgentController(Controller):
             for vsf_article in vsfArticles:
                 vsf_article.set_rpbm_discount(discount)
             return [vsfArticle.__dict__ for vsfArticle in vsfArticles]
-        except VSFError:
-            _logger.exception("Erreur VSF lors de la recherche eurocode %s", baseEurocode)
-            raise UserError(_("Recherche impossible : le portail VSF est inaccessible ou la session a expiré."))
+        except VSFError as error:
+            _raise_portal_error(
+                error,
+                _("Recherche impossible : le portail VSF est inaccessible."),
+                "Erreur VSF lors de la recherche eurocode %s" % baseEurocode,
+            )
 
     @route('/doesProductExists', auth='user', type='json')
     def doesProductExists(self, articleVsfInfo=None, productCode=None):
@@ -528,9 +570,12 @@ class AgentController(Controller):
             )
             article = _vsf_article_payload(details, discount)
             return article.__dict__
-        except VSFError:
-            _logger.exception("Erreur VSF lors de la lecture de l'article %s", code)
-            raise UserError(_("Lecture impossible : la fiche article VSF est inaccessible."))
+        except VSFError as error:
+            _raise_portal_error(
+                error,
+                _("Lecture impossible : la fiche article VSF est inaccessible."),
+                "Erreur VSF lors de la lecture de l'article %s" % code,
+            )
 
     @route('/createProduct', auth='user', type='json')
     @_touch_agent_lock
@@ -574,6 +619,8 @@ class AgentController(Controller):
                         image = base64.b64encode(response.content).replace(b"\n", b"")
                     else:
                         _logger.warning("Image VSF introuvable pour %s", article_vsf.code)
+                except VSFAuthError:
+                    raise
                 except VSFError:
                     _logger.warning("Image VSF indisponible pour %s ; produit créé sans image", article_vsf.code)
 
@@ -591,6 +638,12 @@ class AgentController(Controller):
                 'min_qty': 0,
                 'price': article_vsf.prixVenteRPBM,
             })
+        except VSFError as error:
+            _raise_portal_error(
+                error,
+                _("Création impossible pour l'article VSF %s.") % product_code,
+                "Erreur VSF lors de la création du produit %s" % product_code,
+            )
         except UserError:
             raise
         except Exception as error:
