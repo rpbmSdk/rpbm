@@ -79,7 +79,9 @@ retirer un principal retire aussi les suggestions de son groupe.
 
 `ArticleComponent` expose un slot Owl optionnel `actions`, rendu dans le corps de la carte.
 La dialog principale y injecte l'encart produit ; la dialog devis l'enrichit par héritage avec
-l'ajout ou le retrait de la ligne. Le conteneur d'actions arrête la propagation du clic afin
+l'ajout ou le retrait de la ligne, tant pour l'article principal que pour chaque suggestion.
+Les deux encarts utilisent des points d'insertion XML distincts afin que l'héritage Owl ajoute
+les actions de devis à chaque carte. Le conteneur d'actions arrête la propagation du clic afin
 qu'une action interne ne modifie pas la sélection de la carte. `h-100` est réservé aux cartes
 non sélectionnées : une carte sélectionnée contenant ses actions garde une hauteur naturelle.
 

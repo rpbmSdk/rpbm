@@ -90,7 +90,7 @@
                                     <t t-set-slot="actions">
                                         <t t-if="isArticleSelected(articleVsf.code)">
                                             <t t-set="actionArticle" t-value="articleVsf"/>
-                                            <div name="selected_article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
+                                            <div name="selected_main_article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
                                                 <t t-if="isArticleLoading(actionArticle.code)">
                                                     <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
                                                 </t>
@@ -118,7 +118,7 @@
                                                     <t t-set-slot="actions">
                                                         <t t-if="isArticleSelected(suggestion.code)">
                                                             <t t-set="actionArticle" t-value="suggestion"/>
-                                                            <div name="selected_article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
+                                                            <div name="selected_suggested_article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
                                                                 <t t-if="isArticleLoading(actionArticle.code)">
                                                                     <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
                                                                 </t>

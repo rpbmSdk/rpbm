@@ -7,6 +7,10 @@
 > rejoue une fois l'action interrompue sans effacer son contexte. En cas d'échec, le footer
 > propose « Reconnecter » sans fermer la dialog.
 
+> **Fait (2026-07-30).** Les articles suggérés par VSF disposent désormais des mêmes actions
+> de devis que les articles principaux : ajout individuel, signalement de doublon et retrait de
+> la ligne créée pendant la dialog.
+
 Établie le 2026-07-24, sur lecture intégrale du module + interrogation de l'instance
 `rpbm-preprod` (profil `paradigme-mcp` `rpbm-preprod`, Odoo 17). Complète
 [`etat-des-lieux.md`](etat-des-lieux.md) : celui-ci auditait le **code**, celle-ci part
