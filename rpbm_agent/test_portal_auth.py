@@ -330,6 +330,21 @@ def test_vsf_valeurs_de_creation_produit():
     assert values["description"] == "<p>Note VSF</p>"
 
 
+def test_vsf_reference_constructeur_absente_utilise_le_code_vsf():
+    article = vsf.VSFArticle(
+        code="6571AGRCHIMVZ",
+        name="Pare-brise",
+        refConstructeur=" - ",
+        prix_vente="100,00&nbsp;€",
+        prix_ht="80,00&nbsp;€",
+        total_stock="1",
+    )
+    values = vsf.product_creation_values(article, "<p>Note VSF</p>")
+    assert values["default_code"] == "6571AGRCHIMVZ"
+    assert values["x_studio_reference_constructeur"] is False
+    assert vsf.constructor_reference_or_vsf_code("-", "6571AGRCHIMVZ") == "6571AGRCHIMVZ"
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):

@@ -11,6 +11,10 @@
 > de devis que les articles principaux : ajout individuel, signalement de doublon et retrait de
 > la ligne créée pendant la dialog.
 
+> **Fait (2026-07-30).** La sentinelle VSF `"-"` pour une référence constructeur est
+> désormais traitée comme absente : les nouveaux produits utilisent leur code VSF comme
+> référence interne, sans créer ni rechercher de produit sous le code `"-"`.
+
 Établie le 2026-07-24, sur lecture intégrale du module + interrogation de l'instance
 `rpbm-preprod` (profil `paradigme-mcp` `rpbm-preprod`, Odoo 17). Complète
 [`etat-des-lieux.md`](etat-des-lieux.md) : celui-ci auditait le **code**, celle-ci part

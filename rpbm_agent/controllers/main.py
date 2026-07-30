@@ -201,10 +201,8 @@ def _find_existing_product(env, product_code, eurocode, product_name):
 
 def _article_constructor_reference(article_info):
     """Référence interne attendue par le métier, avec repli VSF stable."""
-    return str(
-        article_info.get('refConstructeur')
-        or article_info.get('code')
-        or ''
+    return vsf.constructor_reference_or_vsf_code(
+        article_info.get('refConstructeur'), article_info.get('code')
     ).strip()
 
 

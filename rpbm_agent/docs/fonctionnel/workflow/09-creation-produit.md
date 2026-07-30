@@ -8,13 +8,13 @@ Après la sélection d'un article VSF, le widget le cherche dans Odoo dans cet o
 | Champ écrit (`product.product`) | Source |
 |---|---|
 | `name` | `articleVsf.name` |
-| `default_code` | `articleVsf.refConstructeur`, ou `articleVsf.code` si la référence constructeur est absente |
+| `default_code` | `articleVsf.refConstructeur`, ou `articleVsf.code` si la référence constructeur est absente (`None`, vide ou `"-"` VSF) |
 | `product.template.x_studio_eurocode` | `articleVsf.code` |
 | `product.template.x_studio_largeur_mm` | Largeur de fiche VSF normalisée en millimètres |
 | `product.template.x_studio_longueur_mm` | Longueur de fiche VSF normalisée en millimètres |
 | `list_price` | `articleVsf.prixVente` |
 | `type` | `'product'` (littéral) |
-| `x_studio_reference_constructeur` | `articleVsf.refConstructeur` |
+| `x_studio_reference_constructeur` | `articleVsf.refConstructeur`, vide lorsque VSF retourne `"-"` |
 | `image_1920` | image pleine taille signée par VSF (`p=xlg`), avec repli sur la miniature si elle est indisponible |
 | `description` | note interne HTML échappée : lien fiche VSF, identifiants, prix, stock, dimensions et toutes les caractéristiques libellé/valeur visibles sur la fiche |
 

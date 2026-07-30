@@ -68,18 +68,33 @@ def _parse_dimension_mm(value, default_unit=None):
     return number * multiplier
 
 
+def normalise_constructor_reference(reference):
+    """Retourne une référence constructeur exploitable, ou ``False``."""
+    value = str(reference or "").strip()
+    return value if value and value != "-" else False
+
+
+def constructor_reference_or_vsf_code(reference, code):
+    """Référence interne : constructeur si présente, sinon code VSF."""
+    return normalise_constructor_reference(reference) or str(code or "").strip()
+
+
 def product_creation_values(article, description, image=False):
     """Valeurs Odoo déterministes dérivées d'une fiche VSF enrichie."""
-    reference = str(getattr(article, "refConstructeur", None) or article.code).strip()
+    constructor_reference = normalise_constructor_reference(
+        getattr(article, "refConstructeur", None)
+    )
     return {
         "name": article.name,
-        "default_code": reference,
+        "default_code": constructor_reference_or_vsf_code(
+            constructor_reference, article.code
+        ),
         "x_studio_eurocode": article.code,
         "x_studio_largeur_mm": getattr(article, "largeurMm", None) or False,
         "x_studio_longueur_mm": getattr(article, "longueurMm", None) or False,
         "list_price": article.prixVente,
         "type": "product",
-        "x_studio_reference_constructeur": getattr(article, "refConstructeur", None) or False,
+        "x_studio_reference_constructeur": constructor_reference,
         "image_1920": image or False,
         "description": description,
     }
