@@ -174,7 +174,7 @@ class VSFArticle:
             raise VSFError("La remise RPBM doit être comprise entre 0 et 1.")
         self.remiseRPBM = discount
         self.prixVenteRPBM = (
-            self.prixVente * (1 - self.remiseRPBM)
+            round(self.prixVente * (1 - self.remiseRPBM), 2)
             if self.prixVente is not None
             else None
         )
