@@ -77,6 +77,12 @@ Dans la liste VSF, chaque article sélectionné possède son propre encart de cr
 consultation Odoo. Une sélection par code permet de conserver plusieurs cartes en parallèle ;
 retirer un principal retire aussi les suggestions de son groupe.
 
+`ArticleComponent` expose un slot Owl optionnel `actions`, rendu dans le corps de la carte.
+La dialog principale y injecte l'encart produit ; la dialog devis l'enrichit par héritage avec
+l'ajout ou le retrait de la ligne. Le conteneur d'actions arrête la propagation du clic afin
+qu'une action interne ne modifie pas la sélection de la carte. `h-100` est réservé aux cartes
+non sélectionnées : une carte sélectionnée contenant ses actions garde une hauteur naturelle.
+
 Au clic sur un article principal, le widget lit sa fiche VSF et hydrate les cartes de son
 carrousel « références complémentaires » sans les ajouter aux résultats principaux. Les cartes
 principales et suggérées partagent le même contenu (photo, référence, prix, stock et

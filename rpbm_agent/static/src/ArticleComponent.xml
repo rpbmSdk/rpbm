@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.ArticleComponent">
-        <div class="card h-100 flex-grow-1" t-att-class="props.selected ? 'border-primary shadow-sm' : ''">
+        <div class="card flex-grow-1" t-att-class="props.selected ? 'border-primary shadow-sm' : 'h-100'">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
                     <t t-esc="props.article.code"/> <t t-esc="props.article.name"/>
@@ -38,6 +38,7 @@
                 </dl>
                 <a t-if="props.article.url" t-att-href="props.article.url" target="_blank" class="btn btn-outline-primary btn-sm mt-2" t-on-click.stop="">Fiche technique</a>
                 <p t-if="props.article.detailsUnavailable" class="text-warning small mt-2 mb-0">Détails VSF indisponibles pour cet article.</p>
+                <t t-slot="actions"/>
         </div>
     </div>
 </t>

@@ -701,6 +701,45 @@ est idempotente afin de ne pas fermer deux fois la même session.
 **Vérification.** Ouvrir le widget, fermer par `Échap`, vérifier que
 `ir.config_parameter` `rpbm_agent.session_lock` est vidé.
 
+### L2.8 — Corriger la hauteur des cartes VSF sélectionnées — fait (2026-07-30)
+
+**Cause.** La grille Bootstrap étire la colonne d'un article principal sélectionné : elle
+contient la carte, ses actions et ses suggestions. La classe `h-100` de la carte impose alors
+`height: 100% !important` sur toute cette hauteur, ce qui allonge la carte et repousse les
+suggestions hors de la zone visible. Le même défaut avait déjà été corrigé pour les cartes
+de pièces OE.
+
+**Correctif livré.** Dans `ArticleComponent.xml`, `h-100` est conservé seulement pour les cartes
+non sélectionnées afin de garder leur alignement visuel. Une carte VSF principale ou suggérée
+sélectionnée doit retrouver une hauteur naturelle. Le groupe principal déjà rendu sur toute
+la largeur reste inchangé ; aucune nouvelle feuille de style, dépendance ou modification du
+contrat VSF/Odoo n'est requise.
+
+**Vérification.** Après mise à jour des assets, sélectionner un article principal enrichi,
+puis une suggestion : les actions et les suggestions suivent immédiatement leur carte, sans
+extension artificielle de hauteur. Les cartes non sélectionnées restent alignées dans la
+grille.
+
+### L2.9 — Intégrer les actions aux cartes Article VSF — fait (2026-07-30)
+
+**Prérequis.** [L2.8](#l28) doit être livrée auparavant : une carte qui contient ses actions
+doit conserver une hauteur naturelle lorsqu'elle est sélectionnée.
+
+**Correctif livré.** `ArticleComponent` expose un slot optionnel `actions`, rendu dans le corps
+de la carte. `AgentWidgetDialog` y injecte les encarts existants de création ou de consultation
+du produit ; la surcharge `SaleOrderDialog` conserve l'ajout et le retrait de ligne de devis via
+le même point d'extension. L'état, les RPC et le suivi des lignes restent dans la dialog.
+Chaque action interne doit interrompre la propagation du clic afin de ne jamais sélectionner ou
+désélectionner la carte.
+
+**Suggestions.** Seules les cartes principales sélectionnées rendent leur liste de suggestions.
+Le slot n'en rend aucune : sélectionner une suggestion affiche ses actions dans sa propre carte,
+mais ne peut pas créer de suggestions de second niveau.
+
+**Vérification.** Contrôler la création/consultation produit et l'ajout/retrait devis depuis une
+carte principale puis depuis une suggestion. Un clic sur un bouton interne ne doit pas modifier
+la sélection ; les suggestions restent limitées à un niveau.
+
 ---
 
 ## L3 — Hygiène

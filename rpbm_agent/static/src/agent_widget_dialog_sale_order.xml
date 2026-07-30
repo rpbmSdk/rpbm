@@ -4,12 +4,12 @@
         <xpath expr="//div[@name='selected_article_actions']" position="inside">
             <t t-if="getProductForArticle(actionArticle.code)">
                 <t t-if="isWidgetArticleInOrder(actionArticle.code)">
-                    <button class="btn btn-outline-danger btn-sm ms-2" t-on-click="()=>this.removeArticleFromSaleOrder(actionArticle.code)">Retirer du devis</button>
+                    <button class="btn btn-outline-danger btn-sm ms-2" t-on-click.stop="()=>this.removeArticleFromSaleOrder(actionArticle.code)">Retirer du devis</button>
                 </t>
                 <t t-elif="isArticleAlreadyInOrder(actionArticle.code)">
                     <span class="ms-2">Article déjà présent dans le devis.</span>
                 </t>
-                <button t-else="" class="btn btn-primary btn-sm ms-2" t-on-click="()=>this.addArticleToSaleOrder(actionArticle.code)">Ajouter au devis</button>
+                <button t-else="" class="btn btn-primary btn-sm ms-2" t-on-click.stop="()=>this.addArticleToSaleOrder(actionArticle.code)">Ajouter au devis</button>
             </t>
         </xpath>
     </t>
