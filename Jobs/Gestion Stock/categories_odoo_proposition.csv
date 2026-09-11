@@ -1,0 +1,18 @@
+category_name;parent_category;odoo_action;odoo_product_type;stockable;source_article_labels;source_type_groups;notes
+Pare-brise;All / Saleable;create;product;true;Pare-brise;PARE BRISE | PARE-BRISE;Categorie metier large, aucune sous-categorie a creer.
+Lunette;All / Saleable;create;product;true;Lunette;LUNETTES;Categorie metier large, aucune sous-categorie a creer.
+Glace latérale;All / Saleable;create;product;true;Glace latérale | Custode | Déflecteur;GLACES LATERALES;Regrouper les trois libelles dans une seule categorie.
+Joint;All / Saleable;create;product;true;Joint | Enjoliveurs;JOINTS | jOINTS | ENJOLIVEURS;Enjoliveurs rattaches a Joint, sans categorie distincte.
+Main d'oeuvre;All / Saleable;reuse_existing;service;false;Temps MO 1 | Temps MO 2;;Categorie existante Odoo All / Saleable / Main d'Oeuvre, a reutiliser.
+Consommable;All / Saleable;create;consu;to_decide;Kit Colle | Gel capteur | Agraphes KIT | Cale Pare-brise | Produit connexe;;Categorie cible distincte de Consommables Atelier, a arbitrer avec les produits existants.
+Film solaire;All / Saleable;create;product;true;Film solaire | Film sécuritaire;;Categorie metier explicite meme si peu representee dans le CSV actuel.
+Autres;All / Saleable;create;product;true;;AUTRES | CAMERA;"Categorie fourre-tout controlee pour les cas rares/non classes. Decision RPBM du 2026-07-23 : CAMERA reste ici sans sous-categorie dediee (article rare, exception explicite). Les regroupements ci-dessous sont desormais de vraies sous-categories Odoo, pas de simples libelles de produit."
+Autres / Optique;Autres;create;product;true;Optique;OPTIQUE | OPTIQUES | FAISCEAU | PHARE | PHARES | ANTIBROUILLARD | FEU;Sous-categorie creee sous Autres (decision RPBM du 2026-07-23).
+Autres / Retroviseur EXT;Autres;create;product;true;Rétroviseur EXT;RETROVISEUR;Sous-categorie creee sous Autres (decision RPBM du 2026-07-23). Libelle source RETROVISEUR renomme Retroviseur EXT.
+Autres / Retroviseur INT;Autres;create;product;true;Rétroviseur INT;RETROVISEUR INT;Sous-categorie creee sous Autres (decision RPBM du 2026-07-23).
+Autres / Toit panoramique;Autres;create;product;true;Toit panoramique;TOIT | TOIT PANO | TOIT PANORAMIQUE | VITRE PAVILLON;Sous-categorie creee sous Autres (decision RPBM du 2026-07-23).
+Autres / Cache rétro;Autres;create;product;true;Cache rétro;CACHE RETRO | CACHE RETRO INT;Sous-categorie creee sous Autres (decision RPBM du 2026-07-23).
+Autres / Lève-vitre;Autres;create;product;true;Lève-vitre;LEVE-VITRE | LEVE VITRE | MECANISME LV | MECANISME;Sous-categorie creee sous Autres (decision RPBM du 2026-07-23).
+Autres / Baie de pare-brise;Autres;create;product;true;Baie de pare-brise;BAIE DE PARE BRISE;Sous-categorie creee sous Autres (decision RPBM du 2026-07-23), source rare (1 ligne).
+Services;All / Saleable;create;service;false;Frais d'identification | Retraitement des déchets | Nettoyage bris de glace | Frais de déplacement | Pose simple;;Pose simple couvre les prestations de pose, pas les pieces mecaniques.
+Accessoires;All / Saleable;reuse_existing;product;true;Balai essuie-glace;;Categorie existante Odoo All / Saleable / Accessoires, a reutiliser. Ne pas creer une categorie Balai essuie-glace.

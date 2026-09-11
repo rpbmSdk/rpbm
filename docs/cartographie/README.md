@@ -1,5 +1,11 @@
 # Cartographie des champs Studio — instance RPBM
 
+> **Statut.** Cette cartographie est le releve historique du 2026-07-25. Le cadre
+> reproductible pour les prochains snapshots, l'inventaire et le rafraichissement est
+> decrit dans l'[audit Odoo Studio](../../.paradigme/audits/rpbm-preprod/README.md).
+> Un snapshot complet en lecture seule est desormais disponible localement ; la documentation
+> versionnable de l'audit a ete regeneree depuis ce snapshot.
+
 Cartographie de l'**instance** `rpbm-pre-prod` (Odoo 17), distincte de la documentation du
 **module** (`rpbm_agent/docs/`). Objectif : savoir, champ par champ, quelle donnée métier
 porte quel `x_studio_*`, pour que le widget **fiabilise la série de champs existante** au lieu
@@ -24,6 +30,11 @@ la main) pour rester exhaustifs.
 - [`prix-devis/`](prix-devis/README.md) — **cartographie du prix de vente** (migrée depuis
   `Jobs/`, format de référence) : cascade complète `crm.lead` → `sale.order`, formules
   `compute`, vérification numérique sur un devis réel, anomalies.
+- [`reconciliation-stock-rpbm-agent.md`](reconciliation-stock-rpbm-agent.md) — analyse croisée
+  entre le module `rpbm_agent` et la migration stock (`Jobs/Gestion Stock/`) : conventions
+  divergentes sur `product.product` (clé `default_code`, catégorie, coût), hiérarchie de
+  priorités et questions client à trancher avant que les deux tournent en production
+  simultanément.
 
 ## Légende des statuts (`crm-lead.md`)
 

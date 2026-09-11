@@ -1,18 +1,24 @@
-__pycache__
+__pycache__/
 *.pyc
 *.json
 !.vscode/
 !.vscode/settings.json
 .env
-Jobs/**/*.js
+.env.local
 *.csv
 *.ipynb
-Jobs
+.venv/
+
+Jobs/**/*.js
+Jobs/
 !Jobs/
 !Jobs/Gestion Stock/
 !Jobs/Gestion Stock/**
+Jobs/Gestion Stock/**/__pycache__/
+Jobs/Gestion Stock/**/*.pyc
 
-.env.local
 rpbm_agent/push_credentials.py
-Jobs/Gestion Stock/__pycache__/prepare_migration_files.cpython-310.pyc
-.venv/
+
+# Configuration locale et snapshots de l'audit Odoo Studio.
+.paradigme.yaml
+.paradigme/

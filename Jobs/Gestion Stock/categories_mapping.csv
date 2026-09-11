@@ -1,0 +1,32 @@
+﻿source_type;target_category;target_subcategory;product_type;stockable;notes
+ANTIBROUILLARD;Autres;Optique;product;true;Sous-categorie Autres / Optique (decision RPBM du 2026-07-23).
+AUTRES;Autres;;product;true;"Categorie Odoo Autres; valeur fourre-tout controlee."
+BAIE DE PARE BRISE;Autres;Baie de pare-brise;product;true;Sous-categorie Autres / Baie de pare-brise (decision RPBM du 2026-07-23), source rare.
+CACHE RETRO;Autres;Cache retro;product;true;Sous-categorie Autres / Cache retro (decision RPBM du 2026-07-23).
+CACHE RETRO INT;Autres;Cache retro;product;true;Sous-categorie Autres / Cache retro (decision RPBM du 2026-07-23).
+CAMERA;Autres;;product;true;Article rare : categorie Odoo Autres, aucune sous-categorie Camera (exception explicite).
+ENJOLIVEURS;Joint;;product;true;Inclut joints et enjoliveurs.
+FAISCEAU;Autres;Optique;product;true;Sous-categorie Autres / Optique (decision RPBM du 2026-07-23).
+FEU;Autres;Optique;product;true;Sous-categorie Autres / Optique (decision RPBM du 2026-07-23).
+GLACES LATERALES;Glace laterale;;product;true;Inclut glaces laterales, custodes et deflecteurs.
+JOINTS;Joint;;product;true;Inclut joints et enjoliveurs.
+LEVE VITRE;Autres;Leve-vitre;product;true;Sous-categorie Autres / Leve-vitre (decision RPBM du 2026-07-23).
+LEVE-VITRE;Autres;Leve-vitre;product;true;Sous-categorie Autres / Leve-vitre (decision RPBM du 2026-07-23).
+LUNETTES;Lunette;;product;true;"Type normalise; aucune sous-categorie Odoo."
+MECANISME;Autres;Leve-vitre;product;true;Sous-categorie Autres / Leve-vitre (decision RPBM du 2026-07-23).
+MECANISME LV;Autres;Leve-vitre;product;true;Sous-categorie Autres / Leve-vitre (decision RPBM du 2026-07-23).
+OPTIQUE;Autres;Optique;product;true;Sous-categorie Autres / Optique (decision RPBM du 2026-07-23).
+OPTIQUES;Autres;Optique;product;true;Sous-categorie Autres / Optique (decision RPBM du 2026-07-23).
+PARE BRISE;Pare-brise;;product;true;"Type normalise; aucune sous-categorie Odoo."
+PARE-BRISE;Pare-brise;;product;true;"Type normalise; aucune sous-categorie Odoo."
+PHARE;Autres;Optique;product;true;Sous-categorie Autres / Optique (decision RPBM du 2026-07-23).
+PHARES;Autres;Optique;product;true;Sous-categorie Autres / Optique (decision RPBM du 2026-07-23).
+PaRE BRISE;Pare-brise;;product;true;"Type normalise; aucune sous-categorie Odoo."
+RETROVISEUR;Autres;Retroviseur EXT;product;true;"Sous-categorie Autres / Retroviseur EXT (decision RPBM du 2026-07-23); libelle source RETROVISEUR renomme."
+RETROVISEUR INT;Autres;Retroviseur INT;product;true;Sous-categorie Autres / Retroviseur INT (decision RPBM du 2026-07-23).
+TOIT;Autres;Toit panoramique;product;true;Sous-categorie Autres / Toit panoramique (decision RPBM du 2026-07-23).
+TOIT PANO;Autres;Toit panoramique;product;true;Sous-categorie Autres / Toit panoramique (decision RPBM du 2026-07-23).
+TOIT PANORAMIQUE;Autres;Toit panoramique;product;true;Sous-categorie Autres / Toit panoramique (decision RPBM du 2026-07-23).
+VITRE PAVILLON;Autres;Toit panoramique;product;true;Sous-categorie Autres / Toit panoramique (decision RPBM du 2026-07-23).
+__VIDE__;Autres;;product;true;Valeur source rare ou non documentee : categorie Odoo Autres, classification manuelle requise.
+jOINTS;Joint;;product;true;Inclut joints et enjoliveurs.

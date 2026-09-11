@@ -1,0 +1,56 @@
+﻿source_frs;row_count;unique_eurocode_count;odoo_partner_action;notes
+VSF Centre;8771;2865;reutiliser rpbm_agent.vsf_partner_id (res.partner 5708, confirme le 2026-08-05);Variante VSF : meme partenaire Odoo que VSF Centre, id 5708 (D10). Aucun second partenaire VSF n'est cree.
+INVENTAIRE;161;142;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+VSF Ouest;150;61;reutiliser rpbm_agent.vsf_partner_id (res.partner 5708, confirme le 2026-08-05);Variante VSF : meme partenaire Odoo que VSF Centre, id 5708 (D10). Aucun second partenaire VSF n'est cree.
+HHH;144;56;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+MA;110;71;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+BLUE AUTO;102;75;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+AUTOS GM;95;89;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+MPB;93;61;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+SODIVA;47;41;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+CENTRE AUTO;40;39;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+-;35;33;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+OCCASION;32;20;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+MARTINIQUE AUTO;29;26;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Vsf Centre;21;20;reutiliser rpbm_agent.vsf_partner_id (res.partner 5708, confirme le 2026-08-05);Variante VSF : meme partenaire Odoo que VSF Centre, id 5708 (D10). Aucun second partenaire VSF n'est cree.
+Panther Pro;21;19;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+AUTO GM;20;18;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+LANES AUTO;19;18;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+SOCAUMAR;18;17;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+A+ GLASS;17;17;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Concess FR;16;16;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+AAAM;16;15;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Palette à identifier;14;13;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+??;9;9;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+CCIE;8;8;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+PANTHER PRO;8;7;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+CLIENT;4;4;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+BAMITEL;4;3;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+AUTODIS;4;4;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+VSF Sud-Ouest;4;4;reutiliser rpbm_agent.vsf_partner_id (res.partner 5708, confirme le 2026-08-05);Variante VSF : meme partenaire Odoo que VSF Centre, id 5708 (D10). Aucun second partenaire VSF n'est cree.
+Auto GM;4;4;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Occasion;4;4;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Blue Autos;4;4;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+A+ Glass;3;3;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+VSF ?;3;3;reutiliser rpbm_agent.vsf_partner_id (res.partner 5708, confirme le 2026-08-05);Variante VSF : meme partenaire Odoo que VSF Centre, id 5708 (D10). Aucun second partenaire VSF n'est cree.
+SODAUTO;3;3;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+AUto GM;3;3;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+TESLA;3;2;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Blue autos;3;3;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Centre autos;3;3;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+maRTINIQUE AUTO;2;2;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+VSF Sud;1;1;reutiliser rpbm_agent.vsf_partner_id (res.partner 5708, confirme le 2026-08-05);Variante VSF : meme partenaire Odoo que VSF Centre, id 5708 (D10). Aucun second partenaire VSF n'est cree.
+CENTRALE CASSE;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Centre;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+RENAULT TRUCKS;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Socaumar;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+BCAM;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Occcasion;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+LANES;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+DPA;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+AUTODOC;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+MISTER AUTO;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+BLUE AUTOS;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Centre auto;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+Caraib 4*4;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
+APM;1;1;rapprocher un res.partner existant, sinon creer;Creer product.supplierinfo (prix = PRIX ACHAT) pour chaque produit rattache.
