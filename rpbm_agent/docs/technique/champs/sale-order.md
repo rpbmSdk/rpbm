@@ -7,6 +7,7 @@ Modèle porteur de l'Ordre de Vente. Les champs eurocode/immatriculation sont de
 | `x_studio_immatriculation_` | char | `opportunity_id.x_studio_field_NVioD` | Studio (existant) | Immatriculation |
 | `x_studio_vehicle_id` | many2one → `fleet.vehicle` | `opportunity_id.x_studio_vehicle_id` | `pre_init_hook` + migration | Véhicule Odoo lié, recopié depuis la piste |
 | `x_studio_categorie_xglass` | char | `opportunity_id.x_studio_categorie_xglass` | `pre_init_hook` + migration | Catégorie X'Glass, recopiée depuis la piste |
+| `x_studio_pice_concerne` | selection | `opportunity_id.x_studio_field_eENQz` | Studio (existant) | Pièce concernée, valeur de la sélection X'Glass |
 | `x_studio_base_eurocode` | char | `opportunity_id.x_studio_field_ORIyy` | Studio (existant) | Base Eurocode — nom technique différent de celui de la piste, voir [crm-lead.md](crm-lead.md#structure-des-3-champs-eurocode) |
 | `x_studio_eurocode_joint` | char | `opportunity_id.x_studio_eurocode_joint` | Studio (existant) | Eurocode du joint |
 

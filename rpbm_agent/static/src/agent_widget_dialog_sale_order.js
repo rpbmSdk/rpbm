@@ -9,6 +9,9 @@ class SaleOrder extends AbstractWidgetRecord {
     constructor(record) {
         super(record);
         this.immatriculationField = "x_studio_immatriculation_";
+        // Le champ Studio de "Pièce concernée" porte un nom différent sur
+        // sale.order que sur crm.lead.
+        this.pieceConcerneeField = "x_studio_pice_concerne";
     }
 }
 
