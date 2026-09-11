@@ -28,6 +28,12 @@ Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis inst
 
 Les deux paramètres `rpbm_agent.vsf_*` sont lus à chaque recherche VSF et création de produit. Une valeur absente conserve le comportement historique ; une valeur invalide produit une erreur explicite et n'est jamais appliquée silencieusement.
 
+### Mise à jour rapide des identifiants portails
+
+Les utilisateurs du groupe technique `base.group_system` peuvent modifier les quatre identifiants depuis `Réglages > Paramètres généraux > Intégrations > Accès catalogues X'Glass / VSF`. Les champs sont reliés directement aux mêmes clés `ir.config_parameter` que celles consommées par `/rpbm_agent_auth` ; l'enregistrement prend donc effet à la prochaine authentification de l'assistant, sans exécution du script [`push_credentials.py`](../../push_credentials.py).
+
+Les mots de passe sont affichés avec le contrôle de saisie masquée. Les identifiants restent des secrets propres à l'instance cible : ne pas les versionner, les recopier dans une vue XML ou les journaliser. Le script reste disponible pour une initialisation ou une rotation automatisée hors interface.
+
 Peuvent être créés manuellement, ou poussés via [`push_credentials.py`](../../push_credentials.py) (racine du module) : lit les 4 identifiants depuis `.env` (racine du module, déjà ignoré par git — mêmes clés que celles utilisées pour l'exécution standalone de `vsf.py`/`xglass.py`) et les écrit sur une instance Odoo cible via XML-RPC standard (`ir.config_parameter.set_param`). Le script lui-même ne contient aucun secret (suivi par git) ; les informations de connexion à l'instance cible (`ODOO_URL`/`ODOO_DB`/`ODOO_LOGIN`/`ODOO_PASSWORD`) peuvent être ajoutées à `.env` ou saisies de manière interactive. Le compte Odoo utilisé doit être administrateur (`base.group_system`), seul groupe ayant accès à `ir.config_parameter`.
 
 Un 5ᵉ paramètre système, `rpbm_agent.session_lock`, est créé et géré automatiquement par le module (verrou de concurrence, voir [ci-dessous](#concurrence--verrou-de-session)) — ne pas le modifier manuellement.

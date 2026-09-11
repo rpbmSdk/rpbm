@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.rpbm.agent</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='general_settings']/block[@name='integration']" position="inside">
+                <setting id="rpbm_agent_portal_credentials"
+                         string="Accès catalogues X'Glass / VSF"
+                         help="Mettre à jour les identifiants utilisés par l'assistant RPBM."
+                         groups="base.group_system">
+                    <div class="content-group">
+                        <div class="row mt16">
+                            <label for="rpbm_xglass_user" class="col-lg-4 o_light_label"/>
+                            <field name="rpbm_xglass_user" class="col-lg-8" autocomplete="off"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="rpbm_xglass_pass" class="col-lg-4 o_light_label"/>
+                            <field name="rpbm_xglass_pass" class="col-lg-8" password="True" autocomplete="new-password"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="rpbm_vsf_login" class="col-lg-4 o_light_label"/>
+                            <field name="rpbm_vsf_login" class="col-lg-8" autocomplete="off"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="rpbm_vsf_password" class="col-lg-4 o_light_label"/>
+                            <field name="rpbm_vsf_password" class="col-lg-8" password="True" autocomplete="new-password"/>
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>
