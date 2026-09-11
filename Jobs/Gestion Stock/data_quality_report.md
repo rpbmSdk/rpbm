@@ -1,6 +1,6 @@
 # Rapport de qualite des donnees de migration
 
-Date de generation : 2026-08-05
+Date de generation : 2026-09-11
 Source : Gestion Stock V4 - Stock Complet.csv (export du 29/01/2025)
 Statut : preparation uniquement, aucune ecriture Odoo.
 

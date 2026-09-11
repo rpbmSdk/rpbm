@@ -49,9 +49,9 @@ l'inverse de l'objectif d'assainissement des deux chantiers.
 
 `rpbm_agent` crée les produits avec `default_code` = référence constructeur VSF, repli sur le
 code VSF si absente (`product_creation_values()`,
-[`controllers/vsf.py:59-73`](../../rpbm_agent/controllers/vsf.py#L59-L73)). La recherche
+[`controllers/vsf.py:83-101`](../../rpbm_agent/controllers/vsf.py#L83-L101)). La recherche
 d'existant avant création se fait en 3 temps
-(`_find_existing_product()`, [`controllers/main.py:169-186`](../../rpbm_agent/controllers/main.py#L169-L186)) :
+(`_find_existing_product()`, [`controllers/main.py:181-198`](../../rpbm_agent/controllers/main.py#L181-L198)) :
 `default_code`, puis `product_tmpl_id.x_studio_eurocode`, puis nom.
 
 La migration stock cible `default_code` = colonne `EUROCODE`
@@ -102,7 +102,7 @@ extrait actuellement.
 **La colonne `EUROCODE` elle-même n'est pas fiablement un vrai eurocode VSF — mais le taux de
 propreté réel est bien meilleur qu'un premier survol ne le suggérait.** Le format réel d'un
 eurocode VSF est illustré par la valeur par défaut de `VSFAgent.searchEurocodePage()`
-([`controllers/vsf.py:220`](../../rpbm_agent/controllers/vsf.py#L220), `"6539RGSH5RD"`). Sur les
+([`controllers/vsf.py:322`](../../rpbm_agent/controllers/vsf.py#L322), `"6539RGSH5RD"`). Sur les
 **3 289 eurocodes uniques** du fichier, un contrôle de plausibilité de format simple
 (alphanumérique + tiret, 4 à 15 caractères) n'en rejette que **43 (1,3 %)**, et ces 43 portent
 presque tous une marque explicite de non-fiabilité : annotations entre parenthèses
@@ -542,3 +542,6 @@ retour de RPBM pour avancer.
   `LONGUEUR`/`HAUTEUR` (49/50) citées en §2.1/§2.5/§2.6)
 - [`suppliers_mapping.csv`](../../Jobs/Gestion%20Stock/suppliers_mapping.csv) (généré le
   29/07/2026, cité en §2.6)
+- [`Jobs/rpbm_agent_stock/`](../../Jobs/rpbm_agent_stock/README.md) — outillage rejouable qui
+  installe `rpbm_agent` (§2.12) et implémente l'architecture stock choisie (§2.4, §2.8), avec
+  vérification structurelle et recette fonctionnelle taguée (rollback inclus)

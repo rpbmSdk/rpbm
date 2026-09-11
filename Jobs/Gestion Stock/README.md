@@ -7,24 +7,37 @@ Cible : `rpbm-preprod` (`https://rpbm-pre-prod.odoo.com/`) — accès **exclusiv
 `paradigme-mcp`, profil `rpbm-preprod`. Aucun secret dans ce dossier.
 Environnement Python : `pyenv 3.10.11` (fixé par `.python-version` à la racine du dépôt).
 
-## État au 2026-08-06
+## Comment vérifier l'état actuel
 
-**Le catalogue est importé en préproduction** : 15 catégories, 30 fournisseurs, 3 229 articles,
-3 137 tarifs fournisseurs et leurs coûts, sans aucun échec de chargement. `rpbm_agent` a été
-installé au préalable — il était en réalité *désinstallé* sur l'instance, ce que le garde-fou de la
-phase produits a détecté avant toute écriture.
+**Ne jamais supposer qu'un relevé daté dans ce dépôt décrit l'état présent de l'instance** : un
+rebuild de `rpbm-preprod` (duplication depuis la production, reset applicatif) remet le catalogue,
+le module et l'architecture stock à zéro sans que ce dépôt ne le sache. Le tableau « Suivi » de
+[plan-import-articles.md](plan-import-articles.md) et les relevés de
+[`architectures/audits/runs/`](architectures/audits/runs/) sont des **rapports d'exécution
+datés**, pas un état courant — vérifier avant de s'y fier.
 
-Deux blocages subsistent :
+Contrôles, avec le script qui répond à chacun (tous en lecture seule, dry-run par défaut) :
 
-- **Entrepôts et emplacements** (P2, P3) : volontairement non lancés, car créer les 5 entrepôts
-  trancherait Q1 de fait. Voir [questions-ouvertes.md](questions-ouvertes.md#q1). *(2026-08-06 : la
-  sous-question déterminante — un fournisseur peut-il livrer au comptoir ? — est répondue « oui »
-  sans faire basculer la recommandation ; voir
-  [architectures-stock.md § I](architectures-stock.md#i--arbitrage-du-2026-08-06).)*
-- **Stock initial** : l'inventaire corrigé du 30/06/2026 n'a pas été fourni (Q2).
+| Question | Script |
+|---|---|
+| `rpbm_agent` est-il installé ? | `Jobs/rpbm_agent_stock/install_module.py` (sans `--commit`) |
+| `x_studio_eurocode` existe-t-il sur `product.template` ? | idem — le script s'arrête si absent |
+| Combien de `product.template`/`product.category` (baseline pré-migration : 169 / 13) ? | `.paradigme/scripts/check_instance.py` ou équivalent versionné |
+| L'architecture stock (34 types d'opération, 3 routes, 6 règles) est-elle en place ? | `Jobs/rpbm_agent_stock/verify_structural.py` |
+| Le catalogue (produits/tarifs/coûts) est-il chargé ? | `Jobs/Gestion Stock/import_odoo.py check` |
 
-Détail phase par phase et relevés d'exécution dans
-[plan-import-articles.md](plan-import-articles.md) § Suivi.
+Séquencement complet pour (re)déployer à partir de zéro :
+[`Jobs/rpbm_agent_stock/README.md`](../rpbm_agent_stock/README.md).
+
+**Décisions et périmètre inchangés par un rebuild** (ils restent valables, seule l'instance
+change d'état) :
+
+- **Entrepôts et emplacements** (P2/P3 de `import_odoo.py`) restent volontairement non lancés :
+  c'est l'ancienne architecture 5-entrepôts, abandonnée au profit de l'architecture 1 (entrepôt
+  unique + zones) — voir [questions-ouvertes.md](questions-ouvertes.md#q1) et
+  [`Jobs/rpbm_agent_stock/setup_stock_architecture.py`](../rpbm_agent_stock/setup_stock_architecture.py)
+  pour l'implémentation actuelle.
+- **Stock initial** : bloqué tant que l'inventaire corrigé du 30/06/2026 n'est pas fourni (Q2).
 
 ## Où trouver quoi
 
@@ -45,6 +58,11 @@ Détail phase par phase et relevés d'exécution dans
 
 Analyse de la coexistence avec le module `rpbm_agent` :
 [docs/cartographie/reconciliation-stock-rpbm-agent.md](../../docs/cartographie/reconciliation-stock-rpbm-agent.md).
+
+Scripts rejouables pour installer `rpbm_agent`, poser l'architecture stock et la vérifier
+(structurel + recette fonctionnelle taguée, avec rollback) :
+[`Jobs/rpbm_agent_stock/`](../rpbm_agent_stock/README.md). Ce dossier implémente les specs
+d'`architectures/` ci-dessus ; il ne les duplique pas.
 
 Tâches GRH de rattachement : 1263 (gestion de stock), 1269 (valorisation), 2079 (inventaire juin
 2026), 251 (mise à jour des statistiques).

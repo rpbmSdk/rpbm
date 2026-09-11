@@ -471,23 +471,37 @@ Les dix questions du document envoye le 2026-07-30 sont toutes tranchees (voir
 [decisions.md](decisions.md) et [Réponses_rpbm.md](Réponses_rpbm.md)). Il ne reste que la question
 structurante **« entrepots distincts ou zones d'un meme entrepot »**, numerotee **Q1** dans
 [questions-ouvertes.md](questions-ouvertes.md), qui conditionne P2 et P3 — toutes les references
-`Q…` de ce document renvoient a cette nouvelle numerotation. Les dry-runs ci-dessous datent d'avant
-ces arbitrages : ils sont tous a rejouer apres les modifications du script.
+`Q…` de ce document renvoient a cette nouvelle numerotation.
 
-| Phase | Dry-run | Etat des decisions | Ecriture preprod | Controle | Ecriture prod |
+> **A verifier avant de se fier a ce tableau.** Ce qui suit est un **journal d'execution**
+> (2026-08-05, rejoue a l'identique le 2026-09-11 apres un rebuild d'instance — voir
+> `Jobs/rpbm_agent_stock/runs/2026-09-11-module-et-architecture.md` § 0.c), pas un etat courant
+> garanti : un rebuild d'instance (duplication depuis la production, reset applicatif) remet le
+> catalogue et le module a zero sans que ce document ne le sache. Avant de supposer qu'une phase
+> marquee « OK » est toujours en place, relancer son controle :
+> `pyenv exec python import_odoo.py check` (P1-P8, lecture seule) et
+> `Jobs/rpbm_agent_stock/install_module.py` sans `--commit` (P0). Voir aussi
+> [`README.md` § « Comment vérifier l'état actuel »](README.md#comment-vérifier-létat-actuel).
+
+| Phase | Dry-run | Etat des decisions | Ecriture preprod (2026-08-05, a reverifier) | Controle a rejouer | Ecriture prod |
 |---|---|---|---|---|---|
-| P0 prerequis | — | D4, D5 | **OK 2026-08-05** module installe | champ recree | |
-| P1 categories | OK 2026-08-05 | D1, D8 | **OK** 15 chargees, 0 echec | 15 comptees | |
-| P2 entrepots | OK 2026-08-05 | 🚧 **bloquee par Q1** | non lancee | 0 | |
-| P3 emplacements | — | D11-D14, parent selon Q1 | non lancee | 0 | |
-| P4 fournisseurs | OK 2026-08-05 | D9, D10 | **OK** 30 chargees, 0 echec | 30 comptees | |
-| P5 produits | OK 2026-08-05 | D2, D3, D4 | **OK** 3 229 chargees, 0 echec | 3 229 comptees | |
-| P6 tarifs | OK 2026-08-05 | D9, D10 | **OK** 2 749 + 388, 0 echec | 3 137 comptees | |
-| P7 couts | OK 2026-08-05 | D6, D7, D8 | **OK** 3 188 ecrits, 0 introuvable | voir ci-dessous | |
-| P8 controle | OK 2026-08-05 | — | lecture seule | **OK** | |
+| P0 prerequis | — | D4, D5 | module installe | `install_module.py` (sans `--commit`) | |
+| P1 categories | fait | D1, D8 | 15 chargees, 0 echec | `import_odoo.py check` | |
+| P2 entrepots | fait | 🚧 **bloquee par Q1** | non lancee (abandonnee, voir architecture 1) | — | |
+| P3 emplacements | — | D11-D14, parent selon Q1 | non lancee (abandonnee, voir architecture 1) | — | |
+| P4 fournisseurs | fait | D9, D10 | 30 chargees, 0 echec | `import_odoo.py check` | |
+| P5 produits | fait | D2, D3, D4 | 3 229 chargees, 0 echec | `import_odoo.py check` | |
+| P6 tarifs | fait | D9, D10 | 2 749 + 388, 0 echec | `import_odoo.py check` | |
+| P7 couts | fait | D6, D7, D8 | 3 188 ecrits, 0 introuvable | `import_odoo.py check` | |
+| P8 controle | fait | — | lecture seule | `import_odoo.py check` | |
 
-**Import du 2026-08-05 en preproduction** (profil `rpbm-preprod` selectionne par `.paradigme.yaml`,
-transport xmlrpc). P2 et P3 volontairement **non lancees** : creer les 5 entrepots trancherait Q1
+P2/P3 restent volontairement non lancees independamment de Q1 desormais : l'entrepot unique +
+zones (architecture 1) les rend caduques — voir
+[`Jobs/rpbm_agent_stock/setup_stock_architecture.py`](../rpbm_agent_stock/setup_stock_architecture.py).
+
+**Journal de l'import du 2026-08-05 en preproduction** (profil `rpbm-preprod` selectionne par
+`.paradigme.yaml`, transport xmlrpc) — conserve comme preuve que le script fonctionne, pas comme
+etat courant. P2 et P3 volontairement **non lancees** : creer les 5 entrepots trancherait Q1
 de fait, et demonter des entrepots porteurs de mouvements est difficile.
 
 Releve avant import : 13 categories, 169 produits, 1 entrepot `RPBM`, 156 produits a cout nul,

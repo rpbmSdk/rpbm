@@ -16,9 +16,16 @@ Jobs/
 !Jobs/Gestion Stock/**
 Jobs/Gestion Stock/**/__pycache__/
 Jobs/Gestion Stock/**/*.pyc
+!Jobs/rpbm_agent_stock/
+!Jobs/rpbm_agent_stock/**
+Jobs/rpbm_agent_stock/**/__pycache__/
+Jobs/rpbm_agent_stock/**/*.pyc
 
 rpbm_agent/push_credentials.py
 
 # Configuration locale et snapshots de l'audit Odoo Studio.
 .paradigme.yaml
 .paradigme/
+
+.agents/
+.claude/
