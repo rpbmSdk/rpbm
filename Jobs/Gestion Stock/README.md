@@ -9,6 +9,8 @@ Environnement Python : `pyenv 3.10.11` (fixé par `.python-version` à la racine
 
 ## Comment vérifier l'état actuel
 
+Le [guide client logistique et assistant véhicule](../rpbm_agent_stock/documentation/README.md) explique l'architecture déployée pour essais, les gestes utilisateurs et les réserves de validation (édition du 11 septembre 2026).
+
 **Ne jamais supposer qu'un relevé daté dans ce dépôt décrit l'état présent de l'instance** : un
 rebuild de `rpbm-preprod` (duplication depuis la production, reset applicatif) remet le catalogue,
 le module et l'architecture stock à zéro sans que ce dépôt ne le sache. Le tableau « Suivi » de

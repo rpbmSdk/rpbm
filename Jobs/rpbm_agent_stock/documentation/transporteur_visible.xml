@@ -1,0 +1,8 @@
+<data>
+  <xpath expr="//sheet//field[@name='partner_id']" position="after">
+    <field name="carrier_id" string="Transporteur / mode de remise"
+           placeholder="Choisir Galleria, Genipa ou Camion avant confirmation"
+           options="{'no_create': True, 'no_open': True}"
+           readonly="state in ['sale', 'cancel'] or locked"/>
+  </xpath>
+</data>

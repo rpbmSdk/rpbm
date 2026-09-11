@@ -13,6 +13,8 @@ qu'aucune trace dans le dépôt ne le signale à l'avance. L'objectif de ce doss
 
 ## Séquencement complet
 
+Pour la validation métier et la prise en main, voir le [guide client PDF, ses captures et les notes de vérification](documentation/README.md) (édition du 11 septembre 2026). Le transporteur a été rendu visible en préproduction ; la connexion aux portails du widget reste à configurer et tester dans cette édition.
+
 ```
 1. install_module.py --commit                                   (ce dossier)
 2. Jobs/Gestion Stock/import_odoo.py <phase> --commit            (catalogue articles, P1/P4-P8)

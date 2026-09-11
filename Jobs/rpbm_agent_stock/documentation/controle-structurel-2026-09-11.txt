@@ -1,0 +1,67 @@
+
+=== 26+8 types d'operation (34 attendus, §2.3) ===
+  [PASS] type D1-GALL (Transfert Dépôt 1 -> Galleria) -- id=15
+  [PASS] type D1-GENI (Transfert Dépôt 1 -> Genipa) -- id=16
+  [PASS] type D1-CAM (Transfert Dépôt 1 -> Camion) -- id=17
+  [PASS] type D1-D2 (Transfert Dépôt 1 -> Dépôt 2) -- id=18
+  [PASS] type D2-GALL (Transfert Dépôt 2 -> Galleria) -- id=19
+  [PASS] type D2-GENI (Transfert Dépôt 2 -> Genipa) -- id=20
+  [PASS] type D2-CAM (Transfert Dépôt 2 -> Camion) -- id=21
+  [PASS] type D2-D1 (Transfert Dépôt 2 -> Dépôt 1) -- id=22
+  [PASS] type GALL-D1 (Transfert Galleria -> Dépôt 1) -- id=23
+  [PASS] type GALL-D2 (Transfert Galleria -> Dépôt 2) -- id=24
+  [PASS] type GALL-CAM (Transfert Galleria -> Camion) -- id=25
+  [PASS] type GALL-GENI (Transfert Galleria -> Genipa) -- id=26
+  [PASS] type GENI-D1 (Transfert Genipa -> Dépôt 1) -- id=27
+  [PASS] type GENI-D2 (Transfert Genipa -> Dépôt 2) -- id=28
+  [PASS] type GENI-CAM (Transfert Genipa -> Camion) -- id=29
+  [PASS] type GENI-GALL (Transfert Genipa -> Galleria) -- id=30
+  [PASS] type CAM-D1 (Retour Camion -> Dépôt 1) -- id=31
+  [PASS] type CAM-D2 (Retour Camion -> Dépôt 2) -- id=32
+  [PASS] type CAM-GALL (Retour Camion -> Galleria) -- id=33
+  [PASS] type CAM-GENI (Retour Camion -> Genipa) -- id=34
+  [PASS] type DEP-GALL (Transfert Dépôts -> Galleria) -- id=35
+  [PASS] type DEP-GENI (Transfert Dépôts -> Genipa) -- id=36
+  [PASS] type STK-CAM (Chargement camion) -- id=37
+  [PASS] type D1/IN (Réception Dépôt 1) -- id=38
+  [PASS] type D2/IN (Réception Dépôt 2) -- id=39
+  [PASS] type GALL/IN (Réception Galleria) -- id=40
+  [PASS] type GENI/IN (Réception Genipa) -- id=41
+  [PASS] type GALL/OUT (Livraison Galleria) -- id=42
+  [PASS] type GENI/OUT (Livraison Genipa) -- id=43
+  [PASS] type CAM/OUT (Pose sur site) -- id=44
+  [PASS] type D1/RET (Retour fournisseur Dépôt 1) -- id=45
+  [PASS] type D2/RET (Retour fournisseur Dépôt 2) -- id=46
+  [PASS] type GALL/RET (Retour fournisseur Galleria) -- id=47
+  [PASS] type GENI/RET (Retour fournisseur Genipa) -- id=48
+  [PASS] total types architecture 1 -- 34/34 attendus (31 invariants + 3 reserves aux regles = 34)
+
+=== 3 routes RPBM + amendement Buy (§2.4) ===
+  [PASS] route Retrait / pose Galleria -- id=10 sale=True shipping=True
+  [PASS] route Retrait / pose Genipa -- id=11 sale=True shipping=True
+  [PASS] route Pose sur site - Camion -- id=12 sale=True shipping=True
+  [PASS] route Buy -- product_categ_selectable -- id=6 valeur=True
+
+=== 6 regles metier (§2.5) ===
+  [PASS] regle Galleria -> Clients -- id=12 procure_method=mts_else_mto
+  [PASS] regle Dépôts -> Galleria -- id=13 procure_method=mts_else_mto
+  [PASS] regle Genipa -> Clients -- id=14 procure_method=mts_else_mto
+  [PASS] regle Dépôts -> Genipa -- id=15 procure_method=mts_else_mto
+  [PASS] regle Camion -> Clients -- id=16 procure_method=make_to_order
+  [PASS] regle Stock -> Camion -- id=17 procure_method=mts_else_mto
+  [PASS] regle Acheter (buy_pull_id) -- location_dest_id -- id=6 dest=[1778, 'RPBM/Stock'] type=[39, 'RPBM: Réception Dépôt 2']
+
+=== Putaway (§2.7 -- filet uniquement, decision RPBM 2026-09) ===
+  [PASS] putaway Stock -> Dépôts/Dépôt 2 -- id=3 (filet -- rattrape la destination Stock de la regle Acheter)
+
+=== 3 transporteurs (§2.6) ===
+  [PASS] transporteur Retrait / pose Galleria -- id=3 produit=[184, 'Retrait comptoir']
+  [PASS] transporteur Retrait / pose Genipa -- id=4 produit=[184, 'Retrait comptoir']
+  [PASS] transporteur Pose sur site (Camion) -- id=5 produit=[185, 'Pose à domicile']
+
+=== Points de vigilance §4.6 (observation, pas de verdict automatique) ===
+  [OBSERVED] lot_stock_id de RPBM -- [1778, 'RPBM/Stock']
+  [NOT_RUN] F4 -- transfert DEP-GALL devient Galleria->Galleria et s'annule proprement -- necessite de jouer verify_flows.py --tests T2 ou F4 pour observer, pas deductible en lecture seule
+  [OBSERVED] types 'Livraisons' natifs existants (§4.6 point 6) -- [{'id': 1, 'name': 'Livraisons Galleria'}, {'id': 11, 'name': 'Livraisons Génipa'}]
+
+=== Verdict : 53 controles -- 0 FAIL, 0 WARN ===
