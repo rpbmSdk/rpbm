@@ -285,6 +285,75 @@ def _replace_legacy_vehicle_text(value):
     return replacement
 
 
+def _replacement_field_names(value):
+    """Retourne les champs Fleet introduits par une expression migree."""
+    return frozenset(re.findall(r"\bx_rpbm_[A-Za-z0-9_]+\b", value or ""))
+
+
+def _assert_replacement_fields_are_registered(env, value):
+    """Refuse une migration si elle introduit un champ que le module ne livre pas.
+
+    Cette verification est volontairement independante du modele de la vue : les
+    templates QWeb peuvent traverser plusieurs modeles (par exemple
+    ``doc.sale_order_id.x_rpbm_*``). La validation XML d'Odoo reste la source de
+    verite pour la chaine complete.
+    """
+    replacement_fields = _replacement_field_names(value)
+    if not replacement_fields:
+        return
+    registered_fields = {
+        field.name
+        for field in env["ir.model.fields"].sudo().search([])
+    }
+    unknown_fields = sorted(replacement_fields - registered_fields)
+    if unknown_fields:
+        raise RuntimeError(
+            "rpbm_agent: la migration introduit des champs non enregistres: %s"
+            % ", ".join(unknown_fields)
+        )
+
+
+def _write_view_reference_replacement(env, record, field_name, original, replacement):
+    """Ecrit une vue, en ignorant uniquement une invalidite deja presente.
+
+    ``ir.ui.view.write`` valide l'architecture complete, y compris les
+    personnalisations Studio qui ne sont pas gerees par ce module. Un savepoint
+    permet de sonder cette validation sans rendre la transaction inutilisable.
+    Si l'architecture originale echoue aussi, la vue est conservee telle quelle
+    et l'upgrade peut continuer. En revanche, une architecture originale valide
+    (ou une erreur mentionnant une de nos references) remonte au chargeur Odoo.
+    """
+    try:
+        with env.cr.savepoint():
+            record.write({field_name: replacement})
+        return True
+    except Exception as replacement_error:
+        record.invalidate_recordset([field_name])
+        if any(
+            field_name in str(replacement_error)
+            for field_name in _replacement_field_names(replacement)
+        ):
+            raise
+
+        probe = "%s\n<!-- rpbm_agent validation probe -->" % original
+        try:
+            with env.cr.savepoint():
+                record.write({field_name: probe})
+        except Exception as original_error:
+            record.invalidate_recordset([field_name])
+            _logger.warning(
+                "rpbm_agent: vue ir.ui.view %s ignoree: architecture deja "
+                "invalide avant migration (%s: %s)",
+                record.id,
+                type(original_error).__name__,
+                original_error,
+            )
+            return False
+
+        record.invalidate_recordset([field_name])
+        raise
+
+
 def _replace_legacy_vehicle_references(env):
     """Remplace les references Studio connues, sans toucher aux donnees.
 
@@ -310,7 +379,15 @@ def _replace_legacy_vehicle_references(env):
             original = getattr(record, field_name) or ""
             replacement = _replace_legacy_vehicle_text(original)
             if replacement != original:
-                record.write({field_name: replacement})
+                if model_name == "ir.ui.view":
+                    _assert_replacement_fields_are_registered(env, replacement)
+                    migrated = _write_view_reference_replacement(
+                        env, record, field_name, original, replacement
+                    )
+                    if not migrated:
+                        continue
+                else:
+                    record.write({field_name: replacement})
                 _logger.info(
                     "rpbm_agent: %s %s (%s) migre vers les champs Fleet",
                     model_name,

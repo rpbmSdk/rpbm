@@ -27,6 +27,12 @@ chaque agent qui ecrit. Ne jamais faire modifier les memes fichiers par deux
 agents en parallele. Pour une tache simple ou inseparable, le pilote peut
 travailler seul et indique brievement pourquoi.
 
+Lorsqu'un verificateur constate un build ou une recette en echec, le pilote
+transmet son analyse factuelle a `rpbm_luna_codeur` pour un correctif cible.
+Apres le correctif, le pilote relance le build puis confie de nouveau la
+verification au verificateur. Cette boucle se poursuit jusqu'a une preuve de
+recette ou a un blocage externe documente.
+
 ## Structure recommandee
 
 - `docs/`: documentation permanente.
