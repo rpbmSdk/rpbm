@@ -12,6 +12,5 @@ Ce module Odoo permet aux utilisateurs internes d'importer facilement des donné
 
 ### Accès
 Seuls les utilisateurs internes (groupe "Utilisateur interne") peuvent accéder à la page d'import.
-
 ---
 Déposez ce module dans le dossier `addons` de votre instance Odoo, puis installez-le via l'interface d'administration.
