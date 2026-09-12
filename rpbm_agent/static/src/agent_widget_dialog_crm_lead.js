@@ -14,7 +14,10 @@ class CrmLead extends AbstractWidgetRecord{
         super(record);
         this.immatriculationField = 'x_studio_field_NVioD'
         this.baseEurocodeField = 'x_studio_field_ORIyy'
-        // this.calqueField = 'x_studio_field_eENQz'
+        this.fullEurocodeField = 'x_studio_field_NwRik'
+        this.vsfDesignationField = 'x_studio_field_j8eh3'
+        this.vsfStockField = 'x_studio_field_BKtpw'
+        this.constructorReferenceField = 'x_studio_field_MNzfJ'
     }
 
     
@@ -41,14 +44,4 @@ export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
         
     }
 
-    async onConfirm() {
-        await super.onConfirm();
-        // const data = {};
-        // data[this.crmLead.immatriculationField] = this.state.immatriculationValue;
-        // const OdooVehicule = await this.getOdooVehicule()
-        
-        // data[this.crmLead.baseEurocodeField] = this.state.baseEurocode;
-        
-        // this.record.update(data);
-    }
 }

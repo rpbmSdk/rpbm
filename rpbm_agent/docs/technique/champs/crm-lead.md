@@ -13,6 +13,26 @@ Modèle porteur de la Piste/Opportunité. Tous les champs `x_studio_*` consommé
 | `x_studio_field_NwRik` ("Eurocode Complet") | char | — | Studio (existant) | non | Eurocode complet, saisi manuellement par l'utilisateur une fois la pièce confirmée — **jamais écrit par le widget** |
 | `x_studio_eurocode_joint` ("Eurocode Joint") | char | — | Studio (existant) | non | Eurocode du joint, saisi manuellement si nécessaire — **jamais écrit par le widget** |
 
+## Référentiel Fleet
+
+Le véhicule Fleet lié par `x_studio_vehicle_id` est la source canonique pour
+les nouveaux dossiers. Le module expose des champs `related` stockés, sans
+écrire dans les anciennes relations Studio `x_studio_field_KyCjB` (marque) et
+`x_studio_field_ZhaeY` (modèle) :
+
+| Champ | Related → | Rôle |
+|---|---|---|
+| `x_rpbm_vehicle_brand_id` | `x_studio_vehicle_id.model_id.brand_id` | Marque Fleet |
+| `x_rpbm_vehicle_model_id` | `x_studio_vehicle_id.model_id` | Modèle Fleet |
+| `x_rpbm_vehicle_vin` | `x_studio_vehicle_id.vin_sn` | VIN |
+| `x_rpbm_vehicle_detail_model` | `x_studio_vehicle_id.x_studio_detail_model` | Détail modèle |
+| `x_rpbm_vehicle_fuel_type` | `x_studio_vehicle_id.fuel_type` | Énergie |
+| `x_rpbm_vehicle_date_mec` | `x_studio_vehicle_id.x_studio_date_mec` | Date de première MEC |
+
+Les alias `x_rpbm_vehicle_brand_name` et `x_rpbm_vehicle_model_name` servent
+aux vues et QWeb. Les fiches historiques sans véhicule Fleet ne sont pas
+reprises et peuvent donc rester vides dans ces nouveaux affichages.
+
 ## Structure des 3 champs Eurocode
 
 Trois champs Eurocode distincts coexistent sur la Piste/Opportunité, correspondant à trois étapes du travail des utilisateurs (convention préexistante à `rpbm_agent`) :
@@ -20,6 +40,12 @@ Trois champs Eurocode distincts coexistent sur la Piste/Opportunité, correspond
 1. **Base Eurocode** (`x_studio_field_ORIyy`) — les 5 premiers caractères, pour préfiltrer les articles VSF. Seul champ eurocode lu/écrit par le widget.
 2. **Eurocode (Complet)** (`x_studio_field_NwRik`) — renseigné manuellement une fois la pièce exacte confirmée.
 3. **Eurocode (Joint)** (`x_studio_eurocode_joint`) — renseigné manuellement en plus si un joint est nécessaire.
+
+Lorsqu'un article VSF est explicitement défini comme article principal, le
+widget écrit son code dans `x_studio_field_NwRik`, sa désignation dans
+`x_studio_field_j8eh3`, son stock dans `x_studio_field_BKtpw` et sa référence
+constructeur dans `x_studio_field_MNzfJ`. Il ne renseigne jamais les champs de
+prix ou de marge calculés.
 
 ## Bug corrigé
 

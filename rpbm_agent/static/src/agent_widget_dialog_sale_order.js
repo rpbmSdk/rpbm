@@ -12,6 +12,10 @@ class SaleOrder extends AbstractWidgetRecord {
         // Le champ Studio de "Pièce concernée" porte un nom différent sur
         // sale.order que sur crm.lead.
         this.pieceConcerneeField = "x_studio_pice_concerne";
+        this.fullEurocodeField = "x_studio_eurocode_complet";
+        this.vsfDesignationField = "x_studio_vsf_dsignation_1";
+        this.vsfStockField = "x_studio_vsf_qt_dispo";
+        this.constructorReferenceField = "x_rpbm_vsf_constructor_reference";
     }
 }
 

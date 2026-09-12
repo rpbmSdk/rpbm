@@ -9,11 +9,28 @@ Ce projet utilise des agents IA. Avant toute modification, inspecter le contexte
 - Verifier les commandes pertinentes avant de terminer une tache.
 - Garder les outils et scripts simples, explicites et reproductibles.
 
+## Delegation par defaut
+
+Pour toute tache non triviale, deleguer les sous-taches independantes puis
+attendre leurs resultats avant la synthese ou toute modification sur un meme
+perimetre :
+
+- `rpbm_product_owner_luna` : qualification fonctionnelle, audit en lecture
+  seule et criteres de recette ;
+- `rpbm_luna_codeur` : implementation d'un lot de fichiers explicitement
+  attribue ;
+- `rpbm_verificateur_computer_use` : recette independante et preuve visuelle
+  sur l'environnement autorise.
+
+Le pilote conserve la coordination et attribue une responsabilite exclusive a
+chaque agent qui ecrit. Ne jamais faire modifier les memes fichiers par deux
+agents en parallele. Pour une tache simple ou inseparable, le pilote peut
+travailler seul et indique brievement pourquoi.
+
 ## Structure recommandee
 
 - `docs/`: documentation permanente.
 - `skills/`: skills reutilisables.
-- `agents/`: definitions et generateurs d'agents.
 - `tools/`: outils locaux ou distribuables.
 - `profiles/`: profils de configuration.
 - `templates/`: fichiers generes par la toolbox.

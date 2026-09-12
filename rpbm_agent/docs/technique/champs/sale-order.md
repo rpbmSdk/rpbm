@@ -13,6 +13,20 @@ Modèle porteur de l'Ordre de Vente. Les champs eurocode/immatriculation sont de
 
 Les deux champs X'Glass suivent la convention de l'instance : l'opportunité est la source et le devis les lit via des champs `related` stockés. La migration `17.0.260725.6` aligne les anciens champs indépendants en place uniquement s'ils sont vides : elle ne les supprime pas, car des vues peuvent les référencer pendant l'upgrade. Elle bloque l'upgrade au lieu d'écraser une valeur inattendue.
 
+## Référentiel Fleet et article principal
+
+Les nouveaux champs `x_rpbm_vehicle_*` sont des miroirs `related` stockés de
+`opportunity_id.x_rpbm_vehicle_*` : marque, modèle, VIN, détail modèle,
+énergie et date de première MEC. Ils remplacent dans les nouvelles vues et
+documents les relations Studio marque/modèle obsolètes.
+
+Le widget peut contenir plusieurs articles VSF. L'utilisateur désigne un seul
+article principal ; son Eurocode complet, sa désignation et son stock sont
+écrits via les champs `related` existants du devis vers l'opportunité. La
+référence constructeur utilise le miroir
+`x_rpbm_vsf_constructor_reference`. Les prix restent exclusivement pilotés par
+les automatisations et les lignes de commande.
+
 ## `product.product`/`product.supplierinfo` créés depuis un article VSF
 
 Lors de la création d'un article (bouton "Créer" sur un article VSF affiché), le widget crée :

@@ -51,6 +51,10 @@ export class AbstractWidgetRecord extends AbstractRecord {
     immatriculationField = "x_studio_immatriculation";
     baseEurocodeField = "x_studio_base_eurocode";
     pieceConcerneeField = "x_studio_field_eENQz";
+    fullEurocodeField = undefined;
+    vsfDesignationField = undefined;
+    vsfStockField = undefined;
+    constructorReferenceField = undefined;
 
     constructor(record) {
         super(record);

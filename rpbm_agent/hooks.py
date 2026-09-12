@@ -1,4 +1,5 @@
 import logging
+import re
 
 _logger = logging.getLogger(__name__)
 
@@ -37,6 +38,75 @@ FIELDS_TO_ENSURE = [
         "description": "Cat\u00e9gorie X'Glass",
         "ttype": "char",
     },
+    # Les donnees vehicule vivent dans Fleet. Ces champs rendent cette source
+    # exploitable dans CRM sans recreer les anciens modeles Studio de marque et
+    # modele, qui ne portaient aucune relation fiable entre eux.
+    {
+        "model": "crm.lead",
+        "name": "x_rpbm_vehicle_brand_id",
+        "description": "Marque du véhicule",
+        "ttype": "many2one",
+        "relation": "fleet.vehicle.model.brand",
+        "related": "x_studio_vehicle_id.model_id.brand_id",
+        "store": True,
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_rpbm_vehicle_model_id",
+        "description": "Modèle du véhicule",
+        "ttype": "many2one",
+        "relation": "fleet.vehicle.model",
+        "related": "x_studio_vehicle_id.model_id",
+        "store": True,
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_rpbm_vehicle_brand_name",
+        "description": "Marque du véhicule",
+        "ttype": "char",
+        "related": "x_rpbm_vehicle_brand_id.name",
+        "store": True,
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_rpbm_vehicle_model_name",
+        "description": "Modèle du véhicule",
+        "ttype": "char",
+        "related": "x_rpbm_vehicle_model_id.name",
+        "store": True,
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_rpbm_vehicle_vin",
+        "description": "VIN du véhicule",
+        "ttype": "char",
+        "related": "x_studio_vehicle_id.vin_sn",
+        "store": True,
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_rpbm_vehicle_detail_model",
+        "description": "Détail du modèle du véhicule",
+        "ttype": "char",
+        "related": "x_studio_vehicle_id.x_studio_detail_model",
+        "store": True,
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_rpbm_vehicle_fuel_type",
+        "description": "Énergie moteur du véhicule",
+        "ttype": "selection",
+        "related": "x_studio_vehicle_id.fuel_type",
+        "store": True,
+    },
+    {
+        "model": "crm.lead",
+        "name": "x_rpbm_vehicle_date_mec",
+        "description": "Date de première MEC du véhicule",
+        "ttype": "date",
+        "related": "x_studio_vehicle_id.x_studio_date_mec",
+        "store": True,
+    },
     {
         "model": "sale.order",
         "name": "x_studio_vehicle_id",
@@ -52,6 +122,35 @@ FIELDS_TO_ENSURE = [
         "description": "Cat\u00e9gorie X'Glass",
         "ttype": "char",
         "related": "opportunity_id.x_studio_categorie_xglass",
+        "store": True,
+    },
+    *[
+        {
+            "model": "sale.order",
+            "name": name,
+            "description": description,
+            "ttype": ttype,
+            "relation": relation,
+            "related": "opportunity_id.%s" % name,
+            "store": True,
+        }
+        for name, description, ttype, relation in (
+            ("x_rpbm_vehicle_brand_id", "Marque du véhicule", "many2one", "fleet.vehicle.model.brand"),
+            ("x_rpbm_vehicle_model_id", "Modèle du véhicule", "many2one", "fleet.vehicle.model"),
+            ("x_rpbm_vehicle_brand_name", "Marque du véhicule", "char", None),
+            ("x_rpbm_vehicle_model_name", "Modèle du véhicule", "char", None),
+            ("x_rpbm_vehicle_vin", "VIN du véhicule", "char", None),
+            ("x_rpbm_vehicle_detail_model", "Détail du modèle du véhicule", "char", None),
+            ("x_rpbm_vehicle_fuel_type", "Énergie moteur du véhicule", "selection", None),
+            ("x_rpbm_vehicle_date_mec", "Date de première MEC du véhicule", "date", None),
+        )
+    ],
+    {
+        "model": "sale.order",
+        "name": "x_rpbm_vsf_constructor_reference",
+        "description": "Référence constructeur VSF",
+        "ttype": "char",
+        "related": "opportunity_id.x_studio_field_MNzfJ",
         "store": True,
     },
     {
@@ -158,6 +257,73 @@ def _align_related_sale_order_fields(env):
             field_spec["name"],
             field_spec["related"],
         )
+
+
+LEGACY_VEHICLE_REFERENCE_REPLACEMENTS = (
+    ("x_studio_field_KyCjB.x_name", "x_rpbm_vehicle_brand_name"),
+    ("x_studio_field_ZhaeY.x_name", "x_rpbm_vehicle_model_name"),
+    ("x_studio_many2one_field_rP62C.x_name", "x_rpbm_vehicle_brand_name"),
+    ("x_studio_many2one_field_DkgHx.x_name", "x_rpbm_vehicle_model_name"),
+    ("x_studio_field_KyCjB", "x_rpbm_vehicle_brand_id"),
+    ("x_studio_field_ZhaeY", "x_rpbm_vehicle_model_id"),
+    ("x_studio_many2one_field_rP62C", "x_rpbm_vehicle_brand_id"),
+    ("x_studio_many2one_field_DkgHx", "x_rpbm_vehicle_model_id"),
+    ("x_studio_marque__1", "x_rpbm_vehicle_brand_name"),
+    ("x_studio_modle_", "x_rpbm_vehicle_model_name"),
+)
+
+
+def _replace_legacy_vehicle_text(value):
+    """Retourne une expression Studio/QWeb pointee vers les champs Fleet."""
+    replacement = value or ""
+    for old, new in LEGACY_VEHICLE_REFERENCE_REPLACEMENTS:
+        replacement = re.sub(
+            r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(old),
+            new,
+            replacement,
+        )
+    return replacement
+
+
+def _replace_legacy_vehicle_references(env):
+    """Remplace les references Studio connues, sans toucher aux donnees.
+
+    Les champs historiques restent presents pour les anciens dossiers. Seules
+    les expressions de vues, QWeb et courriels sont migrees vers les nouveaux
+    champs Fleet ; l'operation est donc rejouable sans effet supplementaire.
+    """
+    legacy_names = [item[0] for item in LEGACY_VEHICLE_REFERENCE_REPLACEMENTS]
+    models_and_fields = (("ir.ui.view", "arch_db"), ("mail.template", "body_html"))
+    available_models = set(env.registry.models)
+    for model_name, field_name in models_and_fields:
+        if model_name not in available_models:
+            _logger.info("rpbm_agent: %s indisponible, inventaire ignore", model_name)
+            continue
+        records = env[model_name].sudo().with_context(active_test=False).search(
+            [(field_name, "ilike", legacy_names[0])]
+        )
+        for legacy_name in legacy_names[1:]:
+            records |= env[model_name].sudo().with_context(active_test=False).search(
+                [(field_name, "ilike", legacy_name)]
+            )
+        for record in records:
+            original = getattr(record, field_name) or ""
+            replacement = _replace_legacy_vehicle_text(original)
+            if replacement != original:
+                record.write({field_name: replacement})
+                _logger.info(
+                    "rpbm_agent: %s %s (%s) migre vers les champs Fleet",
+                    model_name,
+                    record.id,
+                    field_name,
+                )
+            elif any(legacy_name in original for legacy_name in legacy_names):
+                _logger.warning(
+                    "rpbm_agent: %s %s contient une reference non remplacee; "
+                    "controle manuel requis",
+                    model_name,
+                    record.id,
+                )
 
 
 def pre_init_hook(env):

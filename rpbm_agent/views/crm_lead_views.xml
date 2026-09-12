@@ -12,6 +12,20 @@
                         <field name="x_studio_vehicle_id"/>
                         <field name="x_studio_categorie_xglass"/>
                     </group>
+                    <group string="Identité véhicule (Fleet)">
+                        <field name="x_rpbm_vehicle_brand_id"/>
+                        <field name="x_rpbm_vehicle_model_id"/>
+                        <field name="x_rpbm_vehicle_vin"/>
+                        <field name="x_rpbm_vehicle_detail_model"/>
+                        <field name="x_rpbm_vehicle_fuel_type"/>
+                        <field name="x_rpbm_vehicle_date_mec"/>
+                    </group>
+                    <group invisible="1">
+                        <field name="x_studio_field_NwRik"/>
+                        <field name="x_studio_field_j8eh3"/>
+                        <field name="x_studio_field_BKtpw"/>
+                        <field name="x_studio_field_MNzfJ"/>
+                    </group>
                 </page>
             </notebook>
         </field>

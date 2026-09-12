@@ -69,6 +69,7 @@ export class AgentWidgetDialog extends asyncWidget {
             baseEurocode: undefined,
             articlesVsf: [],
             selectedArticleCodes: {},
+            primaryArticleCode: undefined,
             articleProducts: {},
             articleLoadingCodes: {},
             pieceConcernee: undefined,
@@ -345,6 +346,21 @@ export class AgentWidgetDialog extends asyncWidget {
 
         if (this.baseEurocode) {
             data[this.record.baseEurocodeField] = this.baseEurocode;
+        }
+        const primaryArticle = this.getPrimaryArticle();
+        if (primaryArticle) {
+            if (this.record.fullEurocodeField) {
+                data[this.record.fullEurocodeField] = primaryArticle.code;
+            }
+            if (this.record.vsfDesignationField) {
+                data[this.record.vsfDesignationField] = primaryArticle.name;
+            }
+            if (this.record.vsfStockField) {
+                data[this.record.vsfStockField] = String(primaryArticle.stock ?? "");
+            }
+            if (this.record.constructorReferenceField && primaryArticle.refConstructeur) {
+                data[this.record.constructorReferenceField] = primaryArticle.refConstructeur;
+            }
         }
         return data;
     }
@@ -644,12 +660,30 @@ export class AgentWidgetDialog extends asyncWidget {
 
     resetVsfSelection() {
         this.state.selectedArticleCodes = {};
+        this.state.primaryArticleCode = undefined;
         this.state.articleProducts = {};
         this.state.articleLoadingCodes = {};
     }
 
     isArticleSelected(articleCode) {
         return Boolean(this.state.selectedArticleCodes[articleCode]);
+    }
+
+    isPrimaryArticle(articleCode) {
+        return this.state.primaryArticleCode === articleCode;
+    }
+
+    getPrimaryArticle() {
+        const articleCode = this.state.primaryArticleCode;
+        return articleCode && this.isArticleSelected(articleCode)
+            ? this.getArticleByCode(articleCode)
+            : undefined;
+    }
+
+    setPrimaryArticle(articleCode) {
+        if (this.isArticleSelected(articleCode)) {
+            this.state.primaryArticleCode = articleCode;
+        }
     }
 
     isArticleLoading(articleCode) {
@@ -737,6 +771,9 @@ export class AgentWidgetDialog extends asyncWidget {
             delete selectedArticleCodes[code];
             delete articleProducts[code];
             delete articleLoadingCodes[code];
+        }
+        if (articleCodes.includes(this.state.primaryArticleCode)) {
+            this.state.primaryArticleCode = undefined;
         }
         this.state.selectedArticleCodes = selectedArticleCodes;
         this.state.articleProducts = articleProducts;

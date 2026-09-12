@@ -91,6 +91,10 @@
                                         <t t-if="isArticleSelected(articleVsf.code)">
                                             <t t-set="actionArticle" t-value="articleVsf"/>
                                             <div name="selected_main_article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
+                                                <button t-att-class="isPrimaryArticle(actionArticle.code) ? 'btn btn-success btn-sm mb-2' : 'btn btn-outline-primary btn-sm mb-2'" t-on-click.stop="()=>this.setPrimaryArticle(actionArticle.code)">
+                                                    <t t-if="isPrimaryArticle(actionArticle.code)">Article principal</t>
+                                                    <t t-else="">Définir comme article principal</t>
+                                                </button>
                                                 <t t-if="isArticleLoading(actionArticle.code)">
                                                     <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
                                                 </t>
@@ -119,6 +123,10 @@
                                                         <t t-if="isArticleSelected(suggestion.code)">
                                                             <t t-set="actionArticle" t-value="suggestion"/>
                                                             <div name="selected_suggested_article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
+                                                                <button t-att-class="isPrimaryArticle(actionArticle.code) ? 'btn btn-success btn-sm mb-2' : 'btn btn-outline-primary btn-sm mb-2'" t-on-click.stop="()=>this.setPrimaryArticle(actionArticle.code)">
+                                                                    <t t-if="isPrimaryArticle(actionArticle.code)">Article principal</t>
+                                                                    <t t-else="">Définir comme article principal</t>
+                                                                </button>
                                                                 <t t-if="isArticleLoading(actionArticle.code)">
                                                                     <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
                                                                 </t>

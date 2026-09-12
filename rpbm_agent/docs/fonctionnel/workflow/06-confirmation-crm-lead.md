@@ -12,6 +12,12 @@
 | `x_studio_field_ORIyy` (Base Eurocode) | `state.baseEurocode` | si un eurocode est renseigné — nécessite la surcharge `this.baseEurocodeField = 'x_studio_field_ORIyy'` dans `CrmLead` (sinon écriture dans `x_studio_base_eurocode`, inexistant sur `crm.lead`) |
 
 - **Persistance** : mise à jour en mémoire (`this.props.record.update(data)`) ; écriture effective en base au clic utilisateur sur "Enregistrer" (bouton "Confirmer"), ou immédiate via `record.save()` (bouton "Confirmer et enregistrer"). Pas de `write` ORM explicite dans ce module.
-- `x_studio_field_NwRik` (Eurocode Complet) et `x_studio_eurocode_joint` (Eurocode Joint) ne sont **jamais écrits par le widget** — saisie manuelle ultérieure, voir [technique/champs/crm-lead.md](../../technique/champs/crm-lead.md#structure-des-3-champs-eurocode).
+- `x_studio_eurocode_joint` (Eurocode Joint) n'est **jamais écrit par le widget** : il reste saisi manuellement. L'Eurocode complet est, lui, renseigné uniquement quand un article VSF principal est désigné.
+
+Depuis la synchronisation Fleet, le véhicule lié alimente aussi les nouveaux
+champs Fleet de marque, modèle, VIN, détail, énergie et date MEC. Si un article
+VSF est sélectionné comme **article principal**, son Eurocode complet,
+désignation, stock et référence constructeur sont reportés ; l'Eurocode joint
+et les prix restent manuels ou calculés.
 
 Détail de chaque champ : [technique/champs/crm-lead.md](../../technique/champs/crm-lead.md).

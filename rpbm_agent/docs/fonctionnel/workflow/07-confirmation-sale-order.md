@@ -17,4 +17,8 @@ Le widget n'est donc jamais ouvert dans un contexte où ses champs `related` ser
 - **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
 - L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape. Chaque suggestion sélectionnée peut être ajoutée séparément ; seule une ligne créée par le widget dans la dialog courante peut être retirée — voir [9 — Création du produit](09-creation-produit.md).
 
+Les informations Fleet et celles de l'article principal sont écrites sur
+l'opportunité via les champs `related` du devis. Sans opportunité liée, le
+widget est masqué et aucune synchronisation n'est proposée.
+
 Détail de chaque champ : [technique/champs/sale-order.md](../../technique/champs/sale-order.md).
