@@ -42,6 +42,17 @@ flowchart LR
 
 Détail de chaque bloc : [backend](backend.md), [frontend](frontend.md).
 
+## Configuration du script de transfert des secrets
+
+Le script standalone [`push_credentials.py`](../../push_credentials.py) a deux
+propriétaires de configuration distincts : le profil Paradigme sélectionne et
+authentifie la cible Odoo ; le fichier `.env` du module fournit uniquement les
+identifiants des portails à transférer. Le profil est sélectionné par
+`.paradigme.yaml`, décrit globalement dans `~/.paradigme/` et résolu sans
+fallback vers `.env.local` ou vers l'environnement du processus. Les valeurs
+transférées sont ensuite stockées par Odoo dans `ir.config_parameter`, qui est
+la source de vérité de l'exécution en production.
+
 ## Séquence complète (cas Ordre de Vente)
 
 ```mermaid
