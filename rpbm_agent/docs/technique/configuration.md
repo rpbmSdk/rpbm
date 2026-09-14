@@ -13,6 +13,16 @@ Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis inst
 
 `python-dotenv` / `.env` (racine du module) ne sont utiles qu'en **exécution standalone hors Odoo** (tests manuels des scripts `vsf.py`/`xglass.py`, notebooks, et [`push_credentials.py`](../../push_credentials.py)) : en production, les identifiants viennent exclusivement de `ir.config_parameter` via `/rpbm_agent_auth`.
 
+### Frontière des configurations locales
+
+Le dépôt sélectionne la cible Odoo par son nom de profil dans `.paradigme.yaml` (`odoo.profile`). La résolution est ensuite faite sans valeur par défaut :
+
+- les métadonnées du profil (URL, transport et références de variables) viennent de `~/.paradigme/paradigme_odoo_mcp.yaml` ;
+- les secrets Odoo référencés (`database_env`, `username_env`, `password_env`) viennent de `~/.paradigme/.env` ;
+- les quatre secrets des portails (`XGLASS_USER`, `XGLASS_PASS`, `VSF_LOGIN`, `VSF_PASSWORD`) viennent uniquement de `rpbm_agent/.env`.
+
+[`push_credentials.py`](../../push_credentials.py) ne lit donc pas `.env.local`, les variables d'environnement du processus ou une cible saisie en secours. Il échoue explicitement si une partie du profil ou un secret requis manque. Cette séparation évite qu'une configuration de développement détourne une écriture vers une autre instance Odoo.
+
 ## Paramètres système requis
 
 À créer dans `Réglages > Technique > Paramètres > Paramètres système` :
@@ -34,7 +44,7 @@ Les utilisateurs du groupe technique `base.group_system` peuvent modifier les qu
 
 Les mots de passe sont affichés avec le contrôle de saisie masquée. Les identifiants restent des secrets propres à l'instance cible : ne pas les versionner, les recopier dans une vue XML ou les journaliser. Le script reste disponible pour une initialisation ou une rotation automatisée hors interface.
 
-Peuvent être créés manuellement, ou poussés via [`push_credentials.py`](../../push_credentials.py) (racine du module) : lit les 4 identifiants depuis `.env` (racine du module, déjà ignoré par git — mêmes clés que celles utilisées pour l'exécution standalone de `vsf.py`/`xglass.py`) et les écrit sur une instance Odoo cible via XML-RPC standard (`ir.config_parameter.set_param`). Le script lui-même ne contient aucun secret (suivi par git) ; les informations de connexion à l'instance cible (`ODOO_URL`/`ODOO_DB`/`ODOO_LOGIN`/`ODOO_PASSWORD`) peuvent être ajoutées à `.env` ou saisies de manière interactive. Le compte Odoo utilisé doit être administrateur (`base.group_system`), seul groupe ayant accès à `ir.config_parameter`.
+Peuvent être créés manuellement, ou poussés via [`push_credentials.py`](../../push_credentials.py) (racine du module) : le script lit les 4 identifiants depuis `.env` (racine du module, déjà ignoré par git — mêmes clés que celles utilisées pour l'exécution standalone de `vsf.py`/`xglass.py`) et les écrit sur le profil Odoo sélectionné via XML-RPC standard (`ir.config_parameter.set_param`). Les paramètres `ODOO_URL`/`ODOO_DB`/`ODOO_LOGIN`/`ODOO_PASSWORD` de `.env.local` ne sont pas utilisés. Le compte Odoo référencé par le profil doit être administrateur (`base.group_system`), seul groupe ayant accès à `ir.config_parameter`.
 
 Un 5ᵉ paramètre système, `rpbm_agent.session_lock`, est créé et géré automatiquement par le module (verrou de concurrence, voir [ci-dessous](#concurrence--verrou-de-session)) — ne pas le modifier manuellement.
 
