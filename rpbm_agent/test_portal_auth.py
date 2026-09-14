@@ -102,6 +102,26 @@ def test_xglass_releve_la_page_de_login_avant_les_pieces():
         raise AssertionError("XGlassAuthError attendue pour les pièces expirées")
 
 
+def test_xglass_extrait_les_metadonnees_javascript_sans_syntaxe():
+    agent = xglass.XGLASS()
+    agent.selectedVehiculePage = xglass.bs.BeautifulSoup(
+        '''
+        <script>
+            var vin = 'VF3MRHNSMNS091999';
+            var cnit = 'M10PGTVP013D123';
+            var dateMec = '2021-04-16';
+        </script>
+        ''',
+        "html.parser",
+    )
+
+    assert agent.getVehiculeMeta() == {
+        "vin": "VF3MRHNSMNS091999",
+        "cnit": "M10PGTVP013D123",
+        "dateMec": "2021-04-16",
+    }
+
+
 class FakeVSF:
     """Laravel : `_token` est présent aussi bien sur la page de connexion que
     sur les pages authentifiées (formulaire de déconnexion)."""

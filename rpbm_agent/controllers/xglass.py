@@ -6,6 +6,7 @@ import os
 import bs4 as bs
 
 import json
+import re
 from datetime import datetime
 
 try:
@@ -398,10 +399,11 @@ class XGLASS:
         page = self.selectedVehiculePage if self.selectedVehiculePage else self.getSelectedVehiculePage(idVehicule)
         scripts = page.find_all("script",src=False)
         def extract_line_value(line, key):
-            if key in line:
-                line = line.replace(key, "").replace(':', "").replace(',', "").replace("'", '')
-                return line.strip()
-            return None
+            match = re.fullmatch(
+                rf"\s*(?:(?:var|let|const)\s+)?{re.escape(key)}\s*(?:=|:)\s*(['\"])(.*?)\1\s*[,;]?\s*",
+                line,
+            )
+            return match.group(2) if match else None
 
         keys = ['vin', 'cnit', 'dateMec']
         data = {}
