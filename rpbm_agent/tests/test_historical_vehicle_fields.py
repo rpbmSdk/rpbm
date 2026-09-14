@@ -384,6 +384,86 @@ class TestHistoricalVehicleFields(TestCase):
         self.assertEqual(vehicle._values['vin_sn'], 'VIN-EXISTANT')
         self.assertEqual(vehicle._values['x_studio_date_mec'], '2021-01-15')
 
+    def test_fleet_enrichment_repairs_legacy_malformed_vin(self):
+        env = _environment(
+            vehicle_values={
+                'license_plate': 'AB-123-CD',
+                'vin_sn': 'var  = VF3MRHNSMNS091999;',
+                'model_id': False,
+                'x_studio_detail_model': '',
+                'x_studio_date_mec': False,
+                'fuel_type': 'gasoline',
+            }
+        )
+        vehicle = env['fleet.vehicle'].browse(7)[0]
+
+        written = main._enrich_fleet_vehicle_from_metadata(
+            vehicle,
+            {'vin': ' VF3MRHNSMNS091999 '},
+            [],
+        )
+
+        self.assertEqual(written, {'vin_sn': 'VF3MRHNSMNS091999'})
+        self.assertEqual(vehicle._values['vin_sn'], 'VF3MRHNSMNS091999')
+
+    def test_historical_payload_repairs_malformed_vin_when_fleet_write_is_denied(self):
+        env = _environment(
+            vehicle_values={
+                'license_plate': 'AB-123-CD',
+                'vin_sn': 'var  = VF3MRHNSMNS091999;',
+                'model_id': False,
+                'x_studio_detail_model': '',
+                'x_studio_date_mec': False,
+                'fuel_type': 'gasoline',
+            }
+        )
+        env['fleet.vehicle'].deny_write = True
+        vehicle = env['fleet.vehicle'].search([('id', '=', 7)], limit=1)[0]
+
+        written = main._enrich_fleet_vehicle_from_metadata(
+            vehicle,
+            {'vin': ' VF3MRHNSMNS091999 '},
+            [],
+        )
+        payload = main._historical_vehicle_payload(
+            env,
+            7,
+            'crm.lead',
+            {'vin': ' VF3MRHNSMNS091999 '},
+        )
+
+        self.assertEqual(written, {})
+        self.assertEqual(payload['values']['x_studio_field_PfJlB'], 'VF3MRHNSMNS091999')
+
+    def test_historical_payload_preserves_valid_vin(self):
+        env = _environment(
+            vehicle_values={
+                'license_plate': 'AB-123-CD',
+                'vin_sn': 'VF3MRHNSMNS091999',
+                'model_id': False,
+                'x_studio_detail_model': '',
+                'x_studio_date_mec': False,
+                'fuel_type': 'gasoline',
+            }
+        )
+        vehicle = env['fleet.vehicle'].browse(7)[0]
+
+        written = main._enrich_fleet_vehicle_from_metadata(
+            vehicle,
+            {'vin': 'VF1RFB00367123456'},
+            [],
+        )
+        payload = main._historical_vehicle_payload(
+            env,
+            7,
+            'crm.lead',
+            {'vin': 'VF1RFB00367123456'},
+        )
+
+        self.assertEqual(written, {})
+        self.assertEqual(vehicle._values['vin_sn'], 'VF3MRHNSMNS091999')
+        self.assertEqual(payload['values']['x_studio_field_PfJlB'], 'VF3MRHNSMNS091999')
+
     def test_invalid_metadata_date_warns_without_writing(self):
         env = _environment()
         vehicle = env['fleet.vehicle'].browse(7)[0]

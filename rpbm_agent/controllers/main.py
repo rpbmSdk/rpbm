@@ -1,5 +1,6 @@
 import functools
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -251,10 +252,19 @@ HISTORICAL_FUEL_TYPE_LABELS = {
     'electric': 'Électrique',
 }
 
+LEGACY_MALFORMED_VIN_RE = re.compile(
+    r'var\s*=\s*[A-HJ-NPR-Z0-9]{17}\s*;'
+)
+
 
 def _historical_text(value):
     """Retourne une source textuelle nettoyée, ou une chaîne vide."""
     return str(value).strip() if value else ''
+
+
+def _is_legacy_malformed_vin(value):
+    """Identifie uniquement la valeur VIN produite par l'ancien parseur."""
+    return bool(LEGACY_MALFORMED_VIN_RE.fullmatch(_historical_text(value)))
 
 
 def _historical_normalized_name(value):
@@ -417,7 +427,13 @@ def _enrich_fleet_vehicle_from_metadata(vehicle, vehicule_meta, warnings):
         values_to_write = {
             field_name: value
             for field_name, value in metadata_values.items()
-            if not _historical_text(current_values.get(field_name))
+            if (
+                not _historical_text(current_values.get(field_name))
+                or (
+                    field_name == 'vin_sn'
+                    and _is_legacy_malformed_vin(current_values.get(field_name))
+                )
+            )
         }
         if values_to_write:
             vehicle.write(values_to_write)
@@ -453,12 +469,18 @@ def _historical_vehicle_payload(env, vehicle_id, res_model, vehicle_meta=None):
     metadata_warnings = []
     metadata_values = _fleet_vehicle_metadata_values(vehicle_meta, metadata_warnings)
     warnings.extend(metadata_warnings)
-    # Une métadonnée X'Glass ne complète que les champs Fleet absents. Cela
-    # évite de remplacer la source de vérité par une valeur ponctuelle du
-    # portail, tout en réparant les véhicules historiques incomplets.
+    # Une métadonnée X'Glass ne complète que les champs Fleet absents. Le seul
+    # correctif admis est la syntaxe ``var = <VIN>;`` produite par l'ancien
+    # parseur : elle n'est pas une valeur VIN Fleet exploitable.
     vehicle_values = dict(vehicle_values)
     for field_name in ('vin_sn', 'x_studio_date_mec'):
-        if not _historical_text(vehicle_values.get(field_name)) and metadata_values.get(field_name):
+        should_use_metadata = not _historical_text(vehicle_values.get(field_name))
+        if field_name == 'vin_sn':
+            should_use_metadata = (
+                should_use_metadata
+                or _is_legacy_malformed_vin(vehicle_values.get(field_name))
+            )
+        if should_use_metadata and metadata_values.get(field_name):
             vehicle_values[field_name] = metadata_values[field_name]
 
     targets = HISTORICAL_VEHICLE_FIELD_TARGETS[res_model]
