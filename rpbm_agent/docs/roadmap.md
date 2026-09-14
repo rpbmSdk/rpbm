@@ -11,6 +11,12 @@
 > et aucun champ existant — historique, obsolète ou déjà déployé — n'est à
 > supprimer dans ce lot.
 
+> **AG01-03 livré localement (2026-09-14).** `sale.order.carrier_id` est rendu
+> visible par une vue module versionnée, son préremplissage depuis le lieu CRM
+> est limité aux nouveaux devis et la confirmation standard exige un mode de
+> remise. Les rapports et les champs historiques restent inchangés ; leur
+> migration demeure AG01-04.
+
 > **Fait (2026-07-29).** Les cartes VSF supportent désormais la sélection multiple par code, les suggestions sont enrichies depuis leurs fiches, et chaque carte sélectionnée porte ses propres actions produit/devis. Une sélection principale occupe toute la largeur de la grille : ses suggestions compactes restent immédiatement visibles. Les dimensions sans unité du bloc VSF « Dimensions » sont normalisées en millimètres et la description produit conserve les informations visibles de la fiche. Le retrait du devis est limité aux lignes ajoutées par le widget pendant la dialog.
 
 > **Fait (2026-07-30).** Une expiration X'Glass, VSF ou du verrou local est désormais

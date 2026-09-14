@@ -1,3 +1,4 @@
 from . import test_product_template_vsf_sync
 from . import test_historical_vehicle_fields
+from . import test_sale_order_carrier
 from . import test_vehicle_sync_schema

@@ -36,7 +36,14 @@ python Jobs/rpbm_agent_stock/documentation/verify_via_mcp.py
 python Jobs/rpbm_agent_stock/documentation/restore_carrier_view.py
 ```
 
-La [vue complémentaire](transporteur_visible.xml) est déjà appliquée sur la préproduction. Le [script de correctif](restore_carrier_view.py) n'écrit qu'avec `--commit`. Son mode `--restore --commit` désactive exclusivement cette vue complémentaire : il ne modifie ni la vue Studio ni les ventes. Ce retour arrière n'a pas été exécuté pendant la documentation. Les sauvegardes sont locales dans le dossier d'audit ignoré par Git.
+La [vue complémentaire](transporteur_visible.xml) est déjà appliquée sur la
+préproduction. Depuis AG01-03, la vue versionnée du module `rpbm_agent` devient
+la source durable pour ce champ. Le [script de correctif](restore_carrier_view.py)
+reste un outil de reprise/diagnostic : il signale les autres vues actives qui
+ajoutent `carrier_id`, vérifie l'équivalence de la vue connue, puis permet de
+désactiver cette vue complémentaire sans la supprimer, afin d'éviter un doublon.
+Le script n'écrit qu'avec `--commit` et ne modifie ni la vue Studio ni les ventes.
+Les sauvegardes sont locales dans le dossier d'audit ignoré par Git.
 
 Le [script de préparation de démonstration](prepare_demo.py) crée un dossier CRM et un devis sans ligne, sans les confirmer, uniquement avec `--commit` ; il refuse de recréer un dossier du même nom. Il n'est pas nécessaire pour régénérer le guide. Ses identifiants et son périmètre sont consignés dans les notes.
 

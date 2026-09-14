@@ -2,7 +2,7 @@
 
 ## Installation du module
 
-Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis installer via l'interface d'administration (`depends: crm, fleet, sale_crm`).
+Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis installer via l'interface d'administration (`depends: crm, delivery, fleet, sale_crm`). Le module exige `delivery` pour utiliser le champ natif `sale.order.carrier_id` ; `stock_delivery` reste la dépendance de l'architecture de routage stock.
 
 ## Dépendances Python
 
@@ -80,7 +80,29 @@ Conséquence : le champ est créé exactement comme le ferait un humain dans Stu
 
 ## Intégration dans les vues
 
-Le widget et les champs `x_studio_vehicle_id`/`x_studio_categorie_xglass` sont ajoutés par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, `views/fleet_vehicle_views.xml`, `views/product_product_views.xml`), chacune héritant de la vue formulaire de base du modèle concerné et ajoutant un nouvel onglet. Le comportement du widget s'adapte automatiquement selon `resModel` de l'enregistrement courant (`crm.lead`, `sale.order`, ou dialog générique pour tout autre modèle — voir [frontend](frontend.md)).
+Le widget et les champs `x_studio_vehicle_id`/`x_studio_categorie_xglass` sont ajoutés par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, `views/sale_order_carrier_views.xml`, `views/fleet_vehicle_views.xml`, `views/product_product_views.xml`), chacune héritant de la vue formulaire de base du modèle concerné et ajoutant un nouvel onglet ou le champ logistique. Le comportement du widget s'adapte automatiquement selon `resModel` de l'enregistrement courant (`crm.lead`, `sale.order`, ou dialog générique pour tout autre modèle — voir [frontend](frontend.md)).
+
+### `carrier_id` et préremplissage logistique
+
+`sale.order.carrier_id` est le champ natif de `delivery`. La vue du module est
+versionnée avec une priorité supérieure aux personnalisations Studio afin que le
+champ reste disponible après une reconstruction de branche. Le module ne crée
+pas les transporteurs : leur création et leurs routes restent sous la
+responsabilité de [`Jobs/rpbm_agent_stock/setup_stock_architecture.py`](../../../Jobs/rpbm_agent_stock/setup_stock_architecture.py).
+
+À la création d'un nouveau devis, le modèle lit
+`crm.lead.x_studio_lieu_intervention` et recherche un transporteur actif de la
+bonne société ou global. Une absence, une ambiguïté ou un défaut de droits est
+journalisé et laisse le champ vide ; aucun fallback Galleria n'est appliqué. Le
+changement d'opportunité préremplit uniquement un nouveau brouillon vide et ne
+remplace jamais un choix existant. Toute confirmation de `sale.order` exige
+ensuite un `carrier_id`, afin d'éviter le routage implicite Odoo.
+
+En préproduction, la vue complémentaire temporaire
+`sale.order.form.rpbm.transporteur.visible` doit être désactivée après
+vérification de la vue versionnée du module, sans supprimer la vue ni aucun
+champ. Toute autre vue active contenant `carrier_id` doit être contrôlée avant
+la mise à jour pour éviter un affichage en double.
 
 **Caveat de déploiement** : sur toute instance où le tag `<widget name="rpbm_agent_widget"/>` aurait déjà été ajouté à la main via Studio (probable en production, la documentation historique indiquant le widget déjà en usage), il faut le retirer de la vue Studio **avant** de déployer cette version du module, sous peine d'afficher le bouton en double. Vérification : `env['ir.ui.view'].search([('model','in',['crm.lead','sale.order'])]).filtered(lambda v: 'rpbm_agent_widget' in (v.arch_db or ''))`.
 
