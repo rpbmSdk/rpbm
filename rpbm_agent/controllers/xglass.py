@@ -414,10 +414,9 @@ class XGLASS:
                         value = extract_line_value(line, key)
                         if value:
                             data[key] = value
-                            # break
-                return data
             except Exception as e:
                 _logger.debug("getVehiculeMeta: script ignoré (%s)", e)
+        return data
     
     def selectVehicule(self, idVehicule: str='397899'):
         # r = self.post(

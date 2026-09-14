@@ -102,8 +102,10 @@ sequenceDiagram
     Note over FE: confirmRecord() — écrire AVANT de fermer la session
     FE->>BE: /getOdooVehicule (+ /createVehicule si absent)
     BE->>ORM: recherche/création fleet.vehicle
+    FE->>BE: /enrichVehicule si le véhicule existait déjà
+    BE->>ORM: complète VIN/date Fleet absents depuis X'Glass
     FE->>BE: /prepareHistoricalVehicleFields
-    BE->>ORM: lecture Fleet + réutilisation/création des référentiels historiques
+    BE->>ORM: lecture Fleet + repli métadonnées + réutilisation/création des référentiels historiques
     BE-->>FE: values + warnings non bloquants
     FE->>FE: record.update(data) — écriture en mémoire du formulaire
     opt "Confirmer et enregistrer"

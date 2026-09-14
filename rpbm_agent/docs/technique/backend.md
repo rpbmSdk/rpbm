@@ -21,7 +21,8 @@ Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utili
 | `/rpbm_agent/getVehiculeMeta` | `vehiculeId: str` | Retourne VIN/CNIT/date de mise en circulation ; l'ancienne route `/rbm_agent/getVehiculeMeta` reste acceptée pour compatibilité | X'Glass |
 | `/getOdooVehicule` | `immatriculation: str` | Recherche un véhicule Odoo existant par plaque | `fleet.vehicle` |
 | `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle/carburant si besoin, puis le `fleet.vehicle`. L'image X'Glass est facultative et n'est tentée que si l'appelant détient encore le verrou portail. | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, `ir.model.fields`, `ir.model.fields.selection`, X'Glass (image facultative) |
-| `/prepareHistoricalVehicleFields` | `vehicle_id: int, res_model: crm.lead\|sale.order` | Prépare les valeurs historiques à reporter depuis le véhicule Fleet et crée, si nécessaire, une valeur unique de référentiel marque/modèle ; ne crée aucun champ Odoo | `fleet.vehicle`, référentiels historiques `x_rpbm_marques_voitures`/`x_rpbm_modeles_voitures` |
+| `/enrichVehicule` | `vehicle_id: int, vehicule_meta` | Complète uniquement `vin_sn` et `x_studio_date_mec` manquants d'un `fleet.vehicle` existant ; les droits insuffisants deviennent un avertissement | `fleet.vehicle` |
+| `/prepareHistoricalVehicleFields` | `vehicle_id: int, res_model: crm.lead\|sale.order, vehicle_meta` | Prépare les valeurs historiques à reporter depuis Fleet, avec repli sur les métadonnées X'Glass si VIN/date Fleet sont absents ; réutilise ou crée, si nécessaire, une valeur unique de référentiel marque/modèle ; ne crée aucun champ Odoo | `fleet.vehicle`, référentiels historiques `x_rpbm_marques_voitures`/`x_rpbm_modeles_voitures` |
 | `/getPlanche` | `vehiculeId: int` | Récupère la "planche" (catégories/calques de pièces disponibles pour le véhicule) | X'Glass |
 | `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie | X'Glass |
 | `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce, via `XGLASS.findSelectionsPiecesAmView()` | X'Glass |
@@ -45,19 +46,25 @@ utilisateur Odoo connecté (`auth='user'`). Elle accepte uniquement les modèles
 }
 ```
 
-La route est appelée par le dialogue uniquement après la réutilisation ou la
-création du `fleet.vehicle`, au moment de la confirmation. Elle lit avec les
-droits de l'utilisateur courant, sans `sudo`, et sérialise seulement les champs
-Fleet nécessaires. Les valeurs sont ensuite fusionnées dans le dictionnaire
-de `record.update()` ; la route ne persiste pas directement les champs de la
-piste ou du devis.
+Le dialogue appelle d'abord `/enrichVehicule` après la réutilisation d'un
+`fleet.vehicle` existant. Cette route ne remplit que les champs Fleet absents et
+ne remplace jamais une donnée existante. Il appelle ensuite
+`/prepareHistoricalVehicleFields` au moment de la confirmation. Les deux routes
+lisent et écrivent avec les droits de l'utilisateur courant, sans `sudo` ; un
+refus d'écriture Fleet reste non bloquant et les métadonnées X'Glass peuvent
+alors servir de repli pour les champs historiques. Les valeurs historiques
+sont ensuite fusionnées dans le dictionnaire de `record.update()` ; aucune
+route ne persiste directement les champs de la piste ou du devis.
 
-Les noms de marque et de modèle sont comparés après normalisation. Un référentiel
-historique non vide et sans correspondance est créé à la confirmation ; une
-source vide, une correspondance ambiguë, une valeur d'énergie non supportée ou
-une absence de droits produit un avertissement et conserve la valeur historique
-existante. Le kilométrage n'est jamais préparé. Aucun `ir.model.fields` n'est
-créé, supprimé, renommé ou migré par cette route.
+Les noms de marque et de modèle sont comparés après normalisation. Lorsqu'il
+existe plusieurs variantes normalisées mais une seule orthographe exactement
+égale à la source Fleet, cette valeur canonique est réutilisée ; sinon la
+correspondance reste ambiguë. Un référentiel historique non vide et sans
+correspondance est créé à la confirmation ; une source vide, une ambiguïté,
+une valeur d'énergie non supportée ou une absence de droits produit un
+avertissement et conserve la valeur historique existante. Le kilométrage n'est
+jamais préparé. Aucun `ir.model.fields` n'est créé, supprimé, renommé ou migré
+par ces routes.
 
 ## X'Glass (`controllers/xglass.py`)
 

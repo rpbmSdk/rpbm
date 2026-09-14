@@ -7,7 +7,7 @@ Véhicule Odoo créé (ou réutilisé s'il existe déjà par `license_plate`) lo
 | `x_studio_detail_model` | char | `pre_init_hook` (nouveau) | Détail du modèle (ex : `KIA PICANTO III PHASE 2 - 5P 2020-09-> 1.2i 85`), copié depuis `vehicule.libelleCourt` (X'Glass) |
 | `x_studio_date_mec` | date | `pre_init_hook` (nouveau) | Date de mise en circulation, extraite du scraping X'Glass (`vehicule_meta.dateMec`, format `%m/%Y`), écrite seulement si cette donnée est disponible |
 
-Champs standards également écrits à la création (non `x_studio_*`, pour mémoire) : `driver_id`, `model_id`, `license_plate`, `description`, `power`, `doors`, `fuel_type`, `image_1920`, `vin_sn` (si disponible).
+Champs standards également écrits à la création (non `x_studio_*`, pour mémoire) : `driver_id`, `model_id`, `license_plate`, `description`, `power`, `doors`, `fuel_type`, `image_1920`, `vin_sn` (si disponible). Lorsqu'un véhicule existe déjà, `/enrichVehicule` complète seulement `vin_sn` et `x_studio_date_mec` s'ils sont absents ; aucune valeur Fleet existante n'est remplacée.
 
 Documentés mais **non consommés par le code actuel** (ni lus ni écrits par `rpbm_agent` — voir [état des lieux](../../etat-des-lieux.md)), donc volontairement absents de `pre_init_hook` : `x_studio_autre_infos`, `x_studio_note` (champ HTML calculé). À ajouter à `FIELDS_TO_ENSURE` (`hooks.py`) si un usage futur les rend nécessaires.
 
@@ -17,4 +17,4 @@ Affiché dans l'onglet "X'Glass" ajouté par `views/fleet_vehicle_views.xml` (h�
 
 ## Lu/écrit par
 
-- Écriture : [8 — Création du véhicule](../../fonctionnel/workflow/08-creation-vehicule.md) (route `/createVehicule`)
+- Écriture : [8 — Création du véhicule](../../fonctionnel/workflow/08-creation-vehicule.md) (route `/createVehicule`) et confirmation d'un véhicule existant (route `/enrichVehicule`)

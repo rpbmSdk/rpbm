@@ -325,10 +325,16 @@ export class AgentWidgetDialog extends asyncWidget {
     async getRecordData() {
         const data = {};
         data[this.record.immatriculationField] = this.immatriculationValue;
+        const vehicleMeta = this.vehiculeMeta || (
+            this.selectedVehicule
+                ? await this.getVehiculeMeta(this.selectedVehicule.id)
+                : undefined
+        );
         const OdooVehicule = await this.getOdooVehicule();
 
         if (OdooVehicule) {
             data[this.record.vehiculeField] = [OdooVehicule.id, OdooVehicule.name];
+            await this.enrichOdooVehicule(OdooVehicule.id, vehicleMeta);
         }
         else if (this.selectedVehicule) {
             // Il y a un vehicule selectionné mais pas d'OdooVehicule encore créé
@@ -347,6 +353,7 @@ export class AgentWidgetDialog extends asyncWidget {
             const historical = await this.rpc("/prepareHistoricalVehicleFields", {
                 vehicle_id: vehicleId,
                 res_model: this.props.record.resModel,
+                vehicle_meta: vehicleMeta,
             });
             for (const warning of historical?.warnings || []) {
                 this.notification.add(warning, { type: "warning" });
@@ -506,6 +513,19 @@ export class AgentWidgetDialog extends asyncWidget {
             immatriculation: this.immatriculationValue,
             // vehicule: this.selectedVehicule,
         })
+    }
+
+    async enrichOdooVehicule(vehicleId, vehicleMeta = this.vehiculeMeta) {
+        if (!vehicleId || !vehicleMeta) {
+            return;
+        }
+        const result = await this.rpc("/enrichVehicule", {
+            vehicle_id: vehicleId,
+            vehicule_meta: vehicleMeta,
+        });
+        for (const warning of result?.warnings || []) {
+            this.notification.add(warning, { type: "warning" });
+        }
     }
 
     /**

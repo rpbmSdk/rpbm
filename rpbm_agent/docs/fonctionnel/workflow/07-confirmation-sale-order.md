@@ -21,9 +21,9 @@ l'utilisateur est prioritaire.
 | `x_studio_categorie_xglass` | `selectedCalque.libelle` | si une catégorie est sélectionnée |
 | `x_studio_pice_concerne` (Pièce concernée) | suggestion X'Glass visible et modifiable | si une catégorie est sélectionnée — champ `related` vers l'opportunité |
 | `x_studio_base_eurocode` | `state.baseEurocode` | si un eurocode est renseigné — fonctionne nativement ici, ce champ `related` porte déjà ce nom exact |
-| `x_studio_many2one_field_rP62C` / `x_studio_many2one_field_DkgHx` | marque/modèle historiques de l'opportunité, préparés depuis Fleet | si une opportunité est liée et la correspondance est unique ; le référentiel manquant peut être créé à la confirmation |
-| `x_studio_vin_` / `x_studio_dtails_modle` | VIN / détail modèle Fleet via l'opportunité | seulement si la source Fleet est renseignée |
-| `x_studio_date_1re_mec` | date MEC Fleet via l'opportunité | seulement si renseignée, au format texte `MM/YYYY` |
+| `x_studio_many2one_field_rP62C` / `x_studio_many2one_field_DkgHx` | marque/modèle historiques de l'opportunité, préparés depuis Fleet | si une opportunité est liée et la correspondance est unique ; une orthographe canonique exacte est privilégiée et le référentiel manquant peut être créé à la confirmation |
+| `x_studio_vin_` / `x_studio_dtails_modle` | VIN / détail modèle Fleet via l'opportunité | seulement si la source Fleet ou, pour VIN, la métadonnée X'Glass est renseignée |
+| `x_studio_date_1re_mec` | date MEC Fleet ou métadonnée X'Glass via l'opportunité | seulement si renseignée, au format texte `MM/YYYY` |
 | `x_studio_nergie_moteur` | énergie Fleet via l'opportunité | seulement pour les valeurs supportées ; variantes hybrides → `Hybride` |
 
 - **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
@@ -33,8 +33,8 @@ La confirmation standard de la vente est une étape distincte de la confirmation
 de la dialog. Elle exige un `carrier_id` pour toute vente à l'état brouillon ou
 envoyée, mais ne crée pas de transporteur et ne modifie pas les lignes de vente.
 
-Les informations Fleet sont préparées au moment de la confirmation par la
-route interne `/prepareHistoricalVehicleFields`, puis fusionnées dans le même
+Les informations Fleet sont préparées au moment de la confirmation par les
+routes internes `/enrichVehicule` puis `/prepareHistoricalVehicleFields`, puis fusionnées dans le même
 `record.update()` que les autres champs. Une source vide, ambiguë, non
 supportée ou non autorisée produit un avertissement sans bloquer et conserve
 la valeur historique. Le kilométrage n'est jamais modifié. Sans opportunité

@@ -316,6 +316,13 @@ def _historical_reference_value(env, model_name, source_name, label, warnings):
         return None
 
     if len(matches) > 1:
+        source_text = _historical_text(source_name)
+        exact_matches = [
+            match for match in matches if match[1] == source_text
+        ]
+        if len(exact_matches) == 1:
+            record, record_name = exact_matches[0]
+            return [record.id, record_name]
         warnings.append(
             _("%s historique ambigu (%s correspondances) : le champ reste inchangé.")
             % (label, len(matches))
@@ -368,7 +375,62 @@ def _historical_fuel_value(value):
     return None
 
 
-def _historical_vehicle_payload(env, vehicle_id, res_model):
+def _fleet_vehicle_metadata_values(vehicule_meta, warnings):
+    """Convertit les métadonnées X'Glass en valeurs Fleet sûres.
+
+    Les métadonnées ne remplacent jamais une valeur Fleet déjà présente. Elles
+    servent à compléter un véhicule historique existant et à préparer les
+    champs CRM lorsque l'enrichissement Fleet n'est pas autorisé.
+    """
+    if not isinstance(vehicule_meta, dict):
+        return {}
+
+    values = {}
+    vin = _historical_text(vehicule_meta.get('vin'))
+    if vin:
+        values['vin_sn'] = vin
+
+    raw_date_mec = vehicule_meta.get('dateMec')
+    if raw_date_mec:
+        date_mec = _historical_date_value(raw_date_mec)
+        if date_mec is None:
+            warnings.append(
+                _("Date MEC X'Glass invalide ; la valeur Fleet reste inchangée.")
+            )
+        else:
+            values['x_studio_date_mec'] = datetime.strptime(
+                date_mec, '%m/%Y'
+            ).date()
+    return values
+
+
+def _enrich_fleet_vehicle_from_metadata(vehicle, vehicule_meta, warnings):
+    """Complète uniquement les champs Fleet manquants depuis X'Glass."""
+    metadata_values = _fleet_vehicle_metadata_values(vehicule_meta, warnings)
+    if not metadata_values:
+        return {}
+
+    try:
+        current_values = _historical_record_values(
+            vehicle, ('vin_sn', 'x_studio_date_mec')
+        )
+        values_to_write = {
+            field_name: value
+            for field_name, value in metadata_values.items()
+            if not _historical_text(current_values.get(field_name))
+        }
+        if values_to_write:
+            vehicle.write(values_to_write)
+        return values_to_write
+    except AccessError:
+        warnings.append(
+            _("Écriture des métadonnées Fleet interdite ; les valeurs historiques "
+              "seront préparées directement si possible.")
+        )
+        return {}
+
+
+def _historical_vehicle_payload(env, vehicle_id, res_model, vehicle_meta=None):
     """Sérialise les seules valeurs historiques autorisées pour un véhicule."""
     if isinstance(vehicle_id, bool) or not isinstance(vehicle_id, int) or vehicle_id <= 0:
         raise UserError(_("vehicle_id doit être un entier strictement positif."))
@@ -387,6 +449,17 @@ def _historical_vehicle_payload(env, vehicle_id, res_model):
     if not vehicle_values:
         warnings.append(_("Véhicule %s introuvable ou inaccessible.") % vehicle_id)
         return {'values': values, 'warnings': warnings}
+
+    metadata_warnings = []
+    metadata_values = _fleet_vehicle_metadata_values(vehicle_meta, metadata_warnings)
+    warnings.extend(metadata_warnings)
+    # Une métadonnée X'Glass ne complète que les champs Fleet absents. Cela
+    # évite de remplacer la source de vérité par une valeur ponctuelle du
+    # portail, tout en réparant les véhicules historiques incomplets.
+    vehicle_values = dict(vehicle_values)
+    for field_name in ('vin_sn', 'x_studio_date_mec'):
+        if not _historical_text(vehicle_values.get(field_name)) and metadata_values.get(field_name):
+            vehicle_values[field_name] = metadata_values[field_name]
 
     targets = HISTORICAL_VEHICLE_FIELD_TARGETS[res_model]
     license_plate = _historical_text(vehicle_values.get('license_plate'))
@@ -579,12 +652,40 @@ class AgentController(Controller):
             return False
 
     @route('/prepareHistoricalVehicleFields', auth='user', type='json')
-    def prepare_historical_vehicle_fields(self, vehicle_id: int, res_model: str):
+    def prepare_historical_vehicle_fields(
+        self, vehicle_id: int, res_model: str, vehicle_meta=None
+    ):
         """Prépare les champs historiques depuis un véhicule Fleet autorisé."""
-        return _historical_vehicle_payload(request.env, vehicle_id, res_model)
+        return _historical_vehicle_payload(
+            request.env, vehicle_id, res_model, vehicle_meta
+        )
+
+    @route('/enrichVehicule', auth='user', type='json')
+    def enrich_vehicule(self, vehicle_id: int, vehicule_meta=None):
+        """Complète un véhicule Fleet existant sans remplacer ses données."""
+        if isinstance(vehicle_id, bool) or not isinstance(vehicle_id, int) or vehicle_id <= 0:
+            raise UserError(_("vehicle_id doit être un entier strictement positif."))
+
+        warnings = []
+        try:
+            vehicles = request.env['fleet.vehicle'].search(
+                [('id', '=', vehicle_id)], limit=1
+            )
+        except AccessError:
+            warnings.append(_("Lecture du véhicule Fleet interdite ; aucun enrichissement."))
+            return {'values': {}, 'warnings': warnings}
+        if not vehicles:
+            warnings.append(_("Véhicule %s introuvable ou inaccessible.") % vehicle_id)
+            return {'values': {}, 'warnings': warnings}
+
+        _enrich_fleet_vehicle_from_metadata(vehicles[0], vehicule_meta, warnings)
+        return {'values': {}, 'warnings': warnings}
 
     @route('/createVehicule', auth='user', type='json')
-    def createVehicule(self,immatriculation:str, partner_id:int, vehicule_info:dict={}, vehicule_meta:dict={}):
+    def createVehicule(
+        self, immatriculation: str, partner_id: int,
+        vehicule_info=None, vehicule_meta=None,
+    ):
         """
             Permet de créer un véhicule en BDD de Odoo
 
@@ -593,13 +694,19 @@ class AgentController(Controller):
             l'image portail est facultative et les autres données ont déjà été
             reçues dans ``vehicule_info``.
         """
-        _logger.info(f"getVehicule {vehicule_info}")
+        vehicule_info = vehicule_info or {}
+        vehicule_meta = vehicule_meta or {}
+        _logger.info("createVehicule %s", immatriculation)
         vehicule = xglass.XGlassVehicule(**vehicule_info)
         vehicules = request.env['fleet.vehicle'].search([('license_plate', '=', immatriculation)])
         if vehicules:
             if len(vehicules) > 1:
                 _logger.warning(f"Plusieurs véhicules avec la même immatriculation {immatriculation}")
             vehicule = vehicules[0]
+            warnings = []
+            _enrich_fleet_vehicle_from_metadata(vehicule, vehicule_meta, warnings)
+            for warning in warnings:
+                _logger.warning(warning)
         else:
             marque = request.env['fleet.vehicle.model.brand'].search([('name', '=', vehicule.xGlassModele.xGlassMarque.nom)])
             if not marque:
@@ -612,20 +719,10 @@ class AgentController(Controller):
                     'name': vehicule.xGlassModele.gamme,
                     'brand_id': marque.id
                 })
-            data = {}
-            if vehicule_meta is not None:
-                vin = vehicule_meta.get('vin', False)
-                dateMec = vehicule_meta.get('dateMec', False)
-                _logger.info(f"vin {vin} dateMec {dateMec}")
-                if vin:
-                    data['vin_sn'] = vin
-                if dateMec:
-                    # convert %m/%Y to date format
-                    import datetime
-                    date:datetime.date = datetime.datetime.strptime(dateMec, '%m/%Y').date()
-                    _logger.info(f"date {date}")
-                    data['x_studio_date_mec'] = fields.Date.from_string(date)
-                    _logger.info(f"x_studio_date_mec {data['x_studio_date_mec']}")
+            metadata_warnings = []
+            data = _fleet_vehicle_metadata_values(vehicule_meta, metadata_warnings)
+            for warning in metadata_warnings:
+                _logger.warning(warning)
             fuel_type_field = request.env['ir.model.fields'].search([('name', '=', 'fuel_type'),('model_id.model','=','fleet.vehicle')], limit=1)
             _logger.info(f"fuel_type_field {fuel_type_field}")
             fuel_type = request.env['ir.model.fields.selection'].search([

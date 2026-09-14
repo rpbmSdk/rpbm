@@ -30,19 +30,35 @@ class _Record:
     def __init__(self, record_id, **values):
         self.id = record_id
         self._values = values
+        self.write_calls = []
 
     def read(self, field_names):
         return [{field_name: self._values.get(field_name) for field_name in field_names}]
+
+    def write(self, values):
+        self.write_calls.append(values)
+        self._values.update(values)
+        return True
 
 
 class _RecordSet(list):
     def read(self, field_names):
         return self[0].read(field_names) if self else []
 
+    def write(self, values):
+        for record in self:
+            record.write(values)
+        return True
+
 
 class _AccessDeniedRecord(_Record):
     def read(self, field_names):
         raise AccessError('read forbidden')
+
+
+class _WriteDeniedRecord(_Record):
+    def write(self, values):
+        raise AccessError('write forbidden')
 
 
 class _Model:
@@ -54,6 +70,7 @@ class _Model:
         allow_create=True,
         deny_search=False,
         deny_read=False,
+        deny_write=False,
     ):
         self._name = name
         self._records = list(records)
@@ -61,6 +78,7 @@ class _Model:
         self.allow_create = allow_create
         self.deny_search = deny_search
         self.deny_read = deny_read
+        self.deny_write = deny_write
         self.create_calls = []
 
     def with_context(self, **kwargs):
@@ -77,12 +95,19 @@ class _Model:
                 records = [record for record in records if record._values.get('x_name')]
         if limit:
             records = records[:limit]
+        if self.deny_write:
+            records = [
+                _WriteDeniedRecord(record.id, **record._values)
+                for record in records
+            ]
         return _RecordSet(records)
 
     def browse(self, record_id):
         records = [record for record in self._records if record.id == record_id]
         if self.deny_read:
             records = [_AccessDeniedRecord(record.id, **record._values) for record in records]
+        elif self.deny_write:
+            records = [_WriteDeniedRecord(record.id, **record._values) for record in records]
         return _RecordSet(records)
 
     def create(self, values):
@@ -249,6 +274,28 @@ class TestHistoricalVehicleFields(TestCase):
         self.assertEqual(payload['values']['x_studio_nergie_moteur'], 'Diesel')
         self.assertEqual(payload['values']['x_studio_date_1re_mec'], '09/2020')
 
+    def test_reference_prefers_the_single_canonical_spelling(self):
+        env = _environment(
+            historical_brands=[_Record(31, x_name='PEUGEOT'), _Record(32, x_name='peugeot')],
+            historical_models=[_Record(41, x_name='3008')],
+            vehicle_values={
+                'license_plate': 'AB-123-CD',
+                'vin_sn': '',
+                'model_id': [11, '3008'],
+                'x_studio_detail_model': '',
+                'x_studio_date_mec': False,
+                'fuel_type': 'gasoline',
+            },
+            model_values={'name': '3008', 'brand_id': [21, 'PEUGEOT']},
+            brand_values={'name': 'PEUGEOT'},
+        )
+
+        payload = main._historical_vehicle_payload(env, 7, 'crm.lead')
+
+        self.assertEqual(payload['warnings'], [])
+        self.assertEqual(payload['values']['x_studio_field_KyCjB'], [31, 'PEUGEOT'])
+        self.assertEqual(payload['values']['x_studio_field_ZhaeY'], [41, '3008'])
+
     def test_missing_reference_names_warn_and_do_not_create_or_write(self):
         env = _environment(
             model_values={'name': '', 'brand_id': False},
@@ -266,8 +313,8 @@ class TestHistoricalVehicleFields(TestCase):
 
     def test_ambiguous_references_warn_and_do_not_write(self):
         env = _environment(
-            historical_brands=[_Record(31, x_name='Renault'), _Record(32, x_name=' renault ')],
-            historical_models=[_Record(41, x_name='Clio'), _Record(42, x_name='CLIO')],
+            historical_brands=[_Record(31, x_name='RENAULT'), _Record(32, x_name='renault')],
+            historical_models=[_Record(41, x_name='CLIO'), _Record(42, x_name='clio')],
         )
 
         payload = main._historical_vehicle_payload(env, 7, 'crm.lead')
@@ -276,6 +323,105 @@ class TestHistoricalVehicleFields(TestCase):
         self.assertNotIn('x_studio_field_ZhaeY', payload['values'])
         self.assertTrue(any('Marque historique ambigu' in warning for warning in payload['warnings']))
         self.assertTrue(any('Modèle historique ambigu' in warning for warning in payload['warnings']))
+
+    def test_metadata_fills_missing_vin_and_date_for_historical_payload(self):
+        env = _environment(
+            vehicle_values={
+                'license_plate': 'AB-123-CD',
+                'vin_sn': False,
+                'model_id': False,
+                'x_studio_detail_model': '',
+                'x_studio_date_mec': False,
+                'fuel_type': 'gasoline',
+            }
+        )
+
+        payload = main._historical_vehicle_payload(
+            env,
+            7,
+            'crm.lead',
+            {'vin': ' VF123456789 ', 'dateMec': '09/2020'},
+        )
+
+        self.assertEqual(payload['values']['x_studio_field_PfJlB'], 'VF123456789')
+        self.assertEqual(payload['values']['x_studio_field_Eh6Wd'], '09/2020')
+
+    def test_fleet_enrichment_writes_only_missing_metadata(self):
+        env = _environment(
+            vehicle_values={
+                'license_plate': 'AB-123-CD',
+                'vin_sn': '',
+                'model_id': False,
+                'x_studio_detail_model': '',
+                'x_studio_date_mec': False,
+                'fuel_type': 'gasoline',
+            }
+        )
+        vehicle = env['fleet.vehicle'].browse(7)[0]
+        warnings = []
+
+        written = main._enrich_fleet_vehicle_from_metadata(
+            vehicle,
+            {'vin': 'VIN-META', 'dateMec': '09/2020'},
+            warnings,
+        )
+
+        self.assertEqual(warnings, [])
+        self.assertEqual(written['vin_sn'], 'VIN-META')
+        self.assertEqual(written['x_studio_date_mec'].strftime('%m/%Y'), '09/2020')
+        self.assertEqual(vehicle._values['vin_sn'], 'VIN-META')
+        self.assertEqual(vehicle._values['x_studio_date_mec'].strftime('%m/%Y'), '09/2020')
+
+        vehicle._values['vin_sn'] = 'VIN-EXISTANT'
+        vehicle._values['x_studio_date_mec'] = '2021-01-15'
+        written = main._enrich_fleet_vehicle_from_metadata(
+            vehicle,
+            {'vin': 'VIN-NOUVEAU', 'dateMec': '02/2022'},
+            warnings,
+        )
+
+        self.assertEqual(written, {})
+        self.assertEqual(vehicle._values['vin_sn'], 'VIN-EXISTANT')
+        self.assertEqual(vehicle._values['x_studio_date_mec'], '2021-01-15')
+
+    def test_invalid_metadata_date_warns_without_writing(self):
+        env = _environment()
+        vehicle = env['fleet.vehicle'].browse(7)[0]
+        warnings = []
+
+        written = main._enrich_fleet_vehicle_from_metadata(
+            vehicle,
+            {'dateMec': 'date-invalide'},
+            warnings,
+        )
+
+        self.assertEqual(written, {})
+        self.assertTrue(any("Date MEC X'Glass invalide" in warning for warning in warnings))
+        self.assertEqual(vehicle.write_calls, [])
+
+    def test_fleet_enrichment_access_error_is_non_blocking(self):
+        env = _environment(
+            vehicle_values={
+                'license_plate': 'AB-123-CD',
+                'vin_sn': '',
+                'model_id': False,
+                'x_studio_detail_model': '',
+                'x_studio_date_mec': False,
+                'fuel_type': 'gasoline',
+            }
+        )
+        env['fleet.vehicle'].deny_write = True
+        vehicle = env['fleet.vehicle'].search([('id', '=', 7)], limit=1)[0]
+        warnings = []
+
+        written = main._enrich_fleet_vehicle_from_metadata(
+            vehicle,
+            {'vin': 'VIN-META'},
+            warnings,
+        )
+
+        self.assertEqual(written, {})
+        self.assertTrue(any('Écriture des métadonnées Fleet interdite' in warning for warning in warnings))
 
     def test_reference_creation_and_acl_warning(self):
         env = _environment()
