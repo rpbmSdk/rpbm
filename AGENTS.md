@@ -8,6 +8,7 @@ Ce projet utilise des agents IA. Avant toute modification, inspecter le contexte
 - Documenter en francais lorsque le contenu est destine au repo.
 - Verifier les commandes pertinentes avant de terminer une tache.
 - Garder les outils et scripts simples, explicites et reproductibles.
+- Toujours pousser les commits necessaires sur la branche distante avant d'envoyer le verificateur.
 
 ## Delegation par defaut
 
