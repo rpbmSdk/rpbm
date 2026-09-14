@@ -1,5 +1,16 @@
 # Roadmap — UI & transfert vers Odoo
 
+> **Audit AG-01 préparé (2026-09-14).** La qualification des champs historiques,
+> des alias `x_rpbm_*`, des vues et des rapports est documentée dans
+> [l'audit ciblé](audits/AG-01-champs-utiles.md). La correction des champs
+> historiques est le prochain lot critique ; aucune modification Odoo n'est
+> déduite de cet audit.
+>
+> **Périmètre confirmé.** La planification retire uniquement la création future
+> des huit doublons Fleet `x_rpbm_vehicle_*`. `x_studio_vehicle_id` est conservé,
+> et aucun champ existant — historique, obsolète ou déjà déployé — n'est à
+> supprimer dans ce lot.
+
 > **Fait (2026-07-29).** Les cartes VSF supportent désormais la sélection multiple par code, les suggestions sont enrichies depuis leurs fiches, et chaque carte sélectionnée porte ses propres actions produit/devis. Une sélection principale occupe toute la largeur de la grille : ses suggestions compactes restent immédiatement visibles. Les dimensions sans unité du bloc VSF « Dimensions » sont normalisées en millimètres et la description produit conserve les informations visibles de la fiche. Le retrait du devis est limité aux lignes ajoutées par le widget pendant la dialog.
 
 > **Fait (2026-07-30).** Une expiration X'Glass, VSF ou du verrou local est désormais

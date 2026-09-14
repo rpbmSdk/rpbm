@@ -17,6 +17,7 @@ Index de la documentation du module. À maintenir à jour à chaque évolution f
 
 ## Audit & pilotage
 
+- [`audits/README.md`](audits/README.md) — audits ciblés préparatoires, dont [AG-01 — Champs utiles et compatibilité historique](audits/AG-01-champs-utiles.md).
 - [`etat-des-lieux.md`](etat-des-lieux.md) — fonctionnalités implémentées, cohérence technique et métier, optimisation UI/UX, recommandations priorisées.
 - [`roadmap.md`](roadmap.md) — travaux à mener sur l'UI et le transfert vers Odoo, ordonnés par lots (L0 diagnostic → L1 transfert → L2 UI → L3 hygiène), établis sur les données réelles de l'instance.
 - [`validations-metier.md`](validations-metier.md) — registre des décisions attendues du client, de leurs impacts et des réponses validées.
