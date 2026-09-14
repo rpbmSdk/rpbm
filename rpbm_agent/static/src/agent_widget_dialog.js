@@ -336,6 +336,24 @@ export class AgentWidgetDialog extends asyncWidget {
             data[this.record.vehiculeField] = [newOdooVehicule.id, newOdooVehicule.name];
         }
 
+        const vehicleId = data[this.record.vehiculeField]?.[0];
+        const opportunityValue = this.props.record.data?.opportunity_id;
+        const opportunityId = Array.isArray(opportunityValue)
+            ? opportunityValue[0]
+            : opportunityValue?.resId || opportunityValue?.id || opportunityValue;
+        const canPrepareHistoricalSaleFields =
+            this.props.record.resModel !== "sale.order" || Boolean(opportunityId);
+        if (vehicleId && canPrepareHistoricalSaleFields) {
+            const historical = await this.rpc("/prepareHistoricalVehicleFields", {
+                vehicle_id: vehicleId,
+                res_model: this.props.record.resModel,
+            });
+            for (const warning of historical?.warnings || []) {
+                this.notification.add(warning, { type: "warning" });
+            }
+            Object.assign(data, historical?.values || {});
+        }
+
         if (this.selectedCalque) {
             data[this.record.categorieXglassField] = this.selectedCalque.libelle;
         }

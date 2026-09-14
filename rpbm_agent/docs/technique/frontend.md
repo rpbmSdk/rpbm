@@ -154,6 +154,7 @@ que ces deux sélections ne sont pas présentes.
 | `searchImmatriculation()` | `AgentWidgetDialog` | `/searchImmatriculation` | Recherche véhicule(s) par plaque |
 | `getOdooVehicule()` | `AgentWidgetDialog` **et** `VehiculeComponent` | `/getOdooVehicule` | Véhicule Odoo existant (appelé en double, voir [état des lieux](../etat-des-lieux.md)) |
 | `createOdooVehicule()` / `onClickCreateVehicule()` | `AgentWidgetDialog` et `VehiculeComponent` | `/createVehicule` | Création du véhicule |
+| `getRecordData()` | `AgentWidgetDialog` à la confirmation | `/prepareHistoricalVehicleFields` | Préparation explicite des champs historiques depuis le véhicule Fleet ; valeurs + avertissements |
 | `getVehiculeMeta()` | `AgentWidgetDialog` pour le seul véhicule sélectionné | `/rpbm_agent/getVehiculeMeta` | VIN/CNIT/date MEC |
 | `getPlanche()` | `AgentWidgetDialog` | `/getPlanche` | Catégories/calques disponibles |
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
@@ -169,6 +170,11 @@ que ces deux sélections ne sont pas présentes.
 construit un objet `data` (via `getRecordData()`) et appelle
 **`this.props.record.update(data)`** — mise à jour en mémoire du `Record` Odoo standard —
 **avant** de fermer la session portail (`closeAgents()`, cf. correctif L1.0).
+Lorsque le véhicule est résolu, `getRecordData()` appelle également
+`/prepareHistoricalVehicleFields` et fusionne uniquement les `values` retournées
+dans ce même objet ; les `warnings` sont affichés sans bloquer la confirmation.
+L'appel intervient après la réutilisation ou la création de `fleet.vehicle`,
+jamais pendant la saisie intermédiaire.
 L'écriture effective en base se fait ensuite via le mécanisme de sauvegarde standard du
 formulaire Odoo (bouton « Enregistrer »), ou directement avec « Confirmer et enregistrer ».
 Le module n'utilise pas de `orm.write` : tous ses échanges serveur passent par `rpc` vers les

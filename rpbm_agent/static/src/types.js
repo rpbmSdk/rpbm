@@ -74,3 +74,9 @@
  * @typedef {Object} OdooVehicule
  * @property {number} id
  */
+
+/**
+ * @typedef {Object} HistoricalVehicleFields
+ * @property {Object<string, string|number[]>} values
+ * @property {string[]} warnings
+ */

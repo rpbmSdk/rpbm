@@ -21,6 +21,7 @@ Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utili
 | `/rpbm_agent/getVehiculeMeta` | `vehiculeId: str` | Retourne VIN/CNIT/date de mise en circulation ; l'ancienne route `/rbm_agent/getVehiculeMeta` reste acceptée pour compatibilité | X'Glass |
 | `/getOdooVehicule` | `immatriculation: str` | Recherche un véhicule Odoo existant par plaque | `fleet.vehicle` |
 | `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle/carburant si besoin, puis le `fleet.vehicle`. L'image X'Glass est facultative et n'est tentée que si l'appelant détient encore le verrou portail. | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, `ir.model.fields`, `ir.model.fields.selection`, X'Glass (image facultative) |
+| `/prepareHistoricalVehicleFields` | `vehicle_id: int, res_model: crm.lead\|sale.order` | Prépare les valeurs historiques à reporter depuis le véhicule Fleet et crée, si nécessaire, une valeur unique de référentiel marque/modèle ; ne crée aucun champ Odoo | `fleet.vehicle`, référentiels historiques `x_rpbm_marques_voitures`/`x_rpbm_modeles_voitures` |
 | `/getPlanche` | `vehiculeId: int` | Récupère la "planche" (catégories/calques de pièces disponibles pour le véhicule) | X'Glass |
 | `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie | X'Glass |
 | `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce, via `XGLASS.findSelectionsPiecesAmView()` | X'Glass |
@@ -30,6 +31,33 @@ Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utili
 | `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template | `product.product`, `product.template`, `product.supplierinfo` |
 
 La route canonique est `/rpbm_agent/getVehiculeMeta`. L'ancienne route avec la coquille `rbm` reste disponible afin de ne pas casser un asset frontend resté en cache.
+
+### Préparation des champs historiques
+
+`/prepareHistoricalVehicleFields` est une route JSON-RPC interne réservée à un
+utilisateur Odoo connecté (`auth='user'`). Elle accepte uniquement les modèles
+`crm.lead` et `sale.order` et retourne toujours une structure explicite :
+
+```json
+{
+  "values": {"nom_technique_du_champ": "valeur"},
+  "warnings": ["message non bloquant"]
+}
+```
+
+La route est appelée par le dialogue uniquement après la réutilisation ou la
+création du `fleet.vehicle`, au moment de la confirmation. Elle lit avec les
+droits de l'utilisateur courant, sans `sudo`, et sérialise seulement les champs
+Fleet nécessaires. Les valeurs sont ensuite fusionnées dans le dictionnaire
+de `record.update()` ; la route ne persiste pas directement les champs de la
+piste ou du devis.
+
+Les noms de marque et de modèle sont comparés après normalisation. Un référentiel
+historique non vide et sans correspondance est créé à la confirmation ; une
+source vide, une correspondance ambiguë, une valeur d'énergie non supportée ou
+une absence de droits produit un avertissement et conserve la valeur historique
+existante. Le kilométrage n'est jamais préparé. Aucun `ir.model.fields` n'est
+créé, supprimé, renommé ou migré par cette route.
 
 ## X'Glass (`controllers/xglass.py`)
 

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from odoo import fields, _
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.http import Controller, request, route
 import logging
 import base64
@@ -215,6 +215,261 @@ def _vsf_article_payload(article_details, discount):
     return article
 
 
+HISTORICAL_VEHICLE_FIELD_TARGETS = {
+    'crm.lead': {
+        'license_plate': 'x_studio_field_NVioD',
+        'brand': 'x_studio_field_KyCjB',
+        'model': 'x_studio_field_ZhaeY',
+        'vin': 'x_studio_field_PfJlB',
+        'fuel_type': 'x_studio_field_TAhpP',
+        'detail_model': 'x_studio_field_i8fWl',
+        'date_mec': 'x_studio_field_Eh6Wd',
+    },
+    'sale.order': {
+        'license_plate': 'x_studio_immatriculation_',
+        'brand': 'x_studio_many2one_field_rP62C',
+        'model': 'x_studio_many2one_field_DkgHx',
+        'vin': 'x_studio_vin_',
+        'fuel_type': 'x_studio_nergie_moteur',
+        'detail_model': 'x_studio_dtails_modle',
+        'date_mec': 'x_studio_date_1re_mec',
+    },
+}
+
+HISTORICAL_VEHICLE_SOURCE_FIELDS = (
+    'license_plate',
+    'vin_sn',
+    'model_id',
+    'x_studio_detail_model',
+    'x_studio_date_mec',
+    'fuel_type',
+)
+
+HISTORICAL_FUEL_TYPE_LABELS = {
+    'diesel': 'Diesel',
+    'gasoline': 'Essence',
+    'electric': 'Électrique',
+}
+
+
+def _historical_text(value):
+    """Retourne une source textuelle nettoyée, ou une chaîne vide."""
+    return str(value).strip() if value else ''
+
+
+def _historical_normalized_name(value):
+    return _historical_text(value).casefold()
+
+
+def _historical_record_values(record, field_names):
+    rows = record.read(list(field_names))
+    return rows[0] if rows else {}
+
+
+def _historical_many2one_id(value):
+    if isinstance(value, (list, tuple)):
+        return value[0] if value else False
+    return getattr(value, 'id', value) or False
+
+
+def _historical_target_is_available(target_model, field_name):
+    model_fields = getattr(target_model, '_fields', None)
+    return model_fields is None or field_name in model_fields
+
+
+def _add_historical_value(target_model, field_name, value, values, warnings):
+    if not _historical_target_is_available(target_model, field_name):
+        warnings.append(
+            _("Le champ historique %s est absent sur %s ; aucune écriture.")
+            % (field_name, target_model._name)
+        )
+        return
+    values[field_name] = value
+
+
+def _historical_reference_value(env, model_name, source_name, label, warnings):
+    """Réutilise ou crée une valeur du référentiel historique par ``x_name``."""
+    normalized_name = _historical_normalized_name(source_name)
+    if not normalized_name:
+        warnings.append(
+            _("%s Fleet absent : le champ historique reste inchangé.") % label
+        )
+        return None
+
+    reference_model = env[model_name]
+    try:
+        searchable_model = reference_model.with_context(active_test=False)
+    except AttributeError:
+        searchable_model = reference_model
+    try:
+        records = searchable_model.search([('x_name', '!=', False)])
+        matches = []
+        for record in records:
+            record_values = _historical_record_values(record, ('x_name',))
+            if _historical_normalized_name(record_values.get('x_name')) == normalized_name:
+                matches.append((record, _historical_text(record_values.get('x_name'))))
+    except AccessError:
+        warnings.append(
+            _("Lecture du référentiel historique %s interdite ; le champ reste inchangé.")
+            % label
+        )
+        return None
+
+    if len(matches) > 1:
+        warnings.append(
+            _("%s historique ambigu (%s correspondances) : le champ reste inchangé.")
+            % (label, len(matches))
+        )
+        return None
+    if matches:
+        record, record_name = matches[0]
+        return [record.id, record_name]
+
+    if normalized_name == 'inconnu':
+        warnings.append(
+            _("La valeur « Inconnu » n'est pas créée pour %s ; le champ reste inchangé.")
+            % label
+        )
+        return None
+    try:
+        record = reference_model.create({'x_name': _historical_text(source_name)})
+    except AccessError:
+        warnings.append(
+            _("Création de la valeur historique %s interdite par les droits ; le champ reste inchangé.")
+            % label
+        )
+        return None
+    return [record.id, _historical_text(source_name)]
+
+
+def _historical_date_value(value):
+    if not value:
+        return None
+    try:
+        date_value = fields.Date.to_date(value)
+    except (TypeError, ValueError):
+        if not isinstance(value, str):
+            return None
+        try:
+            date_value = datetime.strptime(value.strip(), '%m/%Y').date()
+        except ValueError:
+            return None
+    return date_value.strftime('%m/%Y') if date_value else None
+
+
+def _historical_fuel_value(value):
+    normalized_value = _historical_normalized_name(value)
+    if normalized_value in HISTORICAL_FUEL_TYPE_LABELS:
+        return HISTORICAL_FUEL_TYPE_LABELS[normalized_value]
+    if normalized_value == 'full_hybrid' or normalized_value.startswith('full_hybrid_'):
+        return 'Hybride'
+    if normalized_value.startswith('plug_in_hybrid_'):
+        return 'Hybride'
+    return None
+
+
+def _historical_vehicle_payload(env, vehicle_id, res_model):
+    """Sérialise les seules valeurs historiques autorisées pour un véhicule."""
+    if isinstance(vehicle_id, bool) or not isinstance(vehicle_id, int) or vehicle_id <= 0:
+        raise UserError(_("vehicle_id doit être un entier strictement positif."))
+    if res_model not in HISTORICAL_VEHICLE_FIELD_TARGETS:
+        raise UserError(_("res_model doit être crm.lead ou sale.order."))
+
+    warnings = []
+    values = {}
+    target_model = env[res_model]
+    try:
+        vehicle = env['fleet.vehicle'].search([('id', '=', vehicle_id)], limit=1)
+        vehicle_values = _historical_record_values(vehicle, HISTORICAL_VEHICLE_SOURCE_FIELDS)
+    except AccessError:
+        warnings.append(_("Lecture du véhicule Fleet interdite ; aucune valeur historique n'est préparée."))
+        return {'values': values, 'warnings': warnings}
+    if not vehicle_values:
+        warnings.append(_("Véhicule %s introuvable ou inaccessible.") % vehicle_id)
+        return {'values': values, 'warnings': warnings}
+
+    targets = HISTORICAL_VEHICLE_FIELD_TARGETS[res_model]
+    license_plate = _historical_text(vehicle_values.get('license_plate'))
+    if license_plate:
+        _add_historical_value(target_model, targets['license_plate'], license_plate, values, warnings)
+
+    vin = _historical_text(vehicle_values.get('vin_sn'))
+    if vin:
+        _add_historical_value(target_model, targets['vin'], vin, values, warnings)
+
+    model_values = {}
+    model_readable = True
+    model_id = _historical_many2one_id(vehicle_values.get('model_id'))
+    if model_id:
+        try:
+            model = env['fleet.vehicle.model'].browse(model_id)
+            model_values = _historical_record_values(model, ('name', 'brand_id'))
+        except AccessError:
+            model_readable = False
+            warnings.append(_("Lecture du modèle Fleet interdite ; les champs marque/modèle restent inchangés."))
+
+    brand_name = ''
+    brand_id = _historical_many2one_id(model_values.get('brand_id'))
+    brand_readable = model_readable
+    if model_readable and brand_id:
+        try:
+            brand = env['fleet.vehicle.model.brand'].browse(brand_id)
+            brand_values = _historical_record_values(brand, ('name',))
+            brand_name = _historical_text(brand_values.get('name'))
+        except AccessError:
+            brand_readable = False
+            warnings.append(_("Lecture de la marque Fleet interdite ; le champ historique reste inchangé."))
+    brand_value = None
+    if brand_readable:
+        brand_value = _historical_reference_value(
+            env,
+            'x_rpbm_marques_voitures',
+            brand_name,
+            _('Marque'),
+            warnings,
+        )
+    if brand_value is not None:
+        _add_historical_value(target_model, targets['brand'], brand_value, values, warnings)
+
+    model_name = _historical_text(model_values.get('name'))
+    model_value = None
+    if model_readable:
+        model_value = _historical_reference_value(
+            env,
+            'x_rpbm_modeles_voitures',
+            model_name,
+            _('Modèle'),
+            warnings,
+        )
+    if model_value is not None:
+        _add_historical_value(target_model, targets['model'], model_value, values, warnings)
+
+    fuel_type = _historical_text(vehicle_values.get('fuel_type'))
+    if fuel_type:
+        fuel_value = _historical_fuel_value(fuel_type)
+        if fuel_value is None:
+            warnings.append(
+                _("Énergie Fleet non prise en charge (%s) : le champ historique reste inchangé.")
+                % fuel_type
+            )
+        else:
+            _add_historical_value(target_model, targets['fuel_type'], fuel_value, values, warnings)
+
+    detail_model = _historical_text(vehicle_values.get('x_studio_detail_model'))
+    if detail_model:
+        _add_historical_value(target_model, targets['detail_model'], detail_model, values, warnings)
+
+    raw_date_mec = vehicle_values.get('x_studio_date_mec')
+    if raw_date_mec:
+        date_mec = _historical_date_value(raw_date_mec)
+        if date_mec is None:
+            warnings.append(_("Date MEC Fleet invalide : le champ historique reste inchangé."))
+        else:
+            _add_historical_value(target_model, targets['date_mec'], date_mec, values, warnings)
+
+    return {'values': values, 'warnings': warnings}
+
+
 def _touch_agent_lock(f):
     """À placer directement sous @route, pour que le UserError levé ici ne
     soit jamais avalé par le try/except propre à certaines routes."""
@@ -322,6 +577,11 @@ class AgentController(Controller):
             return vehicule.read()[0]
         else:
             return False
+
+    @route('/prepareHistoricalVehicleFields', auth='user', type='json')
+    def prepare_historical_vehicle_fields(self, vehicle_id: int, res_model: str):
+        """Prépare les champs historiques depuis un véhicule Fleet autorisé."""
+        return _historical_vehicle_payload(request.env, vehicle_id, res_model)
 
     @route('/createVehicule', auth='user', type='json')
     def createVehicule(self,immatriculation:str, partner_id:int, vehicule_info:dict={}, vehicule_meta:dict={}):

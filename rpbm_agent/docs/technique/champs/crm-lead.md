@@ -4,8 +4,8 @@ Modèle porteur de la Piste/Opportunité. Tous les champs `x_studio_*` consommé
 
 | Champ | Type | Related → | Origine | Obsolète | Rôle |
 |---|---|---|---|---|---|
-| `x_studio_field_NVioD` | char | — | Studio (existant) | non | Immatriculation — champ historique conservé (lié aux factures/commandes), rendu calculé à partir du véhicule lié |
-| `x_studio_field_KyCjB` / `x_studio_field_ZhaeY` | many2one | — | Studio (existant) | **oui, `[Obsolète]`** | Marque/modèle véhicule — doublons/créations sauvages historiques ; volontairement exclus des nouvelles vues |
+| `x_studio_field_NVioD` | char | — | Studio (existant) | non | Immatriculation — champ historique conservé (lié aux factures/commandes), renseigné à la confirmation depuis le véhicule lié |
+| `x_studio_field_KyCjB` / `x_studio_field_ZhaeY` | many2one | — | Studio (existant) | **oui, `[Obsolète]`** | Marque/modèle véhicule historiques ; conservés et renseignés si la correspondance Fleet est déterministe |
 | `x_studio_vehicle_id` | many2one → `fleet.vehicle` | — | `pre_init_hook` (nouveau) | non | Véhicule Odoo lié (créé ou réutilisé) |
 | `x_studio_categorie_xglass` | char | — | `pre_init_hook` (nouveau) | non | Catégorie/calque X'Glass sélectionné (ex : Pare-brise) |
 | `x_studio_field_eENQz` ("Pièce concernée") | selection | — | Studio (existant) | non | 4 valeurs (`Pare-Brise`/`Lunette arrière`/`Glace Latérale`/`Autre...`) pilotant le forfait de pose — écrit par le widget via `pieceConcerneeField`, valeur suggérée depuis le calque X'Glass, visible et modifiable |
@@ -13,25 +13,36 @@ Modèle porteur de la Piste/Opportunité. Tous les champs `x_studio_*` consommé
 | `x_studio_field_NwRik` ("Eurocode Complet") | char | — | Studio (existant) | non | Eurocode complet, saisi manuellement par l'utilisateur une fois la pièce confirmée — **jamais écrit par le widget** |
 | `x_studio_eurocode_joint` ("Eurocode Joint") | char | — | Studio (existant) | non | Eurocode du joint, saisi manuellement si nécessaire — **jamais écrit par le widget** |
 
-## Référentiel Fleet
+## Référentiel Fleet et rétrocompatibilité historique
 
 Le véhicule Fleet lié par `x_studio_vehicle_id` est la source canonique pour
-les nouveaux dossiers. Le module expose des champs `related` stockés, sans
-écrire dans les anciennes relations Studio `x_studio_field_KyCjB` (marque) et
-`x_studio_field_ZhaeY` (modèle) :
+les nouveaux dossiers. Le lot AG01-01 ne crée plus les huit champs techniques
+`x_rpbm_vehicle_*` (ni sur `crm.lead`, ni sur `sale.order`). Les champs de même
+nom qui existeraient déjà dans une base restent toutefois intacts : aucun champ
+historique, obsolète ou ancien alias n'est supprimé, renommé ou migré.
 
-| Champ | Related → | Rôle |
+Lors de la confirmation du dialogue, le backend lit explicitement le véhicule
+Fleet puis prépare les champs historiques suivants :
+
+| Champ historique | Source Fleet | Règle |
 |---|---|---|
-| `x_rpbm_vehicle_brand_id` | `x_studio_vehicle_id.model_id.brand_id` | Marque Fleet |
-| `x_rpbm_vehicle_model_id` | `x_studio_vehicle_id.model_id` | Modèle Fleet |
-| `x_rpbm_vehicle_vin` | `x_studio_vehicle_id.vin_sn` | VIN |
-| `x_rpbm_vehicle_detail_model` | `x_studio_vehicle_id.x_studio_detail_model` | Détail modèle |
-| `x_rpbm_vehicle_fuel_type` | `x_studio_vehicle_id.fuel_type` | Énergie |
-| `x_rpbm_vehicle_date_mec` | `x_studio_vehicle_id.x_studio_date_mec` | Date de première MEC |
+| `x_studio_field_NVioD` | `license_plate` | Immatriculation |
+| `x_studio_field_KyCjB` | `model_id.brand_id.name` | Référentiel historique unique, créé s'il est non vide et sans ambiguïté |
+| `x_studio_field_ZhaeY` | `model_id.name` | Référentiel historique unique, créé s'il est non vide et sans ambiguïté |
+| `x_studio_field_PfJlB` | `vin_sn` | Écrit seulement si Fleet est renseigné |
+| `x_studio_field_TAhpP` | `fuel_type` | `Diesel`, `Essence`, `Électrique` ou `Hybride` selon la correspondance supportée |
+| `x_studio_field_i8fWl` | `x_studio_detail_model` | Écrit seulement si Fleet est renseigné |
+| `x_studio_field_Eh6Wd` | `x_studio_date_mec` | Texte au format `MM/YYYY` |
 
-Les alias `x_rpbm_vehicle_brand_name` et `x_rpbm_vehicle_model_name` servent
-aux vues et QWeb. Les fiches historiques sans véhicule Fleet ne sont pas
-reprises et peuvent donc rester vides dans ces nouveaux affichages.
+Une source vide, une valeur ambiguë, une énergie non supportée ou un manque de
+droits déclenche un avertissement non bloquant et conserve la valeur historique
+existante. Le kilométrage n'est jamais fabriqué ni modifié. Sur un devis,
+les champs historiques sont les miroirs de l'opportunité et ne sont préparés
+que lorsqu'une opportunité est présente.
+
+Les champs Fleet réels `x_studio_detail_model` et `x_studio_date_mec`, ainsi que
+`x_studio_vehicle_id`, restent pris en charge. La référence constructeur
+`x_rpbm_vsf_constructor_reference` reste indépendante et inchangée.
 
 ## Structure des 3 champs Eurocode
 
@@ -53,7 +64,12 @@ Le widget ciblait auparavant `x_studio_base_eurocode` par défaut (hérité de `
 
 ## Vue
 
-Affiché dans l'onglet "Véhicule (X'Glass)" ajouté par `views/crm_lead_views.xml` (hérite de `crm.crm_lead_view_form`) : widget + `x_studio_vehicle_id` + `x_studio_categorie_xglass` uniquement — les champs immatriculation/eurocode sont déjà visibles ailleurs sur ce formulaire (vues Studio existantes), donc volontairement non dupliqués ici.
+L'onglet "Véhicule (X'Glass)" ajouté par `views/crm_lead_views.xml` affiche le
+widget, `x_studio_vehicle_id` et `x_studio_categorie_xglass`. Les champs
+historiques nécessaires à la préparation peuvent être chargés dans un groupe
+invisible, mais les groupes d'identité Fleet en doublon ne sont pas affichés.
+Les champs immatriculation/eurocode déjà visibles ailleurs sur ce formulaire ne
+sont pas dupliqués ici.
 
 ## Lu/écrit par
 

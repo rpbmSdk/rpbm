@@ -57,7 +57,7 @@ flowchart TD
     Z --> AA[Fermeture de la fenêtre — la piste affiche les nouvelles données]
 ```
 
-Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardés au clic sur "Enregistrer" — ou immédiatement via "Confirmer et enregistrer") : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode — détail exact des champs et de leurs conditions d'écriture dans [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md).
+Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardés au clic sur "Enregistrer" — ou immédiatement via "Confirmer et enregistrer") : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et, lorsque les données Fleet sont déterministes, les champs historiques véhicule (marque, modèle, VIN, énergie, détail modèle et date MEC). Une source vide, ambiguë ou non autorisée avertit sans bloquer ; détail exact dans [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md).
 
 ### Ordre de Vente (`sale.order`)
 

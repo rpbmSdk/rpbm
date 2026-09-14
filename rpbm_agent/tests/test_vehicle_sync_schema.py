@@ -4,24 +4,65 @@ from odoo.tests.common import TransactionCase
 
 from ..hooks import (
     FIELDS_TO_ENSURE,
+    _replace_legacy_vehicle_references,
     _replace_legacy_vehicle_text,
     _write_view_reference_replacement,
 )
 
 
 class TestVehicleSynchronizationSchema(TransactionCase):
-    def test_fleet_related_fields_are_declared_on_crm_and_sale_order(self):
+    def test_duplicate_fleet_aliases_are_not_declared_for_future_creation(self):
         specs = {(spec["model"], spec["name"]): spec for spec in FIELDS_TO_ENSURE}
 
-        crm_brand = specs[("crm.lead", "x_rpbm_vehicle_brand_id")]
-        self.assertEqual(crm_brand["relation"], "fleet.vehicle.model.brand")
-        self.assertEqual(crm_brand["related"], "x_studio_vehicle_id.model_id.brand_id")
-        self.assertTrue(crm_brand["store"])
+        duplicate_names = {
+            "x_rpbm_vehicle_brand_id",
+            "x_rpbm_vehicle_model_id",
+            "x_rpbm_vehicle_brand_name",
+            "x_rpbm_vehicle_model_name",
+            "x_rpbm_vehicle_vin",
+            "x_rpbm_vehicle_detail_model",
+            "x_rpbm_vehicle_fuel_type",
+            "x_rpbm_vehicle_date_mec",
+        }
+        self.assertFalse(
+            duplicate_names.intersection(spec["name"] for spec in FIELDS_TO_ENSURE)
+        )
+        self.assertFalse(
+            any(
+                spec["name"] in duplicate_names
+                for spec in FIELDS_TO_ENSURE
+                if spec["model"] in {"crm.lead", "sale.order"}
+            )
+        )
 
-        sale_model = specs[("sale.order", "x_rpbm_vehicle_model_id")]
-        self.assertEqual(sale_model["relation"], "fleet.vehicle.model")
-        self.assertEqual(sale_model["related"], "opportunity_id.x_rpbm_vehicle_model_id")
-        self.assertTrue(sale_model["store"])
+    def test_canonical_and_existing_fleet_fields_remain_declared(self):
+        specs = {(spec["model"], spec["name"]): spec for spec in FIELDS_TO_ENSURE}
+
+        for model in ("crm.lead", "sale.order"):
+            self.assertIn((model, "x_studio_vehicle_id"), specs)
+
+        crm_vehicle = specs[("crm.lead", "x_studio_vehicle_id")]
+        self.assertEqual(crm_vehicle["relation"], "fleet.vehicle")
+
+        sale_vehicle = specs[("sale.order", "x_studio_vehicle_id")]
+        self.assertEqual(sale_vehicle["relation"], "fleet.vehicle")
+        self.assertEqual(sale_vehicle["related"], "opportunity_id.x_studio_vehicle_id")
+        self.assertTrue(sale_vehicle["store"])
+
+        for field_name, field_type in (
+            ("x_studio_detail_model", "char"),
+            ("x_studio_date_mec", "date"),
+        ):
+            fleet_field = specs[("fleet.vehicle", field_name)]
+            self.assertEqual(fleet_field["ttype"], field_type)
+
+        vsf_reference = specs[("sale.order", "x_rpbm_vsf_constructor_reference")]
+        self.assertEqual(vsf_reference["related"], "opportunity_id.x_studio_field_MNzfJ")
+        self.assertTrue(vsf_reference["store"])
+
+    def test_legacy_view_rewrite_migration_is_now_a_noop(self):
+        self.assertIsNone(_replace_legacy_vehicle_references(object()))
+
 
     def test_legacy_qweb_references_are_replaced_without_touching_similar_names(self):
         source = (

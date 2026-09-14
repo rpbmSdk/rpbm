@@ -10,13 +10,20 @@
 | `x_studio_categorie_xglass` | `selectedCalque.libelle` | si une catégorie est sélectionnée |
 | `x_studio_field_eENQz` (Pièce concernée) | suggestion X'Glass visible et modifiable | si une catégorie est sélectionnée |
 | `x_studio_field_ORIyy` (Base Eurocode) | `state.baseEurocode` | si un eurocode est renseigné — nécessite la surcharge `this.baseEurocodeField = 'x_studio_field_ORIyy'` dans `CrmLead` (sinon écriture dans `x_studio_base_eurocode`, inexistant sur `crm.lead`) |
+| `x_studio_field_KyCjB` / `x_studio_field_ZhaeY` | marque/modèle du véhicule Fleet | si le nom est non vide et la correspondance du référentiel historique est unique ; une valeur manquante peut être créée à la confirmation |
+| `x_studio_field_PfJlB` / `x_studio_field_i8fWl` | VIN / détail modèle Fleet | seulement si la source Fleet est renseignée |
+| `x_studio_field_Eh6Wd` | date MEC Fleet | seulement si renseignée, convertie en texte `MM/YYYY` |
+| `x_studio_field_TAhpP` | énergie Fleet | seulement pour les valeurs supportées ; variantes hybrides → `Hybride` |
 
 - **Persistance** : mise à jour en mémoire (`this.props.record.update(data)`) ; écriture effective en base au clic utilisateur sur "Enregistrer" (bouton "Confirmer"), ou immédiate via `record.save()` (bouton "Confirmer et enregistrer"). Pas de `write` ORM explicite dans ce module.
 - `x_studio_eurocode_joint` (Eurocode Joint) n'est **jamais écrit par le widget** : il reste saisi manuellement. L'Eurocode complet est, lui, renseigné uniquement quand un article VSF principal est désigné.
 
-Depuis la synchronisation Fleet, le véhicule lié alimente aussi les nouveaux
-champs Fleet de marque, modèle, VIN, détail, énergie et date MEC. Si un article
-VSF est sélectionné comme **article principal**, son Eurocode complet,
+Le véhicule Fleet lié reste la source de vérité pour la marque, le modèle, le
+VIN, le détail, l'énergie et la date MEC. Depuis AG01-01, la confirmation
+prépare les champs historiques existants ci-dessus ; elle ne crée plus les
+alias `x_rpbm_vehicle_*`. Une source vide, ambiguë ou non autorisée produit un
+avertissement sans bloquer et conserve l'ancienne valeur. Le kilométrage n'est
+jamais modifié. Si un article VSF est sélectionné comme **article principal**, son Eurocode complet,
 désignation, stock et référence constructeur sont reportés ; l'Eurocode joint
 et les prix restent manuels ou calculés.
 
