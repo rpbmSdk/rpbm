@@ -1,6 +1,6 @@
 {
     "name": "RPBM Agent",
-    "version": "17.0.260914.3",
+    "version": "17.0.260914.4",
     "category": "Tools",
     "description": """""",
     "author": "Paradigme SASU",
@@ -9,6 +9,7 @@
         "views/crm_lead_views.xml",
         "views/sale_order_views.xml",
         "views/sale_order_carrier_views.xml",
+        "views/sale_order_report_views.xml",
         "views/fleet_vehicle_views.xml",
         "views/product_product_views.xml",
         "views/product_template_views.xml",

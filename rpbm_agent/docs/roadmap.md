@@ -16,6 +16,41 @@
 > est limité aux nouveaux devis et la confirmation standard exige un mode de
 > remise. Les rapports et les champs historiques restent inchangés ; leur
 > migration demeure AG01-04.
+>
+> **AG01-04 — implémenté (2026-09-14), à vérifier en live après déploiement.**
+> La [cartographie des rapports](audits/AG-01-04-cartographie-rapports.md)
+> (items 1-2) reste la référence de la chaîne QWeb des 6 familles de rapports.
+> L'item 3 est livré dans `views/sale_order_report_views.xml` : cinq vues
+> module versionnées héritent des vues QWeb Studio par leur external id, sans
+> aucune écriture directe en base. Les 5 rapports (1499, 1505, 1513, 1519,
+> 1591) affichent désormais le mode de remise `carrier_id`, avec repli explicite
+> sur `crm.lead.x_studio_lieu_intervention` pour les dossiers antérieurs à
+> AG01-03 ; 1505 et 1513 n'affichent plus qu'une seule marque et un seul modèle.
+> L'item 4 (recette PDF) et l'item 5 (non-régression) restent à faire en live.
+>
+> **Deux constats ont inversé le plan initial, mesures à l'appui.** Les xpath
+> ont été écrits contre l'arch *combinée* réelle de chaque rapport
+> (`get_combined_arch()`), pas contre l'`arch_db` brute des personnalisations :
+> les vues Studio enchaînent des `position="replace"` successifs, si bien que la
+> cartographie, qui comptait les occurrences textuelles de l'`arch_db`, a
+> surestimé les doublons. Conséquences : (1) il n'y a **aucun doublon** à
+> supprimer sur 1499 ni sur 1591, contrairement à ce qu'annonçait la
+> cartographie ; (2) la consolidation marque/modèle de 1505 et 1513 retient les
+> champs `related` `x_studio_many2one_field_rP62C` / `_DkgHx` (7 211 et 7 182
+> devis renseignés sur 7 353, et cibles d'écriture effectives d'AG01-01/02 dans
+> `controllers/main.py`) et non `x_studio_marque__1` / `x_studio_modle_`
+> (**2 devis sur 7 353**) : l'inverse aurait vidé marque et modèle sur ~7 200
+> devis. La proposition §2bis de la cartographie est donc à corriger sur ce
+> point.
+>
+> **Deux questions restent ouvertes, hors de ce lot.** Le kilométrage
+> (AG01-F05) n'est pas tranché côté métier : les deux variantes cohabitent
+> toujours sur 1505 et 1513, et la mesure ajoute un élément de décision —
+> `x_studio_kilomtrage__1` est renseigné sur **0** devis sur 7 353, contre
+> 3 070 pour `x_studio_kilomtrage_1` (`related` vers le CRM). Et le rapport
+> 1519, seul à lire `x_studio_marque__1` / `x_studio_modle_` sans variante
+> `related`, sort donc aujourd'hui **marque et modèle vides** : constat hors
+> périmètre de ce lot, à arbitrer avec AG01-F05.
 
 > **Fait (2026-07-29).** Les cartes VSF supportent désormais la sélection multiple par code, les suggestions sont enrichies depuis leurs fiches, et chaque carte sélectionnée porte ses propres actions produit/devis. Une sélection principale occupe toute la largeur de la grille : ses suggestions compactes restent immédiatement visibles. Les dimensions sans unité du bloc VSF « Dimensions » sont normalisées en millimètres et la description produit conserve les informations visibles de la fiche. Le retrait du devis est limité aux lignes ajoutées par le widget pendant la dialog.
 

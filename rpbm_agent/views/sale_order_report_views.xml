@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        AG01-04 — migration versionnee des rapports PDF RPBM.
+
+        Chaque vue ci-dessous herite d'une vue QWeb Studio existante par son
+        external id stable (module `studio_customization`, genere par Studio et
+        installe sans dependance : il est charge avant `rpbm_agent`, aucune
+        entree `depends` n'est donc necessaire). Les vues Studio ne sont jamais
+        modifiees en base : le module ajoute une couche d'extension par-dessus.
+
+        Les xpath sont ecrits contre l'arch *combinee* de chaque document
+        (`ir.ui.view.get_combined_arch()`, lu en lecture seule sur rpbm-preprod
+        le 2026-09-14), et non contre l'arch_db brute des personnalisations :
+        les vues Studio enchainent des `position="replace"` successifs, si bien
+        qu'une occurrence presente dans l'arch_db peut avoir disparu du rendu
+        final. Chaque vue herite du dernier maillon de sa chaine pour que ses
+        xpath s'appliquent apres toutes les insertions Studio.
+
+        Deux ecarts assumes par rapport au plan initial du lot, tous deux
+        etablis sur des mesures faites sur l'instance (voir docs/roadmap.md) :
+
+        1. Le sens de la consolidation marque/modele est inverse. Les variantes
+           `x_studio_marque__1` / `x_studio_modle_` (char autonomes) sont
+           renseignees sur 2 devis / 7353, tandis que
+           `x_studio_many2one_field_rP62C` / `x_studio_many2one_field_DkgHx`
+           (related vers `opportunity_id.x_studio_field_KyCjB` / `_ZhaeY`) le
+           sont sur 7211 et 7182 / 7353 — et ce sont ces dernieres que le module
+           alimente deja depuis Fleet (AG01-01/02,
+           `controllers/main.py:HISTORICAL_VEHICLE_FIELD_TARGETS`). Conserver le
+           char aurait vide marque et modele sur ~7200 devis.
+        2. Aucune deduplication n'est appliquee aux rapports 1499 et 1591 : leur
+           arch combinee n'affiche qu'une seule fois chaque information, et
+           leurs marque/modele passent deja par `opportunity_id.x_studio_field_
+           KyCjB` / `_ZhaeY`, c'est-a-dire la meme donnee que les related
+           conserves ailleurs. Rien a consolider.
+
+        ponytail: la question kilometrage (`x_studio_kilomtrage__1`, 0/7353, vs
+        `x_studio_kilomtrage_1`, 3070/7353) reste hors de ce lot — elle est
+        ouverte cote metier (AG01-F05). Aucune des deux variantes n'est retiree,
+        y compris quand elles cohabitent dans la meme cellule (1505, 1513).
+    -->
+
+    <!-- 1499 — RPBM Devis / Commande : ajout du mode de remise. -->
+    <template id="report_rpbm_devis_commande_carrier"
+              inherit_id="studio_customization.odoo_studio_report_s_ac7d3db8-340a-4fdd-807c-2dbafe95bb60"
+              priority="110">
+        <xpath expr="//span[@t-field='doc.opportunity_id.x_studio_field_aIM13']/ancestor::div[2]"
+               position="after">
+            <div class="row" name="rpbm_carrier">
+                <div class="col-12">
+                    <span><strong>Mode de remise / lieu : </strong></span>
+                    <t t-if="doc.carrier_id">
+                        <span t-field="doc.carrier_id"/>
+                        <span t-if="doc.carrier_id.carrier_description"
+                              t-out="doc.carrier_id.carrier_description"/>
+                    </t>
+                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
+                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    </t>
+                    <t t-else="">
+                        <span>Non renseigne</span>
+                    </t>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- 1505 — RPBM Ordre de Reparation : marque/modele uniques + mode de remise. -->
+    <template id="report_rpbm_ordre_reparation_vehicule"
+              inherit_id="studio_customization.odoo_studio_studio_c_5f4f5a86-237d-4056-ab5d-5cd23f66c22c"
+              priority="110">
+        <xpath expr="//span[@t-field='doc.x_studio_marque__1']" position="replace"/>
+        <xpath expr="//span[@t-field='doc.x_studio_modle_']" position="replace"/>
+        <xpath expr="//span[@t-field='doc.x_studio_many2one_field_DkgHx.x_name']/ancestor::div[2]"
+               position="after">
+            <div class="row" name="rpbm_carrier">
+                <div class="col-12">
+                    <span><strong>Mode de remise / lieu : </strong></span>
+                    <t t-if="doc.carrier_id">
+                        <span t-field="doc.carrier_id"/>
+                        <span t-if="doc.carrier_id.carrier_description"
+                              t-out="doc.carrier_id.carrier_description"/>
+                    </t>
+                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
+                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    </t>
+                    <t t-else="">
+                        <span>Non renseigne</span>
+                    </t>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- 1513 — RPBM OR : marque/modele uniques + mode de remise. -->
+    <template id="report_rpbm_or_vehicule"
+              inherit_id="studio_customization.odoo_studio_report_s_a834eac1-0318-4f74-bc4e-6d416f0ce2e1"
+              priority="110">
+        <xpath expr="//span[@t-field='doc.x_studio_marque__1']" position="replace"/>
+        <xpath expr="//span[@t-field='doc.x_studio_modle_']" position="replace"/>
+        <xpath expr="//span[@t-field='doc.x_studio_many2one_field_DkgHx.x_name']/ancestor::div[2]"
+               position="after">
+            <div class="row" name="rpbm_carrier">
+                <div class="col-12">
+                    <span><strong>Mode de remise / lieu : </strong></span>
+                    <t t-if="doc.carrier_id">
+                        <span t-field="doc.carrier_id"/>
+                        <span t-if="doc.carrier_id.carrier_description"
+                              t-out="doc.carrier_id.carrier_description"/>
+                    </t>
+                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
+                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    </t>
+                    <t t-else="">
+                        <span>Non renseigne</span>
+                    </t>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!--
+        1519 — RPBM Devis / Commande brouillon : ajout du mode de remise
+        uniquement. Le bloc vehicule de ce rapport est deja unique ; il lit en
+        revanche `x_studio_marque__1` / `x_studio_modle_` (2/7353 renseignes),
+        donc marque et modele y sortent vides. Ce constat est hors perimetre de
+        ce lot (aucune consigne de changement de source sur 4921) et remonte a
+        la roadmap.
+    -->
+    <template id="report_rpbm_devis_brouillon_carrier"
+              inherit_id="studio_customization.report_saleorder_doc_51c4118c-4f77-4aac-aea2-16fb8c467006"
+              priority="110">
+        <xpath expr="//span[@t-field='doc.x_studio_modle_']/ancestor::div[2]"
+               position="after">
+            <div class="row" name="rpbm_carrier">
+                <div class="col-12">
+                    <span><strong>Mode de remise / lieu : </strong></span>
+                    <t t-if="doc.carrier_id">
+                        <span t-field="doc.carrier_id"/>
+                        <span t-if="doc.carrier_id.carrier_description"
+                              t-out="doc.carrier_id.carrier_description"/>
+                    </t>
+                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
+                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    </t>
+                    <t t-else="">
+                        <span>Non renseigne</span>
+                    </t>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!--
+        1591 — DBDG RPBM : ajout du mode de remise. Marque et modele y sont deja
+        lus sur `doc.opportunity_id.x_studio_field_KyCjB` / `_ZhaeY`, soit
+        exactement la source des related conserves sur 1505 et 1513 : aucune
+        substitution n'est necessaire. `x_studio_lieu_de_sinistre_` /
+        `x_studio_lieu_sinistre_` (lieu du sinistre assurance) restent intacts.
+    -->
+    <template id="report_rpbm_dbdg_carrier"
+              inherit_id="studio_customization.odoo_studio_studio_c_0f4704bf-cc93-4c06-8b4d-880b08a2ec5b"
+              priority="110">
+        <xpath expr="//span[@t-field='doc.x_studio_immatriculation_']/ancestor::div[2]"
+               position="after">
+            <div class="row" name="rpbm_carrier">
+                <div class="col-12">
+                    <span><strong>Mode de remise / lieu : </strong></span>
+                    <t t-if="doc.carrier_id">
+                        <span t-field="doc.carrier_id"/>
+                        <span t-if="doc.carrier_id.carrier_description"
+                              t-out="doc.carrier_id.carrier_description"/>
+                    </t>
+                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
+                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    </t>
+                    <t t-else="">
+                        <span>Non renseigne</span>
+                    </t>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>
