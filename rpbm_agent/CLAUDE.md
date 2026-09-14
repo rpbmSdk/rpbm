@@ -21,6 +21,6 @@ Pour exécuter `controllers/vsf.py` / `controllers/xglass.py` en standalone (hor
 - `XGLASS_USER`, `XGLASS_PASS` — identifiants du portail X'Glass
 - `VSF_LOGIN`, `VSF_PASSWORD` — identifiants du portail VSF
 
-Ne jamais afficher, logger ou recopier le contenu de ce fichier. En production (exécution via Odoo), ces mêmes identifiants sont configurés en tant que `ir.config_parameter` — voir [`docs/technique/configuration.md`](docs/technique/configuration.md) et [`push_credentials.py`](push_credentials.py) pour les pousser automatiquement depuis ce même `.env`.
+Ne jamais afficher, logger ou recopier le contenu de ce fichier. En production (exécution via Odoo), ces mêmes identifiants sont configurés en tant que `ir.config_parameter` — voir [`docs/technique/configuration.md`](docs/technique/configuration.md) et [`push_credentials.py`](push_credentials.py) pour les pousser automatiquement depuis ce même `.env`. La cible Odoo du script est toutefois résolue exclusivement par le profil sélectionné dans `.paradigme.yaml`, avec les secrets Odoo dans `~/.paradigme/.env` ; ne pas réintroduire de `ODOO_*` dans un `.env` du dépôt.
 
 Le même `.env` contient aussi le **login web de l'instance de dév/staging** (`RPBM_DEV_WEB_URL`/`RPBM_DEV_WEB_LOGIN`/`RPBM_DEV_WEB_PASSWORD`, compte de test dédié) pour la connexion navigateur lors des vérifications via `chrome-devtools`. À distinguer du compte MCP XML-RPC (`RPBM_USERNAME`/`RPBM_PASSWORD` dans `~/.paradigme/.env`, avec clé API — inutilisable pour le login web). Ne jamais afficher ces identifiants.
