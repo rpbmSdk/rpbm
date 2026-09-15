@@ -51,6 +51,39 @@
 > 1519, seul à lire `x_studio_marque__1` / `x_studio_modle_` sans variante
 > `related`, sort donc aujourd'hui **marque et modèle vides** : constat hors
 > périmètre de ce lot, à arbitrer avec AG01-F05.
+>
+> **Item 4 (recette PDF) réalisé en live (2026-09-15) — échec partiel constaté
+> sur 1505 et 1519, non corrigé (décision explicite : hors priorité).** Sur les
+> 3 devis testés (avec `carrier_id`, avec repli `x_studio_lieu_intervention`,
+> sans les deux), les rapports 1499, 1513 et 1591 rendent correctement les 3
+> scénarios du mode de remise, avec marque/modèle uniques sur 1505/1513. **1505
+> et 1519 renvoient une erreur HTTP 500** sur les 3 devis, indépendamment du
+> contenu testé : `AttributeError: 'sale.order' object has no attribute
+> 'amount_by_group'`, dans le tableau des totaux de taxes de l'arch Studio
+> préexistante de ces deux rapports (champ supprimé du modèle depuis Odoo 17,
+> remplacé par `tax_totals` — confirmé absent via `fields_get` et absent de
+> `D:\git\odoo_17` comme champ de `sale.order`). **Confirmé hors périmètre
+> d'AG01-04** : le nœud fautif est le tableau de totaux, pas le bloc
+> `rpbm_carrier` ajouté par ce lot, qui s'applique correctement même sur l'arch
+> combinée de ces deux rapports ; l'erreur est reproductible sur un devis de
+> janvier 2025, donc préexistante et indépendante de `carrier_id`. Le pattern
+> de correction (widget `tax_totals` + `t-call="account.document_tax_totals"`)
+> existe déjà et fonctionne sur 1499/1513 — voir vues Studio 4860/4909. Un plan
+> d'implémentation détaillé existe (xpath `position="replace"` à ajouter dans
+> `views/sale_order_report_views.xml`, avec un point d'attention non tranché :
+> vérifier si 1499 est réellement épargné ou si son propre bloc legacy est
+> simplement un no-op silencieux) mais n'est **pas engagé** — 1505 et 1519 ont
+> `binding_model_id = False` (absents du menu Imprimer standard), jugés non
+> prioritaires. Défaut cosmétique relevé au passage sur les 3 rapports sains :
+> le texte de repli affiche `Non renseigne` sans accent
+> (`views/sale_order_report_views.xml`, 5 occurrences), non corrigé.
+>
+> **Item 5 (non-régression) : confirmé sur le périmètre testé.** Parcours VIN/
+> Fleet (AG01-01/02, commits `addded0`/`071bec8`/`fc734ad`) revérifiés en
+> conditions réelles à la même occasion : VIN nettoyé sans préfixe `var = ...;`,
+> date MEC renseignée, persistance confirmée après rechargement complet, VIN
+> legacy correctement écrasé et VIN Fleet déjà propre correctement préservé
+> (non écrasé par une valeur X'Glass différente).
 
 > **Fait (2026-07-29).** Les cartes VSF supportent désormais la sélection multiple par code, les suggestions sont enrichies depuis leurs fiches, et chaque carte sélectionnée porte ses propres actions produit/devis. Une sélection principale occupe toute la largeur de la grille : ses suggestions compactes restent immédiatement visibles. Les dimensions sans unité du bloc VSF « Dimensions » sont normalisées en millimètres et la description produit conserve les informations visibles de la fiche. Le retrait du devis est limité aux lignes ajoutées par le widget pendant la dialog.
 
