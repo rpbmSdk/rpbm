@@ -8,7 +8,7 @@
             <notebook position="inside">
                 <page name="rpbm_agent_xglass" string="Véhicule (X'Glass)">
                     <group>
-                        <widget name="rpbm_agent_widget"/>
+                        <widget name="rpbm_agent_widget" colspan="2"/>
                         <field name="x_studio_vehicle_id"/>
                         <field name="x_studio_categorie_xglass"/>
                     </group>
