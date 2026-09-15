@@ -27,16 +27,18 @@ Fleet puis prépare les champs historiques suivants :
 | Champ historique | Source Fleet | Règle |
 |---|---|---|
 | `x_studio_field_NVioD` | `license_plate` | Immatriculation |
-| `x_studio_field_KyCjB` | `model_id.brand_id.name` | Référentiel historique unique, créé s'il est non vide et sans ambiguïté |
-| `x_studio_field_ZhaeY` | `model_id.name` | Référentiel historique unique, créé s'il est non vide et sans ambiguïté |
+| `x_studio_field_KyCjB` | `model_id.brand_id.name` | Référentiel historique, créé s'il est non vide et sans correspondance ; en cas d'ambiguïté, la première correspondance est retenue avec un avertissement |
+| `x_studio_field_ZhaeY` | `model_id.name` | Référentiel historique, créé s'il est non vide et sans correspondance ; en cas d'ambiguïté, la première correspondance est retenue avec un avertissement |
 | `x_studio_field_PfJlB` | `vin_sn` | Écrit seulement si Fleet est renseigné |
 | `x_studio_field_TAhpP` | `fuel_type` | `Diesel`, `Essence`, `Électrique` ou `Hybride` selon la correspondance supportée |
 | `x_studio_field_i8fWl` | `x_studio_detail_model` | Écrit seulement si Fleet est renseigné |
 | `x_studio_field_Eh6Wd` | `x_studio_date_mec` | Texte au format `MM/YYYY` |
 
-Une source vide, une valeur ambiguë, une énergie non supportée ou un manque de
-droits déclenche un avertissement non bloquant et conserve la valeur historique
-existante. Le kilométrage n'est jamais fabriqué ni modifié. Sur un devis,
+Une source vide, une énergie non supportée ou un manque de droits déclenche un
+avertissement non bloquant et conserve la valeur historique existante. Une
+valeur ambiguë déclenche également un avertissement, mais la première
+correspondance du référentiel est retenue.
+Le kilométrage n'est jamais fabriqué ni modifié. Sur un devis,
 les champs historiques sont les miroirs de l'opportunité et ne sont préparés
 que lorsqu'une opportunité est présente.
 

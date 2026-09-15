@@ -311,7 +311,7 @@ class TestHistoricalVehicleFields(TestCase):
         self.assertTrue(any('Marque Fleet absent' in warning for warning in payload['warnings']))
         self.assertTrue(any('Modèle Fleet absent' in warning for warning in payload['warnings']))
 
-    def test_ambiguous_references_warn_and_do_not_write(self):
+    def test_ambiguous_references_warn_and_write_first_match(self):
         env = _environment(
             historical_brands=[_Record(31, x_name='RENAULT'), _Record(32, x_name='renault')],
             historical_models=[_Record(41, x_name='CLIO'), _Record(42, x_name='clio')],
@@ -319,10 +319,18 @@ class TestHistoricalVehicleFields(TestCase):
 
         payload = main._historical_vehicle_payload(env, 7, 'crm.lead')
 
-        self.assertNotIn('x_studio_field_KyCjB', payload['values'])
-        self.assertNotIn('x_studio_field_ZhaeY', payload['values'])
-        self.assertTrue(any('Marque historique ambigu' in warning for warning in payload['warnings']))
-        self.assertTrue(any('Modèle historique ambigu' in warning for warning in payload['warnings']))
+        self.assertEqual(payload['values']['x_studio_field_KyCjB'], [31, 'RENAULT'])
+        self.assertEqual(payload['values']['x_studio_field_ZhaeY'], [41, 'CLIO'])
+        self.assertEqual(env['x_rpbm_marques_voitures'].create_calls, [])
+        self.assertEqual(env['x_rpbm_modeles_voitures'].create_calls, [])
+        self.assertTrue(any(
+            'Marque historique ambigu' in warning and 'première correspondance retenue' in warning
+            for warning in payload['warnings']
+        ))
+        self.assertTrue(any(
+            'Modèle historique ambigu' in warning and 'première correspondance retenue' in warning
+            for warning in payload['warnings']
+        ))
 
     def test_metadata_fills_missing_vin_and_date_for_historical_payload(self):
         env = _environment(

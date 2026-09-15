@@ -35,9 +35,11 @@ envoyée, mais ne crée pas de transporteur et ne modifie pas les lignes de vent
 
 Les informations Fleet sont préparées au moment de la confirmation par les
 routes internes `/enrichVehicule` puis `/prepareHistoricalVehicleFields`, puis fusionnées dans le même
-`record.update()` que les autres champs. Une source vide, ambiguë, non
-supportée ou non autorisée produit un avertissement sans bloquer et conserve
-la valeur historique. Le kilométrage n'est jamais modifié. Sans opportunité
+`record.update()` que les autres champs. Une source vide, non supportée ou non
+autorisée produit un avertissement sans bloquer et conserve la valeur
+historique ; une source ambiguë produit un avertissement mais retient la
+première correspondance du référentiel.
+Le kilométrage n'est jamais modifié. Sans opportunité
 liée, le widget est masqué et aucune écriture dans les champs `related` n'est
 proposée. Les informations de l'article principal restent indépendantes.
 

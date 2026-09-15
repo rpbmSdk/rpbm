@@ -59,10 +59,11 @@ route ne persiste directement les champs de la piste ou du devis.
 Les noms de marque et de modèle sont comparés après normalisation. Lorsqu'il
 existe plusieurs variantes normalisées mais une seule orthographe exactement
 égale à la source Fleet, cette valeur canonique est réutilisée ; sinon la
-correspondance reste ambiguë. Un référentiel historique non vide et sans
-correspondance est créé à la confirmation ; une source vide, une ambiguïté,
-une valeur d'énergie non supportée ou une absence de droits produit un
-avertissement et conserve la valeur historique existante. Le kilométrage n'est
+correspondance reste ambiguë : la première correspondance est alors retenue,
+avec un avertissement invitant à vérifier. Un référentiel historique non vide
+et sans correspondance est créé à la confirmation ; une source vide, une valeur
+d'énergie non supportée ou une absence de droits produit un avertissement et
+conserve la valeur historique existante. Le kilométrage n'est
 jamais préparé. Aucun `ir.model.fields` n'est créé, supprimé, renommé ou migré
 par ces routes.
 

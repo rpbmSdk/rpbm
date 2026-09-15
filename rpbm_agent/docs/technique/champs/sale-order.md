@@ -34,9 +34,10 @@ historiques de l'opportunité, puis lu par les miroirs `related` du devis :
 | `x_studio_dtails_modle` | `x_studio_field_i8fWl` | `x_studio_detail_model` |
 | `x_studio_date_1re_mec` | `x_studio_field_Eh6Wd` | `x_studio_date_mec`, format `MM/YYYY` |
 
-Une source vide, une correspondance de référentiel ambiguë, une énergie non
-supportée ou un manque de droits produit un avertissement non bloquant et
-conserve la valeur historique existante. Le kilométrage n'est jamais écrit.
+Une source vide, une énergie non supportée ou un manque de droits produit un
+avertissement non bloquant et conserve la valeur historique existante. Une
+correspondance de référentiel ambiguë produit également un avertissement, mais
+la première correspondance est retenue. Le kilométrage n'est jamais écrit.
 Sans opportunité liée, aucune écriture dans ces champs `related` n'est
 préparée. Les champs Fleet réels et `x_rpbm_vsf_constructor_reference` restent
 inchangés.

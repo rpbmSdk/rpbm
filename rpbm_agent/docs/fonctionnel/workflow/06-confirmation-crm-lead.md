@@ -24,8 +24,10 @@ métadonnées X'Glass complètent les champs Fleet VIN/date manquants ; elles
 servent aussi de repli pour préparer le CRM si l'écriture Fleet est refusée.
 Depuis AG01-01, la confirmation
 prépare les champs historiques existants ci-dessus ; elle ne crée plus les
-alias `x_rpbm_vehicle_*`. Une source vide, ambiguë ou non autorisée produit un
-avertissement sans bloquer et conserve l'ancienne valeur. Le kilométrage n'est
+alias `x_rpbm_vehicle_*`. Une source vide ou non autorisée produit un
+avertissement sans bloquer et conserve l'ancienne valeur ; une source ambiguë
+produit un avertissement mais retient la première correspondance du
+référentiel. Le kilométrage n'est
 jamais modifié. Si un article VSF est sélectionné comme **article principal**, son Eurocode complet,
 désignation, stock et référence constructeur sont reportés ; l'Eurocode joint
 et les prix restent manuels ou calculés.

@@ -1,6 +1,6 @@
 {
     "name": "RPBM Agent",
-    "version": "17.0.260914.4",
+    "version": "17.0.260915.1",
     "category": "Tools",
     "description": """""",
     "author": "Paradigme SASU",

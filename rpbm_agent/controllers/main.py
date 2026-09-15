@@ -334,10 +334,11 @@ def _historical_reference_value(env, model_name, source_name, label, warnings):
             record, record_name = exact_matches[0]
             return [record.id, record_name]
         warnings.append(
-            _("%s historique ambigu (%s correspondances) : le champ reste inchangé.")
+            _("%s historique ambigu (%s correspondances) : première correspondance retenue.")
             % (label, len(matches))
         )
-        return None
+        record, record_name = matches[0]
+        return [record.id, record_name]
     if matches:
         record, record_name = matches[0]
         return [record.id, record_name]
