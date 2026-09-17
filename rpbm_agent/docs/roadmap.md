@@ -702,6 +702,16 @@ calculés par Odoo, sauvegarde du devis sans erreur.
 
 ## L2 — UI/UX du widget
 
+### Priorité suivante — Réouverture persistante et temps de main-d’œuvre
+
+Le prochain lot est ordonné ainsi : (1) contrat de persistance des sélections et
+réhydratation, (2) affichage réduit des catégories et pièces avec extension
+explicite, (3) confirmation CRM/devis et effacement cohérent, (4) recette UI et
+preuve de persistance. L’étude des produits historiques `product.product` 23, 24
+et 46 précède toute implémentation des lignes de main-d’œuvre ; les quantités et
+la correspondance pièce/temps doivent être validées avant codage. L’ajout et le
+retrait de ces lignes sur les devis constituent le lot suivant.
+
 ### L2.1 — Structurer la dialog en étapes
 
 > **Fait (2026-07-26).** Dialog `xl`, quatre sections titrées et pièces après-marché visuellement

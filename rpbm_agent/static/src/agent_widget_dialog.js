@@ -73,7 +73,10 @@ export class AgentWidgetDialog extends asyncWidget {
             articleProducts: {},
             articleLoadingCodes: {},
             pieceConcernee: undefined,
+            showAllCalques: false,
+            showAllPieces: false,
         });
+        this._restorePending = false;
         this._agentLockReleased = false;
         this._lastSearchedBaseEurocode = undefined;
         this._reconnectPromise = undefined;
@@ -129,7 +132,8 @@ export class AgentWidgetDialog extends asyncWidget {
                 if (this.record.categorieXglass) {
                     const calque = this.calques.find(calque => calque.libelle === this.record.categorieXglass);
                     if (calque) {
-                        this.onClickCalque(calque.id);
+                        this.state.selectedCalque = calque;
+                        this.state.showAllCalques = false;
                     }
                 }
                 else {
@@ -144,9 +148,11 @@ export class AgentWidgetDialog extends asyncWidget {
                 this.clearSelectedPiece();
             }
             else {
-                this.state.pieceConcernee = suggestPieceConcernee(this.selectedCalque.libelle);
+                if (!this._restorePending || !this.pieceConcernee) {
+                    this.state.pieceConcernee = suggestPieceConcernee(this.selectedCalque.libelle);
+                }
                 this.state.pieces = [];
-                this.clearSelectedPiece();
+                this.clearSelectedPiece(this._restorePending);
                 this.runAsync(() => this.getPieces(), "Chargement des pièces en cours...");
             }
         }, () => [this.selectedCalque])
@@ -182,13 +188,13 @@ export class AgentWidgetDialog extends asyncWidget {
         }, () => [this.selectedPieceAm])
 
         useEffect(() => {
-            if (this.baseEurocode) {
+            if (this.agentsInitialized && this.selectedPiece && this.baseEurocode) {
                 this.onSearchBaseEurocode();
             }
             // else {
             //     this.state.baseEurocode = undefined;
             // }
-        }, () => [this.baseEurocode])
+        }, () => [this.baseEurocode, this.selectedPiece, this.agentsInitialized])
 
     }
 
@@ -369,8 +375,17 @@ export class AgentWidgetDialog extends asyncWidget {
             data[this.record.pieceConcerneeField] = this.pieceConcernee;
         }
 
-        if (this.baseEurocode) {
-            data[this.record.baseEurocodeField] = this.baseEurocode;
+        if (this.record.baseEurocodeField) {
+            data[this.record.baseEurocodeField] = this.baseEurocode || "";
+        }
+        if (this.record.xglassPieceIdField) {
+            data[this.record.xglassPieceIdField] = this.selectedPiece ? String(this.selectedPiece.id) : "";
+        }
+        if (this.record.pieceOeIdField) {
+            data[this.record.pieceOeIdField] = this.selectedPiece?.pieceOe?.id ? String(this.selectedPiece.pieceOe.id) : "";
+        }
+        if (this.record.pieceAmIdField) {
+            data[this.record.pieceAmIdField] = this.selectedPieceAm?.pieceAm?.id ? String(this.selectedPieceAm.pieceAm.id) : "";
         }
         const primaryArticle = this.getPrimaryArticle();
         if (primaryArticle) {
@@ -567,6 +582,18 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.planche.calques;
     }
 
+    get visibleCalques() {
+        return this.selectedCalque && !this.state.showAllCalques ? [this.selectedCalque] : this.calques;
+    }
+
+    get showAllCalques() {
+        return this.state.showAllCalques;
+    }
+
+    showOtherCalques() {
+        this.state.showAllCalques = true;
+    }
+
     /** @returns {Calque|undefined} */
     get selectedCalque() {
         return this.state.selectedCalque;
@@ -585,10 +612,25 @@ export class AgentWidgetDialog extends asyncWidget {
 
     onClickCalque(calqueId) {
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
+        this.state.showAllCalques = false;
+        this.state.showAllPieces = false;
+        this._restorePending = false;
     }
 
     get pieces() {
         return this.state.pieces;
+    }
+
+    get visiblePieces() {
+        return this.selectedPiece && !this.state.showAllPieces ? [this.selectedPiece] : this.pieces;
+    }
+
+    get showAllPieces() {
+        return this.state.showAllPieces;
+    }
+
+    showOtherPieces() {
+        this.state.showAllPieces = true;
     }
 
     async getPieces() {
@@ -597,25 +639,39 @@ export class AgentWidgetDialog extends asyncWidget {
             calqueId: this.selectedCalque.id,
         })
         this.state.pieces = res;
+        if (this._restorePieceId || this._restorePieceOeId) {
+            const restoredPiece = this.pieces.find(piece =>
+                String(piece.id) === this._restorePieceId
+                || String(piece.pieceOe?.id || "") === String(this._restorePieceOeId || "")
+            );
+            if (restoredPiece) {
+                this.state.selectedPiece = restoredPiece;
+                this.state.showAllPieces = false;
+            }
+        }
     }
 
     onSelectPiece(pieceId) {
         if (this.selectedPiece?.id === pieceId) {
             this.clearSelectedPiece();
+            this.state.showAllPieces = true;
             return;
         }
         this.clearSelectedPiece();
         this.state.selectedPiece = this.pieces.find(piece => piece.id === pieceId);
+        this.state.showAllPieces = false;
     }
 
     /**
      * Réinitialise les données dépendant de la pièce OE sélectionnée pour ne
      * pas afficher ou réutiliser les détails d'une sélection précédente.
      */
-    clearSelectedPiece() {
+    clearSelectedPiece(preserveRestoredBase = false) {
         this.state.selectedPiece = undefined;
         this.state.selectedPieceAm = undefined;
-        this.state.baseEurocode = undefined;
+        if (!preserveRestoredBase) {
+            this.state.baseEurocode = undefined;
+        }
         this.state.articlesVsf = [];
         this.resetVsfSelection();
         this._lastSearchedBaseEurocode = undefined;
@@ -648,6 +704,13 @@ export class AgentWidgetDialog extends asyncWidget {
             elementSitId: piece.elementSitId,
         })
         piece.PiecesAM = res;
+        if (this._restorePieceAmId) {
+            this.state.selectedPieceAm = res.find(meta => String(meta.pieceAm?.id) === this._restorePieceAmId);
+            if (this.state.selectedPieceAm && this._restoreBaseEurocode) {
+                this.state.baseEurocode = this._restoreBaseEurocode;
+            }
+            this._restorePending = false;
+        }
         // La propriété est enrichie en place : réassigner le tableau garantit
         // que OWL rerend aussi les pièces après-marché nouvellement reçues.
         this.state.pieces = [...this.pieces];
@@ -662,6 +725,20 @@ export class AgentWidgetDialog extends asyncWidget {
 
     onChangeBaseEurocode(ev) {
         this.state.baseEurocode = ev.target.value;
+    }
+
+    restoreSelectionFromRecord() {
+        const read = (field) => field ? this.record.recordData[field] : undefined;
+        this._restorePieceId = read(this.record.xglassPieceIdField) || undefined;
+        this._restorePieceOeId = read(this.record.pieceOeIdField) || undefined;
+        this._restorePieceAmId = read(this.record.pieceAmIdField) || undefined;
+        this._restoreBaseEurocode = read(this.record.baseEurocodeField) || undefined;
+        this._restorePending = Boolean(
+            this._restorePieceId || this._restorePieceOeId || this._restorePieceAmId || this._restoreBaseEurocode
+        );
+        if (this._restoreBaseEurocode) {
+            this.state.baseEurocode = this._restoreBaseEurocode;
+        }
     }
 
     get articlesVsf() {

@@ -91,3 +91,12 @@ Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule li�
 ### Champs Odoo Studio à créer
 
 Les champs `x_studio_*` requis par le widget sont créés automatiquement à l'installation par `pre_init_hook` (voir [configuration technique](../technique/configuration.md#champs-odoo-studio-requis)). Inventaire complet par modèle (nom, type, rôle, champs obsolètes, structure des 3 champs Eurocode sur `crm.lead`) : [technique/champs/](../technique/champs/README.md).
+
+## Réouverture du dialogue et mémorisation des pièces
+
+La confirmation mémorise la catégorie X’Glass, la base Eurocode et les identifiants
+de la pièce X’Glass, de la pièce OE et de la pièce après-marché. À la réouverture,
+le dialogue restaure ces choix et réduit les listes à la sélection existante.
+Les boutons « Afficher les autres » rendent les listes complètes disponibles pour
+une modification volontaire. Un second clic sur la pièce sélectionnée efface les
+sélections dépendantes, la base Eurocode et les résultats VSF.

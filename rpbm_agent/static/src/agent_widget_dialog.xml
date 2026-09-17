@@ -35,9 +35,10 @@
                 <section t-if="planche" class="mb-4">
                     <h5>2. Catégorie</h5>
                     <div class="d-flex flex-wrap gap-2">
-                        <t t-foreach="calques" t-as="calque" t-key="calque.id">
+                        <t t-foreach="visibleCalques" t-as="calque" t-key="calque.id">
                             <CalqueComponent calque="calque" selectedCalqueId="selectedCalqueId" t-on-click="()=>this.onClickCalque(calque.id)"/>
                         </t>
+                        <button t-if="selectedCalque and !showAllCalques" class="btn btn-outline-secondary btn-sm" t-on-click="showOtherCalques">Afficher les autres</button>
                     </div>
                     <div t-if="selectedCalque" class="mt-3">
                         <label for="pieceConcernee" class="form-label">Pièce concernée</label>
@@ -53,7 +54,7 @@
                 <section t-if="selectedCalque" class="mb-4">
                     <h5>3. Pièce</h5>
                     <div t-if="pieces.length > 0" class="row g-2">
-                        <t t-foreach="pieces" t-as="piece" t-key="piece.id">
+                        <t t-foreach="visiblePieces" t-as="piece" t-key="piece.id">
                             <div class="col-12 col-lg-6">
                                 <PieceComponent piece="piece" selectedPieceId="selectedPieceId" t-on-click="()=>this.onSelectPiece(piece.id)"/>
                                 <div t-if="piece.id === selectedPieceId and piece.PiecesAM and piece.PiecesAM.length > 0" class="mt-3 border rounded bg-light p-3">
@@ -72,6 +73,7 @@
                             </div>
                         </t>
                     </div>
+                    <button t-if="selectedPiece and !showAllPieces" class="btn btn-outline-secondary btn-sm mt-2" t-on-click="showOtherPieces">Afficher les autres</button>
                 </section>
 
                 <section t-if="selectedPiece" class="mb-4">

@@ -10,6 +10,7 @@
 | `x_studio_categorie_xglass` | `selectedCalque.libelle` | si une catégorie est sélectionnée |
 | `x_studio_field_eENQz` (Pièce concernée) | suggestion X'Glass visible et modifiable | si une catégorie est sélectionnée |
 | `x_studio_field_ORIyy` (Base Eurocode) | `state.baseEurocode` | si un eurocode est renseigné — nécessite la surcharge `this.baseEurocodeField = 'x_studio_field_ORIyy'` dans `CrmLead` (sinon écriture dans `x_studio_base_eurocode`, inexistant sur `crm.lead`) |
+| `x_rpbm_xglass_piece_id` / `x_rpbm_piece_oe_id` / `x_rpbm_piece_am_id` | identifiants X’Glass/OE/après-marché | chaînes mises à jour à la confirmation, vides pour effacer une ancienne sélection |
 | `x_studio_field_KyCjB` / `x_studio_field_ZhaeY` | marque/modèle du véhicule Fleet | si le nom est non vide et la correspondance du référentiel historique est unique ; une orthographe canonique exacte est privilégiée et une valeur manquante peut être créée à la confirmation |
 | `x_studio_field_PfJlB` / `x_studio_field_i8fWl` | VIN / détail modèle Fleet | seulement si la source Fleet ou, pour VIN, la métadonnée X'Glass est renseignée |
 | `x_studio_field_Eh6Wd` | date MEC Fleet ou métadonnée X'Glass | seulement si renseignée, convertie en texte `MM/YYYY` |

@@ -1,5 +1,11 @@
 # Champs — `sale.order`
 
+## Sélections persistantes du widget
+
+Les champs `x_rpbm_xglass_piece_id`, `x_rpbm_piece_oe_id` et
+`x_rpbm_piece_am_id` sont des miroirs `related` stockés des champs de
+l’opportunité liée. Le devis conserve ainsi le même contexte que le CRM.
+
 Modèle porteur de l'Ordre de Vente. Les champs eurocode/immatriculation sont des champs `related` pointant vers l'Opportunité liée (`opportunity_id`) — voir [crm-lead.md](crm-lead.md) pour les champs source. Le mode logistique est porté par le champ natif `carrier_id`.
 
 | Champ | Type | Related → | Origine | Rôle |

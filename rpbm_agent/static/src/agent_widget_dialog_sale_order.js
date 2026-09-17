@@ -13,6 +13,9 @@ class SaleOrder extends AbstractWidgetRecord {
         // sale.order que sur crm.lead.
         this.pieceConcerneeField = "x_studio_pice_concerne";
         this.fullEurocodeField = "x_studio_eurocode_complet";
+        this.xglassPieceIdField = "x_rpbm_xglass_piece_id";
+        this.pieceOeIdField = "x_rpbm_piece_oe_id";
+        this.pieceAmIdField = "x_rpbm_piece_am_id";
         this.vsfDesignationField = "x_studio_vsf_dsignation_1";
         this.vsfStockField = "x_studio_vsf_qt_dispo";
         this.constructorReferenceField = "x_rpbm_vsf_constructor_reference";
@@ -27,6 +30,7 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         super.setup();
         this.record = new SaleOrder(this.record);
         this.state.immatriculationValue = this.record.immatriculation;
+        this.restoreSelectionFromRecord();
         this._widgetOrderLinesByArticleCode = new Map();
         onWillStart(() => this.onWillStart());
     }

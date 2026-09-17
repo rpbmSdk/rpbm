@@ -8,4 +8,8 @@ Aucun champ Odoo n'est lu ou écrit à cette étape : la recherche externe VSF r
 
 Chaque carte sélectionnée garde ses propres actions de produit Odoo. Sur un devis, l'ajout et le retrait sont indépendants par article ; le retrait ne concerne que la ligne ajoutée par le widget pendant la dialog courante.
 
+La base Eurocode restaurée depuis l'enregistrement relance la recherche VSF à la
+réouverture. Elle est écrite dans le formulaire lors de la confirmation ; son
+effacement suit la désélection de la pièce principale.
+
 Suivant, selon le modèle porteur : [6 — Confirmation sur Piste/Opportunité](06-confirmation-crm-lead.md) ou [7 — Confirmation sur Ordre de Vente](07-confirmation-sale-order.md).

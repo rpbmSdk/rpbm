@@ -51,6 +51,9 @@ export class AbstractWidgetRecord extends AbstractRecord {
     immatriculationField = "x_studio_immatriculation";
     baseEurocodeField = "x_studio_base_eurocode";
     pieceConcerneeField = "x_studio_field_eENQz";
+    xglassPieceIdField = "x_rpbm_xglass_piece_id";
+    pieceOeIdField = "x_rpbm_piece_oe_id";
+    pieceAmIdField = "x_rpbm_piece_am_id";
     fullEurocodeField = undefined;
     vsfDesignationField = undefined;
     vsfStockField = undefined;

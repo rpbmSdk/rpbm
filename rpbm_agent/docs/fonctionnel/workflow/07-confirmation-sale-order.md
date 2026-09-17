@@ -21,6 +21,7 @@ l'utilisateur est prioritaire.
 | `x_studio_categorie_xglass` | `selectedCalque.libelle` | si une catégorie est sélectionnée |
 | `x_studio_pice_concerne` (Pièce concernée) | suggestion X'Glass visible et modifiable | si une catégorie est sélectionnée — champ `related` vers l'opportunité |
 | `x_studio_base_eurocode` | `state.baseEurocode` | si un eurocode est renseigné — fonctionne nativement ici, ce champ `related` porte déjà ce nom exact |
+| `x_rpbm_xglass_piece_id` / `x_rpbm_piece_oe_id` / `x_rpbm_piece_am_id` | identifiants X’Glass/OE/après-marché liés à l’opportunité | champs `related` stockés, mis à jour via l’opportunité |
 | `x_studio_many2one_field_rP62C` / `x_studio_many2one_field_DkgHx` | marque/modèle historiques de l'opportunité, préparés depuis Fleet | si une opportunité est liée et la correspondance est unique ; une orthographe canonique exacte est privilégiée et le référentiel manquant peut être créé à la confirmation |
 | `x_studio_vin_` / `x_studio_dtails_modle` | VIN / détail modèle Fleet via l'opportunité | seulement si la source Fleet ou, pour VIN, la métadonnée X'Glass est renseignée |
 | `x_studio_date_1re_mec` | date MEC Fleet ou métadonnée X'Glass via l'opportunité | seulement si renseignée, au format texte `MM/YYYY` |

@@ -1,5 +1,11 @@
 # Champs — `crm.lead`
 
+## Sélections persistantes du widget
+
+Le module conserve dans trois champs `Char` techniques les identifiants externes
+nécessaires à la réouverture : `x_rpbm_xglass_piece_id`, `x_rpbm_piece_oe_id` et
+`x_rpbm_piece_am_id`. Ils sont cachés dans la vue et ne contiennent pas de secret.
+
 Modèle porteur de la Piste/Opportunité. Tous les champs `x_studio_*` consommés par `rpbm_agent`, existants ou créés par [`pre_init_hook`](../configuration.md#mécanisme-retenu-pour-un-script-de-pré-installation).
 
 | Champ | Type | Related → | Origine | Obsolète | Rôle |

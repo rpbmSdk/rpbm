@@ -10,4 +10,7 @@
 
 Aucune écriture à cette étape — la valeur n'est écrite qu'à la confirmation (voir [6](06-confirmation-crm-lead.md)/[7](07-confirmation-sale-order.md)). Détail du champ : [technique/champs/crm-lead.md](../../technique/champs/crm-lead.md) / [sale-order.md](../../technique/champs/sale-order.md).
 
+À la réouverture, une catégorie enregistrée est affichée seule. Le bouton
+« Afficher les autres » permet de revenir à la liste complète et de modifier le choix.
+
 Suivant : [4 — Pièce et pièce après-marché](04-piece-piece-am.md).

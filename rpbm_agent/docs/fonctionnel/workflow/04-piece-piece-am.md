@@ -7,4 +7,10 @@
 
 Aucun champ Odoo lu ou écrit à cette étape — uniquement de l'état widget local, qui alimentera l'écriture à la confirmation ([6](06-confirmation-crm-lead.md)/[7](07-confirmation-sale-order.md)).
 
+La confirmation mémorise `piece.id`, `piece.pieceOe.id` et l'identifiant de la
+pièce après-marché sélectionnée. À la réouverture, la pièce mémorisée est affichée
+seule ; « Afficher les autres » réaffiche toutes les pièces. Un second clic sur la
+pièce sélectionnée annule la sélection et efface la base Eurocode ainsi que la
+recherche VSF.
+
 Suivant : [5 — Recherche VSF par eurocode](05-recherche-vsf-eurocode.md).
