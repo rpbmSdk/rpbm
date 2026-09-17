@@ -622,7 +622,17 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     get visiblePieces() {
+        if (!this.state.showAllPieces && this.hasRestoredPieceContext && !this.selectedPiece) {
+            return [];
+        }
         return this.selectedPiece && !this.state.showAllPieces ? [this.selectedPiece] : this.pieces;
+    }
+
+    get hasRestoredPieceContext() {
+        return Boolean(
+            this._restorePending
+            && (this._restorePieceId || this._restorePieceOeId || this._restorePieceAmId || this._restoreBaseEurocode)
+        );
     }
 
     get showAllPieces() {

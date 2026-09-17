@@ -73,10 +73,10 @@
                             </div>
                         </t>
                     </div>
-                    <button t-if="selectedPiece and !showAllPieces" class="btn btn-outline-secondary btn-sm mt-2" t-on-click="showOtherPieces">Afficher les autres</button>
+                    <button t-if="(selectedPiece or hasRestoredPieceContext) and !showAllPieces" class="btn btn-outline-secondary btn-sm mt-2" t-on-click="showOtherPieces">Afficher les autres</button>
                 </section>
 
-                <section t-if="selectedPiece" class="mb-4">
+                <section t-if="selectedPiece or hasRestoredPieceContext" class="mb-4">
                     <h5>4. Article VSF</h5>
                     <div class="d-flex flex-wrap gap-2 align-items-end">
                         <div>
