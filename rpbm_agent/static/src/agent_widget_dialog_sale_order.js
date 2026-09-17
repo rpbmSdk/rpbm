@@ -32,7 +32,75 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         this.state.immatriculationValue = this.record.immatriculation;
         this.restoreSelectionFromRecord();
         this._widgetOrderLinesByArticleCode = new Map();
+        this._widgetLaborLinesByKey = new Map();
+        this.state.selectedLaborOperationKeys = {};
+        this._restoreLaborLines();
         onWillStart(() => this.onWillStart());
+    }
+
+    _restoreLaborLines() {
+        for (const line of this.props.record.data.order_line.records) {
+            const key = line.data.x_rpbm_labor_operation_key;
+            if (key) {
+                this._widgetLaborLinesByKey.set(key, line);
+            }
+        }
+    }
+
+    get laborOperations() {
+        return this.selectedPiece?.laborOperations || [];
+    }
+
+    isLaborOperationInOrder(operation) {
+        const line = this._widgetLaborLinesByKey.get(operation.key);
+        return Boolean(line && this.props.record.data.order_line.records.includes(line));
+    }
+
+    isLaborOperationSelected(operation) {
+        return Boolean(this.state.selectedLaborOperationKeys[operation.key]);
+    }
+
+    toggleLaborOperation(operation) {
+        if (operation.unavailableReason || this.isLaborOperationInOrder(operation)) {
+            return;
+        }
+        this.state.selectedLaborOperationKeys = {
+            ...this.state.selectedLaborOperationKeys,
+            [operation.key]: !this.isLaborOperationSelected(operation),
+        };
+    }
+
+    async addSelectedLaborOperations() {
+        const operations = this.laborOperations.filter(operation =>
+            this.isLaborOperationSelected(operation) && !operation.unavailableReason && !this.isLaborOperationInOrder(operation)
+        );
+        if (!operations.length) {
+            return;
+        }
+        await this.runAsync(async () => {
+            for (const operation of operations) {
+                const newLine = await this.props.record.data.order_line.addNewRecord({
+                    context: { default_product_id: operation.productId },
+                });
+                await newLine.update({
+                    product_uom_qty: operation.duration,
+                    x_rpbm_labor_operation_key: operation.key,
+                });
+                this._widgetLaborLinesByKey.set(operation.key, newLine);
+            }
+            this.state.selectedLaborOperationKeys = {};
+        }, "Ajout des opérations de main-d'œuvre au devis en cours...");
+    }
+
+    async removeLaborOperation(operation) {
+        const line = this._widgetLaborLinesByKey.get(operation.key);
+        if (!line) {
+            return;
+        }
+        await this.runAsync(async () => {
+            await this.props.record.data.order_line.delete(line);
+            this._widgetLaborLinesByKey.delete(operation.key);
+        }, "Retrait de l'opération de main-d'œuvre du devis en cours...");
     }
 
     async onWillStart() {

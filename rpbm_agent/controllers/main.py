@@ -25,6 +25,47 @@ VSF_PARTNER_PARAM = "rpbm_agent.vsf_partner_id"
 VSF_DISCOUNT_PARAM = "rpbm_agent.vsf_discount"
 DEFAULT_VSF_PARTNER_ID = 5708
 
+# Produits de service contrôlés sur rpbm-preprod. Le widget ne calcule jamais
+# leur prix : l'onchange Odoo applique prix, taxes et règle fiscale du produit.
+LABOR_PRODUCT_BY_RATE = {"T1": 24, "T2": 23, "T3": 113}
+
+
+def _xglass_labor_rate(raw_temps):
+    """Normalise exclusivement les taux X'Glass validés pour la facturation."""
+    candidates = [raw_temps.get("taux"), raw_temps.get("activite", {}).get("code"),
+                  raw_temps.get("activite", {}).get("libelle"),
+                  raw_temps.get("operationTemps", {}).get("libelleCourt")]
+    for candidate in candidates:
+        match = re.search(r"(?:^|[^A-Z0-9])(?:[TCM])?([123])(?:$|[^A-Z0-9])", str(candidate or "").upper())
+        if match:
+            return "T%s" % match.group(1)
+    return False
+
+
+def _labor_operation_payload(piece_id, raw_temps):
+    """Retourne le contrat minimal et sûr consommé par le widget devis."""
+    operation = raw_temps.get("operationTemps") or {}
+    operation_id = raw_temps.get("id") or operation.get("id")
+    duration = raw_temps.get("temps")
+    rate = _xglass_labor_rate(raw_temps)
+    label = operation.get("libelle") or operation.get("libelleCourt") or raw_temps.get("libelle") or _("Opération X'Glass")
+    payload = {
+        "key": "%s:%s" % (piece_id, operation_id) if operation_id else False,
+        "label": label,
+        "nature": (raw_temps.get("activite") or {}).get("nature"),
+        "rate": rate,
+        "duration": duration,
+        "productId": LABOR_PRODUCT_BY_RATE.get(rate),
+        "unavailableReason": False,
+    }
+    if not payload["key"]:
+        payload["unavailableReason"] = _("Identifiant d'opération X'Glass absent.")
+    elif not isinstance(duration, (int, float)) or duration <= 0:
+        payload["unavailableReason"] = _("Durée X'Glass absente ou invalide.")
+    elif not payload["productId"]:
+        payload["unavailableReason"] = _("Taux X'Glass non pris en charge : %s.") % (rate or _("inconnu"))
+    return payload
+
 # --- Verrou de concurrence -------------------------------------------------
 # Le portail X'Glass n'autorise qu'une seule session active par identifiant,
 # et RPBM ne dispose que d'un seul identifiant partagé X'Glass/VSF pour toute
@@ -838,6 +879,10 @@ class AgentController(Controller):
                     piece['elementKey'] = elementKey
                     piece['element.withPiecesAm'] = Element.withPiecesAm
                     piece['elementSitId'] = Element.elementSitId
+                    piece['laborOperations'] = [
+                        _labor_operation_payload(piece['id'], temps)
+                        for temps in piece.get('tempsList', [])
+                    ]
                     pieces.append(piece)
         return pieces
 

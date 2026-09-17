@@ -1,6 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.SaleOrderDialog" t-inherit="rpbm_agent.AgentWidgetDialog" t-inherit-mode="primary">
+        <xpath expr="//section[@t-if='selectedPiece or hasRestoredPieceContext']" position="before">
+            <section t-if="selectedPiece" class="mb-4">
+                <h5>4. Main d'œuvre X'Glass</h5>
+                <p class="form-text">Sélectionnez les opérations à ajouter au devis. Le tarif est celui du service Odoo associé.</p>
+                <t t-if="laborOperations.length">
+                    <div class="list-group">
+                        <t t-foreach="laborOperations" t-as="operation" t-key="operation.key">
+                            <div class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                                <label class="mb-0 flex-grow-1">
+                                    <input class="form-check-input me-2" type="checkbox" t-att-checked="isLaborOperationSelected(operation)" t-att-disabled="operation.unavailableReason || isLaborOperationInOrder(operation)" t-on-change="()=>this.toggleLaborOperation(operation)"/>
+                                    <strong><t t-esc="operation.label"/></strong> — <t t-esc="operation.duration"/> h (<t t-esc="operation.rate || 'taux inconnu'"/>)
+                                </label>
+                                <span t-if="operation.unavailableReason" class="text-warning small"><t t-esc="operation.unavailableReason"/></span>
+                                <button t-elif="isLaborOperationInOrder(operation)" class="btn btn-outline-danger btn-sm" t-on-click="()=>this.removeLaborOperation(operation)">Retirer</button>
+                            </div>
+                        </t>
+                    </div>
+                    <button class="btn btn-primary btn-sm mt-2" t-on-click="addSelectedLaborOperations">Ajouter les opérations sélectionnées</button>
+                </t>
+                <span t-else="" class="text-muted">Aucune opération de main-d'œuvre n'est fournie pour cette pièce.</span>
+            </section>
+        </xpath>
         <xpath expr="//div[@name='selected_main_article_actions']" position="inside">
             <t t-if="getProductForArticle(actionArticle.code)">
                 <t t-if="isWidgetArticleInOrder(actionArticle.code)">

@@ -75,6 +75,20 @@ flowchart TD
 
 Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et miroirs historiques véhicule lorsque l'opportunité est liée. Le notebook du widget est masqué sur un devis sans opportunité liée. Le champ natif `carrier_id` (« Transporteur / mode de remise ») est visible sous le client ; il peut être prérempli depuis le lieu historique du CRM sur un nouveau devis et doit être renseigné avant la confirmation standard de la vente. L'ajout au devis (`addToSaleOrder`) est **indépendant** du bouton "Confirm" de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md) et [9 — Création du produit](workflow/09-creation-produit.md).
 
+### Main-d'œuvre X'Glass sur devis
+
+Après la sélection d'une pièce, le widget affiche les opérations X'Glass et
+leurs durées. Le vendeur coche les opérations à facturer puis les ajoute : une
+ligne de service est créée par opération, avec la quantité en heures indiquée
+par X'Glass. Le prix et les taxes sont ceux du produit Odoo, jamais un calcul du
+widget : T1 → produit 24, T2 → 23, T3 → 113. Une opération sans durée positive,
+sans identifiant ou sans taux reconnu reste non ajoutable et explique le motif.
+
+Les lignes portent une provenance X'Glass persistante : à la réouverture, une
+opération déjà ajoutée est reconnue et peut être retirée sans toucher aux lignes
+manuelles. Le champ Studio agrégé de temps et le produit « Pose à Domicile » ne
+participent pas à ce flux.
+
 ## Prérequis avant utilisation
 
 ### Paramètres système

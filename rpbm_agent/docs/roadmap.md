@@ -712,6 +712,12 @@ et 46 précède toute implémentation des lignes de main-d’œuvre ; les quanti
 la correspondance pièce/temps doivent être validées avant codage. L’ajout et le
 retrait de ces lignes sur les devis constituent le lot suivant.
 
+> **Livré (2026-09-17).** Le devis propose les opérations X'Glass cochables et
+> crée une ligne de service par opération T1/T2/T3, avec quantité en heures et
+> tarif produit Odoo. La provenance persistante interdit les doublons et limite
+> le retrait aux lignes du widget. Les opérations non mappées restent bloquées ;
+> le champ Studio agrégé ne participe pas au tarif.
+
 ### L2.1 — Structurer la dialog en étapes
 
 > **Fait (2026-07-26).** Dialog `xl`, quatre sections titrées et pièces après-marché visuellement

@@ -30,6 +30,12 @@ l'utilisateur est prioritaire.
 - **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
 - L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape. Chaque suggestion sélectionnée peut être ajoutée séparément ; seule une ligne créée par le widget dans la dialog courante peut être retirée — voir [9 — Création du produit](09-creation-produit.md).
 
+Les opérations de main-d'œuvre X'Glass cochées sont ajoutées indépendamment de
+la confirmation. Chaque opération reconnue (T1, T2 ou T3) crée une ligne de
+service dont la quantité vaut sa durée X'Glass. La clé
+`x_rpbm_labor_operation_key` garde la provenance de la ligne, ce qui interdit
+les doublons après réouverture et limite le retrait à la ligne du widget.
+
 La confirmation standard de la vente est une étape distincte de la confirmation
 de la dialog. Elle exige un `carrier_id` pour toute vente à l'état brouillon ou
 envoyée, mais ne crée pas de transporteur et ne modifie pas les lignes de vente.
