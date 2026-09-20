@@ -4,29 +4,30 @@ import { useService } from "@web/core/utils/hooks";
 import { useState, Component } from "@odoo/owl";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
 
-export const PIECE_CONCERNEE_OPTIONS = [
-    "Pare-Brise",
-    "Lunette arrière",
-    "Glace Latérale",
-    "Autre...",
+// Clés de la sélection native crm.lead.rpbm_part_type (libellés identiques au serveur).
+export const PART_TYPES = [
+    ["windshield", "Pare-brise"],
+    ["rear_window", "Lunette arrière"],
+    ["side_window", "Glace latérale"],
+    ["other", "Autre"],
 ];
 
 /**
- * Propose une valeur de tarification legacy à partir du libellé X'Glass.
+ * Propose une pièce concernée à partir du libellé du calque X'Glass.
  * La valeur reste visible et modifiable dans la dialog avant tout enregistrement.
  */
 export function suggestPieceConcernee(calqueLabel) {
     switch ((calqueLabel || "").trim().toUpperCase()) {
         case "PARE-BRISE":
-            return "Pare-Brise";
+            return "windshield";
         case "GLACE AR":
-            return "Lunette arrière";
+            return "rear_window";
         case "GLACE PORTE AV":
         case "GLACE PORTE AR":
         case "GLACE FIXE PORTE AR":
-            return "Glace Latérale";
+            return "side_window";
         default:
-            return "Autre...";
+            return "other";
     }
 }
 
@@ -39,22 +40,24 @@ export class AbstractRecord {
     }
 }
 
+/**
+ * Champs natifs du module lus/écrits par le widget. Ils portent les mêmes noms sur
+ * crm.lead et sur sale.order (miroirs related écrivables vers l'opportunité).
+ */
 export class AbstractWidgetRecord extends AbstractRecord {
-    /** Modèles sur lesquels ont peut ajouter un widget et récupérer / éditer les données (ex. crm.lead, sale.order, etc) */
-
     partnerField = "partner_id";
-    categorieXglassField = "x_studio_categorie_xglass";
-    vehiculeField = "x_studio_vehicle_id";
-    immatriculationField = "x_studio_immatriculation";
-    baseEurocodeField = "x_studio_base_eurocode";
-    pieceConcerneeField = "x_studio_field_eENQz";
-    xglassPieceIdField = "x_rpbm_xglass_piece_id";
-    pieceOeIdField = "x_rpbm_piece_oe_id";
-    pieceAmIdField = "x_rpbm_piece_am_id";
-    fullEurocodeField = undefined;
-    vsfDesignationField = undefined;
-    vsfStockField = undefined;
-    constructorReferenceField = undefined;
+    immatriculationField = "rpbm_license_plate";
+    vehiculeField = "rpbm_vehicle_id";
+    categorieXglassField = "rpbm_xglass_category";
+    pieceConcerneeField = "rpbm_part_type";
+    baseEurocodeField = "rpbm_eurocode_base";
+    xglassPieceIdField = "rpbm_xglass_piece_id";
+    pieceOeIdField = "rpbm_piece_oe_id";
+    pieceAmIdField = "rpbm_piece_am_id";
+    fullEurocodeField = "rpbm_eurocode";
+    vsfDesignationField = "rpbm_vsf_designation";
+    vsfStockField = "rpbm_vsf_stock";
+    constructorReferenceField = "rpbm_constructor_reference";
 
     get immatriculation() {
         return this.recordData[this.immatriculationField];

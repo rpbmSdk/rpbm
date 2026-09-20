@@ -4,12 +4,14 @@ import { registry } from "@web/core/registry";
 import { Component } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
-import { AgentWidgetDialogCrmLead } from "./agent_widget_dialog_crm_lead";
+import { AgentWidgetDialog } from "./agent_widget_dialog";
 import { AgentWidgetDialogSaleOrder } from "./agent_widget_dialog_sale_order";
 
 // Le widget n'est placé que par views/crm_lead_views.xml et views/sale_order_views.xml.
+// Les champs natifs portent les mêmes noms sur les deux modèles ; seul le devis ajoute
+// les lignes d'article et de main-d'œuvre.
 const DIALOG_BY_MODEL = {
-    "crm.lead": AgentWidgetDialogCrmLead,
+    "crm.lead": AgentWidgetDialog,
     "sale.order": AgentWidgetDialogSaleOrder,
 };
 

@@ -7,7 +7,7 @@ import { Dialog } from '@web/core/dialog/dialog';
 import {
     asyncWidget,
     AbstractWidgetRecord,
-    PIECE_CONCERNEE_OPTIONS,
+    PART_TYPES,
     suggestPieceConcernee,
 } from "./utils";
 import { VehiculeComponent } from "./VehiculeComponent";
@@ -77,9 +77,9 @@ export class AgentWidgetDialog extends asyncWidget {
         this._agentLockReleased = false;
         this._lastSearchedBaseEurocode = undefined;
         this._reconnectPromise = undefined;
+        this.state.immatriculationValue = this.record.immatriculation || "";
+        this.restoreSelectionFromRecord();
 
-        // Les sous-classes finissent d'initialiser record/state dans leur setup()
-        // avant que ce crochet ne s'exécute.
         onWillStart(() => this.onWillStart());
 
         // La croix de la dialog et Échap contournent onDiscard(). Le crochet de
@@ -335,25 +335,8 @@ export class AgentWidgetDialog extends asyncWidget {
             data[this.record.vehiculeField] = [newOdooVehicule.id, newOdooVehicule.name];
         }
 
-        const vehicleId = data[this.record.vehiculeField]?.[0];
-        const opportunityValue = this.props.record.data?.opportunity_id;
-        const opportunityId = Array.isArray(opportunityValue)
-            ? opportunityValue[0]
-            : opportunityValue?.resId || opportunityValue?.id || opportunityValue;
-        const canPrepareHistoricalSaleFields =
-            this.props.record.resModel !== "sale.order" || Boolean(opportunityId);
-        if (vehicleId && canPrepareHistoricalSaleFields) {
-            const historical = await this.rpc("/prepareHistoricalVehicleFields", {
-                vehicle_id: vehicleId,
-                res_model: this.props.record.resModel,
-                vehicle_meta: vehicleMeta,
-            });
-            for (const warning of historical?.warnings || []) {
-                this.notification.add(warning, { type: "warning" });
-            }
-            Object.assign(data, historical?.values || {});
-        }
-
+        // Marque, modèle, VIN, énergie, détail et date MEC sont dérivés du véhicule côté
+        // serveur (compute) et recopiés vers les champs Studio historiques par le module.
         if (this.selectedCalque) {
             data[this.record.categorieXglassField] = this.selectedCalque.libelle;
         }
@@ -383,7 +366,7 @@ export class AgentWidgetDialog extends asyncWidget {
                 data[this.record.vsfDesignationField] = primaryArticle.name;
             }
             if (this.record.vsfStockField) {
-                data[this.record.vsfStockField] = String(primaryArticle.stock ?? "");
+                data[this.record.vsfStockField] = Number.parseInt(primaryArticle.stock, 10) || 0;
             }
             if (this.record.constructorReferenceField && primaryArticle.refConstructeur) {
                 data[this.record.constructorReferenceField] = primaryArticle.refConstructeur;
@@ -842,7 +825,7 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     get pieceConcerneeOptions() {
-        return PIECE_CONCERNEE_OPTIONS;
+        return PART_TYPES;
     }
 
     get pieceConcernee() {

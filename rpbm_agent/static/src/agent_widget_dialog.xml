@@ -43,8 +43,8 @@
                     <div t-if="selectedCalque" class="mt-3">
                         <label for="pieceConcernee" class="form-label">Pièce concernée</label>
                         <select id="pieceConcernee" class="o_input" t-att-value="pieceConcernee" t-on-change="onChangePieceConcernee">
-                            <t t-foreach="pieceConcerneeOptions" t-as="option" t-key="option">
-                                <option t-att-value="option" t-att-selected="option === pieceConcernee"><t t-esc="option"/></option>
+                            <t t-foreach="pieceConcerneeOptions" t-as="option" t-key="option[0]">
+                                <option t-att-value="option[0]" t-att-selected="option[0] === pieceConcernee"><t t-esc="option[1]"/></option>
                             </t>
                         </select>
                         <div class="form-text">Suggestion modifiable avant confirmation ; elle alimente le calcul legacy de pose.</div>
