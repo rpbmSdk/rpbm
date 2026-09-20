@@ -3,7 +3,7 @@
 Migration du suivi de stock tenu dans Google Sheets (`Gestion Stock V4 - Stock Complet.csv`, export
 du 29/01/2025) vers Odoo 17.
 
-Cible : `rpbm-preprod` (`https://rpbm-pre-prod.odoo.com/`) — accès **exclusivement** via la skill
+Cible : profil `rpbm-preprod` (URL du build `https://<base-du-profil>.dev.odoo.com`, jamais l'alias de branche) — accès **exclusivement** via la skill
 `paradigme-mcp`, profil `rpbm-preprod`. Aucun secret dans ce dossier.
 Environnement Python : `pyenv 3.10.11` (fixé par `.python-version` à la racine du dépôt).
 

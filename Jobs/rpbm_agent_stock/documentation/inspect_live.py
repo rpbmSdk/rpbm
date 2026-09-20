@@ -10,11 +10,9 @@ from common import load_profile, load_env, _parse_simple_yaml, PROFILES_PATH
 
 CONN = load_profile()
 assert CONN['profile'] == 'rpbm-preprod'
-assert CONN['database'] == 'rpbm-pre-prod-37860002'
-# L'utilisateur désigne l'URL de branche ; le profil utilise son alias stable.
-# La base est identique, aucun profil ni secret global n'est modifié.
-assert CONN['url'].rstrip('/') in ['https://rpbm-pre-prod.odoo.com','https://rpbm-pre-prod-37860002.dev.odoo.com']
-CONN['url'] = 'https://rpbm-pre-prod-37860002.dev.odoo.com'
+# URL du build de la base du profil, jamais l'alias de branche. Aucun profil ni secret
+# global n'est modifié.
+CONN['url'] = f"https://{CONN['database']}.dev.odoo.com"
 ENV = load_env()
 CONFIG = _parse_simple_yaml(PROFILES_PATH.read_text(encoding='utf-8'))
 ENDPOINT = CONFIG.get('mcp_server_url', 'https://mcp.odoo.paradigme.io/mcp')

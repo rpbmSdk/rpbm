@@ -51,7 +51,6 @@ sys.path.insert(0, str(FOLDER))
 
 from prepare_migration_files import NON_SUPPLIER_KEYS, normalize_key  # noqa: E402
 
-DEFAULT_URL = "https://rpbm-pre-prod.odoo.com/"
 ENV_PATH = Path.home() / ".paradigme" / ".env"
 
 # Prefixe des identifiants externes. __import__ est le module reserve d'Odoo aux donnees
@@ -175,7 +174,7 @@ class Odoo:
     """Client XML-RPC minimal. Les lectures sont toujours autorisees, les ecritures
     seulement si commit est vrai."""
 
-    def __init__(self, url: str, commit: bool) -> None:
+    def __init__(self, url: str | None, commit: bool) -> None:
         env = load_env()
         missing = [
             key for key in ("RPBM_PREPROD_DB", "RPBM_USERNAME", "RPBM_PASSWORD")
@@ -184,8 +183,9 @@ class Odoo:
         if missing:
             raise RuntimeError(f"Variables absentes de {ENV_PATH} : {', '.join(missing)}")
 
-        self.url = url.rstrip("/")
         self.db = env["RPBM_PREPROD_DB"]
+        # URL du build de la base du profil, jamais l'alias de branche.
+        self.url = (url or f"https://{self.db}.dev.odoo.com").rstrip("/")
         self.password = env["RPBM_PASSWORD"]
         self.commit = commit
 
@@ -789,7 +789,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("phase", choices=[*PHASES, "selfcheck"])
     parser.add_argument("--commit", action="store_true", help="ecrire reellement dans Odoo")
     parser.add_argument("--limit", type=int, help="limiter le nombre de lignes (essai)")
-    parser.add_argument("--url", default=DEFAULT_URL)
+    parser.add_argument("--url", help="URL du build (defaut : https://<RPBM_PREPROD_DB>.dev.odoo.com)")
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     if args.phase == "selfcheck":

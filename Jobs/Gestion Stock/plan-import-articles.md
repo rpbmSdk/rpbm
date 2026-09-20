@@ -1,7 +1,7 @@
 # Plan d'import — catalogue articles et emplacements
 
 Date : 2026-07-30, revise le 2026-08-05
-Cible : `rpbm-preprod` (`https://rpbm-pre-prod.odoo.com/`), Odoo 17
+Cible : profil `rpbm-preprod` (URL du build `https://<base-du-profil>.dev.odoo.com`), Odoo 17
 Perimetre : import du catalogue articles et de la structure d'emplacements. **Le stock initial
 est hors perimetre** : il reste bloque tant que l'inventaire corrige du 30/06/2026 n'est pas
 fourni (Q2).

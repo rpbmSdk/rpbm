@@ -28,3 +28,13 @@ Jobs/rpbm_agent_stock/**/*.pyc
 
 .agents/
 .claude/
+.codex
+tmp/
+.tmp_push_profile.py
+Jobs/Email relance/
+Jobs/crawler/
+Jobs/consolidation_vehicules/
+Jobs/agent.py
+
+# Notes et directives locales (non suivies) : directive-champs.local.md, rpbm_agent/docs/*.local.md
+*.local.md

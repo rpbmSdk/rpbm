@@ -42,7 +42,7 @@ Le generateur de fichiers de migration de reference est maintenant `prepare_migr
 Le profil explicite a utiliser est :
 
 - profil : `rpbm-preprod`
-- URL Odoo : `https://rpbm-pre-prod.odoo.com/`
+- URL Odoo : celle du build de la base du profil `rpbm-preprod` (`https://<base>.dev.odoo.com`), jamais l'alias de branche
 - transport : `xmlrpc`
 - source des identifiants : `~/.paradigme/.env`
 

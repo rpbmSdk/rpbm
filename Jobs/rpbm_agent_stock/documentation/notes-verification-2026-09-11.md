@@ -4,7 +4,7 @@
 
 - Dépôt inspecté avant modification : `08b6b1d6fc441bad0205b4b4b460226d78564183`.
 - Profil choisi par le [fichier projet local](../../../.paradigme.yaml) : `rpbm-preprod`.
-- Le profil global emploie l'alias stable `rpbm-pre-prod.odoo.com`, base `rpbm-pre-prod-37860002`. Pour ces appels, l'URL est explicitement remplacée en mémoire par l'URL de branche demandée par l'utilisateur : `https://rpbm-pre-prod-37860002.dev.odoo.com/`. Aucune configuration globale ni aucun secret n'a été modifié.
+- Base du profil global : `rpbm-pre-prod-37860002` à cette date. Pour ces appels, l'URL utilisée est celle du build de cette base (`https://rpbm-pre-prod-37860002.dev.odoo.com/`), jamais l'alias de branche. Aucune configuration globale ni aucun secret n'a été modifié.
 - Transport XML-RPC à travers le serveur Paradigme MCP, enveloppes `tools/call` ; pas d'appels directs XML-RPC par les scripts documentaires.
 - [Index d'audit Studio](../../../.paradigme/audits/README.md) consulté : il indiquait une structure initialisée sans acquisition complète. Une acquisition ciblée des vues de vente et métadonnées stock a été effectuée pour cette tâche ; ce n'est pas un audit Studio exhaustif.
 - Sources locales brutes : `.paradigme/audits/rpbm-preprod/data/documentation-2026-09-11/`, ignorées par Git. Les paramètres de connexion des portails n'ont été recherchés que par leurs noms, jamais par leurs valeurs.

@@ -9,7 +9,7 @@ Ce rapport est le relevé de l'instance reconstruite. Les documents de recette s
 | Champ | Valeur |
 |---|---|
 | Profil | `rpbm-preprod` |
-| URL | `https://rpbm-pre-prod.odoo.com/` |
+| URL | alias de branche (référence retirée du dépôt le 2026-09-21 ; utiliser l'URL du build `https://<base-du-profil>.dev.odoo.com`) |
 | Architecture | Architecture 1 |
 | Date | `2026-08-07` |
 | Opérateur | Codex ; poursuite autorisée après validation humaine du catalogue |

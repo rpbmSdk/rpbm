@@ -4,7 +4,7 @@
 
 Le MCP `chrome-devtools` peut être utilisé pour se connecter à l'instance de staging Odoo et déboguer directement dans le navigateur (inspection DOM, console, réseau, etc.).
 
-- URL de l'instance de staging : https://rpbm-pre-prod.odoo.com/web
+- Instance de staging : branche `pre-prod` du projet odoo.sh `rpbm`. Ne pas supposer une URL fixe — résoudre l'URL du build correspondant au commit cible via la skill `odoo-sh-build-connect` (dashboard : https://www.odoo.sh/project/rpbm/branches/pre-prod).
 
 ## Accès aux données Odoo (lecture/écriture via MCP)
 

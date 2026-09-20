@@ -15,7 +15,7 @@ l'instance de préproduction RPBM, via la skill **`paradigme-mcp-local`**.
   `.paradigme.yaml` à la racine du dépôt, qui vaut `rpbm-preprod`.
 - **Le fichier `~/.paradigme/paradigme_odoo_mcp.yaml` déclare aussi un profil `rpbm`, qui est la
   PRODUCTION. Tu ne dois JAMAIS l'utiliser, ni le sélectionner, ni y écrire, sous aucun prétexte.**
-  Avant la première écriture, confirme que l'URL cible est bien `https://rpbm-pre-prod.odoo.com/`.
+  Avant la première écriture, confirme que la cible est bien le build de la base du profil `rpbm-preprod` (`https://<base-du-profil>.dev.odoo.com`), jamais l'alias de branche ni le profil `rpbm`.
   Si ce n'est pas le cas, arrête-toi immédiatement et signale-le.
 - Ne copie aucun secret dans le dépôt.
 

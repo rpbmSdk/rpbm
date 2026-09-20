@@ -16,11 +16,11 @@ Pour toute tache non triviale, deleguer les sous-taches independantes puis
 attendre leurs resultats avant la synthese ou toute modification sur un meme
 perimetre :
 
-- `rpbm_product_owner_luna` : qualification fonctionnelle, audit en lecture
+- `rpbm-product-owner-luna` : qualification fonctionnelle, audit en lecture
   seule et criteres de recette ;
-- `rpbm_luna_codeur` : implementation d'un lot de fichiers explicitement
+- `rpbm-luna-codeur` : implementation d'un lot de fichiers explicitement
   attribue ;
-- `rpbm_verificateur_computer_use` : recette independante et preuve visuelle
+- `rpbm-verificateur-computer-use` : recette independante et preuve visuelle
   sur l'environnement autorise.
 
 Le pilote conserve la coordination et attribue une responsabilite exclusive a
@@ -29,7 +29,7 @@ agents en parallele. Pour une tache simple ou inseparable, le pilote peut
 travailler seul et indique brievement pourquoi.
 
 Lorsqu'un verificateur constate un build ou une recette en echec, le pilote
-transmet son analyse factuelle a `rpbm_luna_codeur` pour un correctif cible.
+transmet son analyse factuelle a `rpbm-luna-codeur` pour un correctif cible.
 Apres le correctif, le pilote relance le build puis confie de nouveau la
 verification au verificateur. Cette boucle se poursuit jusqu'a une preuve de
 recette ou a un blocage externe documente.
