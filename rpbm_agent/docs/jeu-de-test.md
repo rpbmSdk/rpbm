@@ -41,7 +41,7 @@ widget et exécuter :
 
 Résultats attendus :
 
-- le véhicule Fleet est créé ou retrouvé puis lié par `x_studio_vehicle_id` ;
+- le véhicule Fleet est créé ou retrouvé puis lié par `rpbm_vehicle_id` ;
 - la catégorie X'Glass et la pièce concernée sont visibles ;
 - la base Eurocode est `6539R` ;
 - l'article sélectionné est mémorisé sans modifier de prix ;

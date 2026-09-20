@@ -13,10 +13,10 @@
 | `power` | `vehicule.puissanceKw` | toujours |
 | `doors` | `vehicule.portesNbr` | toujours |
 | `fuel_type` | `vehicule.energie` converti en clé native `fleet.FUEL_TYPES` (`XGLASS_ENERGY_TO_FUEL_TYPE`, `main.py`) | si l'énergie X'Glass a un équivalent Fleet ; sinon champ vide + warning serveur |
-| `x_studio_detail_model` | `vehicule.libelleCourt` | toujours |
+| `rpbm_detail_model` | `vehicule.libelleCourt` | toujours |
 | `image_1920` | image téléchargée depuis X'Glass | si `vehicule.imgUrl` est renseigné et le téléchargement réussit (HTTP 200) |
 | `vin_sn` | `vehicule_meta.vin` | si `vehicule_meta` fourni et `vin` renseigné |
-| `x_studio_date_mec` | `vehicule_meta.dateMec` (`%m/%Y` → date) | si `vehicule_meta` fourni et `dateMec` renseigné |
+| `rpbm_first_registration_date` | `vehicule_meta.dateMec` (`MM/YYYY` → date) | si `vehicule_meta` fourni et `dateMec` renseigné |
 
 - **Effets de bord** : crée à la volée `fleet.vehicle.model.brand` (si la marque X'Glass n'existe pas déjà) et `fleet.vehicle.model` (si le modèle n'existe pas déjà, lié à la marque). Aucune valeur de sélection n'est créée sur `fuel_type` (Odoo refuse d'altérer un champ de base).
 - **Retour** : `{id, name}` du `fleet.vehicle` créé ou réutilisé.

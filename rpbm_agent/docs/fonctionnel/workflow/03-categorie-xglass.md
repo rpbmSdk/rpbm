@@ -6,7 +6,7 @@
 
 | Champ | Modèle | Sens | Détail |
 |---|---|---|---|
-| `x_studio_categorie_xglass` | `crm.lead` / `sale.order` | **lecture** | Comparé aux `libelle` des calques chargés ; si une correspondance est trouvée, la catégorie est présélectionnée automatiquement (seule lecture de champ Odoo de toute la chaîne réactive du widget, en dehors de l'ouverture de la fenêtre) |
+| `rpbm_xglass_category` | `crm.lead` / `sale.order` | **lecture** | Comparé aux `libelle` des calques chargés ; si une correspondance est trouvée, la catégorie est présélectionnée automatiquement (seule lecture de champ Odoo de toute la chaîne réactive du widget, en dehors de l'ouverture de la fenêtre) |
 
 Aucune écriture à cette étape — la valeur n'est écrite qu'à la confirmation (voir [6](06-confirmation-crm-lead.md)/[7](07-confirmation-sale-order.md)). Détail du champ : [technique/champs/crm-lead.md](../../technique/champs/crm-lead.md) / [sale-order.md](../../technique/champs/sale-order.md).
 

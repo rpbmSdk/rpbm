@@ -13,8 +13,8 @@ Index de la documentation du module. À maintenir à jour à chaque évolution f
 - [`technique/architecture.md`](technique/architecture.md) — stack, vue d'ensemble des composants, diagramme de séquence bout-en-bout.
 - [`technique/backend.md`](technique/backend.md) — controllers Odoo, référence des routes, intégration X'Glass/VSF (scraping, authentification, contraintes de session).
 - [`technique/frontend.md`](technique/frontend.md) — arborescence des composants OWL, gestion d'état, appels serveur.
-- [`technique/configuration.md`](technique/configuration.md) — paramètres système, champs Studio (création automatique via `pre_init_hook`), dépendances Python, déploiement.
-- [`technique/champs/README.md`](technique/champs/README.md) — référence complète des champs Odoo (`x_studio_*` et standards) par modèle porteur : type, related, origine (`pre_init_hook` ou Studio), champs obsolètes.
+- [`technique/configuration.md`](technique/configuration.md) — paramètres système, champs natifs et synchronisation avec les champs Studio historiques, dépendances Python, déploiement.
+- [`technique/champs/README.md`](technique/champs/README.md) — référence des champs natifs `rpbm_*` par modèle porteur, avec le champ Studio historique synchronisé pour chacun.
 
 ## Audit & pilotage
 

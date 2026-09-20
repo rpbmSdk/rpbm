@@ -56,32 +56,42 @@ Deux paramètres optionnels pilotent le traçage HTTP des portails (voir [Débog
 | `rpbm_agent.trace` | `1` pour journaliser chaque requête portail (défaut : inactif) |
 | `rpbm_agent.trace_dir` | Dossier serveur où écrire le corps des réponses (optionnel) |
 
-## Champs Odoo Studio requis
+## Champs natifs et champs Studio historiques
 
-Les champs `x_studio_*` consommés par le code sont créés automatiquement à l'installation par `pre_init_hook` (`rpbm_agent/hooks.py`) — voir le mécanisme ci-dessous. État détaillé par modèle (quels champs, lesquels sont nouveaux vs déjà existants sur une instance donnée, related, obsolètes) : [technique/champs/](champs/README.md).
+Le module ne crée que des champs natifs, préfixés `rpbm_`, déclarés dans `models/*.py` (voir
+[technique/champs/](champs/README.md)). Il ne crée plus aucun champ Studio : l'ancien
+`pre_init_hook` et ses champs « Studio-like » ont été retirés en `17.0.260921.1`.
 
-### Mécanisme retenu : `pre_init_hook` + contexte Studio
+### Synchronisation avec les champs Studio historiques
 
-Vérifié dans le code source d'Odoo Enterprise (`D:\git\odoo_17\enterprise\web_studio`, voir [directives projet](../../../CLAUDE.md#code-source-odoo-vérification-de-méthodes)) : `ir.model.fields` hérite de `studio.mixin` (`web_studio/models/ir_model.py:598`). Ce mixin surcharge `create()`/`write()` : si le contexte contient `studio=True` (et pas `install_mode`), il appelle automatiquement `create_studio_model_data()`, qui :
-1. récupère (ou **crée**) le module `studio_customization` via `ir.module.module.get_studio_module()` — donc pas besoin qu'il préexiste ;
-2. crée l'`ir.model.data` correspondant (`module='studio_customization'`, flag `studio=True`, `noupdate` forcé à `True` dès la première modification ultérieure du champ).
+`models/legacy_fields.py` est le seul fichier du module qui cite un nom `x_studio_*`. Il contient la
+table de correspondance natif → Studio (14 champs sur `crm.lead`, 1 sur `sale.order.line`), les
+convertisseurs (énergie, date `MM/YYYY`, pièce concernée, lieu, stock, référentiels Studio
+marque/modèle ↔ Fleet par nom normalisé) et le mixin `rpbm.legacy.sync.mixin` : chaque écriture
+d'un champ natif est recopiée dans le champ Studio s'il existe, et une saisie Studio seule met à
+jour le natif. Tout accès est gardé par `name in model._fields` : sur une base sans ces champs, le
+mixin ne fait rien et le module fonctionne à l'identique. Les automatisations et calculs Studio
+(cascade de prix sur « Pièce concernée », « Tarif x glass ») continuent donc de tourner pendant la
+transition.
 
-Il suffit donc de passer `studio=True` dans le contexte lors de la création — aucune manipulation manuelle d'`ir.model.data`. Implémenté dans [`hooks.py`](../../hooks.py) (`FIELDS_TO_ENSURE` + `pre_init_hook`, idempotent — ignore tout champ déjà présent).
+### Migration `17.0.260921.1`
 
-Depuis AG01-01, `FIELDS_TO_ENSURE` ne contient plus les huit doublons Fleet
-`x_rpbm_vehicle_*` sur `crm.lead` et `sale.order`. Cette absence désactive leur
-création future uniquement ; elle ne supprime ni ne renomme les champs qui
-existent déjà dans une base.
+Au premier passage sur une base existante, `migrations/17.0.260921.1/post-native-fields.py` :
+1. recopie les champs créés par l'ancien hook vers les natifs (`fleet.vehicle`, `product.*`,
+   véhicule et catégorie de l'opportunité) ;
+2. remplit les natifs de `crm.lead` depuis les champs Studio historiques (SQL pour les valeurs
+   simples, ORM pour marque/modèle avec création des marques et modèles Fleet manquants), et
+   `sale.order.line.rpbm_xglass_price` depuis `x_studio_prix_x_glass` ;
+3. rafraîchit les miroirs stockés de `sale.order` et `stock.picking` ;
+4. supprime les champs que le module avait lui-même créés (11 champs Studio-like du hook, 16 alias
+   `x_rpbm_vehicle_*`) uniquement s'ils ne sont plus référencés par aucune vue, automatisation,
+   action serveur, filtre ni export ; sinon ils sont conservés et listés dans le journal.
 
-Conséquence : le champ est créé exactement comme le ferait un humain dans Studio (même mixin, même `ir.model.data`), et une désinstallation de `rpbm_agent` ne le supprime pas (seuls les `ir.model.data` rattachés au module désinstallé sont nettoyés).
-
-**Pourquoi `pre_init_hook` et pas `post_init_hook`** : ce module livre aussi des vues XML (`views/*.xml`, voir ci-dessous) qui référencent ces mêmes champs. Vérifié dans `odoo/modules/loading.py:189-247` : l'ordre réel est `pre_init_hook(env)` → chargement des modèles du module → chargement des données `data` (dont les vues) → `post_init_hook(env)` seulement en tout dernier. Avec un `post_init_hook`, les vues échoueraient à se charger (champ inconnu) puisqu'elles sont traitées avant lui. Vérifié également que `env` reçu par ces hooks a un contexte vide (`loading.py:426`, `api.Environment(cr, SUPERUSER_ID, {})`) — pas de risque que `install_mode` soit déjà présent et court-circuite le mécanisme Studio.
-
-**Limites** : ce comportement Studio est fourni par `web_studio` (Enterprise) — sans ce module installé, `studio=True` n'a aucun effet particulier (le champ est quand même créé, juste sans traçage Studio) ; mécanisme interne non documenté publiquement par Odoo, sans garantie de stabilité inter-versions.
+Les champs Studio historiques des utilisateurs ne sont jamais supprimés par le module.
 
 ## Intégration dans les vues
 
-Le widget et les champs `x_studio_vehicle_id`/`x_studio_categorie_xglass` sont ajoutés par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, `views/sale_order_carrier_views.xml`, `views/fleet_vehicle_views.xml`, `views/product_product_views.xml`), chacune héritant de la vue formulaire de base du modèle concerné et ajoutant un nouvel onglet ou le champ logistique. Le comportement du widget s'adapte automatiquement selon `resModel` de l'enregistrement courant (`crm.lead`, `sale.order`, ou dialog générique pour tout autre modèle — voir [frontend](frontend.md)).
+Le widget et les champs natifs `rpbm_*` sont ajoutés par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, `views/sale_order_carrier_views.xml`, `views/fleet_vehicle_views.xml`, `views/product_product_views.xml`), chacune héritant de la vue formulaire de base du modèle concerné et ajoutant un nouvel onglet ou le champ logistique. Le comportement du widget s'adapte automatiquement selon `resModel` de l'enregistrement courant (`crm.lead`, `sale.order`, ou dialog générique pour tout autre modèle — voir [frontend](frontend.md)).
 
 ### `carrier_id` et préremplissage logistique
 

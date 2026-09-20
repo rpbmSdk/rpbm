@@ -20,9 +20,8 @@ Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utili
 | `/searchImmatriculation` | `immatriculation: str` | Recherche véhicule(s) par plaque sur X'Glass | X'Glass |
 | `/rpbm_agent/getVehiculeMeta` | `vehiculeId: str` | Sélectionne le véhicule côté portail (`selectVehicule`) et retourne `{meta: {vin, cnit, dateMec}, planche}` en un seul aller-retour | X'Glass |
 | `/getOdooVehicule` | `immatriculation: str` | Recherche un véhicule Odoo existant par plaque ; retourne `{id, name, driver_id}` ou `False` | `fleet.vehicle` |
-| `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle si besoin, puis le `fleet.vehicle` ; retourne `{id, name}`. L'énergie X'Glass est convertie vers une clé native `fleet.FUEL_TYPES` (`XGLASS_ENERGY_TO_FUEL_TYPE`, énergie inconnue = champ vide). L'image X'Glass est facultative et n'est tentée que si l'appelant détient encore le verrou portail. | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, X'Glass (image facultative) |
-| `/enrichVehicule` | `vehicle_id: int, vehicule_meta` | Complète uniquement `vin_sn` et `x_studio_date_mec` manquants d'un `fleet.vehicle` existant ; les droits insuffisants deviennent un avertissement | `fleet.vehicle` |
-| `/prepareHistoricalVehicleFields` | `vehicle_id: int, res_model: crm.lead\|sale.order, vehicle_meta` | Prépare les valeurs historiques à reporter depuis Fleet, avec repli sur les métadonnées X'Glass si VIN/date Fleet sont absents ; réutilise ou crée, si nécessaire, une valeur unique de référentiel marque/modèle ; ne crée aucun champ Odoo | `fleet.vehicle`, référentiels historiques `x_rpbm_marques_voitures`/`x_rpbm_modeles_voitures` |
+| `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle si besoin, puis le `fleet.vehicle` (`rpbm_detail_model`, `rpbm_first_registration_date`, `vin_sn`) ; retourne `{id, name}`. L'énergie X'Glass est convertie vers une clé native `fleet.FUEL_TYPES` (`XGLASS_ENERGY_TO_FUEL_TYPE`, énergie inconnue = champ vide). L'image X'Glass est facultative et n'est tentée que si l'appelant détient encore le verrou portail. | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, X'Glass (image facultative) |
+| `/enrichVehicule` | `vehicle_id: int, vehicule_meta` | Complète uniquement `vin_sn` et `rpbm_first_registration_date` manquants d'un `fleet.vehicle` existant (un VIN de l'ancienne forme `var = …;` est remplacé) ; les droits insuffisants deviennent un avertissement | `fleet.vehicle` |
 | `/getPlanche` | `vehiculeId: int` | Re-sélectionne le véhicule côté portail et retourne la "planche" ; utilisé par le widget uniquement pour restaurer le contexte après reconnexion | X'Glass |
 | `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie ; chaque pièce porte `laborOperations` (opérations de main-d'œuvre T1/T2/T3 avec `productId` issu de `rpbm_agent.labor_product_t*`) | X'Glass, `ir.config_parameter` |
 | `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce, via `XGLASS.findSelectionsPiecesAmView()` | X'Glass |
@@ -31,39 +30,13 @@ Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utili
 | `/doesProductExists` | `articleVsfInfo: dict` | Recherche un produit par référence interne, eurocode, puis nom | `product.product`, `product.template` |
 | `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template | `product.product`, `product.template`, `product.supplierinfo` |
 
-### Préparation des champs historiques
+### Dérivation du véhicule et champs Studio
 
-`/prepareHistoricalVehicleFields` est une route JSON-RPC interne réservée à un
-utilisateur Odoo connecté (`auth='user'`). Elle accepte uniquement les modèles
-`crm.lead` et `sale.order` et retourne toujours une structure explicite :
-
-```json
-{
-  "values": {"nom_technique_du_champ": "valeur"},
-  "warnings": ["message non bloquant"]
-}
-```
-
-Le dialogue appelle d'abord `/enrichVehicule` après la réutilisation d'un
-`fleet.vehicle` existant. Cette route ne remplit que les champs Fleet absents et
-ne remplace jamais une donnée existante. Il appelle ensuite
-`/prepareHistoricalVehicleFields` au moment de la confirmation. Les deux routes
-lisent et écrivent avec les droits de l'utilisateur courant, sans `sudo` ; un
-refus d'écriture Fleet reste non bloquant et les métadonnées X'Glass peuvent
-alors servir de repli pour les champs historiques. Les valeurs historiques
-sont ensuite fusionnées dans le dictionnaire de `record.update()` ; aucune
-route ne persiste directement les champs de la piste ou du devis.
-
-Les noms de marque et de modèle sont comparés après normalisation. Lorsqu'il
-existe plusieurs variantes normalisées mais une seule orthographe exactement
-égale à la source Fleet, cette valeur canonique est réutilisée ; sinon la
-correspondance reste ambiguë : la première correspondance est alors retenue,
-avec un avertissement invitant à vérifier. Un référentiel historique non vide
-et sans correspondance est créé à la confirmation ; une source vide, une valeur
-d'énergie non supportée ou une absence de droits produit un avertissement et
-conserve la valeur historique existante. Le kilométrage n'est
-jamais préparé. Aucun `ir.model.fields` n'est créé, supprimé, renommé ou migré
-par ces routes.
+Le widget n'écrit que les champs natifs `rpbm_*` de l'opportunité (ou leurs miroirs sur le devis).
+Marque, modèle, VIN, énergie, détail et date de mise en circulation sont dérivés du véhicule Fleet
+lié par le `compute` de `crm.lead` ; la recopie vers les champs Studio historiques (et le retour
+d'une saisie Studio vers le natif) est faite par le mixin de `models/legacy_fields.py`, sans route
+dédiée. Voir [configuration](configuration.md#champs-natifs-et-champs-studio-historiques).
 
 ## X'Glass (`controllers/xglass.py`)
 

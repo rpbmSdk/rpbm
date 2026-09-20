@@ -16,38 +16,24 @@ l'utilisateur est prioritaire.
 
 | Champ écrit | Valeur source | Condition |
 |---|---|---|
-| `x_studio_immatriculation_` | `state.immatriculationValue` | toujours |
-| `x_studio_vehicle_id` | véhicule Odoo réutilisé ou créé (cf. [8 — Création du véhicule](08-creation-vehicule.md)) | si un véhicule est sélectionné |
-| `x_studio_categorie_xglass` | `selectedCalque.libelle` | si une catégorie est sélectionnée |
-| `x_studio_pice_concerne` (Pièce concernée) | suggestion X'Glass visible et modifiable | si une catégorie est sélectionnée — champ `related` vers l'opportunité |
-| `x_studio_base_eurocode` | `state.baseEurocode` | si un eurocode est renseigné — fonctionne nativement ici, ce champ `related` porte déjà ce nom exact |
-| `x_rpbm_xglass_piece_id` / `x_rpbm_piece_oe_id` / `x_rpbm_piece_am_id` | identifiants X’Glass/OE/après-marché liés à l’opportunité | champs `related` stockés, mis à jour via l’opportunité |
-| `x_studio_many2one_field_rP62C` / `x_studio_many2one_field_DkgHx` | marque/modèle historiques de l'opportunité, préparés depuis Fleet | si une opportunité est liée et la correspondance est unique ; une orthographe canonique exacte est privilégiée et le référentiel manquant peut être créé à la confirmation |
-| `x_studio_vin_` / `x_studio_dtails_modle` | VIN / détail modèle Fleet via l'opportunité | seulement si la source Fleet ou, pour VIN, la métadonnée X'Glass est renseignée |
-| `x_studio_date_1re_mec` | date MEC Fleet ou métadonnée X'Glass via l'opportunité | seulement si renseignée, au format texte `MM/YYYY` |
-| `x_studio_nergie_moteur` | énergie Fleet via l'opportunité | seulement pour les valeurs supportées ; variantes hybrides → `Hybride` |
+| mêmes champs natifs `rpbm_*` que sur l'opportunité ([6](06-confirmation-crm-lead.md)) | mêmes sources | miroirs `related` écrivables : la valeur est portée par l'opportunité liée |
 
 - **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
-- L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape. Chaque suggestion sélectionnée peut être ajoutée séparément ; seule une ligne créée par le widget dans la dialog courante peut être retirée — voir [9 — Création du produit](09-creation-produit.md).
+- L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape ; seule une ligne créée par le widget dans la dialog courante peut être retirée — voir [9 — Création du produit](09-creation-produit.md).
 
 Les opérations de main-d'œuvre X'Glass cochées sont ajoutées indépendamment de
 la confirmation. Chaque opération reconnue (T1, T2 ou T3) crée une ligne de
 service dont la quantité vaut sa durée X'Glass. La clé
-`x_rpbm_labor_operation_key` garde la provenance de la ligne, ce qui interdit
+`rpbm_labor_operation_key` garde la provenance de la ligne, ce qui interdit
 les doublons après réouverture et limite le retrait à la ligne du widget.
 
 La confirmation standard de la vente est une étape distincte de la confirmation
 de la dialog. Elle exige un `carrier_id` pour toute vente à l'état brouillon ou
 envoyée, mais ne crée pas de transporteur et ne modifie pas les lignes de vente.
 
-Les informations Fleet sont préparées au moment de la confirmation par les
-routes internes `/enrichVehicule` puis `/prepareHistoricalVehicleFields`, puis fusionnées dans le même
-`record.update()` que les autres champs. Une source vide, non supportée ou non
-autorisée produit un avertissement sans bloquer et conserve la valeur
-historique ; une source ambiguë produit un avertissement mais retient la
-première correspondance du référentiel.
-Le kilométrage n'est jamais modifié. Sans opportunité
-liée, le widget est masqué et aucune écriture dans les champs `related` n'est
-proposée. Les informations de l'article principal restent indépendantes.
+Pour un véhicule existant, `/enrichVehicule` complète les champs Fleet VIN/date MEC manquants ;
+les champs dérivés du véhicule et les champs Studio historiques sont alimentés côté serveur à
+l'enregistrement, comme sur l'opportunité. Le kilométrage n'est jamais modifié. Sans opportunité
+liée, le widget est masqué.
 
 Détail de chaque champ : [technique/champs/sale-order.md](../../technique/champs/sale-order.md).

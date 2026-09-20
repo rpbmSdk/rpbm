@@ -59,7 +59,7 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 - **Remise RPBM et fournisseur VSF** — **configurables (2026-07-26)** par `rpbm_agent.vsf_discount` et `rpbm_agent.vsf_partner_id`, avec les défauts historiques `0.2` et `5708` et une validation explicite des valeurs.
 - **Champs CRM historiques marqués `[Obsolète]`** plutôt que supprimés (`x_studio_field_KyCjB`, `x_studio_field_ZhaeY` — cf. [parcours utilisateur](fonctionnel/parcours-utilisateur.md)) : dette déjà identifiée et documentée par l'équipe elle-même, non résolue.
 - **Contrainte de session mono-utilisateur du portail X'Glass** — **corrigé** : désormais gérée explicitement par un verrou applicatif (cf. §3) plutôt que subie ; RPBM ne disposant que d'un seul identifiant partagé X'Glass/VSF (confirmé), la solution retenue sérialise les utilisateurs (message "occupé par X") plutôt que d'isoler par utilisateur, ce qui ne résoudrait pas la contrainte portail elle-même.
-- **Champs Studio non versionnés** — **corrigé** : les champs `x_studio_*` manquants sont désormais créés automatiquement par `pre_init_hook` (`hooks.py`), reproductible sur toute instance (voir [configuration](technique/configuration.md) et [technique/champs/](technique/champs/README.md)).
+- **Champs Studio non versionnés** — **remplacé (2026-09-21)** : le module déclare ses propres champs natifs `rpbm_*` et synchronise les champs Studio historiques tant qu'ils existent ; le `pre_init_hook` qui créait des champs Studio-like a été retiré (voir [configuration](technique/configuration.md#champs-natifs-et-champs-studio-historiques)).
 
 ## 6. UI/UX
 
@@ -85,7 +85,7 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 
 **Chantiers structurants (effort plus élevé)**
 1. ~~Isoler la session portail par utilisateur Odoo...~~ **Fait**, avec une solution différente de celle envisagée ici : un seul identifiant X'Glass/VSF partagé étant confirmé (pas de pool de comptes), l'isolation par utilisateur ne réglerait pas la contrainte portail — la solution retenue sérialise les sessions widget complètes via un verrou applicatif (`ir.config_parameter`, voir [configuration](technique/configuration.md#concurrence--verrou-de-session)).
-2. ~~Formaliser la création des champs `x_studio_*` manquants...~~ **Fait** : `pre_init_hook` idempotent (`hooks.py`) créant les `ir.model.fields` avec `context={'studio': True}` (mécanisme du mixin `web_studio`, vérifié dans le code source Odoo — voir [configuration](technique/configuration.md#mécanisme-retenu--pre_init_hook--contexte-studio)), plus les vues versionnées `views/*.xml` plaçant le widget et les champs correspondants.
+2. ~~Formaliser la création des champs `x_studio_*` manquants...~~ **Remplacé (2026-09-21)** par des champs natifs `rpbm_*` déclarés en Python, avec migration et double alimentation des champs Studio historiques.
 3. ~~Rendre la remise VSF (`remiseRPBM`) configurable.~~ **Fait** — paramètres système documentés.
 4. Ajouter une politique de sécurité minimale (`ir.model.access.csv`, groupe dédié) plutôt que de s'appuyer uniquement sur `auth='user'`.
 5. Fournir un moyen reproductible de pousser les identifiants portails (`XGLASS_USER`/`XGLASS_PASS`/`VSF_LOGIN`/`VSF_PASSWORD`) — **fait**, [`push_credentials.py`](../push_credentials.py) (racine du module, lit `.env` pour les portails et le profil Paradigme pour la cible Odoo, puis pousse vers `ir.config_parameter` via XML-RPC).

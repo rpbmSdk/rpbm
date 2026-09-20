@@ -112,14 +112,11 @@ classDiagram
         +xglassPieceIdField / pieceOeIdField / pieceAmIdField
         +fullEurocodeField / vsfDesignationField / vsfStockField / constructorReferenceField
     }
-    class CrmLead
-    class SaleOrder
     AbstractRecord <|-- AbstractWidgetRecord
-    AbstractWidgetRecord <|-- CrmLead
-    AbstractWidgetRecord <|-- SaleOrder
 ```
 
-`CrmLead` et `SaleOrder` surchargent certaines de ces propriétés avec des noms de champs `x_studio_*` différents selon le modèle (ex. `immatriculationField`, `baseEurocodeField`). Détail des noms de champs par classe/modèle : voir [technique/champs/](champs/README.md).
+Les noms sont ceux des champs natifs `rpbm_*`, identiques sur `crm.lead` et `sale.order` (miroirs
+`related` écrivables) : une seule table, aucune surcharge par modèle. Détail : [technique/champs/](champs/README.md).
 
 ## Chaîne réactive (`useEffect`) de `AgentWidgetDialog`
 
@@ -152,7 +149,7 @@ catégorie. Les boutons « Confirmer » et « Confirmer et enregistrer » resten
 que ces deux sélections ne sont pas présentes.
 
 À l'ouverture, `restoreSelectionFromRecord()` relit les identifiants persistés
-(`x_rpbm_xglass_piece_id`, `x_rpbm_piece_oe_id`, `x_rpbm_piece_am_id`, base Eurocode) et la
+(`rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id`, base Eurocode) et la
 cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAllCalques` /
 `showAllPieces` pilotent l'affichage réduit à la sélection courante.
 
@@ -166,7 +163,6 @@ cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAll
 | `getOdooVehicule()` | `AgentWidgetDialog` **et** `VehiculeComponent` | `/getOdooVehicule` | Véhicule Odoo existant (`{id, name, driver_id}`), appelé par carte puis à la confirmation |
 | `createOdooVehicule()` / `onClickCreateVehicule()` | `AgentWidgetDialog` et `VehiculeComponent` | `/createVehicule` | Création du véhicule ; retourne `{id, name}` |
 | `enrichOdooVehicule()` | `AgentWidgetDialog` à la confirmation si le véhicule existe déjà | `/enrichVehicule` | Complément des champs Fleet VIN/date manquants depuis les métadonnées X'Glass ; avertissements |
-| `getRecordData()` | `AgentWidgetDialog` à la confirmation | `/prepareHistoricalVehicleFields` | Préparation explicite des champs historiques depuis Fleet, avec métadonnées X'Glass en repli ; valeurs + avertissements |
 | `getVehiculeMeta()` | `AgentWidgetDialog` pour le seul véhicule sélectionné | `/rpbm_agent/getVehiculeMeta` | VIN/CNIT/date MEC **et** planche (catégories/calques), en un appel |
 | `restorePortalContext()` | `AgentWidgetDialog` après reconnexion | `/getPlanche` | Re-sélection du véhicule côté portail sans toucher l'état Owl |
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
@@ -176,7 +172,7 @@ cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAll
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour une carte VSF donnée |
 | `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cette carte |
 | `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget |
-| `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce), provenance `x_rpbm_labor_operation_key` |
+| `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce), provenance `rpbm_labor_operation_key` |
 
 L'encart d'actions d'une carte VSF est le sous-template `rpbm_agent.ArticleActions`
 (`agent_widget_dialog.xml`), appelé pour les cartes principales et suggérées ; la dialog devis
@@ -189,12 +185,11 @@ ligne, derrière un garde-fou `addArticleToSaleOrder` puisque l'extension Owl es
 construit un objet `data` (via `getRecordData()`) et appelle
 **`this.props.record.update(data)`** — mise à jour en mémoire du `Record` Odoo standard —
 **avant** de fermer la session portail (`closeAgents()`, cf. correctif L1.0).
-Lorsque le véhicule est résolu, `getRecordData()` appelle également
-`/enrichVehicule`, puis `/prepareHistoricalVehicleFields` avec les métadonnées
-du véhicule, et fusionne uniquement les `values` retournées
-dans ce même objet ; les `warnings` sont affichés sans bloquer la confirmation.
-L'appel intervient après la réutilisation ou la création de `fleet.vehicle`,
-jamais pendant la saisie intermédiaire.
+Lorsque le véhicule existe déjà, `getRecordData()` appelle `/enrichVehicule` (VIN et date MEC
+Fleet manquants) ; les `warnings` sont affichés sans bloquer. Marque, modèle, VIN, énergie,
+détail et date de l'opportunité ne sont pas écrits par le widget : ils dérivent du véhicule lié
+côté serveur (`compute`, visible dans le formulaire via l'onchange) et sont recopiés vers les
+champs Studio historiques à l'enregistrement.
 L'écriture effective en base se fait ensuite via le mécanisme de sauvegarde standard du
 formulaire Odoo (bouton « Enregistrer »), ou directement avec « Confirmer et enregistrer ».
 Le module n'utilise pas de `orm.write` : tous ses échanges serveur passent par `rpc` vers les

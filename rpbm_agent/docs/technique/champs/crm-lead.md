@@ -1,88 +1,56 @@
 # Champs — `crm.lead`
 
-## Sélections persistantes du widget
+Modèle porteur de la Piste/Opportunité, **source de vérité du dossier** : le devis recopie ces
+champs en `related`. Tous sont déclarés dans `models/crm_lead.py`.
 
-Le module conserve dans trois champs `Char` techniques les identifiants externes
-nécessaires à la réouverture : `x_rpbm_xglass_piece_id`, `x_rpbm_piece_oe_id` et
-`x_rpbm_piece_am_id`. Ils sont cachés dans la vue et ne contiennent pas de secret.
+## Véhicule (référentiel Fleet)
 
-Modèle porteur de la Piste/Opportunité. Tous les champs `x_studio_*` consommés par `rpbm_agent`, existants ou créés par [`pre_init_hook`](../configuration.md#mécanisme-retenu--pre_init_hook--contexte-studio).
+| Champ | Type | Alimentation | Studio historique synchronisé |
+|---|---|---|---|
+| `rpbm_vehicle_id` | many2one `fleet.vehicle` | widget (véhicule réutilisé ou créé) | — |
+| `rpbm_license_plate` | char | widget ; dérivé du véhicule | `x_studio_field_NVioD` |
+| `rpbm_vehicle_brand_id` | many2one `fleet.vehicle.model.brand`, **cherchable et groupable** | dérivé du véhicule, saisissable sans véhicule | `x_studio_field_KyCjB` (référentiel Studio `x_rpbm_marques_voitures`, par nom) |
+| `rpbm_vehicle_model_id` | many2one `fleet.vehicle.model` | idem | `x_studio_field_ZhaeY` (référentiel Studio `x_rpbm_modeles_voitures`, par nom + marque) |
+| `rpbm_vin` | char | idem (VIN `var = …;` de l'ancien parseur nettoyé) | `x_studio_field_PfJlB` |
+| `rpbm_fuel_type` | selection `fleet.FUEL_TYPES` | idem | `x_studio_field_TAhpP` (Diesel / Essence / Électrique / Hybride ; GPL, GNV, hydrogène sans équivalent) |
+| `rpbm_vehicle_detail_model` | char | idem | `x_studio_field_i8fWl` |
+| `rpbm_first_registration_date` | date | idem | `x_studio_field_Eh6Wd` (char `MM/YYYY`) |
 
-| Champ | Type | Related → | Origine | Obsolète | Rôle |
-|---|---|---|---|---|---|
-| `x_studio_field_NVioD` | char | — | Studio (existant) | non | Immatriculation — champ historique conservé (lié aux factures/commandes), renseigné à la confirmation depuis le véhicule lié |
-| `x_studio_field_KyCjB` / `x_studio_field_ZhaeY` | many2one | — | Studio (existant) | **oui, `[Obsolète]`** | Marque/modèle véhicule historiques ; conservés et renseignés si la correspondance Fleet est déterministe |
-| `x_studio_vehicle_id` | many2one → `fleet.vehicle` | — | `pre_init_hook` (nouveau) | non | Véhicule Odoo lié (créé ou réutilisé) |
-| `x_studio_categorie_xglass` | char | — | `pre_init_hook` (nouveau) | non | Catégorie/calque X'Glass sélectionné (ex : Pare-brise) |
-| `x_studio_field_eENQz` ("Pièce concernée") | selection | — | Studio (existant) | non | 4 valeurs (`Pare-Brise`/`Lunette arrière`/`Glace Latérale`/`Autre...`) pilotant le forfait de pose — écrit par le widget via `pieceConcerneeField`, valeur suggérée depuis le calque X'Glass, visible et modifiable |
-| `x_studio_field_ORIyy` ("Base Eurocode") | char | — | Studio (existant) | non | 5 premiers caractères de l'eurocode, préfiltrage VSF — ciblé par le widget via `CrmLead.baseEurocodeField` (`agent_widget_dialog_crm_lead.js`) |
-| `x_studio_field_NwRik` ("Eurocode Complet") | char | — | Studio (existant) | non | Eurocode complet — écrit par le widget (`fullEurocodeField`) avec le `code` de l'article VSF désigné **article principal** ; sinon saisi à la main |
-| `x_studio_field_j8eh3` ("VSF - Désignation") | char | — | Studio (existant) | non | Désignation de l'article principal (`vsfDesignationField`) |
-| `x_studio_field_BKtpw` ("VSF - Qté Dispo") | char | — | Studio (existant) | non | Stock VSF de l'article principal (`vsfStockField`) |
-| `x_studio_field_MNzfJ` ("Code Constructeur") | char | — | Studio (existant) | non | Référence constructeur de l'article principal (`constructorReferenceField`), si VSF la fournit |
-| `x_studio_eurocode_joint` ("Eurocode Joint") | char | — | Studio (existant) | non | Eurocode du joint, saisi manuellement si nécessaire — **jamais écrit par le widget** |
+Les champs dérivés sont des `compute` stockés, `readonly=False` : quand un véhicule est lié, Fleet
+les complète sans jamais effacer une valeur existante ; sans véhicule (dossiers historiques), ils
+restent saisissables.
 
-## Référentiel Fleet et rétrocompatibilité historique
+## Pièce et article
 
-Le véhicule Fleet lié par `x_studio_vehicle_id` est la source canonique pour
-les nouveaux dossiers. Le lot AG01-01 ne crée plus les huit champs techniques
-`x_rpbm_vehicle_*` (ni sur `crm.lead`, ni sur `sale.order`). Les champs de même
-nom qui existeraient déjà dans une base restent toutefois intacts : aucun champ
-historique, obsolète ou ancien alias n'est supprimé, renommé ou migré.
+| Champ | Type | Alimentation | Studio historique synchronisé |
+|---|---|---|---|
+| `rpbm_xglass_category` | char | widget (libellé exact du calque X'Glass) | — |
+| `rpbm_part_type` | selection `windshield` / `rear_window` / `side_window` / `other` | widget (suggestion depuis le calque, modifiable) | `x_studio_field_eENQz` (Pare-Brise / Lunette arrière / Glace Latérale / Autre...) — **pilote la cascade de prix Studio** |
+| `rpbm_eurocode_base` | char | widget (5 premiers caractères de la pièce après-marché, ou saisie) | `x_studio_field_ORIyy` |
+| `rpbm_eurocode` | char, indexé | widget, article VSF **principal** | `x_studio_field_NwRik` |
+| `rpbm_vsf_designation` | char | idem | `x_studio_field_j8eh3` |
+| `rpbm_vsf_stock` | integer | idem | `x_studio_field_BKtpw` (char) |
+| `rpbm_constructor_reference` | char | idem, si VSF la fournit | `x_studio_field_MNzfJ` |
+| `rpbm_intervention_location` | selection `galleria` / `genipa` / `domicile` / `lavage_place_armes` / `lavage_marin` | saisie ; préremplit `sale.order.carrier_id` | `x_studio_lieu_intervention` |
+| `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id` | char, invisibles | widget (restauration des sélections à la réouverture) | — |
 
-Lors de la confirmation du dialogue, le backend lit explicitement le véhicule
-Fleet puis prépare les champs historiques suivants :
+`x_studio_eurocode_joint` n'est pas consommé par le module.
 
-| Champ historique | Source Fleet | Règle |
-|---|---|---|
-| `x_studio_field_NVioD` | `license_plate` | Immatriculation |
-| `x_studio_field_KyCjB` | `model_id.brand_id.name` | Référentiel historique, créé s'il est non vide et sans correspondance ; en cas d'ambiguïté, la première correspondance est retenue avec un avertissement |
-| `x_studio_field_ZhaeY` | `model_id.name` | Référentiel historique, créé s'il est non vide et sans correspondance ; en cas d'ambiguïté, la première correspondance est retenue avec un avertissement |
-| `x_studio_field_PfJlB` | `vin_sn` | Écrit seulement si Fleet est renseigné |
-| `x_studio_field_TAhpP` | `fuel_type` | `Diesel`, `Essence`, `Électrique` ou `Hybride` selon la correspondance supportée |
-| `x_studio_field_i8fWl` | `x_studio_detail_model` | Écrit seulement si Fleet est renseigné |
-| `x_studio_field_Eh6Wd` | `x_studio_date_mec` | Texte au format `MM/YYYY` |
+## Synchronisation avec les champs Studio
 
-Une source vide, une énergie non supportée ou un manque de droits déclenche un
-avertissement non bloquant et conserve la valeur historique existante. Une
-valeur ambiguë déclenche également un avertissement, mais la première
-correspondance du référentiel est retenue.
-Le kilométrage n'est jamais fabriqué ni modifié. Sur un devis,
-les champs historiques sont les miroirs de l'opportunité et ne sont préparés
-que lorsqu'une opportunité est présente.
-
-Les champs Fleet réels `x_studio_detail_model` et `x_studio_date_mec`, ainsi que
-`x_studio_vehicle_id`, restent pris en charge. La référence constructeur
-`x_rpbm_vsf_constructor_reference` reste indépendante et inchangée.
-
-## Structure des 3 champs Eurocode
-
-Trois champs Eurocode distincts coexistent sur la Piste/Opportunité, correspondant à trois étapes du travail des utilisateurs (convention préexistante à `rpbm_agent`) :
-
-1. **Base Eurocode** (`x_studio_field_ORIyy`) — les 5 premiers caractères, pour préfiltrer les articles VSF. Seul champ eurocode **lu** par le widget (restauration à la réouverture).
-2. **Eurocode (Complet)** (`x_studio_field_NwRik`) — écrit par le widget quand un article VSF principal est désigné, sinon renseigné manuellement.
-3. **Eurocode (Joint)** (`x_studio_eurocode_joint`) — renseigné manuellement en plus si un joint est nécessaire.
-
-Lorsqu'un article VSF est explicitement défini comme article principal, le
-widget écrit son code dans `x_studio_field_NwRik`, sa désignation dans
-`x_studio_field_j8eh3`, son stock dans `x_studio_field_BKtpw` et sa référence
-constructeur dans `x_studio_field_MNzfJ`. Il ne renseigne jamais les champs de
-prix ou de marge calculés.
-
-## Bug corrigé
-
-Le widget ciblait auparavant `x_studio_base_eurocode` par défaut (hérité de `AbstractWidgetRecord`, `utils.js`), un champ qui n'existe pas sur `crm.lead` (il n'existe que sur `sale.order`, en tant que champ `related`). Corrigé par la surcharge `this.baseEurocodeField = 'x_studio_field_ORIyy'` dans le constructeur de `CrmLead` — voir [état des lieux](../../etat-des-lieux.md).
+Le mixin `rpbm.legacy.sync.mixin` (`models/legacy_fields.py`) recopie chaque écriture d'un champ
+natif vers le champ Studio correspondant s'il existe, et une saisie Studio seule vers le natif
+(convertisseurs : énergie, date, pièce concernée, lieu, stock, référentiels marque/modèle). Une
+valeur non convertible laisse la cible inchangée. Sans champs Studio, le mixin ne fait rien.
 
 ## Vue
 
-L'onglet "Véhicule (X'Glass)" ajouté par `views/crm_lead_views.xml` affiche le
-widget, `x_studio_vehicle_id` et `x_studio_categorie_xglass`. Les champs
-historiques nécessaires à la préparation peuvent être chargés dans un groupe
-invisible, mais les groupes d'identité Fleet en doublon ne sont pas affichés.
-Les champs immatriculation/eurocode déjà visibles ailleurs sur ce formulaire ne
-sont pas dupliqués ici.
+L'onglet « Véhicule (X'Glass) » (`views/crm_lead_views.xml`) affiche le widget et tous les champs
+ci-dessus ; la vue de recherche des opportunités ajoute immatriculation, marque, modèle et
+eurocode, et les regroupements par marque, modèle et pièce concernée. Les vues Studio des équipes
+ne sont pas modifiées.
 
 ## Lu/écrit par
 
-- Lecture (auto-restore de la catégorie à l'ouverture) : [3 — Catégorie X'Glass](../../fonctionnel/workflow/03-categorie-xglass.md)
+- Lecture (restauration à l'ouverture) : [3 — Catégorie X'Glass](../../fonctionnel/workflow/03-categorie-xglass.md), [4 — Pièce](../../fonctionnel/workflow/04-piece-piece-am.md)
 - Écriture : [6 — Confirmation sur Piste/Opportunité](../../fonctionnel/workflow/06-confirmation-crm-lead.md)

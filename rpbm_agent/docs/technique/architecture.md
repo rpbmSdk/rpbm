@@ -104,10 +104,8 @@ sequenceDiagram
     BE->>ORM: recherche/création fleet.vehicle
     FE->>BE: /enrichVehicule si le véhicule existait déjà
     BE->>ORM: complète VIN/date Fleet absents depuis X'Glass
-    FE->>BE: /prepareHistoricalVehicleFields
-    BE->>ORM: lecture Fleet + repli métadonnées + réutilisation/création des référentiels historiques
-    BE-->>FE: values + warnings non bloquants
-    FE->>FE: record.update(data) — écriture en mémoire du formulaire
+    FE->>FE: record.update(data) — champs natifs rpbm_* en mémoire du formulaire
+    Note over ORM: à l'enregistrement : compute depuis Fleet + recopie vers les champs Studio (mixin)
     opt "Confirmer et enregistrer"
         FE->>ORM: record.save() — sauvegarde effective en base
     end
@@ -121,9 +119,9 @@ sequenceDiagram
 
 ## Points d'attention transverses
 
-- **Champs `x_studio_*` désormais créés automatiquement** à l'installation par `pre_init_hook` (voir [configuration](configuration.md#champs-odoo-studio-requis)) : le module fonctionne "out of the box" sur une instance vierge pour les champs listés dans [technique/champs/](champs/README.md) ; les champs Studio historiques (immatriculation, eurocode complet/joint) restent créés à la main, préexistants à ce module.
-- **Compatibilité historique véhicule** : la confirmation prépare les champs Studio historiques depuis Fleet ; les huit alias techniques `x_rpbm_vehicle_*` ne sont plus créés par le hook. Les alias déjà présents et tous les champs historiques restent inchangés.
+- **Champs natifs `rpbm_*`** déclarés par le module (voir [configuration](configuration.md#champs-natifs-et-champs-studio-historiques)) : le module fonctionne sur une instance vierge ; les champs Studio historiques, s'ils existent, sont alimentés en double par `models/legacy_fields.py`.
+- **Compatibilité historique véhicule** : marque, modèle, VIN, énergie, détail et date MEC de l'opportunité dérivent du véhicule Fleet lié et sont recopiés vers les champs Studio historiques ; la migration `17.0.260921.1` a rempli les natifs depuis ces champs et retiré les champs que le module avait créés.
 - **Mode logistique** : `sale.order.carrier_id` est la source canonique du lieu/mode de remise. Une vue versionnée le rend visible après les réorganisations Studio ; sa valeur peut être préremplie depuis `crm.lead.x_studio_lieu_intervention` uniquement sur les nouveaux devis. La confirmation de la vente refuse un transporteur vide pour éviter le routage implicite.
 - **Aucune sécurité applicative dédiée** : les routes sont ouvertes à tout utilisateur connecté (`auth='user'`), sans groupe ni `ir.model.access.csv` propre au module.
-- **Contrôle d'accès de la synchronisation historique** : `/prepareHistoricalVehicleFields` n'utilise pas `sudo`, lit seulement les champs Fleet nécessaires et transforme toute absence de droit couverte en avertissement non bloquant.
+- **Contrôle d'accès** : `/enrichVehicule` n'utilise pas `sudo` et transforme un refus d'écriture Fleet en avertissement non bloquant ; la synchronisation Studio s'exécute avec les droits de l'utilisateur qui écrit.
 - **État de session partagé** : `vsfAgent`/`xglassAgent` sont des instances Python **au niveau module** (pas par utilisateur Odoo, pas par requête) — voir [backend](backend.md#état-de-session-partagée) et l'[état des lieux](../etat-des-lieux.md) pour l'implication en usage concurrent.

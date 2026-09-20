@@ -4,7 +4,7 @@ Outil de récupération des données des portails **X'Glass** et **VSF** pour in
 
 ## Prérequis rapides
 
-1. Installer le module : les champs Studio requis sont créés par `pre_init_hook` et le widget est placé par les vues versionnées (`views/*.xml`).
+1. Installer le module : ses champs natifs `rpbm_*` sont créés par l'ORM et le widget est placé par les vues versionnées (`views/*.xml`) ; sur une base existante, la migration `17.0.260921.1` remplit les natifs depuis les champs Studio historiques, qui restent alimentés en double.
 2. Renseigner les identifiants portails dans `Réglages > Paramètres généraux > Intégrations > Accès catalogues X'Glass / VSF` (`XGLASS_USER`, `XGLASS_PASS`, `VSF_LOGIN`, `VSF_PASSWORD`), ou les pousser avec [`push_credentials.py`](push_credentials.py).
 3. Vérifier les paramètres optionnels `rpbm_agent.vsf_partner_id`, `rpbm_agent.vsf_discount`, `rpbm_agent.labor_product_t1/t2/t3` (défauts calés sur `rpbm-preprod`).
 

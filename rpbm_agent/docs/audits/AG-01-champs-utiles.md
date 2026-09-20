@@ -159,7 +159,7 @@ marque/modèle. Le cas x_rpbm_vsf_constructor_reference reste hors de cette
 modification ciblée. Les champs déjà déployés, y compris les alias et les
 champs historiques, restent en place.
 
-Références : [hooks.py](../../hooks.py), [vue CRM](../../views/crm_lead_views.xml),
+Références : `hooks.py` (supprimé en `17.0.260921.1`, remplacé par des champs natifs), [vue CRM](../../views/crm_lead_views.xml),
 [vue devis](../../views/sale_order_views.xml),
 [champs live](../../../.paradigme/audits/rpbm-preprod/data/ag01-2026-09-14/fields/ir.model.fields.json),
 [origines live](../../../.paradigme/audits/rpbm-preprod/data/ag01-2026-09-14/models/ir.model.data.json).

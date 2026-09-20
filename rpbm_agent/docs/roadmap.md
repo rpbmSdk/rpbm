@@ -1,6 +1,6 @@
 # Roadmap — UI & transfert vers Odoo
 
-## Reste à faire (état au 2026-09-20)
+## Reste à faire (état au 2026-09-21)
 
 Tout ce qui suit cette section est l'historique du chantier (diagnostic de juillet, lots
 livrés, décisions) : il est conservé tel quel comme trace, mais seule cette table fait foi
@@ -13,12 +13,18 @@ pour ce qui reste ouvert.
 | R3 | VM-11 / VM-12 (coefficients de prix pour L4) | [validations-metier.md](validations-metier.md) | à soumettre |
 | R4 | Retry réseau léger sur les GET X'Glass (instabilité Odoo.sh↔portail) | §0 ④ | à évaluer, jamais tranché |
 | R5 | Bouton « Synchroniser VSF » masqué (`base.group_no_one`) | `views/product_template_views.xml` | en attente d'ouverture métier |
-| R6 | Champs `related` Studio de `sale.order` écrits par le widget (`x_studio_pice_concerne`, `x_studio_eurocode_complet`, `x_studio_vsf_*`, miroirs marque/modèle) : vérifier `readonly=False` via `fields_get`, sinon l'écriture ne se propage pas à l'opportunité | AG01-02 | une requête `paradigme-mcp` |
+| R6 | Recette live de la refonte des champs natifs (`17.0.260921.x`) : migration sans FAIL dans le journal, taux de remplissage des natifs ≈ ceux des Studio, champs du hook et alias `x_rpbm_vehicle_*` absents de `ir.model.fields`, parcours widget complet | refonte 2026-09-21 | à rejouer avec [`jeu-de-test.md`](jeu-de-test.md) |
 | R7 | Exports draw.io obsolètes à la racine du module (`Readme.jpeg/.pdf/.png/.html`, 5,4 Mo livrés à chaque build) | — | à supprimer (source archivée dans `_archive/Readme.drawio`) |
 
 Réglé le 2026-09-20 : alias de route `/rbm_agent/getVehiculeMeta`, accent « Non renseigné » des
 rapports, énergie Fleet à la création de véhicule, produits main-d'œuvre paramétrables, code
 mort backend/frontend, doublons d'appels portail, documentation alignée.
+
+Réglé le 2026-09-21 (refonte des champs, lots 1-5) : champs natifs `rpbm_*` sur `crm.lead`,
+`sale.order`, `sale.order.line`, `fleet.vehicle`, `product.*`, `account.move`, `stock.picking` ;
+synchronisation bidirectionnelle avec les champs Studio historiques ; migration avec backfill ;
+suppression du `pre_init_hook`, des champs Studio-like qu'il créait et des alias orphelins ; le
+constat sur les miroirs `readonly` du devis disparaît par construction.
 
 ---
 

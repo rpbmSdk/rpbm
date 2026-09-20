@@ -105,7 +105,7 @@ Paramètres optionnels (`rpbm_agent.vsf_partner_id`, `rpbm_agent.vsf_discount`, 
 
 ### Champs Odoo Studio à créer
 
-Les champs `x_studio_*` requis par le widget sont créés automatiquement à l'installation par `pre_init_hook` (voir [configuration technique](../technique/configuration.md#champs-odoo-studio-requis)). Inventaire complet par modèle (nom, type, rôle, champs obsolètes, structure des 3 champs Eurocode sur `crm.lead`) : [technique/champs/](../technique/champs/README.md).
+Aucun champ Studio n'est à créer : le module déclare ses champs natifs `rpbm_*` et, si des champs Studio historiques existent, les alimente en double (voir [configuration technique](../technique/configuration.md#champs-natifs-et-champs-studio-historiques)). Inventaire par modèle : [technique/champs/](../technique/champs/README.md).
 
 ## Réouverture du dialogue et mémorisation des pièces
 
