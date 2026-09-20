@@ -98,11 +98,13 @@ def month_year_to_date(value):
     if isinstance(value, date):
         return value
     text = str(value or "").strip()
-    for fmt in ("%m/%Y", "%Y-%m-%d"):
+    # Formats historiques constatés en base : MM/YYYY (majoritaire), MM/YY, YYYY, JJ/MM/YYYY.
+    for fmt in ("%m/%Y", "%Y-%m-%d", "%m/%y", "%Y", "%d/%m/%Y"):
         try:
-            return datetime.strptime(text[:10] if fmt == "%Y-%m-%d" else text, fmt).date()
+            parsed = datetime.strptime(text[:10] if fmt == "%Y-%m-%d" else text, fmt).date()
         except ValueError:
             continue
+        return parsed.replace(day=1) if fmt == "%d/%m/%Y" else parsed
     return None
 
 
@@ -274,7 +276,8 @@ def referenced_elsewhere(env, model_name, field_name):
     autres champs. Sert de garde avant toute suppression."""
     pattern = re.compile(r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(field_name))
     found = []
-    views = env["ir.ui.view"].sudo().with_context(active_test=False).search([("arch_db", "ilike", field_name)])
+    views = env["ir.ui.view"].sudo().with_context(active_test=False).search([
+        ("model", "=", model_name), ("arch_db", "ilike", field_name)])
     found += ["ir.ui.view %s (%s)" % (view.id, view.xml_id or view.name)
               for view in views if pattern.search(view.arch_db or "")]
     if "base.automation" in env:
@@ -299,9 +302,29 @@ def referenced_elsewhere(env, model_name, field_name):
     for field in other_fields:
         if (field.model, field.name) == (model_name, field_name):
             continue
+        if field.related and not _related_hits(env, field, model_name, field_name):
+            continue  # même nom sur un autre modèle (ex. account.move.x_studio_eurocode)
         if pattern.search(" ".join(filter(None, [field.related, field.depends, field.compute]))):
             found.append("ir.model.fields %s.%s" % (field.model, field.name))
     return found
+
+
+def _related_hits(env, field, model_name, field_name):
+    """Vrai si le chemin ``related`` de ``field`` aboutit bien à ``model_name.field_name`` et n'est
+    pas le miroir automatique d'un ``_inherits`` (product.product ← product.template), qui
+    disparaît avec le champ parent."""
+    *path, last = field.related.split(".")
+    if last != field_name or field.model not in env:
+        return False
+    model = env[field.model]
+    if len(path) == 1 and model._inherits.get(model_name) == path[0] and field.state == "base":
+        return False
+    for step in path:
+        step_field = model._fields.get(step)
+        if step_field is None or not step_field.comodel_name or step_field.comodel_name not in env:
+            return False
+        model = env[step_field.comodel_name]
+    return model._name == model_name
 
 
 class RpbmLegacySyncMixin(models.AbstractModel):

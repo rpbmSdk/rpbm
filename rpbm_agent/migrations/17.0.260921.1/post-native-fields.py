@@ -22,7 +22,13 @@ _logger = logging.getLogger(__name__)
 FUEL_LEGACY_LABELS = {"Diesel": "diesel", "Essence": "gasoline", "Électrique": "electric", "Hybride": "full_hybrid"}
 VIN_CLEANUP = r"regexp_replace({src}, '^\s*var\s*=\s*([A-HJ-NPR-Z0-9]{{17}})\s*;\s*$', '\1')"
 INT_CAST = r"CASE WHEN {src} ~ '^\s*\d+\s*$' THEN trim({src})::integer END"
-MONTH_YEAR = r"CASE WHEN {src} ~ '^(0[1-9]|1[0-2])/\d{{4}}$' THEN to_date({src}, 'MM/YYYY') END"
+MONTH_YEAR = (
+    r"CASE WHEN trim({src}) ~ '^(0[1-9]|1[0-2])/\d{{4}}$' THEN to_date(trim({src}), 'MM/YYYY')"
+    r" WHEN trim({src}) ~ '^(0[1-9]|1[0-2])/\d{{2}}$' THEN to_date(trim({src}), 'MM/YY')"
+    r" WHEN trim({src}) ~ '^(19|20)\d{{2}}$' THEN to_date(trim({src}), 'YYYY')"
+    r" WHEN trim({src}) ~ '^\d{{2}}/(0[1-9]|1[0-2])/\d{{4}}$' THEN date_trunc('month', to_date(trim({src}), 'DD/MM/YYYY'))::date"
+    r" END"
+)
 
 # (table, colonne source, colonne cible, expression, correspondance pour un CASE)
 COPIES = [
@@ -174,20 +180,28 @@ def _refresh_mirrors(env):
 
 def _drop_module_created_fields(env):
     Fields = env["ir.model.fields"].sudo()
-    for model_name, field_name in MODULE_CREATED_FIELDS:
-        field = Fields.search([("model", "=", model_name), ("name", "=", field_name), ("state", "=", "manual")], limit=1)
-        if not field:
-            continue
-        references = referenced_elsewhere(env, model_name, field_name)
-        if references:
-            _logger.warning("rpbm_agent: %s.%s conservé, encore référencé par %s", model_name, field_name, references)
-            continue
-        try:
-            with env.cr.savepoint():
-                field.unlink()
-            _logger.info("rpbm_agent: champ %s.%s supprimé", model_name, field_name)
-        except Exception as error:  # noqa: BLE001 - la migration continue, le champ est signalé
-            _logger.warning("rpbm_agent: %s.%s non supprimé : %s", model_name, field_name, error)
+    pending = list(MODULE_CREATED_FIELDS)
+    for _ in range(len(pending)):  # plusieurs passes : un champ ne référencé que par un autre de la liste tombe à la passe suivante
+        kept = []
+        for model_name, field_name in pending:
+            field = Fields.search([("model", "=", model_name), ("name", "=", field_name), ("state", "=", "manual")], limit=1)
+            if not field:
+                continue
+            references = referenced_elsewhere(env, model_name, field_name)
+            if references:
+                kept.append((model_name, field_name, references))
+                continue
+            try:
+                with env.cr.savepoint():
+                    field.unlink()
+                _logger.info("rpbm_agent: champ %s.%s supprimé", model_name, field_name)
+            except Exception as error:  # noqa: BLE001 - la migration continue, le champ est signalé
+                _logger.warning("rpbm_agent: %s.%s non supprimé : %s", model_name, field_name, error)
+        if len(kept) == len(pending):
+            break
+        pending = [(model_name, field_name) for model_name, field_name, _ in kept]
+    for model_name, field_name, references in kept:
+        _logger.warning("rpbm_agent: %s.%s conservé, encore référencé par %s", model_name, field_name, references)
 
 
 def migrate(cr, version):
