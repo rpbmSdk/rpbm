@@ -83,6 +83,9 @@ def _copy_column(cr, table, src, dst, expression=None, case_map=None):
     if case_map:
         expression = "CASE {src} " + " ".join(["WHEN %s THEN %s"] * len(case_map)) + " END"
         params = tuple(item for pair in case_map.items() for item in pair)
+    # Les colonnes Studio portent des majuscules (x_studio_field_NVioD) : identifiants cites, sinon
+    # Postgres les replie en minuscules (build 38336004 : column "x_studio_field_nviod" does not exist).
+    src = f'"{src}"'
     expression = (expression or "{src}").format(src=src)
     cr.execute(
         f"UPDATE {table} SET {dst} = {expression} WHERE {dst} IS NULL AND {src} IS NOT NULL AND {src}::text <> ''",
@@ -115,9 +118,9 @@ def _backfill_brand_model(env):
     env.cr.execute(f"""
         SELECT l.id, b.x_name, m.x_name
         FROM crm_lead l
-        LEFT JOIN {brand_table} b ON b.id = l.{studio_brand}
-        LEFT JOIN {model_table} m ON m.id = l.{studio_model}
-        WHERE (l.{studio_brand} IS NOT NULL OR l.{studio_model} IS NOT NULL)
+        LEFT JOIN {brand_table} b ON b.id = l."{studio_brand}"
+        LEFT JOIN {model_table} m ON m.id = l."{studio_model}"
+        WHERE (l."{studio_brand}" IS NOT NULL OR l."{studio_model}" IS NOT NULL)
           AND (l.rpbm_vehicle_brand_id IS NULL OR l.rpbm_vehicle_model_id IS NULL)
     """)
     groups = {}
