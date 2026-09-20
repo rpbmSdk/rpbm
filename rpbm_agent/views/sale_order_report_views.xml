@@ -59,7 +59,7 @@
                         <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
                     </t>
                     <t t-else="">
-                        <span>Non renseigne</span>
+                        <span>Non renseigné</span>
                     </t>
                 </div>
             </div>
@@ -86,7 +86,7 @@
                         <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
                     </t>
                     <t t-else="">
-                        <span>Non renseigne</span>
+                        <span>Non renseigné</span>
                     </t>
                 </div>
             </div>
@@ -113,7 +113,7 @@
                         <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
                     </t>
                     <t t-else="">
-                        <span>Non renseigne</span>
+                        <span>Non renseigné</span>
                     </t>
                 </div>
             </div>
@@ -145,7 +145,7 @@
                         <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
                     </t>
                     <t t-else="">
-                        <span>Non renseigne</span>
+                        <span>Non renseigné</span>
                     </t>
                 </div>
             </div>
@@ -176,7 +176,7 @@
                         <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
                     </t>
                     <t t-else="">
-                        <span>Non renseigne</span>
+                        <span>Non renseigné</span>
                     </t>
                 </div>
             </div>

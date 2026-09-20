@@ -23,6 +23,9 @@
                 <span t-else="" class="text-muted">Aucune opération de main-d'œuvre n'est fournie pour cette pièce.</span>
             </section>
         </xpath>
+        <xpath expr="//section[@t-if='selectedPiece or hasRestoredPieceContext']/h5" position="replace">
+            <h5>5. Article VSF</h5>
+        </xpath>
         <xpath expr="//div[@name='selected_main_article_actions']" position="inside">
             <t t-if="getProductForArticle(actionArticle.code)">
                 <t t-if="isWidgetArticleInOrder(actionArticle.code)">

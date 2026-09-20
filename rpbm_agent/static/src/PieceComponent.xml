@@ -19,19 +19,13 @@
                         </div>
                     </t>
                 </div>
-                <t t-if="props.piece.tempsList">
+                <ul t-if="props.piece.tempsList and props.piece.tempsList.length" class="mb-0">
                     <t t-foreach="props.piece.tempsList" t-as="tempsList" t-key="tempsList.operationTemps.id">
                         <li>
-                            <t t-esc="tempsList.operationTemps.libelle"/>
- :                            <t t-esc="tempsList.temps"/>
-h | Taux : <t t-esc="tempsList.taux"/>
+                            <t t-esc="tempsList.operationTemps.libelle"/> : <t t-esc="tempsList.temps"/>h | Taux : <t t-esc="tempsList.taux"/>
                         </li>
                     </t>
-                </t>
-                <ul>
-
                 </ul>
-
             </div>
         </div>
     </t>

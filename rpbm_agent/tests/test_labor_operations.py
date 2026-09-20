@@ -29,5 +29,5 @@ class TestLaborOperations(TestCase):
 
     def test_invalid_duration_unknown_rate_and_missing_identifier_cannot_be_added(self):
         self.assertTrue(_labor_operation_payload(99, self._operation(temps=0))["unavailableReason"])
-        self.assertTrue(_labor_operation_payload(99, self._operation(taux="T9"))["unavailableReason"])
+        self.assertTrue(_labor_operation_payload(99, self._operation(taux="T9", activite={"code": "X9"}))["unavailableReason"])
         self.assertTrue(_labor_operation_payload(99, self._operation(id=False, operationTemps={}))["unavailableReason"])

@@ -25,9 +25,50 @@ VSF_PARTNER_PARAM = "rpbm_agent.vsf_partner_id"
 VSF_DISCOUNT_PARAM = "rpbm_agent.vsf_discount"
 DEFAULT_VSF_PARTNER_ID = 5708
 
-# Produits de service contrôlés sur rpbm-preprod. Le widget ne calcule jamais
-# leur prix : l'onchange Odoo applique prix, taxes et règle fiscale du produit.
+# Produits de service contrôlés sur rpbm-preprod, surchargeables par les
+# paramètres système rpbm_agent.labor_product_t1/t2/t3. Le widget ne calcule
+# jamais leur prix : l'onchange Odoo applique prix, taxes et règle fiscale.
 LABOR_PRODUCT_BY_RATE = {"T1": 24, "T2": 23, "T3": 113}
+
+# Énergie X'Glass (champ `energie` du véhicule) -> clé native fleet.FUEL_TYPES.
+# Créer une valeur de sélection sur le champ de base fuel_type est refusé par
+# Odoo (ir.model.fields.selection.create) : une énergie inconnue laisse le
+# champ vide plutôt que de faire échouer la création du véhicule.
+# ponytail: « Électrique & X » lu comme plug-in, « X Hybride » comme full hybrid ;
+# à ajuster si le métier distingue autrement.
+XGLASS_ENERGY_TO_FUEL_TYPE = {
+    233: "gasoline",
+    234: "diesel",
+    235: "cng",
+    236: "lpg",
+    240: "plug_in_hybrid_diesel",
+    241: "plug_in_hybrid_gasoline",
+    273: "electric",
+    706853: "full_hybrid",
+    706854: "full_hybrid",
+}
+
+
+def _xglass_fuel_type(energie):
+    """Retourne la clé fleet.FUEL_TYPES d'une énergie X'Glass, ou False."""
+    try:
+        return XGLASS_ENERGY_TO_FUEL_TYPE.get(int(energie), False)
+    except (TypeError, ValueError):
+        return False
+
+
+def _labor_products(env):
+    """Produits de main-d'œuvre par taux, lus depuis les paramètres système."""
+    params = env["ir.config_parameter"].sudo()
+    products = {}
+    for rate, default in LABOR_PRODUCT_BY_RATE.items():
+        key = "rpbm_agent.labor_product_%s" % rate.lower()
+        raw_value = params.get_param(key, str(default))
+        try:
+            products[rate] = int(raw_value)
+        except (TypeError, ValueError) as error:
+            raise UserError(_("Le paramètre %s doit contenir l'identifiant numérique d'un produit.") % key) from error
+    return products
 
 
 def _xglass_labor_rate(raw_temps):
@@ -42,7 +83,7 @@ def _xglass_labor_rate(raw_temps):
     return False
 
 
-def _labor_operation_payload(piece_id, raw_temps):
+def _labor_operation_payload(piece_id, raw_temps, products=LABOR_PRODUCT_BY_RATE):
     """Retourne le contrat minimal et sûr consommé par le widget devis."""
     operation = raw_temps.get("operationTemps") or {}
     operation_id = raw_temps.get("id") or operation.get("id")
@@ -55,7 +96,7 @@ def _labor_operation_payload(piece_id, raw_temps):
         "nature": (raw_temps.get("activite") or {}).get("nature"),
         "rate": rate,
         "duration": duration,
-        "productId": LABOR_PRODUCT_BY_RATE.get(rate),
+        "productId": products.get(rate),
         "unavailableReason": False,
     }
     if not payload["key"]:
@@ -787,19 +828,12 @@ class AgentController(Controller):
             data = _fleet_vehicle_metadata_values(vehicule_meta, metadata_warnings)
             for warning in metadata_warnings:
                 _logger.warning(warning)
-            fuel_type_field = request.env['ir.model.fields'].search([('name', '=', 'fuel_type'),('model_id.model','=','fleet.vehicle')], limit=1)
-            _logger.info(f"fuel_type_field {fuel_type_field}")
-            fuel_type = request.env['ir.model.fields.selection'].search([
-                ('field_id','=',fuel_type_field.id),  # fuel_type field
-                ('name', '=', vehicule.energieLibelle)
-            ])
-            _logger.info(f"fuel_type {fuel_type}")
+            fuel_type = _xglass_fuel_type(getattr(vehicule, 'energie', None))
             if not fuel_type:
-                fuel_type = request.env['ir.model.fields.selection'].create({
-                    'field_id': fuel_type_field.id,  # fuel_type field
-                    'name': vehicule.energieLibelle,
-                    'value': vehicule.energieLibelle,
-                })
+                _logger.warning(
+                    "Énergie X'Glass %s (%s) sans équivalent Fleet : véhicule %s créé sans énergie",
+                    getattr(vehicule, 'energie', None), vehicule.energieLibelle, immatriculation,
+                )
             # L'image X'Glass est un enrichissement facultatif. Après la
             # fermeture de la session portail, on crée tout de même le véhicule
             # sans image plutôt que de transformer un cache d'asset frontend en
@@ -830,7 +864,7 @@ class AgentController(Controller):
                 'description': vehicule.libelleCourt,
                 'power': vehicule.puissanceKw,
                 'doors': vehicule.portesNbr,
-                'fuel_type': fuel_type.value,
+                'fuel_type': fuel_type,
                 'x_studio_detail_model':vehicule.libelleCourt,
                 'image_1920': image,
                 **data,
@@ -871,6 +905,7 @@ class AgentController(Controller):
             'ELEMENTSIT_COMPLEMENTAIRES': [xglass.XGlassElement(**element) for element in raw.get('ELEMENTSIT_COMPLEMENTAIRES', [])],
         }
         pieces = []
+        labor_products = _labor_products(request.env)
 
         for elementKey,Elements in rawData.items():
             for Element in Elements:
@@ -880,7 +915,7 @@ class AgentController(Controller):
                     piece['element.withPiecesAm'] = Element.withPiecesAm
                     piece['elementSitId'] = Element.elementSitId
                     piece['laborOperations'] = [
-                        _labor_operation_payload(piece['id'], temps)
+                        _labor_operation_payload(piece['id'], temps, labor_products)
                         for temps in piece.get('tempsList', [])
                     ]
                     pieces.append(piece)

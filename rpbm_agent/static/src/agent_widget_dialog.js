@@ -854,7 +854,7 @@ export class AgentWidgetDialog extends asyncWidget {
 
     productOdooUrl(product) {
         return product
-            ? `/web#id=${product.id}&view_type=form&model=product.product&action=product.product_template_action`
+            ? `/web#model=product.product&view_type=form&id=${product.id}`
             : undefined;
     }
 

@@ -41,7 +41,7 @@ export class VehiculeComponent extends asyncWidget {
     }
 
     get vehiculeOdooUrl() {
-        return `/web#menu_id=684&action=929&model=fleet.vehicle&view_type=form&id=${this.vehiculeId}`;
+        return `/web#model=fleet.vehicle&view_type=form&id=${this.vehiculeId}`;
     }
 
     /**
