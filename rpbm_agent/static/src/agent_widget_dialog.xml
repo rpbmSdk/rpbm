@@ -3,9 +3,13 @@
     <t t-name="rpbm_agent.AgentWidgetDialog">
         <Dialog size="xl" title="'Assistant véhicule et pièces'">
             <t t-if="!agentsInitialized">
-                <div class="d-flex justify-content-center">
+                <div t-if="!authError" class="d-flex justify-content-center">
                     <i class="fa fa-spinner fa-spin fa-2x me-2"/>
                     <t t-esc="loadingMessage"/>
+                </div>
+                <div t-else="" class="alert alert-danger d-flex align-items-center gap-3" role="alert">
+                    <span class="flex-grow-1"><t t-esc="authError"/></span>
+                    <button class="btn btn-outline-danger btn-sm" t-on-click="startAgents">Réessayer</button>
                 </div>
             </t>
             <t t-else="">

@@ -49,6 +49,7 @@ export class AgentWidgetDialog extends asyncWidget {
             ...this.state,
             canConfirm: false,
             agentsInitialized: false,
+            authError: "",
             isReconnecting: false,
             reconnectRequired: false,
             immatriculationValue: "",
@@ -202,11 +203,27 @@ export class AgentWidgetDialog extends asyncWidget {
 
 
     async onWillStart() {
+        await this.startAgents();
+    }
+
+    async startAgents() {
+        // Sans état d'erreur, un refus de portail laissait le spinner « Authentification des
+        // agents en cours... » indéfiniment (recette 2026-09-20, portail VSF indisponible).
+        this.state.authError = "";
         await this.runAsync(async () => {
             this.setLoadingMessage("Authentification des agents en cours...");
-            await this.auth_agents();
+            try {
+                await this.auth_agents();
+            } catch (error) {
+                this.state.authError = error.data?.message || error.message || "Une erreur est survenue";
+                throw error;
+            }
             await this.init();
         });
+    }
+
+    get authError() {
+        return this.state.authError;
     }
 
     async auth_agents() {
