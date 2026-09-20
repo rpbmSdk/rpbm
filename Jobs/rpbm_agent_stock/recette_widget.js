@@ -11,7 +11,7 @@
     const all = (selector, root = document) => Array.from(root.querySelectorAll(selector));
     const byText = (selector, needle, root = document) =>
         all(selector, root).find((el) => visible(el) && text(el).includes(needle));
-    const modal = () => all(".modal.show, .modal[style*='display: block']").find((m) => text(m).includes("Assistant véhicule et pièces"));
+    const modal = () => all(".modal.show, .modal.d-block, .modal[style*='display: block']").find((m) => text(m).includes("Assistant véhicule et pièces"));
     const section = (title) => {
         const m = modal();
         if (!m) return null;
@@ -56,7 +56,7 @@
     }
 
     const api = {
-        version: "2026-09-21",
+        version: "2026-09-21c",
         state,
 
         async openAssistant() {
@@ -70,19 +70,24 @@
             });
         },
 
+        vehicleInfo() {
+            const cards = cardsOf(section("1. Véhicule"));
+            const selected = cards.find((c) => (c.querySelector(".card-body") || {}).style && c.querySelector(".card-body").style.backgroundColor);
+            const metaText = text(selected || section("1. Véhicule"));
+            const grab = (key) => (metaText.match(new RegExp(key + " : ([^ ]+)")) || [])[1] || null;
+            return { vehicules: cards.map((c) => text(c.querySelector(".card-title"))), selected: selected ? text(selected.querySelector(".card-title")) : null,
+                     meta: { vin: grab("VIN"), cnit: grab("CNIT"), dateMec: grab("Date MeC") },
+                     existsInOdoo: metaText.includes("Le véhicule existe en BDD"),
+                     driverWarning: metaText.includes("conducteur du véhicule est différent"),
+                     createButton: Boolean(byText("button", "Créer", section("1. Véhicule"))) };
+        },
+
         async searchPlate() {
             return run(async () => {
-                const m = modal();
-                clickEl(byText("button", "Rechercher", m));
+                // L'ouverture de la dialog lance déjà la recherche quand l'immatriculation est connue.
+                if (!section("2. Catégorie")) clickEl(byText("button", "Rechercher", modal()));
                 await waitFor(() => !loading() && section("2. Catégorie"), "résultats véhicule et section Catégorie");
-                const vehicules = cardsOf(section("1. Véhicule")).map((c) => text(c.querySelector(".card-title")));
-                const selected = cardsOf(section("1. Véhicule")).find((c) => (c.querySelector(".card-body") || {}).style && c.querySelector(".card-body").style.backgroundColor);
-                const metaText = text(selected || section("1. Véhicule"));
-                const grab = (key) => (metaText.match(new RegExp(key + " : ([^ ]+)")) || [])[1] || null;
-                return { vehicules, selected: selected ? text(selected.querySelector(".card-title")) : null,
-                         meta: { vin: grab("VIN"), cnit: grab("CNIT"), dateMec: grab("Date MeC") },
-                         existsInOdoo: metaText.includes("Le véhicule existe en BDD"),
-                         driverWarning: metaText.includes("conducteur du véhicule est différent") };
+                return api.vehicleInfo();
             });
         },
 
@@ -117,16 +122,32 @@
             });
         },
 
-        async selectPieceAm(index = 0) {
+        async selectPieceAm(index = "eurocode") {
+            // index numérique, ou "eurocode" : première pièce dont la référence ressemble à un eurocode
+            // (4 chiffres + lettres) plutôt qu'une référence OE (constaté : « 4031842 » donnait la base « 40318 »).
             return run(async () => {
                 const box = byText(".badge", "Pièce sélectionnée", section("3. Pièce")).closest(".border");
                 const cards = all(".card", box);
-                if (!cards[index]) throw new Error(`pièce après-marché ${index} absente (${cards.length} disponibles)`);
-                clickEl(cards[index].querySelector(".card-body"));
+                const refOf = (c) => (text(c).match(/Référence : (\S+)/) || [])[1] || "";
+                const card = index === "eurocode" ? (cards.find((c) => /^\d{4}[A-Z]{2,}/.test(refOf(c))) || cards[0]) : cards[index];
+                if (!card) throw new Error(`pièce après-marché ${index} absente (${cards.length} disponibles)`);
+                clickEl(card.querySelector(".card-body"));
                 await waitFor(() => modal().querySelector("#baseEurocode") && modal().querySelector("#baseEurocode").value, "base Eurocode déduite");
                 await waitFor(() => !loading(), "recherche VSF terminée");
                 const articles = section("Article VSF") ? cardsOf(section("Article VSF")).map((c) => text(c.querySelector(".card-title"))) : [];
-                return { base: modal().querySelector("#baseEurocode").value, articles };
+                return { reference: refOf(card), base: modal().querySelector("#baseEurocode").value, articles };
+            });
+        },
+
+        async createVehicle() {
+            // Bouton « Créer » de la carte véhicule (route /createVehicule) ; « Confirmer » le fait aussi
+            // implicitement, mais l'appel explicite isole l'erreur éventuelle.
+            return run(async () => {
+                const button = byText("button", "Créer", section("1. Véhicule"));
+                if (!button) return { created: false, reason: "pas de bouton Créer (véhicule déjà en base ?)" };
+                clickEl(button);
+                await waitFor(() => !loading() && !byText("button", "Créer", section("1. Véhicule")), "création du véhicule", 60000);
+                return { created: true, ...api.vehicleInfo() };
             });
         },
 
@@ -197,9 +218,11 @@
                 const ticked = [];
                 for (const item of items.slice(0, max)) {
                     const box = item.querySelector("input[type=checkbox]");
-                    if (!box.checked) { box.click(); }
+                    // box.click() programmatique ne persiste pas (Owl t-on-change) : état + événement change.
+                    if (!box.checked) { box.checked = true; box.dispatchEvent(new Event("change", { bubbles: true })); }
                     ticked.push(text(item));
                 }
+                await sleep(300);
                 return { ticked, available: items.length, unavailable: all(".text-warning", sec).map(text) };
             });
         },
@@ -207,17 +230,24 @@
         async addLabor() {
             return run(async () => {
                 const sec = section("Main d'œuvre");
+                // Les rangées n'existent dans le DOM que si l'onglet « Lignes de commande » (derrière la dialog) est actif.
+                const tab = byText(".o_notebook .nav-link", "Lignes de commande");
+                if (tab) { tab.click(); await sleep(800); }
+                const before = all("div[name='order_line'] tbody tr.o_data_row").length;
                 clickEl(byText("button", "Ajouter les opérations sélectionnées", sec));
-                await waitFor(() => !loading() && byText("button", "Retirer", section("Main d'œuvre")), "lignes de main-d'œuvre ajoutées");
-                return { removeButtons: all("button", section("Main d'œuvre")).filter((b) => text(b) === "Retirer").length };
+                await waitFor(() => !loading() && all("div[name='order_line'] tbody tr.o_data_row").length > before, "lignes de main-d'œuvre ajoutées", 30000);
+                return { linesAdded: all("div[name='order_line'] tbody tr.o_data_row").length - before,
+                         removeButtons: all("button", section("Main d'œuvre")).filter((b) => text(b) === "Retirer").length };
             });
         },
 
         async confirmAndSave() {
             return run(async () => {
                 clickEl(byText(".modal-footer button", "Confirmer et enregistrer", modal()));
-                await waitFor(() => !modal(), "fermeture de la dialog");
-                await waitFor(() => !document.querySelector(".o_form_status_indicator_buttons:not(.invisible) .o_form_button_save") || true, "formulaire enregistré", 5000);
+                // Délai court : si la dialog reste ouverte, une erreur serveur (notification) est en cause.
+                await waitFor(() => !modal() || notifications().length, "fermeture de la dialog", 30000);
+                if (modal()) throw new Error("dialog toujours ouverte : " + notifications().join(" | "));
+                await sleep(2000);
                 return { closed: true, dirty: Boolean(document.querySelector(".o_form_dirty")), notifications: notifications() };
             });
         },
@@ -254,6 +284,8 @@
 
         async orderLines() {
             return run(async () => {
+                const tab = byText(".o_notebook .nav-link", "Lignes de commande");
+                if (tab) { clickEl(tab); await sleep(800); }
                 const rows = all("div[name='order_line'] tbody tr.o_data_row");
                 const cell = (row, name) => text(row.querySelector(`td[name='${name}']`));
                 return { lines: rows.map((row) => ({ product: cell(row, "product_template_id") || cell(row, "product_id"), qty: cell(row, "product_uom_qty"), price_unit: cell(row, "price_unit") })) };

@@ -302,6 +302,14 @@ def cmd_prepare(args) -> int:
     for tag, plate, location in (("W1", args.plate_new, "galleria"), ("W3", args.plate_existing, "galleria")):
         vals = {"name": f"RECETTE-{args.run}-{tag} {plate}", "type": "opportunity", "partner_id": partner_id,
                 "rpbm_license_plate": plate, "rpbm_intervention_location": location}
+        # Champs Studio obligatoires dans la vue formulaire (sinon « Confirmer et enregistrer » echoue) : valeurs arbitraires.
+        lead_fields = odoo.field_names("crm.lead")
+        if "x_studio_moyen_1er_contact" in lead_fields:
+            vals["x_studio_moyen_1er_contact"] = "Téléphone"
+        if "x_studio_field_VGmbJ" in lead_fields:
+            choice = odoo.search_read("x_choix_comment_connu", [], ["id"], limit=1)
+            if choice:
+                vals["x_studio_field_VGmbJ"] = choice[0]["id"]
         if stage:
             vals["stage_id"] = stage[0]["id"]
         leads[tag] = odoo.execute("crm.lead", "create", vals)

@@ -1,11 +1,11 @@
 # Recette migration champs natifs — https://rpbm-pre-prod-37939198.dev.odoo.com
 
-Date : 2026-09-20 12:41
-Verdict : **FAIL** (29 PASS, 1 WARN, 1 FAIL, 0 NOT_RUN)
+Date : 2026-09-20 12:49
+Verdict : **PASS** (30 PASS, 1 WARN, 0 FAIL, 0 NOT_RUN)
 
 | Statut | Contrôle | Détail |
 |---|---|---|
-| `PASS` | version du module | 17.0.260921.5 (attendu 17.0.260921.5) |
+| `PASS` | version du module | 17.0.260921.6 (attendu 17.0.260921.6) |
 | `PASS` | champs natifs crm.lead | 19 présents |
 | `PASS` | champs natifs sale.order | 7 présents |
 | `PASS` | champs natifs sale.order.line | 2 présents |
@@ -20,7 +20,7 @@ Verdict : **FAIL** (29 PASS, 1 WARN, 1 FAIL, 0 NOT_RUN)
 | `PASS` | crm.lead rpbm_vin vs x_studio_field_PfJlB | 5908 / 5908 remplis (100%) |
 | `PASS` | crm.lead rpbm_fuel_type vs x_studio_field_TAhpP | 9818 / 9818 remplis (100%) |
 | `PASS` | crm.lead rpbm_vehicle_detail_model vs x_studio_field_i8fWl | 9930 / 9930 remplis (100%) |
-| `FAIL` | crm.lead rpbm_first_registration_date vs x_studio_field_Eh6Wd | 5352 / 9559 remplis (56%) |
+| `PASS` | crm.lead rpbm_first_registration_date vs x_studio_field_Eh6Wd | 9489 / 9559 remplis (99%) |
 | `PASS` | crm.lead rpbm_part_type vs x_studio_field_eENQz | 10187 / 10187 remplis (100%) |
 | `PASS` | crm.lead rpbm_eurocode_base vs x_studio_field_ORIyy | 9304 / 9304 remplis (100%) |
 | `PASS` | crm.lead rpbm_eurocode vs x_studio_field_NwRik | 9592 / 9592 remplis (100%) |
@@ -33,6 +33,6 @@ Verdict : **FAIL** (29 PASS, 1 WARN, 1 FAIL, 0 NOT_RUN)
 | `PASS` | product.template.rpbm_eurocode | 3229 produits |
 | `PASS` | fleet.vehicle FQ581EN | détail='RENAULT CLIO V PHASE 1 - 5P 2019-04-> 1.5DCI 85 FAP' MEC=2020-06-01 énergie=diesel |
 | `PASS` | fleet.vehicle GH915QH | détail='PEUGEOT 3008 II (P84) PHASE 2 - 5P 2020-09->2024-03 1.2i TURBO 130 FAP' MEC=2022-07-01 énergie=gasoline |
-| `WARN` | champs créés par l'ancien module supprimés | conservés (référencés ou erreur, voir journal Odoo.sh) : ['sale.order.x_rpbm_vehicle_brand_id', 'sale.order.x_rpbm_vehicle_model_id', 'crm.lead.x_rpbm_vehicle_brand_id', 'crm.lead.x_rpbm_vehicle_model_id', 'sale.order.x_studio_vehicle_id', 'crm.lead.x_studio_vehicle_id', 'product.template.x_studio_eurocode', 'product.template.x_studio_largeur_mm', 'product.template.x_studio_longueur_mm'] |
+| `WARN` | champs créés par l'ancien module supprimés | conservés (référencés ou erreur, voir journal Odoo.sh) : ['product.template.x_studio_eurocode'] |
 | `PASS` | marque native = marque Studio (échantillon 25) | identiques |
 | `PASS` | verrou portail libre |  |
