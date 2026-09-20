@@ -348,9 +348,9 @@ def test_vsf_valeurs_de_creation_produit():
     )
     values = vsf.product_creation_values(article, "<p>Note VSF</p>", image=b"image")
     assert values["default_code"] == "1617361980"
-    assert values["x_studio_eurocode"] == "6571AGRCHIMVZ"
-    assert values["x_studio_largeur_mm"] == 1240
-    assert values["x_studio_longueur_mm"] == 560
+    assert values["rpbm_eurocode"] == "6571AGRCHIMVZ"
+    assert values["rpbm_width_mm"] == 1240
+    assert values["rpbm_length_mm"] == 560
     assert values["description"] == "<p>Note VSF</p>"
 
 
@@ -365,7 +365,7 @@ def test_vsf_reference_constructeur_absente_utilise_le_code_vsf():
     )
     values = vsf.product_creation_values(article, "<p>Note VSF</p>")
     assert values["default_code"] == "6571AGRCHIMVZ"
-    assert values["x_studio_reference_constructeur"] is False
+    assert values["rpbm_constructor_reference"] is False
     assert vsf.constructor_reference_or_vsf_code("-", "6571AGRCHIMVZ") == "6571AGRCHIMVZ"
 
 
@@ -381,13 +381,13 @@ def test_vsf_valeurs_de_synchronisation_produit_preservent_identite_et_medias():
     )
     values = vsf.product_sync_values(article, vsf.product_description(article))
     assert values == {
-        "x_studio_largeur_mm": 1240,
-        "x_studio_longueur_mm": 560,
+        "rpbm_width_mm": 1240,
+        "rpbm_length_mm": 560,
         "list_price": 100.0,
         "description": values["description"],
     }
     assert "name" not in values
-    assert "x_studio_eurocode" not in values
+    assert "rpbm_eurocode" not in values
     assert "image_1920" not in values
     assert "Informations VSF" in values["description"]
 

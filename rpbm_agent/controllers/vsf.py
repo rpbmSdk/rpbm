@@ -84,12 +84,12 @@ def product_creation_values(article, description, image=False):
         "default_code": constructor_reference_or_vsf_code(
             constructor_reference, article.code
         ),
-        "x_studio_eurocode": article.code,
-        "x_studio_largeur_mm": getattr(article, "largeurMm", None) or False,
-        "x_studio_longueur_mm": getattr(article, "longueurMm", None) or False,
+        "rpbm_eurocode": article.code,
+        "rpbm_width_mm": getattr(article, "largeurMm", None) or False,
+        "rpbm_length_mm": getattr(article, "longueurMm", None) or False,
         "list_price": article.prixVente,
         "type": "product",
-        "x_studio_reference_constructeur": constructor_reference,
+        "rpbm_constructor_reference": constructor_reference,
         "image_1920": image or False,
         "description": description,
     }
@@ -98,8 +98,8 @@ def product_creation_values(article, description, image=False):
 def product_sync_values(article, description):
     """Valeurs de fiche pouvant être rafraîchies sans modifier son identité."""
     return {
-        "x_studio_largeur_mm": getattr(article, "largeurMm", None) or False,
-        "x_studio_longueur_mm": getattr(article, "longueurMm", None) or False,
+        "rpbm_width_mm": getattr(article, "largeurMm", None) or False,
+        "rpbm_length_mm": getattr(article, "longueurMm", None) or False,
         "list_price": article.prixVente,
         "description": description,
     }

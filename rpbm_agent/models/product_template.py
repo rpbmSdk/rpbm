@@ -14,6 +14,10 @@ _logger = logging.getLogger(__name__)
 class ProductTemplate(models.Model):
     _inherit = "product.template"
 
+    rpbm_eurocode = fields.Char("Eurocode", index=True)
+    rpbm_width_mm = fields.Float("Largeur (mm)")
+    rpbm_length_mm = fields.Float("Longueur (mm)")
+
     def _vsf_sync_configuration(self):
         """Lit et valide les paramètres nécessaires à une synchronisation VSF."""
         params = self.env["ir.config_parameter"].sudo()
@@ -81,7 +85,7 @@ class ProductTemplate(models.Model):
     def _sync_vsf_information(self, agent, discount, partner_id):
         """Synchronise un modèle à partir de sa fiche VSF, sans ses médias."""
         self.ensure_one()
-        code = (self.x_studio_eurocode or "").strip()
+        code = (self.rpbm_eurocode or "").strip()
         if not code:
             raise UserError(_("Synchronisation impossible : l'eurocode VSF est absent."))
 
@@ -155,3 +159,9 @@ class ProductTemplate(models.Model):
                 "sticky": bool(errors),
             },
         }
+
+
+class ProductProduct(models.Model):
+    _inherit = "product.product"
+
+    rpbm_constructor_reference = fields.Char("Référence constructeur")

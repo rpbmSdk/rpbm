@@ -1,50 +1,30 @@
 from pathlib import Path
-from unittest import SkipTest, TestCase
+from unittest import TestCase
 from unittest.mock import patch
 
 from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase
 
-from ..models.sale_order import (
-    HISTORICAL_LOCATION_TO_CARRIER,
-    carrier_name_for_historical_location,
-    normalize_historical_location,
-)
+from ..models.legacy_fields import normalize
+from ..models.sale_order import LOCATION_TO_CARRIER, carrier_name_for_location
 
 
-class TestHistoricalLocationMapping(TestCase):
-    def test_mapping_is_normalized_and_limited_to_the_three_supported_locations(self):
-        self.assertEqual(
-            carrier_name_for_historical_location(" Galleria "),
-            "Retrait / pose Galleria",
-        )
-        self.assertEqual(
-            carrier_name_for_historical_location("DOMICILE"),
-            "Pose sur site (Camion)",
-        )
-        self.assertIsNone(carrier_name_for_historical_location("LAVAGE MARIN"))
-        self.assertIsNone(carrier_name_for_historical_location("AUTRE"))
-        self.assertEqual(
-            set(HISTORICAL_LOCATION_TO_CARRIER),
-            {"galleria", "genipa", "domicile"},
-        )
+class TestLocationMapping(TestCase):
+    def test_mapping_is_limited_to_the_three_supported_locations(self):
+        self.assertEqual(carrier_name_for_location("galleria"), "Retrait / pose Galleria")
+        self.assertEqual(carrier_name_for_location("domicile"), "Pose sur site (Camion)")
+        self.assertIsNone(carrier_name_for_location("lavage_marin"))
+        self.assertIsNone(carrier_name_for_location(False))
+        self.assertEqual(set(LOCATION_TO_CARRIER), {"galleria", "genipa", "domicile"})
 
     def test_normalizer_removes_accents_and_collapses_spaces(self):
-        self.assertEqual(
-            normalize_historical_location("  Pose   à domicile "),
-            "pose a domicile",
-        )
+        self.assertEqual(normalize("  Pose   à domicile "), "pose a domicile")
 
 
 class TestSaleOrderCarrier(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        if "x_studio_lieu_intervention" not in cls.env["crm.lead"]._fields:
-            raise SkipTest(
-                "Le test d'intégration exige le champ historique CRM "
-                "x_studio_lieu_intervention sur la base de recette."
-            )
         cls.partner = cls.env["res.partner"].create({"name": "Client transporteur AG01-03"})
         cls.carriers = {}
         for name in (
@@ -65,7 +45,7 @@ class TestSaleOrderCarrier(TransactionCase):
                 "name": "Opportunité AG01-03",
                 "type": "opportunity",
                 "partner_id": self.partner.id,
-                "x_studio_lieu_intervention": location,
+                "rpbm_intervention_location": location,
             }
         )
 
@@ -76,33 +56,33 @@ class TestSaleOrderCarrier(TransactionCase):
 
     def test_create_prefills_the_three_supported_carriers(self):
         for location, expected_name in (
-            ("GALLERIA", "Retrait / pose Galleria"),
-            ("GENIPA", "Retrait / pose Genipa"),
-            ("DOMICILE", "Pose sur site (Camion)"),
+            ("galleria", "Retrait / pose Galleria"),
+            ("genipa", "Retrait / pose Genipa"),
+            ("domicile", "Pose sur site (Camion)"),
         ):
             order = self._order(opportunity_id=self._lead(location).id)
             self.assertEqual(order.carrier_id, self.carriers[expected_name])
 
     def test_create_does_not_guess_unmapped_location_or_empty_source(self):
-        for location in ("LAVAGE MARIN", False):
+        for location in ("lavage_marin", False):
             order = self._order(opportunity_id=self._lead(location).id)
             self.assertFalse(order.carrier_id)
 
     def test_missing_or_ambiguous_carrier_is_left_empty(self):
         missing = self.carriers["Retrait / pose Galleria"]
         missing.active = False
-        missing_order = self._order(opportunity_id=self._lead("GALLERIA").id)
+        missing_order = self._order(opportunity_id=self._lead("galleria").id)
         self.assertFalse(missing_order.carrier_id)
 
         missing.active = True
         self.env["delivery.carrier"].create(
             {"name": missing.name, "product_id": missing.product_id.id}
         )
-        ambiguous_order = self._order(opportunity_id=self._lead("GALLERIA").id)
+        ambiguous_order = self._order(opportunity_id=self._lead("galleria").id)
         self.assertFalse(ambiguous_order.carrier_id)
 
     def test_carrier_access_error_is_non_blocking_at_creation(self):
-        lead = self._lead("GENIPA")
+        lead = self._lead("genipa")
         carrier_model_class = type(self.env["delivery.carrier"])
         with patch.object(
             carrier_model_class,
@@ -113,7 +93,7 @@ class TestSaleOrderCarrier(TransactionCase):
         self.assertFalse(order.carrier_id)
 
     def test_explicit_carrier_wins_and_existing_write_is_not_retrofilled(self):
-        lead = self._lead("GALLERIA")
+        lead = self._lead("galleria")
         explicit = self.carriers["Retrait / pose Genipa"]
         order = self._order(opportunity_id=lead.id, carrier_id=explicit.id)
         self.assertEqual(order.carrier_id, explicit)
@@ -123,7 +103,7 @@ class TestSaleOrderCarrier(TransactionCase):
         self.assertFalse(empty_order.carrier_id)
 
     def test_onchange_prefills_only_a_new_empty_draft(self):
-        lead = self._lead("GENIPA")
+        lead = self._lead("genipa")
         new_order = self.env["sale.order"].new({"partner_id": self.partner.id})
         new_order.opportunity_id = lead
         new_order._onchange_rpbm_opportunity_carrier()
@@ -135,7 +115,7 @@ class TestSaleOrderCarrier(TransactionCase):
         self.assertFalse(existing_order.carrier_id)
 
     def test_onchange_warns_for_manual_or_unknown_locations(self):
-        for location in ("LAVAGE MARIN", "INCONNU", False):
+        for location in ("lavage_marin", "lavage_place_armes", False):
             order = self.env["sale.order"].new({"partner_id": self.partner.id})
             order.opportunity_id = self._lead(location)
             result = order._onchange_rpbm_opportunity_carrier()
@@ -155,14 +135,14 @@ class TestSaleOrderCarrier(TransactionCase):
         self.assertEqual(len(order.order_line), 0)
         self.assertEqual(len(order.picking_ids), 0)
 
-        linked_missing = self._order(opportunity_id=self._lead("DOMICILE").id)
+        linked_missing = self._order(opportunity_id=self._lead("domicile").id)
         with self.assertRaises(UserError):
             linked_missing.action_confirm()
         self.assertEqual(len(linked_missing.order_line), 0)
         self.assertEqual(len(linked_missing.picking_ids), 0)
 
         linked_order = self._order(
-            opportunity_id=self._lead("DOMICILE").id,
+            opportunity_id=self._lead("domicile").id,
             carrier_id=self.carriers["Pose sur site (Camion)"].id,
         )
         linked_order.action_confirm()

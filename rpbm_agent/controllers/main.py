@@ -16,6 +16,7 @@ from . import xglass
 from .vsf import VSFError, VSFAuthError
 from .vsf_config import get_vsf_discount, get_vsf_partner_id
 from .xglass import XGlassError, XGlassAuthError
+from ..models.legacy_fields import clean_vin, is_legacy_malformed_vin, month_year_to_date
 
 _logger = logging.getLogger(__name__)
 
@@ -239,7 +240,7 @@ def _find_existing_product(env, product_code, eurocode, product_name):
             return product, 'reference_interne'
     if eurocode:
         product = Product.search(
-            [('product_tmpl_id.x_studio_eurocode', '=', eurocode)], limit=1
+            [('product_tmpl_id.rpbm_eurocode', '=', eurocode)], limit=1
         )
         if product:
             return product, 'eurocode'
@@ -267,346 +268,41 @@ def _vsf_article_payload(article_details, discount):
     return article
 
 
-HISTORICAL_VEHICLE_FIELD_TARGETS = {
-    'crm.lead': {
-        'license_plate': 'x_studio_field_NVioD',
-        'brand': 'x_studio_field_KyCjB',
-        'model': 'x_studio_field_ZhaeY',
-        'vin': 'x_studio_field_PfJlB',
-        'fuel_type': 'x_studio_field_TAhpP',
-        'detail_model': 'x_studio_field_i8fWl',
-        'date_mec': 'x_studio_field_Eh6Wd',
-    },
-    'sale.order': {
-        'license_plate': 'x_studio_immatriculation_',
-        'brand': 'x_studio_many2one_field_rP62C',
-        'model': 'x_studio_many2one_field_DkgHx',
-        'vin': 'x_studio_vin_',
-        'fuel_type': 'x_studio_nergie_moteur',
-        'detail_model': 'x_studio_dtails_modle',
-        'date_mec': 'x_studio_date_1re_mec',
-    },
-}
-
-HISTORICAL_VEHICLE_SOURCE_FIELDS = (
-    'license_plate',
-    'vin_sn',
-    'model_id',
-    'x_studio_detail_model',
-    'x_studio_date_mec',
-    'fuel_type',
-)
-
-HISTORICAL_FUEL_TYPE_LABELS = {
-    'diesel': 'Diesel',
-    'gasoline': 'Essence',
-    'electric': 'Électrique',
-}
-
-LEGACY_MALFORMED_VIN_RE = re.compile(
-    r'var\s*=\s*[A-HJ-NPR-Z0-9]{17}\s*;'
-)
-
-
-def _historical_text(value):
-    """Retourne une source textuelle nettoyée, ou une chaîne vide."""
-    return str(value).strip() if value else ''
-
-
-def _is_legacy_malformed_vin(value):
-    """Identifie uniquement la valeur VIN produite par l'ancien parseur."""
-    return bool(LEGACY_MALFORMED_VIN_RE.fullmatch(_historical_text(value)))
-
-
-def _historical_normalized_name(value):
-    return _historical_text(value).casefold()
-
-
-def _historical_record_values(record, field_names):
-    rows = record.read(list(field_names))
-    return rows[0] if rows else {}
-
-
-def _historical_many2one_id(value):
-    if isinstance(value, (list, tuple)):
-        return value[0] if value else False
-    return getattr(value, 'id', value) or False
-
-
-def _historical_target_is_available(target_model, field_name):
-    return field_name in target_model._fields
-
-
-def _add_historical_value(target_model, field_name, value, values, warnings):
-    if not _historical_target_is_available(target_model, field_name):
-        warnings.append(
-            _("Le champ historique %s est absent sur %s ; aucune écriture.")
-            % (field_name, target_model._name)
-        )
-        return
-    values[field_name] = value
-
-
-def _historical_reference_value(env, model_name, source_name, label, warnings):
-    """Réutilise ou crée une valeur du référentiel historique par ``x_name``."""
-    normalized_name = _historical_normalized_name(source_name)
-    if not normalized_name:
-        warnings.append(
-            _("%s Fleet absent : le champ historique reste inchangé.") % label
-        )
-        return None
-
-    reference_model = env[model_name]
-    searchable_model = reference_model.with_context(active_test=False)
-    try:
-        matches = [
-            (row['id'], _historical_text(row.get('x_name')))
-            for row in searchable_model.search_read([('x_name', '!=', False)], ['x_name'])
-            if _historical_normalized_name(row.get('x_name')) == normalized_name
-        ]
-    except AccessError:
-        warnings.append(
-            _("Lecture du référentiel historique %s interdite ; le champ reste inchangé.")
-            % label
-        )
-        return None
-
-    if len(matches) > 1:
-        source_text = _historical_text(source_name)
-        exact_matches = [
-            match for match in matches if match[1] == source_text
-        ]
-        if len(exact_matches) == 1:
-            return list(exact_matches[0])
-        warnings.append(
-            _("%s historique ambigu (%s correspondances) : première correspondance retenue.")
-            % (label, len(matches))
-        )
-        return list(matches[0])
-    if matches:
-        return list(matches[0])
-
-    if normalized_name == 'inconnu':
-        warnings.append(
-            _("La valeur « Inconnu » n'est pas créée pour %s ; le champ reste inchangé.")
-            % label
-        )
-        return None
-    try:
-        record = reference_model.create({'x_name': _historical_text(source_name)})
-    except AccessError:
-        warnings.append(
-            _("Création de la valeur historique %s interdite par les droits ; le champ reste inchangé.")
-            % label
-        )
-        return None
-    return [record.id, _historical_text(source_name)]
-
-
-def _historical_date_value(value):
-    if not value:
-        return None
-    try:
-        date_value = fields.Date.to_date(value)
-    except (TypeError, ValueError):
-        if not isinstance(value, str):
-            return None
-        try:
-            date_value = datetime.strptime(value.strip(), '%m/%Y').date()
-        except ValueError:
-            return None
-    return date_value.strftime('%m/%Y') if date_value else None
-
-
-def _historical_fuel_value(value):
-    normalized_value = _historical_normalized_name(value)
-    if normalized_value in HISTORICAL_FUEL_TYPE_LABELS:
-        return HISTORICAL_FUEL_TYPE_LABELS[normalized_value]
-    if normalized_value == 'full_hybrid' or normalized_value.startswith('full_hybrid_'):
-        return 'Hybride'
-    if normalized_value.startswith('plug_in_hybrid_'):
-        return 'Hybride'
-    return None
-
-
 def _fleet_vehicle_metadata_values(vehicule_meta, warnings):
-    """Convertit les métadonnées X'Glass en valeurs Fleet sûres.
-
-    Les métadonnées ne remplacent jamais une valeur Fleet déjà présente. Elles
-    servent à compléter un véhicule historique existant et à préparer les
-    champs CRM lorsque l'enrichissement Fleet n'est pas autorisé.
-    """
+    """Convertit les métadonnées X'Glass (VIN, date MEC) en valeurs Fleet sûres."""
     if not isinstance(vehicule_meta, dict):
         return {}
-
     values = {}
-    vin = _historical_text(vehicule_meta.get('vin'))
+    vin = clean_vin(vehicule_meta.get('vin'))
     if vin:
         values['vin_sn'] = vin
-
     raw_date_mec = vehicule_meta.get('dateMec')
     if raw_date_mec:
-        date_mec = _historical_date_value(raw_date_mec)
+        date_mec = month_year_to_date(raw_date_mec)
         if date_mec is None:
-            warnings.append(
-                _("Date MEC X'Glass invalide ; la valeur Fleet reste inchangée.")
-            )
+            warnings.append(_("Date MEC X'Glass invalide ; la valeur Fleet reste inchangée."))
         else:
-            values['x_studio_date_mec'] = datetime.strptime(
-                date_mec, '%m/%Y'
-            ).date()
+            values['rpbm_first_registration_date'] = date_mec
     return values
 
 
 def _enrich_fleet_vehicle_from_metadata(vehicle, vehicule_meta, warnings):
-    """Complète uniquement les champs Fleet manquants depuis X'Glass."""
+    """Complète uniquement les champs Fleet manquants depuis X'Glass ; le seul remplacement
+    admis est un VIN de l'ancienne forme ``var = <VIN>;``."""
     metadata_values = _fleet_vehicle_metadata_values(vehicule_meta, warnings)
     if not metadata_values:
         return {}
-
     try:
-        current_values = _historical_record_values(
-            vehicle, ('vin_sn', 'x_studio_date_mec')
-        )
         values_to_write = {
-            field_name: value
-            for field_name, value in metadata_values.items()
-            if (
-                not _historical_text(current_values.get(field_name))
-                or (
-                    field_name == 'vin_sn'
-                    and _is_legacy_malformed_vin(current_values.get(field_name))
-                )
-            )
+            name: value for name, value in metadata_values.items()
+            if not vehicle[name] or (name == 'vin_sn' and is_legacy_malformed_vin(vehicle.vin_sn))
         }
         if values_to_write:
             vehicle.write(values_to_write)
         return values_to_write
     except AccessError:
-        warnings.append(
-            _("Écriture des métadonnées Fleet interdite ; les valeurs historiques "
-              "seront préparées directement si possible.")
-        )
+        warnings.append(_("Écriture des métadonnées Fleet interdite ; véhicule laissé tel quel."))
         return {}
-
-
-def _historical_vehicle_payload(env, vehicle_id, res_model, vehicle_meta=None):
-    """Sérialise les seules valeurs historiques autorisées pour un véhicule."""
-    if isinstance(vehicle_id, bool) or not isinstance(vehicle_id, int) or vehicle_id <= 0:
-        raise UserError(_("vehicle_id doit être un entier strictement positif."))
-    if res_model not in HISTORICAL_VEHICLE_FIELD_TARGETS:
-        raise UserError(_("res_model doit être crm.lead ou sale.order."))
-
-    warnings = []
-    values = {}
-    target_model = env[res_model]
-    try:
-        vehicle = env['fleet.vehicle'].search([('id', '=', vehicle_id)], limit=1)
-        vehicle_values = _historical_record_values(vehicle, HISTORICAL_VEHICLE_SOURCE_FIELDS)
-    except AccessError:
-        warnings.append(_("Lecture du véhicule Fleet interdite ; aucune valeur historique n'est préparée."))
-        return {'values': values, 'warnings': warnings}
-    if not vehicle_values:
-        warnings.append(_("Véhicule %s introuvable ou inaccessible.") % vehicle_id)
-        return {'values': values, 'warnings': warnings}
-
-    metadata_warnings = []
-    metadata_values = _fleet_vehicle_metadata_values(vehicle_meta, metadata_warnings)
-    warnings.extend(metadata_warnings)
-    # Une métadonnée X'Glass ne complète que les champs Fleet absents. Le seul
-    # correctif admis est la syntaxe ``var = <VIN>;`` produite par l'ancien
-    # parseur : elle n'est pas une valeur VIN Fleet exploitable.
-    vehicle_values = dict(vehicle_values)
-    for field_name in ('vin_sn', 'x_studio_date_mec'):
-        should_use_metadata = not _historical_text(vehicle_values.get(field_name))
-        if field_name == 'vin_sn':
-            should_use_metadata = (
-                should_use_metadata
-                or _is_legacy_malformed_vin(vehicle_values.get(field_name))
-            )
-        if should_use_metadata and metadata_values.get(field_name):
-            vehicle_values[field_name] = metadata_values[field_name]
-
-    targets = HISTORICAL_VEHICLE_FIELD_TARGETS[res_model]
-    license_plate = _historical_text(vehicle_values.get('license_plate'))
-    if license_plate:
-        _add_historical_value(target_model, targets['license_plate'], license_plate, values, warnings)
-
-    vin = _historical_text(vehicle_values.get('vin_sn'))
-    if vin:
-        _add_historical_value(target_model, targets['vin'], vin, values, warnings)
-
-    model_values = {}
-    model_readable = True
-    model_id = _historical_many2one_id(vehicle_values.get('model_id'))
-    if model_id:
-        try:
-            model = env['fleet.vehicle.model'].browse(model_id)
-            model_values = _historical_record_values(model, ('name', 'brand_id'))
-        except AccessError:
-            model_readable = False
-            warnings.append(_("Lecture du modèle Fleet interdite ; les champs marque/modèle restent inchangés."))
-
-    brand_name = ''
-    brand_id = _historical_many2one_id(model_values.get('brand_id'))
-    brand_readable = model_readable
-    if model_readable and brand_id:
-        try:
-            brand = env['fleet.vehicle.model.brand'].browse(brand_id)
-            brand_values = _historical_record_values(brand, ('name',))
-            brand_name = _historical_text(brand_values.get('name'))
-        except AccessError:
-            brand_readable = False
-            warnings.append(_("Lecture de la marque Fleet interdite ; le champ historique reste inchangé."))
-    brand_value = None
-    if brand_readable:
-        brand_value = _historical_reference_value(
-            env,
-            'x_rpbm_marques_voitures',
-            brand_name,
-            _('Marque'),
-            warnings,
-        )
-    if brand_value is not None:
-        _add_historical_value(target_model, targets['brand'], brand_value, values, warnings)
-
-    model_name = _historical_text(model_values.get('name'))
-    model_value = None
-    if model_readable:
-        model_value = _historical_reference_value(
-            env,
-            'x_rpbm_modeles_voitures',
-            model_name,
-            _('Modèle'),
-            warnings,
-        )
-    if model_value is not None:
-        _add_historical_value(target_model, targets['model'], model_value, values, warnings)
-
-    fuel_type = _historical_text(vehicle_values.get('fuel_type'))
-    if fuel_type:
-        fuel_value = _historical_fuel_value(fuel_type)
-        if fuel_value is None:
-            warnings.append(
-                _("Énergie Fleet non prise en charge (%s) : le champ historique reste inchangé.")
-                % fuel_type
-            )
-        else:
-            _add_historical_value(target_model, targets['fuel_type'], fuel_value, values, warnings)
-
-    detail_model = _historical_text(vehicle_values.get('x_studio_detail_model'))
-    if detail_model:
-        _add_historical_value(target_model, targets['detail_model'], detail_model, values, warnings)
-
-    raw_date_mec = vehicle_values.get('x_studio_date_mec')
-    if raw_date_mec:
-        date_mec = _historical_date_value(raw_date_mec)
-        if date_mec is None:
-            warnings.append(_("Date MEC Fleet invalide : le champ historique reste inchangé."))
-        else:
-            _add_historical_value(target_model, targets['date_mec'], date_mec, values, warnings)
-
-    return {'values': values, 'warnings': warnings}
 
 
 def _touch_agent_lock(f):
@@ -715,15 +411,6 @@ class AgentController(Controller):
             _logger.warning(f"Plusieurs véhicules avec la même immatriculation {immatriculation}")
         return vehicules[0].read(['name', 'driver_id'])[0]
 
-    @route('/prepareHistoricalVehicleFields', auth='user', type='json')
-    def prepare_historical_vehicle_fields(
-        self, vehicle_id: int, res_model: str, vehicle_meta=None
-    ):
-        """Prépare les champs historiques depuis un véhicule Fleet autorisé."""
-        return _historical_vehicle_payload(
-            request.env, vehicle_id, res_model, vehicle_meta
-        )
-
     @route('/enrichVehicule', auth='user', type='json')
     def enrich_vehicule(self, vehicle_id: int, vehicule_meta=None):
         """Complète un véhicule Fleet existant sans remplacer ses données."""
@@ -824,7 +511,7 @@ class AgentController(Controller):
                 'power': vehicule.puissanceKw,
                 'doors': vehicule.portesNbr,
                 'fuel_type': fuel_type,
-                'x_studio_detail_model':vehicule.libelleCourt,
+                'rpbm_detail_model': vehicule.libelleCourt,
                 'image_1920': image,
                 **data,
 

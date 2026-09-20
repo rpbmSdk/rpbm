@@ -36,7 +36,7 @@ class TestProductTemplateVSFSync(TransactionCase):
         return self.env["product.template"].create(
             {
                 "name": "Nom commercial client",
-                "x_studio_eurocode": "6571AGRCHIMVZ",
+                "rpbm_eurocode": "6571AGRCHIMVZ",
                 **values,
             }
         )
@@ -99,6 +99,6 @@ class TestProductTemplateVSFSync(TransactionCase):
         self.assertEqual(report["updated_ids"], [valid.id])
         self.assertEqual(report["errors"][0]["id"], invalid.id)
         self.assertEqual(valid.name, "Nom commercial client")
-        self.assertEqual(valid.x_studio_eurocode, "6571AGRCHIMVZ")
+        self.assertEqual(valid.rpbm_eurocode, "6571AGRCHIMVZ")
         self.assertEqual(valid.list_price, 100.0)
         self.assertIn("Informations VSF", valid.description)
