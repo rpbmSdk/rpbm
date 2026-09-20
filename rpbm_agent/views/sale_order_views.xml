@@ -6,33 +6,39 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/tree" position="inside">
-                <field name="x_rpbm_labor_operation_key" column_invisible="True"/>
+                <field name="rpbm_xglass_price" column_invisible="True"/>
+                <field name="rpbm_labor_operation_key" column_invisible="True"/>
             </xpath>
             <notebook position="inside">
                 <page name="rpbm_agent_xglass" string="Véhicule (X'Glass)" invisible="not opportunity_id">
+                    <field name="opportunity_id" invisible="1"/>
                     <group>
-                        <field name="opportunity_id" invisible="1"/>
-                        <widget name="rpbm_agent_widget" colspan="2"/>
-                        <field name="x_studio_vehicle_id"/>
-                        <field name="x_studio_categorie_xglass"/>
+                        <group string="Véhicule">
+                            <widget name="rpbm_agent_widget" colspan="2"/>
+                            <field name="rpbm_vehicle_id"/>
+                            <field name="rpbm_license_plate"/>
+                            <field name="rpbm_vehicle_brand_id"/>
+                            <field name="rpbm_vehicle_model_id"/>
+                            <field name="rpbm_vehicle_detail_model"/>
+                            <field name="rpbm_vin"/>
+                            <field name="rpbm_fuel_type"/>
+                            <field name="rpbm_first_registration_date"/>
+                        </group>
+                        <group string="Pièce et article">
+                            <field name="rpbm_xglass_category"/>
+                            <field name="rpbm_part_type"/>
+                            <field name="rpbm_eurocode_base"/>
+                            <field name="rpbm_eurocode"/>
+                            <field name="rpbm_vsf_designation"/>
+                            <field name="rpbm_vsf_stock"/>
+                            <field name="rpbm_constructor_reference"/>
+                            <field name="rpbm_intervention_location"/>
+                        </group>
                     </group>
                     <group invisible="1">
-                        <field name="x_rpbm_xglass_piece_id"/>
-                        <field name="x_rpbm_piece_oe_id"/>
-                        <field name="x_rpbm_piece_am_id"/>
-                        <field name="x_studio_immatriculation_"/>
-                        <field name="x_studio_many2one_field_rP62C"/>
-                        <field name="x_studio_many2one_field_DkgHx"/>
-                        <field name="x_studio_vin_"/>
-                        <field name="x_studio_nergie_moteur"/>
-                        <field name="x_studio_dtails_modle"/>
-                        <field name="x_studio_date_1re_mec"/>
-                    </group>
-                    <group invisible="1">
-                        <field name="x_studio_eurocode_complet"/>
-                        <field name="x_studio_vsf_dsignation_1"/>
-                        <field name="x_studio_vsf_qt_dispo"/>
-                        <field name="x_rpbm_vsf_constructor_reference"/>
+                        <field name="rpbm_xglass_piece_id"/>
+                        <field name="rpbm_piece_oe_id"/>
+                        <field name="rpbm_piece_am_id"/>
                     </group>
                 </page>
             </notebook>

@@ -55,8 +55,8 @@
                         <span t-if="doc.carrier_id.carrier_description"
                               t-out="doc.carrier_id.carrier_description"/>
                     </t>
-                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
-                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    <t t-elif="doc.opportunity_id.rpbm_intervention_location">
+                        <span t-field="doc.opportunity_id.rpbm_intervention_location"/>
                     </t>
                     <t t-else="">
                         <span>Non renseigné</span>
@@ -82,8 +82,8 @@
                         <span t-if="doc.carrier_id.carrier_description"
                               t-out="doc.carrier_id.carrier_description"/>
                     </t>
-                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
-                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    <t t-elif="doc.opportunity_id.rpbm_intervention_location">
+                        <span t-field="doc.opportunity_id.rpbm_intervention_location"/>
                     </t>
                     <t t-else="">
                         <span>Non renseigné</span>
@@ -109,8 +109,8 @@
                         <span t-if="doc.carrier_id.carrier_description"
                               t-out="doc.carrier_id.carrier_description"/>
                     </t>
-                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
-                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    <t t-elif="doc.opportunity_id.rpbm_intervention_location">
+                        <span t-field="doc.opportunity_id.rpbm_intervention_location"/>
                     </t>
                     <t t-else="">
                         <span>Non renseigné</span>
@@ -141,8 +141,8 @@
                         <span t-if="doc.carrier_id.carrier_description"
                               t-out="doc.carrier_id.carrier_description"/>
                     </t>
-                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
-                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    <t t-elif="doc.opportunity_id.rpbm_intervention_location">
+                        <span t-field="doc.opportunity_id.rpbm_intervention_location"/>
                     </t>
                     <t t-else="">
                         <span>Non renseigné</span>
@@ -172,8 +172,8 @@
                         <span t-if="doc.carrier_id.carrier_description"
                               t-out="doc.carrier_id.carrier_description"/>
                     </t>
-                    <t t-elif="doc.opportunity_id.x_studio_lieu_intervention">
-                        <span t-field="doc.opportunity_id.x_studio_lieu_intervention"/>
+                    <t t-elif="doc.opportunity_id.rpbm_intervention_location">
+                        <span t-field="doc.opportunity_id.rpbm_intervention_location"/>
                     </t>
                     <t t-else="">
                         <span>Non renseigné</span>

@@ -79,12 +79,12 @@ class TestSaleOrderReportViews(TestCase):
             ]
             self.assertIn("doc.carrier_id", conditions, tpl_id)
             self.assertIn(
-                "doc.opportunity_id.x_studio_lieu_intervention", conditions, tpl_id
+                "doc.opportunity_id.rpbm_intervention_location", conditions, tpl_id
             )
             fields = {node.get("t-field") for node in block.iter()}
             self.assertIn("doc.carrier_id", fields, tpl_id)
             self.assertIn(
-                "doc.opportunity_id.x_studio_lieu_intervention", fields, tpl_id
+                "doc.opportunity_id.rpbm_intervention_location", fields, tpl_id
             )
 
     def test_only_the_two_duplicate_brand_and_model_displays_are_removed(self):

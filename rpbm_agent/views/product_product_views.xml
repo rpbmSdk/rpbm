@@ -6,14 +6,14 @@
         <field name="inherit_id" ref="product.product_normal_form_view"/>
         <field name="arch" type="xml">
             <field name="default_code" position="after">
-                <field name="x_studio_eurocode"/>
-                <field name="x_studio_largeur_mm"/>
-                <field name="x_studio_longueur_mm"/>
+                <field name="rpbm_eurocode"/>
+                <field name="rpbm_width_mm"/>
+                <field name="rpbm_length_mm"/>
             </field>
             <notebook position="inside">
                 <page name="rpbm_agent_xglass" string="VSF">
                     <group>
-                        <field name="x_studio_reference_constructeur"/>
+                        <field name="rpbm_constructor_reference"/>
                     </group>
                 </page>
             </notebook>

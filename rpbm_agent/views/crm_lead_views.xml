@@ -8,30 +8,54 @@
             <notebook position="inside">
                 <page name="rpbm_agent_xglass" string="Véhicule (X'Glass)">
                     <group>
-                        <widget name="rpbm_agent_widget" colspan="2"/>
-                        <field name="x_studio_vehicle_id"/>
-                        <field name="x_studio_categorie_xglass"/>
+                        <group string="Véhicule">
+                            <widget name="rpbm_agent_widget" colspan="2"/>
+                            <field name="rpbm_vehicle_id"/>
+                            <field name="rpbm_license_plate"/>
+                            <field name="rpbm_vehicle_brand_id"/>
+                            <field name="rpbm_vehicle_model_id"/>
+                            <field name="rpbm_vehicle_detail_model"/>
+                            <field name="rpbm_vin"/>
+                            <field name="rpbm_fuel_type"/>
+                            <field name="rpbm_first_registration_date"/>
+                        </group>
+                        <group string="Pièce et article">
+                            <field name="rpbm_xglass_category"/>
+                            <field name="rpbm_part_type"/>
+                            <field name="rpbm_eurocode_base"/>
+                            <field name="rpbm_eurocode"/>
+                            <field name="rpbm_vsf_designation"/>
+                            <field name="rpbm_vsf_stock"/>
+                            <field name="rpbm_constructor_reference"/>
+                            <field name="rpbm_intervention_location"/>
+                        </group>
                     </group>
                     <group invisible="1">
-                        <field name="x_rpbm_xglass_piece_id"/>
-                        <field name="x_rpbm_piece_oe_id"/>
-                        <field name="x_rpbm_piece_am_id"/>
-                        <field name="x_studio_field_NVioD"/>
-                        <field name="x_studio_field_KyCjB"/>
-                        <field name="x_studio_field_ZhaeY"/>
-                        <field name="x_studio_field_PfJlB"/>
-                        <field name="x_studio_field_TAhpP"/>
-                        <field name="x_studio_field_i8fWl"/>
-                        <field name="x_studio_field_Eh6Wd"/>
-                    </group>
-                    <group invisible="1">
-                        <field name="x_studio_field_NwRik"/>
-                        <field name="x_studio_field_j8eh3"/>
-                        <field name="x_studio_field_BKtpw"/>
-                        <field name="x_studio_field_MNzfJ"/>
+                        <field name="rpbm_xglass_piece_id"/>
+                        <field name="rpbm_piece_oe_id"/>
+                        <field name="rpbm_piece_am_id"/>
                     </group>
                 </page>
             </notebook>
+        </field>
+    </record>
+
+    <record id="view_crm_lead_search_rpbm_agent" model="ir.ui.view">
+        <field name="name">crm.lead.search.rpbm.agent</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="rpbm_license_plate"/>
+                <field name="rpbm_vehicle_brand_id"/>
+                <field name="rpbm_vehicle_model_id"/>
+                <field name="rpbm_eurocode"/>
+            </field>
+            <xpath expr="//group" position="inside">
+                <filter name="group_by_rpbm_vehicle_brand" string="Marque du véhicule" context="{'group_by': 'rpbm_vehicle_brand_id'}"/>
+                <filter name="group_by_rpbm_vehicle_model" string="Modèle du véhicule" context="{'group_by': 'rpbm_vehicle_model_id'}"/>
+                <filter name="group_by_rpbm_part_type" string="Pièce concernée" context="{'group_by': 'rpbm_part_type'}"/>
+            </xpath>
         </field>
     </record>
 </odoo>

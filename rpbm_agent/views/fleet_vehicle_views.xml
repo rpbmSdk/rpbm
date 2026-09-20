@@ -8,8 +8,8 @@
             <notebook position="inside">
                 <page name="rpbm_agent_xglass" string="X'Glass">
                     <group>
-                        <field name="x_studio_detail_model"/>
-                        <field name="x_studio_date_mec"/>
+                        <field name="rpbm_detail_model"/>
+                        <field name="rpbm_first_registration_date"/>
                     </group>
                 </page>
             </notebook>
