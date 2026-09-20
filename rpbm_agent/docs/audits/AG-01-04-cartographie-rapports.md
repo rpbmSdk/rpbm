@@ -8,7 +8,7 @@ couvre uniquement les items 1 et 2 du lot AG01-04 défini dans
 cartographier la chaîne QWeb complète de chaque rapport et proposer une source
 canonique par information. **Aucune vue, aucun rapport et aucun fichier de code
 n'a été modifié.** Les items 3 à 5 (migration effective des références,
-vérification PDF, non-régression) restent à réaliser par `rpbm_luna_codeur` dans
+vérification PDF, non-régression) restent à réaliser par `rpbm-luna-codeur` dans
 une tâche ultérieure, à partir de la liste ordonnée en fin de document.
 
 > **Correction apportée à l'implémentation (2026-09-14, même jour).** Les
@@ -239,7 +239,7 @@ désormais », en remplaçant les variantes concurrentes.
 
 ## 3. Liste ordonnée des changements QWeb concrets pour l'implémentation (item 3)
 
-Cette liste est un plan d'attaque pour `rpbm_luna_codeur`, pas une
+Cette liste est un plan d'attaque pour `rpbm-luna-codeur`, pas une
 implémentation. Chaque étape est bornée à une vue.
 
 1. **Trancher AG01-F05 (kilométrage) avant de toucher aux rapports** — sans

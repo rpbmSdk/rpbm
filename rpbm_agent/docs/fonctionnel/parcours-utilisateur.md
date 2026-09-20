@@ -21,8 +21,7 @@ flowchart TD
     H --> I{Le véhicule existe déjà dans Odoo ?}
     I -->|Oui| J["Bouton 'Voir' → ouvre la fiche véhicule dans un nouvel onglet"]
     I -->|Non| K["Bouton 'Créer' → crée le véhicule dans Odoo"]
-    H --> L["Clic sur 'Rechercher les Catégories'"]
-    L --> M[Affichage des catégories / calques X'Glass disponibles pour le véhicule]
+    H --> M[Affichage automatique des catégories / calques X'Glass disponibles pour le véhicule]
     M --> N[Clic sur une catégorie]
     N --> O[Affichage des pièces X'Glass de la catégorie]
     O --> P[Clic sur une pièce]
@@ -40,7 +39,7 @@ Notes :
 - Si le champ "Catégorie X'Glass" est déjà renseigné sur l'enregistrement, la catégorie correspondante est présélectionnée automatiquement dès que la planche est chargée.
 - La recherche VSF se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique).
 
-> ⚠️ Le diagramme visuel existant (`Readme.png`, généré via draw.io) libellait par erreur cette étape "Recherche du véhicule sur VSF" — la recherche véhicule se fait bien sur **X'Glass** ; VSF n'intervient qu'à l'étape de recherche par eurocode. Corrigé ci-dessus.
+> ⚠️ L'ancien diagramme draw.io (source archivée dans [`_archive/Readme.drawio`](../_archive/Readme.drawio)) libellait par erreur cette étape "Recherche du véhicule sur VSF" — la recherche véhicule se fait bien sur **X'Glass** ; VSF n'intervient qu'à l'étape de recherche par eurocode. Les diagrammes Mermaid de ce dossier font foi.
 
 ## Finalisation selon le modèle
 
@@ -66,14 +65,14 @@ En plus du flux véhicule/catégorie/eurocode ci-dessus (identique), chaque arti
 ```mermaid
 flowchart TD
     U[Articles VSF affichés] --> W2{L'article existe-t-il déjà en tant que produit dans Odoo ?}
-    W2 -->|Non| W3["Bouton 'Créer' → crée le product.product + prix fournisseur VSF"]
-    W2 -->|Oui| W4["Bouton 'Voir' → ouvre la fiche article dans un nouvel onglet"]
-    W3 --> W5["Bouton 'Ajouter' → ajoute une ligne au devis"]
+    W2 -->|Non| W3["Bouton 'Créer le produit' → crée le product.product + prix fournisseur VSF"]
+    W2 -->|Oui| W4["Bouton 'Voir le produit' → ouvre la fiche article dans un nouvel onglet"]
+    W3 --> W5["Bouton 'Ajouter au devis' → ajoute une ligne au devis"]
     W4 --> W5
     W5 --> W6[Clic sur Confirmer pour finaliser véhicule/catégorie/eurocode sur le devis]
 ```
 
-Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et miroirs historiques véhicule lorsque l'opportunité est liée. Le notebook du widget est masqué sur un devis sans opportunité liée. Le champ natif `carrier_id` (« Transporteur / mode de remise ») est visible sous le client ; il peut être prérempli depuis le lieu historique du CRM sur un nouveau devis et doit être renseigné avant la confirmation standard de la vente. L'ajout au devis (`addToSaleOrder`) est **indépendant** du bouton "Confirm" de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md) et [9 — Création du produit](workflow/09-creation-produit.md).
+Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et miroirs historiques véhicule lorsque l'opportunité est liée. Le notebook du widget est masqué sur un devis sans opportunité liée. Le champ natif `carrier_id` (« Transporteur / mode de remise ») est visible sous le client ; il peut être prérempli depuis le lieu historique du CRM sur un nouveau devis et doit être renseigné avant la confirmation standard de la vente. L'ajout au devis (`addArticleToSaleOrder`) est **indépendant** du bouton « Confirmer » de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md) et [9 — Création du produit](workflow/09-creation-produit.md).
 
 ### Main-d'œuvre X'Glass sur devis
 
@@ -93,7 +92,7 @@ participent pas à ce flux.
 
 ### Paramètres système
 
-À créer dans `Réglages > Technique > Paramètres > Paramètres système` (`ir.config_parameter`) :
+Les identifiants portails se saisissent dans `Réglages > Paramètres généraux > Intégrations > Accès catalogues X'Glass / VSF` (groupe technique), ou directement dans `Réglages > Technique > Paramètres > Paramètres système` (`ir.config_parameter`) :
 
 | Clé | Rôle |
 |---|---|
@@ -101,6 +100,8 @@ participent pas à ce flux.
 | `XGLASS_PASS` | Mot de passe du portail X'Glass |
 | `VSF_LOGIN` | Identifiant du portail VSF |
 | `VSF_PASSWORD` | Mot de passe du portail VSF |
+
+Paramètres optionnels (`rpbm_agent.vsf_partner_id`, `rpbm_agent.vsf_discount`, `rpbm_agent.labor_product_t1/t2/t3`) : voir [configuration technique](../technique/configuration.md#paramètres-système-requis).
 
 ### Champs Odoo Studio à créer
 

@@ -4,7 +4,7 @@
 - **Code** : `onSelectVehicule()` (`agent_widget_dialog.js`).
 - **Routes déclenchées en cascade** :
   - `GET /getOdooVehicule` (`main.py::getVehicule`) — recherche `fleet.vehicle` existant par `license_plate` ; si le conducteur (`driver_id`) diffère du client de l'enregistrement, une alerte s'affiche.
-  - `GET /getPlanche` (`main.py::getPlanche`) — récupère les catégories/calques disponibles pour ce véhicule sur X'Glass.
+  - `POST /rpbm_agent/getVehiculeMeta` (`main.py::getVehiculeMeta`) — sélectionne le véhicule côté X'Glass et ramène en un seul appel ses métadonnées (VIN/CNIT/date MEC) et la planche (catégories/calques disponibles).
 
 Aucun champ Odoo n'est lu ou écrit directement à cette étape (uniquement de l'état widget local + un appel en lecture seule sur `fleet.vehicle`). La création éventuelle du véhicule est différée à la confirmation — voir [8 — Création du véhicule](08-creation-vehicule.md).
 

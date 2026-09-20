@@ -16,22 +16,20 @@ Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utili
 | Route | Paramètres | Résumé | Modèles/portails touchés |
 |---|---|---|---|
 | `/rpbm_agent_auth` | — | Réinstancie et authentifie `vsfAgent`/`xglassAgent` depuis `ir.config_parameter` (`XGLASS_USER`, `XGLASS_PASS`, `VSF_LOGIN`, `VSF_PASSWORD`) | X'Glass, VSF, `ir.config_parameter` |
-| `/rpbm_agent_close` | — | Ferme la session X'Glass (`xglassAgent.close()`). La fermeture VSF est en commentaire et échouerait (`VSFAgent` n'a pas de méthode `close()`) | X'Glass |
+| `/rpbm_agent_close` | — | Ferme la session X'Glass (`xglassAgent.close()`) et libère le verrou. VSF n'est pas déconnecté explicitement (`VSFAgent` n'a pas de `close()`, non nécessaire) | X'Glass |
 | `/searchImmatriculation` | `immatriculation: str` | Recherche véhicule(s) par plaque sur X'Glass | X'Glass |
-| `/rpbm_agent/getVehiculeMeta` | `vehiculeId: str` | Retourne VIN/CNIT/date de mise en circulation ; l'ancienne route `/rbm_agent/getVehiculeMeta` reste acceptée pour compatibilité | X'Glass |
-| `/getOdooVehicule` | `immatriculation: str` | Recherche un véhicule Odoo existant par plaque | `fleet.vehicle` |
-| `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle/carburant si besoin, puis le `fleet.vehicle`. L'image X'Glass est facultative et n'est tentée que si l'appelant détient encore le verrou portail. | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, `ir.model.fields`, `ir.model.fields.selection`, X'Glass (image facultative) |
+| `/rpbm_agent/getVehiculeMeta` | `vehiculeId: str` | Sélectionne le véhicule côté portail (`selectVehicule`) et retourne `{meta: {vin, cnit, dateMec}, planche}` en un seul aller-retour | X'Glass |
+| `/getOdooVehicule` | `immatriculation: str` | Recherche un véhicule Odoo existant par plaque ; retourne `{id, name, driver_id}` ou `False` | `fleet.vehicle` |
+| `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle si besoin, puis le `fleet.vehicle` ; retourne `{id, name}`. L'énergie X'Glass est convertie vers une clé native `fleet.FUEL_TYPES` (`XGLASS_ENERGY_TO_FUEL_TYPE`, énergie inconnue = champ vide). L'image X'Glass est facultative et n'est tentée que si l'appelant détient encore le verrou portail. | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, X'Glass (image facultative) |
 | `/enrichVehicule` | `vehicle_id: int, vehicule_meta` | Complète uniquement `vin_sn` et `x_studio_date_mec` manquants d'un `fleet.vehicle` existant ; les droits insuffisants deviennent un avertissement | `fleet.vehicle` |
 | `/prepareHistoricalVehicleFields` | `vehicle_id: int, res_model: crm.lead\|sale.order, vehicle_meta` | Prépare les valeurs historiques à reporter depuis Fleet, avec repli sur les métadonnées X'Glass si VIN/date Fleet sont absents ; réutilise ou crée, si nécessaire, une valeur unique de référentiel marque/modèle ; ne crée aucun champ Odoo | `fleet.vehicle`, référentiels historiques `x_rpbm_marques_voitures`/`x_rpbm_modeles_voitures` |
-| `/getPlanche` | `vehiculeId: int` | Récupère la "planche" (catégories/calques de pièces disponibles pour le véhicule) | X'Glass |
-| `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie | X'Glass |
+| `/getPlanche` | `vehiculeId: int` | Re-sélectionne le véhicule côté portail et retourne la "planche" ; utilisé par le widget uniquement pour restaurer le contexte après reconnexion | X'Glass |
+| `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie ; chaque pièce porte `laborOperations` (opérations de main-d'œuvre T1/T2/T3 avec `productId` issu de `rpbm_agent.labor_product_t*`) | X'Glass, `ir.config_parameter` |
 | `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce, via `XGLASS.findSelectionsPiecesAmView()` | X'Glass |
 | `/searchBaseEurocode` | `baseEurocode: str` | Recherche les articles VSF correspondant à une base eurocode | VSF |
-| `/getVsfArticleDetails` | `articleVsfInfo: dict` | Lit la fiche de l'article sélectionné : images pleine taille, dimensions, caractéristiques et suggestions VSF | VSF |
+| `/getVsfArticleDetails` | `articleVsfInfo: dict, enrichSuggestions=True` | Lit la fiche de l'article sélectionné : images pleine taille, dimensions, caractéristiques et suggestions VSF (fiches des suggestions lues aussi si `enrichSuggestions`) | VSF |
 | `/doesProductExists` | `articleVsfInfo: dict` | Recherche un produit par référence interne, eurocode, puis nom | `product.product`, `product.template` |
 | `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template | `product.product`, `product.template`, `product.supplierinfo` |
-
-La route canonique est `/rpbm_agent/getVehiculeMeta`. L'ancienne route avec la coquille `rbm` reste disponible afin de ne pas casser un asset frontend resté en cache.
 
 ### Préparation des champs historiques
 
@@ -70,7 +68,7 @@ par ces routes.
 ## X'Glass (`controllers/xglass.py`)
 
 - **Portail** : `https://portail-xglass.com`, authentification Spring Security classique (`j_spring_security_check`, `j_username`/`j_password`), session par cookies (`requests.Session`).
-- **Contrainte connue** (documentée dans `controllers/Readme.md`) : *"Un seul utilisateur actif par identifiant"* — le portail refuse une seconde session simultanée pour le même identifiant. C'est pour cela que `auth()` ferme systématiquement la session avant de retenter une connexion en cas d'échec.
+- **Contrainte connue** : *"un seul utilisateur actif par identifiant"* — le portail refuse une seconde session simultanée pour le même identifiant. `auth()` réessaie donc exactement une fois sans se déconnecter entre les deux tentatives (la première tentative refusée évince la session restée ouverte) — détail dans [configuration](configuration.md#authentification-des-portails).
 - **Contrainte non documentée ailleurs** (retrouvée dans `controllers/xglass.ipynb`, cellule 27) : une recherche par immatriculation (`searchImmat`) n'est acceptée par le portail que si la page `initRechercheVehicule.html` a été chargée au préalable dans la session — d'où `setInitRecherche()` appelé automatiquement par `searchImmat()` si nécessaire.
 
 ### États de session
@@ -79,7 +77,7 @@ par ces routes.
 stateDiagram-v2
     [*] --> NonConnecte
     NonConnecte --> Connecte: auth() réussi
-    NonConnecte --> NonConnecte: échec du 1er essai → close() puis 2e tentative
+    NonConnecte --> NonConnecte: échec du 1er essai → 2e tentative (sans logout)
     NonConnecte --> [*]: échec du 2e essai → XGlassAuthError
     Connecte --> RechercheInitialisee: setInitRecherche()\n(déclenché automatiquement par searchImmat)
     RechercheInitialisee --> RechercheInitialisee: searchImmat / selectVehicule /\naffichagePieces / findSelectionsPiecesAmView
@@ -95,11 +93,10 @@ Toutes construites depuis le JSON/HTML du portail (`**kwargs` → attributs), au
 |---|---|
 | `XGlassMarque`, `XGlassModele` | Marque et modèle véhicule (X'Glass) |
 | `XGlassVehicule` | Véhicule retourné par la recherche immatriculation ; calcule `energieLibelle` via `xglass_lbl.getLabel()` et construit `imgUrl` |
-| `XGlassCalque`, `XGlassPlanche` | Catégorie de pièces et ensemble des catégories disponibles pour un véhicule |
+| `XGlassCalque` | Catégorie de pièces (la planche elle-même est renvoyée en JSON brut par `selectVehicule()`) |
 | `XGlassPieceOe`, `XGlassPieceOeCaracteristique(Type)` | Pièce d'origine et ses caractéristiques |
 | `XGlassPieceTemps*` (4 classes) | Temps/opérations de main d'œuvre associés à une pièce |
 | `XGlassPiece` | Regroupe une `XGlassPieceOe` et ses temps |
-| `XGlassPieceAm` | Pièce après-marché (fournisseur, référence, prix, validité) |
 | `XGlassElement` | Regroupement de pièces (`ELEMENTSIT_PRINCIPAUX`/`ELEMENTSIT_COMPLEMENTAIRES`) |
 
 Exemple de payload `XGlassVehicule` (issu de `controllers/xglass.ipynb`) :

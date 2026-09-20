@@ -15,7 +15,12 @@ Modèle porteur de l'Ordre de Vente. Les champs eurocode/immatriculation sont de
 | `x_studio_categorie_xglass` | char | `opportunity_id.x_studio_categorie_xglass` | `pre_init_hook` + migration | Catégorie X'Glass, recopiée depuis la piste |
 | `x_studio_pice_concerne` | selection | `opportunity_id.x_studio_field_eENQz` | Studio (existant) | Pièce concernée, valeur de la sélection X'Glass |
 | `x_studio_base_eurocode` | char | `opportunity_id.x_studio_field_ORIyy` | Studio (existant) | Base Eurocode — nom technique différent de celui de la piste, voir [crm-lead.md](crm-lead.md#structure-des-3-champs-eurocode) |
-| `x_studio_eurocode_joint` | char | `opportunity_id.x_studio_eurocode_joint` | Studio (existant) | Eurocode du joint |
+| `x_studio_eurocode_joint` | char | `opportunity_id.x_studio_eurocode_joint` | Studio (existant) | Eurocode du joint (jamais écrit par le widget) |
+| `x_studio_eurocode_complet` | char | `opportunity_id.x_studio_field_NwRik` | Studio (existant) | Eurocode complet de l'article VSF principal (`fullEurocodeField`) |
+| `x_studio_vsf_dsignation_1` | char | `opportunity_id.x_studio_field_j8eh3` | Studio (existant) | Désignation VSF de l'article principal (`vsfDesignationField`) |
+| `x_studio_vsf_qt_dispo` | char | `opportunity_id.x_studio_field_BKtpw` | Studio (existant) | Stock VSF de l'article principal (`vsfStockField`) |
+| `x_rpbm_vsf_constructor_reference` | char | `opportunity_id.x_studio_field_MNzfJ` | `pre_init_hook` | Référence constructeur de l'article principal (`constructorReferenceField`) |
+| `x_rpbm_xglass_piece_id` / `x_rpbm_piece_oe_id` / `x_rpbm_piece_am_id` | char | `opportunity_id.x_rpbm_*` | ORM (`models/piece_selection.py`) | Identifiants X'Glass/OE/après-marché persistés pour la réouverture |
 | `carrier_id` | many2one → `delivery.carrier` | — | `delivery` (natif) | Mode de remise et route logistique de la commande |
 
 Les deux champs X'Glass suivent la convention de l'instance : l'opportunité est la source et le devis les lit via des champs `related` stockés. La migration `17.0.260725.6` aligne les anciens champs indépendants en place uniquement s'ils sont vides : elle ne les supprime pas, car des vues peuvent les référencer pendant l'upgrade. Elle bloque l'upgrade au lieu d'écraser une valeur inattendue.
@@ -61,7 +66,7 @@ Lors de la création d'un article (bouton "Créer" sur un article VSF affiché),
 - un `product.product` (voir [product-product.md](product-product.md))
 - un `product.supplierinfo` associé (fournisseur VSF, prix d'achat remisé)
 
-Puis une ligne de commande (`sale.order.line`) est ajoutée via le bouton "Ajouter" (indépendant du bouton "Confirm" de la fenêtre — voir [9 — Création du produit](../../fonctionnel/workflow/09-creation-produit.md)).
+Puis une ligne de commande (`sale.order.line`) est ajoutée via le bouton « Ajouter au devis » (indépendant du bouton « Confirmer » de la fenêtre — voir [9 — Création du produit](../../fonctionnel/workflow/09-creation-produit.md) et [sale-order-line.md](sale-order-line.md)).
 
 ## Vue
 

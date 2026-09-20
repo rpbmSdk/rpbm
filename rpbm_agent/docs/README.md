@@ -6,6 +6,7 @@ Index de la documentation du module. À maintenir à jour à chaque évolution f
 
 - [`fonctionnel/parcours-utilisateur.md`](fonctionnel/parcours-utilisateur.md) — prérequis métier, parcours utilisateur détaillé (Piste/Opportunité et Ordre de Vente), diagrammes de flux.
 - [`fonctionnel/workflow/README.md`](fonctionnel/workflow/README.md) — parcours utilisateur découpé en 9 étapes, chacune documentant précisément la route appelée et les champs Odoo lus/écrits.
+- [`jeu-de-test.md`](jeu-de-test.md) — plaques, bases Eurocode, articles VSF et scénarios de recette réutilisables.
 
 ## Technique
 

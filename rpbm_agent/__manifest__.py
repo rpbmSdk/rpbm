@@ -1,9 +1,16 @@
 {
     "name": "RPBM Agent",
-    "version": "17.0.260920.3",
+    "version": "17.0.260920.4",
     "category": "Tools",
-    "description": """""",
+    "summary": "Assistant véhicule et pièces X'Glass / VSF pour les pistes et devis",
+    "description": """Widget Odoo qui interroge les portails X'Glass (véhicule, catégories, pièces,
+temps de main-d'œuvre) et VSF (articles par eurocode) depuis une piste CRM ou un devis,
+crée le véhicule Fleet et les produits correspondants, puis reporte les données
+normalisées dans les champs Studio de l'instance. Documentation : docs/README.md.""",
     "author": "Paradigme SASU",
+    "license": "LGPL-3",
+    "installable": True,
+    "application": False,
     "depends": ["base_setup", "crm", "delivery", "fleet", "product", "sale_crm"],
     "data": [
         "views/crm_lead_views.xml",

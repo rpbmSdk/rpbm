@@ -20,7 +20,6 @@ Le placement du widget dans les formulaires (`<widget name="rpbm_agent_widget" /
 flowchart TD
     AW["AgentWidget<br/>(bouton loupe, view_widgets)"] -->|"resModel == 'crm.lead'"| DCL[AgentWidgetDialogCrmLead]
     AW -->|"resModel == 'sale.order'"| DSO[AgentWidgetDialogSaleOrder]
-    AW -->|autre modèle| DG[AgentWidgetDialog générique]
     DCL --> Base[AgentWidgetDialog]
     DSO --> Base
     Base --> VC[VehiculeComponent]
@@ -28,7 +27,10 @@ flowchart TD
     Base --> PC[PieceComponent]
     PC --> PAC[PieceAMComponent]
     Base --> AC["ArticleComponent<br/>(utilisé tel quel sur les deux modèles)"]
+    Base --> VIP["VsfImagePreviewDialog<br/>(aperçu image VSF)"]
 ```
+
+Le widget n'est placé que sur `crm.lead` et `sale.order` (`DIALOG_BY_MODEL`, `agent_widget.js`) ; il n'existe pas de dialog générique pour un autre modèle.
 
 ## Hiérarchie des classes
 
@@ -44,6 +46,7 @@ classDiagram
     class CalqueComponent
     class PieceComponent
     class PieceAMComponent
+    class VsfImagePreviewDialog
 
     Component <|-- asyncWidget
     asyncWidget <|-- AgentWidgetDialog
@@ -54,6 +57,7 @@ classDiagram
     Component <|-- CalqueComponent
     Component <|-- PieceComponent
     Component <|-- PieceAMComponent
+    Component <|-- VsfImagePreviewDialog
 ```
 
 `asyncWidget` (`utils.js`) est la classe de base fournissant le service `rpc`, l'accès à
@@ -97,7 +101,6 @@ une URL pleine taille signée par VSF ouvrent une prévisualisation dans une dia
 classDiagram
     class AbstractRecord {
         +recordData
-        +odooId
     }
     class AbstractWidgetRecord {
         +partnerField
@@ -106,6 +109,8 @@ classDiagram
         +immatriculationField
         +baseEurocodeField
         +pieceConcerneeField
+        +xglassPieceIdField / pieceOeIdField / pieceAmIdField
+        +fullEurocodeField / vsfDesignationField / vsfStockField / constructorReferenceField
     }
     class CrmLead
     class SaleOrder
@@ -123,13 +128,14 @@ Toute la progression du parcours (véhicule → planche → catégorie → pièc
 ```mermaid
 flowchart TD
     V[selectedVehicule change] --> P{selectedVehicule défini ?}
-    P -->|Oui| GP["onGetPlanche() → GET /getPlanche"]
-    P -->|Non| RP[planche = undefined]
+    P -->|Oui| GP["getVehiculeMeta() → /rpbm_agent/getVehiculeMeta<br/>(métadonnées + planche en un appel)"]
+    P -->|Non| RP[vehiculeMeta = planche = undefined]
     GP --> PL[planche change]
     PL --> C{"categorieXglass déjà renseignée sur le record ?"}
-    C -->|Oui, calque trouvé| SC["onClickCalque() déclenché automatiquement"]
+    C -->|Oui, calque trouvé| SC["selectedCalque présélectionné (liste réduite, « Afficher les autres »)"]
     C -->|Non| NC[selectedCalque = undefined]
     SC --> CA[selectedCalque change]
+    CA --> PCS["pieceConcernee suggérée depuis le libellé du calque (modifiable)"]
     CA --> GPi["getPieces() → GET /getPieces"]
     GPi --> PI[pieces change]
     PI --> SP["selectedPiece re-matché dans la nouvelle liste (ou réinitialisé)"]
@@ -145,6 +151,11 @@ Un `useEffect` séparé recalcule `state.canConfirm` à chaque changement de vé
 catégorie. Les boutons « Confirmer » et « Confirmer et enregistrer » restent désactivés tant
 que ces deux sélections ne sont pas présentes.
 
+À l'ouverture, `restoreSelectionFromRecord()` relit les identifiants persistés
+(`x_rpbm_xglass_piece_id`, `x_rpbm_piece_oe_id`, `x_rpbm_piece_am_id`, base Eurocode) et la
+cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAllCalques` /
+`showAllPieces` pilotent l'affichage réduit à la sélection courante.
+
 ## Table des appels serveur
 
 | Méthode JS | Composant | Route | Usage |
@@ -152,18 +163,25 @@ que ces deux sélections ne sont pas présentes.
 | `auth_agents()` | `AgentWidgetDialog` | `/rpbm_agent_auth` | Connexion X'Glass + VSF |
 | `closeAgents()` | `AgentWidgetDialog` | `/rpbm_agent_close` | Fermeture session X'Glass |
 | `searchImmatriculation()` | `AgentWidgetDialog` | `/searchImmatriculation` | Recherche véhicule(s) par plaque |
-| `getOdooVehicule()` | `AgentWidgetDialog` **et** `VehiculeComponent` | `/getOdooVehicule` | Véhicule Odoo existant (appelé en double, voir [état des lieux](../etat-des-lieux.md)) |
-| `createOdooVehicule()` / `onClickCreateVehicule()` | `AgentWidgetDialog` et `VehiculeComponent` | `/createVehicule` | Création du véhicule |
+| `getOdooVehicule()` | `AgentWidgetDialog` **et** `VehiculeComponent` | `/getOdooVehicule` | Véhicule Odoo existant (`{id, name, driver_id}`), appelé par carte puis à la confirmation |
+| `createOdooVehicule()` / `onClickCreateVehicule()` | `AgentWidgetDialog` et `VehiculeComponent` | `/createVehicule` | Création du véhicule ; retourne `{id, name}` |
 | `enrichOdooVehicule()` | `AgentWidgetDialog` à la confirmation si le véhicule existe déjà | `/enrichVehicule` | Complément des champs Fleet VIN/date manquants depuis les métadonnées X'Glass ; avertissements |
 | `getRecordData()` | `AgentWidgetDialog` à la confirmation | `/prepareHistoricalVehicleFields` | Préparation explicite des champs historiques depuis Fleet, avec métadonnées X'Glass en repli ; valeurs + avertissements |
-| `getVehiculeMeta()` | `AgentWidgetDialog` pour le seul véhicule sélectionné | `/rpbm_agent/getVehiculeMeta` | VIN/CNIT/date MEC |
-| `getPlanche()` | `AgentWidgetDialog` | `/getPlanche` | Catégories/calques disponibles |
+| `getVehiculeMeta()` | `AgentWidgetDialog` pour le seul véhicule sélectionné | `/rpbm_agent/getVehiculeMeta` | VIN/CNIT/date MEC **et** planche (catégories/calques), en un appel |
+| `restorePortalContext()` | `AgentWidgetDialog` après reconnexion | `/getPlanche` | Re-sélection du véhicule côté portail sans toucher l'état Owl |
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce |
 | `onSearchBaseEurocode()` | `AgentWidgetDialog` | `/searchBaseEurocode` | Articles VSF par eurocode |
+| `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'une carte sélectionnée (+ suggestions pour un article principal) |
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour une carte VSF donnée |
 | `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cette carte |
 | `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget |
+| `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce), provenance `x_rpbm_labor_operation_key` |
+
+L'encart d'actions d'une carte VSF est le sous-template `rpbm_agent.ArticleActions`
+(`agent_widget_dialog.xml`), appelé pour les cartes principales et suggérées ; la dialog devis
+l'étend une seule fois (`rpbm_agent.SaleOrderArticleActions`) pour y ajouter l'ajout/retrait de
+ligne, derrière un garde-fou `addArticleToSaleOrder` puisque l'extension Owl est globale.
 
 ## Écriture finale
 

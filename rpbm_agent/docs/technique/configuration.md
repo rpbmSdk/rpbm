@@ -2,16 +2,16 @@
 
 ## Installation du module
 
-Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis installer via l'interface d'administration (`depends: crm, delivery, fleet, sale_crm`). Le module exige `delivery` pour utiliser le champ natif `sale.order.carrier_id` ; `stock_delivery` reste la dépendance de l'architecture de routage stock.
+Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis installer via l'interface d'administration (`depends: base_setup, crm, delivery, fleet, product, sale_crm`). Le module exige `delivery` pour le champ natif `sale.order.carrier_id` et `base_setup` pour l'écran Réglages. Le routage stock (`stock_delivery`) est porté par l'architecture stock, pas par ce module.
 
 ## Dépendances Python
 
 | Fichier | Contenu |
 |---|---|
-| `__manifest__.py` → `external_dependencies.python` | `beautifulsoup4`, `python-dotenv`, `requests` |
-| `controllers/requirements.txt` | `beautifulsoup4`, `python-dotenv`, `requests` |
+| `__manifest__.py` → `external_dependencies.python` | `beautifulsoup4`, `requests` |
+| `controllers/requirements.txt` | `beautifulsoup4`, `python-dotenv`, `requests` (dont les scripts standalone) |
 
-`python-dotenv` / `.env` (racine du module) ne sont utiles qu'en **exécution standalone hors Odoo** (tests manuels des scripts `vsf.py`/`xglass.py`, notebooks, et [`push_credentials.py`](../../push_credentials.py)) : en production, les identifiants viennent exclusivement de `ir.config_parameter` via `/rpbm_agent_auth`.
+`python-dotenv` / `.env` (racine du module) ne servent qu'aux **scripts standalone hors Odoo** ([`debug_portals.py`](../../debug_portals.py), [`push_credentials.py`](../../push_credentials.py), notebooks) ; les controllers ne chargent jamais `.env`. En production, les identifiants viennent exclusivement de `ir.config_parameter` via `/rpbm_agent_auth`.
 
 ### Frontière des configurations locales
 
@@ -35,8 +35,9 @@ Le dépôt sélectionne la cible Odoo par son nom de profil dans `.paradigme.yam
 | `VSF_PASSWORD` | Mot de passe du portail VSF |
 | `rpbm_agent.vsf_partner_id` | Identifiant du partenaire fournisseur VSF ; défaut de compatibilité : `5708` |
 | `rpbm_agent.vsf_discount` | Remise RPBM décimale entre `0` et `1` ; défaut de compatibilité : `0.2` |
+| `rpbm_agent.labor_product_t1` / `_t2` / `_t3` | Identifiants des `product.product` de service facturés pour les opérations X'Glass T1/T2/T3 ; défauts `24` / `23` / `113` (ids constatés sur `rpbm-preprod`) |
 
-Les deux paramètres `rpbm_agent.vsf_*` sont lus à chaque recherche VSF et création de produit. Une valeur absente conserve le comportement historique ; une valeur invalide produit une erreur explicite et n'est jamais appliquée silencieusement.
+Les paramètres `rpbm_agent.vsf_*` sont lus à chaque recherche VSF et création de produit (`controllers/vsf_config.py`), `rpbm_agent.labor_product_*` à chaque `/getPieces`. Une valeur absente conserve le comportement historique ; une valeur invalide produit une erreur explicite et n'est jamais appliquée silencieusement.
 
 ### Mise à jour rapide des identifiants portails
 
@@ -140,7 +141,7 @@ Comportements vérifiés contre les portails réels (transcriptions HTTP obtenue
   python debug_portals.py --dump trace/            # + dump du HTML reçu
   ```
   Attention : X'Glass n'autorisant qu'une session par identifiant, lancer ce script pendant qu'un utilisateur se sert du widget invalide sa session.
-- [`test_portal_auth.py`](../../test_portal_auth.py) — vérifie la logique d'authentification sans réseau (portails simulés d'après les traces ci-dessus) : `python test_portal_auth.py`.
+- [`test_portal_auth.py`](../../test_portal_auth.py) — vérifie la logique d'authentification et de parsing sans réseau (portails simulés d'après les traces ci-dessus) : `python test_portal_auth.py`. Les mêmes tests sont exposés au lanceur Odoo (`--test-enable`) par `tests/test_portal_parsing.py`.
 
 ## Concurrence — verrou de session
 

@@ -1,5 +1,27 @@
 # Roadmap — UI & transfert vers Odoo
 
+## Reste à faire (état au 2026-09-20)
+
+Tout ce qui suit cette section est l'historique du chantier (diagnostic de juillet, lots
+livrés, décisions) : il est conservé tel quel comme trace, mais seule cette table fait foi
+pour ce qui reste ouvert.
+
+| # | Item | Source | État |
+|---|---|---|---|
+| R1 | **Vérifications live jamais consignées** : L1.0 (onConfirm), L1.1 (course véhicule), L1.2.a (migration related), main-d'œuvre (2026-09-17), et les correctifs du 2026-09-20 (énergie Fleet, un seul `selectVehicule` par sélection) | L1.0/L1.1/L1.2.a, L2 | à rejouer avec [`jeu-de-test.md`](jeu-de-test.md) (CRM-01, SO-04, ROB-01) |
+| R2 | AG01-F05 kilométrage (deux variantes cohabitent) et rapport 1519 marque/modèle vides | AG01-04, [AG-01](audits/AG-01-champs-utiles.md) | arbitrage métier requis |
+| R3 | VM-11 / VM-12 (coefficients de prix pour L4) | [validations-metier.md](validations-metier.md) | à soumettre |
+| R4 | Retry réseau léger sur les GET X'Glass (instabilité Odoo.sh↔portail) | §0 ④ | à évaluer, jamais tranché |
+| R5 | Bouton « Synchroniser VSF » masqué (`base.group_no_one`) | `views/product_template_views.xml` | en attente d'ouverture métier |
+| R6 | Champs `related` Studio de `sale.order` écrits par le widget (`x_studio_pice_concerne`, `x_studio_eurocode_complet`, `x_studio_vsf_*`, miroirs marque/modèle) : vérifier `readonly=False` via `fields_get`, sinon l'écriture ne se propage pas à l'opportunité | AG01-02 | une requête `paradigme-mcp` |
+| R7 | Exports draw.io obsolètes à la racine du module (`Readme.jpeg/.pdf/.png/.html`, 5,4 Mo livrés à chaque build) | — | à supprimer (source archivée dans `_archive/Readme.drawio`) |
+
+Réglé le 2026-09-20 : alias de route `/rbm_agent/getVehiculeMeta`, accent « Non renseigné » des
+rapports, énergie Fleet à la création de véhicule, produits main-d'œuvre paramétrables, code
+mort backend/frontend, doublons d'appels portail, documentation alignée.
+
+---
+
 > **Audit AG-01 préparé (2026-09-14).** La qualification des champs historiques,
 > des alias `x_rpbm_*`, des vues et des rapports est documentée dans
 > [l'audit ciblé](audits/AG-01-champs-utiles.md). La correction des champs
