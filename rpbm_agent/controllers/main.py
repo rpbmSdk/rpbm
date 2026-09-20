@@ -16,7 +16,7 @@ from . import xglass
 from .vsf import VSFError, VSFAuthError
 from .vsf_config import get_vsf_discount, get_vsf_partner_id
 from .xglass import XGlassError, XGlassAuthError
-from ..models.legacy_fields import clean_vin, is_legacy_malformed_vin, month_year_to_date
+from ..models.legacy_fields import NameIndex, clean_vin, is_legacy_malformed_vin, month_year_to_date
 
 _logger = logging.getLogger(__name__)
 
@@ -459,17 +459,15 @@ class AgentController(Controller):
             for warning in warnings:
                 _logger.warning(warning)
         else:
-            marque = request.env['fleet.vehicle.model.brand'].search([('name', '=', vehicule.xGlassModele.xGlassMarque.nom)])
-            if not marque:
-                marque = request.env['fleet.vehicle.model.brand'].create({
-                    'name': vehicule.xGlassModele.xGlassMarque.nom
-                })
-            modele = request.env['fleet.vehicle.model'].search([('name', '=', vehicule.xGlassModele.gamme)])
-            if not modele:
-                modele = request.env['fleet.vehicle.model'].create({
-                    'name': vehicule.xGlassModele.gamme,
-                    'brand_id': marque.id
-                })
+            # Référentiels Fleet par nom normalisé (casse, accents), modèle restreint à sa marque :
+            # la base porte des homonymes (« Renault »/« RENAULT », deux « MEGANE »), un search par
+            # nom seul renvoyait plusieurs enregistrements (Expected singleton, recette 2026-09-20).
+            marque_id = NameIndex(request.env, 'fleet.vehicle.model.brand', 'name').get_or_create(
+                vehicule.xGlassModele.xGlassMarque.nom)
+            marque = request.env['fleet.vehicle.model.brand'].browse(marque_id)
+            modele_id = NameIndex(request.env, 'fleet.vehicle.model', 'name', [('brand_id', '=', marque.id)]).get_or_create(
+                vehicule.xGlassModele.gamme, {'brand_id': marque.id})
+            modele = request.env['fleet.vehicle.model'].browse(modele_id)
             metadata_warnings = []
             data = _fleet_vehicle_metadata_values(vehicule_meta, metadata_warnings)
             for warning in metadata_warnings:
