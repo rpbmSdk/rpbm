@@ -2,7 +2,6 @@
 
 import { AgentWidgetDialog } from "./agent_widget_dialog";
 import { AbstractWidgetRecord } from "./utils";
-import { onWillStart } from "@odoo/owl";
 
 
 class SaleOrder extends AbstractWidgetRecord {
@@ -35,7 +34,6 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         this._widgetLaborLinesByKey = new Map();
         this.state.selectedLaborOperationKeys = {};
         this._restoreLaborLines();
-        onWillStart(() => this.onWillStart());
     }
 
     _restoreLaborLines() {
@@ -101,10 +99,6 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
             await this.props.record.data.order_line.delete(line);
             this._widgetLaborLinesByKey.delete(operation.key);
         }, "Retrait de l'opération de main-d'œuvre du devis en cours...");
-    }
-
-    async onWillStart() {
-        await super.onWillStart();
     }
 
     getWidgetOrderLine(articleCode) {

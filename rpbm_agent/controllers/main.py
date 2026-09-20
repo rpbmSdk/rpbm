@@ -14,16 +14,13 @@ from . import portal_trace
 from . import vsf
 from . import xglass
 from .vsf import VSFError, VSFAuthError
+from .vsf_config import get_vsf_discount, get_vsf_partner_id
 from .xglass import XGlassError, XGlassAuthError
 
 _logger = logging.getLogger(__name__)
 
 vsfAgent = vsf.VSFAgent()
 xglassAgent = xglass.XGLASS()
-
-VSF_PARTNER_PARAM = "rpbm_agent.vsf_partner_id"
-VSF_DISCOUNT_PARAM = "rpbm_agent.vsf_discount"
-DEFAULT_VSF_PARTNER_ID = 5708
 
 # Produits de service contrôlés sur rpbm-preprod, surchargeables par les
 # paramètres système rpbm_agent.labor_product_t1/t2/t3. Le widget ne calcule
@@ -221,34 +218,6 @@ def has_active_agent_lock(env):
         return False
 
 
-def _get_vsf_discount(env):
-    """Retourne la remise RPBM configurée, avec le défaut historique à 20 %."""
-    raw_value = env['ir.config_parameter'].sudo().get_param(
-        VSF_DISCOUNT_PARAM, str(vsf.DEFAULT_RPBM_DISCOUNT)
-    )
-    try:
-        discount = float(raw_value)
-    except (TypeError, ValueError) as error:
-        raise UserError(_("Le paramètre %s doit être un nombre compris entre 0 et 1.") % VSF_DISCOUNT_PARAM) from error
-    if not 0 <= discount <= 1:
-        raise UserError(_("Le paramètre %s doit être compris entre 0 et 1.") % VSF_DISCOUNT_PARAM)
-    return discount
-
-
-def _get_vsf_partner_id(env):
-    """Retourne le fournisseur VSF configuré et vérifie qu'il existe."""
-    raw_value = env['ir.config_parameter'].sudo().get_param(
-        VSF_PARTNER_PARAM, str(DEFAULT_VSF_PARTNER_ID)
-    )
-    try:
-        partner_id = int(raw_value)
-    except (TypeError, ValueError) as error:
-        raise UserError(_("Le paramètre %s doit contenir l'identifiant numérique d'un partenaire.") % VSF_PARTNER_PARAM) from error
-    if not env['res.partner'].browse(partner_id).exists():
-        raise UserError(_("Le fournisseur VSF configuré (%s) n'existe pas.") % partner_id)
-    return partner_id
-
-
 def _product_payload(product, matched_by=None):
     """Forme de réponse partagée par la recherche et la création de produit."""
     payload = {
@@ -365,8 +334,7 @@ def _historical_many2one_id(value):
 
 
 def _historical_target_is_available(target_model, field_name):
-    model_fields = getattr(target_model, '_fields', None)
-    return model_fields is None or field_name in model_fields
+    return field_name in target_model._fields
 
 
 def _add_historical_value(target_model, field_name, value, values, warnings):
@@ -389,10 +357,7 @@ def _historical_reference_value(env, model_name, source_name, label, warnings):
         return None
 
     reference_model = env[model_name]
-    try:
-        searchable_model = reference_model.with_context(active_test=False)
-    except AttributeError:
-        searchable_model = reference_model
+    searchable_model = reference_model.with_context(active_test=False)
     try:
         records = searchable_model.search([('x_name', '!=', False)])
         matches = []
@@ -706,7 +671,6 @@ class AgentController(Controller):
     def rpbm_agent_close(self):
         _logger.info("rpbm_agent_close")
         xglassAgent.close()
-        # vsfAgent.close()
         release_agent_lock(request.env)
         _logger.info("rpbm_agent_close done")
         return
@@ -725,7 +689,7 @@ class AgentController(Controller):
                 "Erreur X'Glass lors de la recherche immatriculation %s" % immatriculation,
             )
 
-    @route(['/rpbm_agent/getVehiculeMeta', '/rbm_agent/getVehiculeMeta'], auth='user', type='json')
+    @route('/rpbm_agent/getVehiculeMeta', auth='user', type='json')
     @_touch_agent_lock
     def getVehiculeMeta(self,vehiculeId:str):
         _logger.info(f"getVehiculeMeta {vehiculeId}")
@@ -925,10 +889,8 @@ class AgentController(Controller):
     @_touch_agent_lock
     def getPieceAm(self,element_withPiecesAm, pieceId:int=None, elementSitId:int=None):
         _logger.info(f"getPieceAm {element_withPiecesAm} {pieceId} {elementSitId}")
-        # Réutilise XGLASS.findSelectionsPiecesAmView() au lieu de dupliquer
-        # l'appel HTTP (URL/payload) — voir docs/etat-des-lieux.md. On ne
-        # réutilise pas XGLASS.getPieceAm() (qui construit des XGlassPieceAm)
-        # pour ne pas changer la forme de la réponse déjà consommée par le widget.
+        # Réutilise XGLASS.findSelectionsPiecesAmView() : la réponse JSON brute
+        # est renvoyée telle quelle, c'est la forme déjà consommée par le widget.
         element = SimpleNamespace(withPiecesAm=element_withPiecesAm, elementSitId=elementSitId)
         piece = SimpleNamespace(id=pieceId) if pieceId else None
         try:
@@ -946,7 +908,7 @@ class AgentController(Controller):
     def searchBaseEurocode(self,baseEurocode:str):
         _logger.info(f"searchBaseEurocode {baseEurocode}")
         try:
-            discount = _get_vsf_discount(request.env)
+            discount = get_vsf_discount(request.env)
             vsfArticles = vsfAgent.searchEurocodeArticlesClient(baseEurocode)
             for vsf_article in vsfArticles:
                 vsf_article.set_rpbm_discount(discount)
@@ -983,7 +945,7 @@ class AgentController(Controller):
         if not code:
             raise UserError(_("Lecture impossible : le code VSF de l'article est absent."))
         try:
-            discount = _get_vsf_discount(request.env)
+            discount = get_vsf_discount(request.env)
             details = vsfAgent.getArticleDetails(
                 article_info,
                 include_suggestions=bool(enrichSuggestions),
@@ -1017,7 +979,7 @@ class AgentController(Controller):
                 articleVsfInfo, include_suggestions=False
             )
             article_vsf = vsf.VSFArticle(
-                _rpbm_discount=_get_vsf_discount(request.env), **article_details
+                _rpbm_discount=get_vsf_discount(request.env), **article_details
             )
             constructor_reference = _article_constructor_reference(article_vsf.__dict__)
             existing_product, matched_by = _find_existing_product(
@@ -1055,7 +1017,7 @@ class AgentController(Controller):
             request.env['product.supplierinfo'].create(
                 vsf.product_supplierinfo_values(
                     article_vsf,
-                    _get_vsf_partner_id(request.env),
+                    get_vsf_partner_id(request.env),
                     product_id=product.id,
                     date_start=fields.Date.today(),
                 )

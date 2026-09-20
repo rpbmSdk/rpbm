@@ -1,6 +1,6 @@
 {
     "name": "RPBM Agent",
-    "version": "17.0.260920.1",
+    "version": "17.0.260920.2",
     "category": "Tools",
     "description": """""",
     "author": "Paradigme SASU",
@@ -22,6 +22,6 @@
         ]
     },
     "external_dependencies": {
-        "python": ["beautifulsoup4", "python-dotenv", "requests"],
+        "python": ["beautifulsoup4", "requests"],
     },
 }

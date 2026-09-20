@@ -1,5 +1,4 @@
 import logging
-import re
 
 _logger = logging.getLogger(__name__)
 
@@ -167,113 +166,6 @@ def _align_related_sale_order_fields(env):
             field_spec["name"],
             field_spec["related"],
         )
-
-
-LEGACY_VEHICLE_REFERENCE_REPLACEMENTS = (
-    ("x_studio_field_KyCjB.x_name", "x_rpbm_vehicle_brand_name"),
-    ("x_studio_field_ZhaeY.x_name", "x_rpbm_vehicle_model_name"),
-    ("x_studio_many2one_field_rP62C.x_name", "x_rpbm_vehicle_brand_name"),
-    ("x_studio_many2one_field_DkgHx.x_name", "x_rpbm_vehicle_model_name"),
-    ("x_studio_field_KyCjB", "x_rpbm_vehicle_brand_id"),
-    ("x_studio_field_ZhaeY", "x_rpbm_vehicle_model_id"),
-    ("x_studio_many2one_field_rP62C", "x_rpbm_vehicle_brand_id"),
-    ("x_studio_many2one_field_DkgHx", "x_rpbm_vehicle_model_id"),
-    ("x_studio_marque__1", "x_rpbm_vehicle_brand_name"),
-    ("x_studio_modle_", "x_rpbm_vehicle_model_name"),
-)
-
-
-def _replace_legacy_vehicle_text(value):
-    """Retourne une expression Studio/QWeb pointee vers les champs Fleet."""
-    replacement = value or ""
-    for old, new in LEGACY_VEHICLE_REFERENCE_REPLACEMENTS:
-        replacement = re.sub(
-            r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(old),
-            new,
-            replacement,
-        )
-    return replacement
-
-
-def _replacement_field_names(value):
-    """Retourne les champs Fleet introduits par une expression migree."""
-    return frozenset(re.findall(r"\bx_rpbm_[A-Za-z0-9_]+\b", value or ""))
-
-
-def _assert_replacement_fields_are_registered(env, value):
-    """Refuse une migration si elle introduit un champ que le module ne livre pas.
-
-    Cette verification est volontairement independante du modele de la vue : les
-    templates QWeb peuvent traverser plusieurs modeles (par exemple
-    ``doc.sale_order_id.x_rpbm_*``). La validation XML d'Odoo reste la source de
-    verite pour la chaine complete.
-    """
-    replacement_fields = _replacement_field_names(value)
-    if not replacement_fields:
-        return
-    registered_fields = {
-        field.name
-        for field in env["ir.model.fields"].sudo().search([])
-    }
-    unknown_fields = sorted(replacement_fields - registered_fields)
-    if unknown_fields:
-        raise RuntimeError(
-            "rpbm_agent: la migration introduit des champs non enregistres: %s"
-            % ", ".join(unknown_fields)
-        )
-
-
-def _write_view_reference_replacement(env, record, field_name, original, replacement):
-    """Ecrit une vue, en ignorant uniquement une invalidite deja presente.
-
-    ``ir.ui.view.write`` valide l'architecture complete, y compris les
-    personnalisations Studio qui ne sont pas gerees par ce module. Un savepoint
-    permet de sonder cette validation sans rendre la transaction inutilisable.
-    Si l'architecture originale echoue aussi, la vue est conservee telle quelle
-    et l'upgrade peut continuer. En revanche, une architecture originale valide
-    (ou une erreur mentionnant une de nos references) remonte au chargeur Odoo.
-    """
-    try:
-        with env.cr.savepoint():
-            record.write({field_name: replacement})
-        return True
-    except Exception as replacement_error:
-        record.invalidate_recordset([field_name])
-        if any(
-            field_name in str(replacement_error)
-            for field_name in _replacement_field_names(replacement)
-        ):
-            raise
-
-        probe = "%s\n<!-- rpbm_agent validation probe -->" % original
-        try:
-            with env.cr.savepoint():
-                record.write({field_name: probe})
-        except Exception as original_error:
-            record.invalidate_recordset([field_name])
-            _logger.warning(
-                "rpbm_agent: vue ir.ui.view %s ignoree: architecture deja "
-                "invalide avant migration (%s: %s)",
-                record.id,
-                type(original_error).__name__,
-                original_error,
-            )
-            return False
-
-        record.invalidate_recordset([field_name])
-        raise
-
-
-def _replace_legacy_vehicle_references(env):
-    """Compatibilite avec l'ancienne migration, désormais sans effet.
-
-    Les vues, courriels et champs historiques existants ne doivent pas être
-    réécrits vers les anciens alias ``x_rpbm_vehicle_*``. Le paramètre ``env``
-    est conservé pour que la migration historique reste importable et
-    rejouable sans effet destructif.
-    """
-    _logger.info("rpbm_agent: migration des références véhicule historiques ignorée")
-    return None
 
 
 def pre_init_hook(env):

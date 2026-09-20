@@ -5,13 +5,10 @@ from odoo import _, fields, models, tools
 from odoo.exceptions import UserError
 
 from ..controllers import vsf
+from ..controllers.vsf_config import get_vsf_discount, get_vsf_partner_id
 
 
 _logger = logging.getLogger(__name__)
-
-VSF_PARTNER_PARAM = "rpbm_agent.vsf_partner_id"
-VSF_DISCOUNT_PARAM = "rpbm_agent.vsf_discount"
-DEFAULT_VSF_PARTNER_ID = 5708
 
 
 class ProductTemplate(models.Model):
@@ -25,33 +22,7 @@ class ProductTemplate(models.Model):
         if not login or not password:
             raise UserError(_("Les identifiants VSF ne sont pas configurés."))
 
-        try:
-            discount = float(
-                params.get_param(VSF_DISCOUNT_PARAM, str(vsf.DEFAULT_RPBM_DISCOUNT))
-            )
-        except (TypeError, ValueError) as error:
-            raise UserError(
-                _("Le paramètre %s doit être un nombre compris entre 0 et 1.")
-                % VSF_DISCOUNT_PARAM
-            ) from error
-        if not 0 <= discount <= 1:
-            raise UserError(
-                _("Le paramètre %s doit être compris entre 0 et 1.")
-                % VSF_DISCOUNT_PARAM
-            )
-
-        try:
-            partner_id = int(
-                params.get_param(VSF_PARTNER_PARAM, str(DEFAULT_VSF_PARTNER_ID))
-            )
-        except (TypeError, ValueError) as error:
-            raise UserError(
-                _("Le paramètre %s doit contenir l'identifiant numérique d'un partenaire.")
-                % VSF_PARTNER_PARAM
-            ) from error
-        if not self.env["res.partner"].browse(partner_id).exists():
-            raise UserError(_("Le fournisseur VSF configuré (%s) n'existe pas.") % partner_id)
-        return login, password, discount, partner_id
+        return login, password, get_vsf_discount(self.env), get_vsf_partner_id(self.env)
 
     def _active_vsf_supplierinfo(self, partner_id, today):
         """Retourne l'unique tarif VSF valable aujourd'hui pour ce modèle."""

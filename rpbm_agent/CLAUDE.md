@@ -16,7 +16,7 @@ Ne jamais raisonner de mémoire sur le comportement des portails : rejouer une t
 
 ## Secrets en développement local
 
-Pour exécuter `controllers/vsf.py` / `controllers/xglass.py` en standalone (hors Odoo, ex. notebooks), les secrets de connexion aux portails XGlass et VSF sont lus depuis `.env` (racine du module, non suivi par git, chargé via `python-dotenv` — `dotenv.load_dotenv()` sans argument recherche `.env` en remontant les dossiers parents depuis `controllers/`, donc le trouve à la racine) :
+Pour exécuter les agents `controllers/vsf.py` / `controllers/xglass.py` hors Odoo (via [`debug_portals.py`](debug_portals.py) ou un notebook), les secrets de connexion aux portails XGlass et VSF sont lus depuis `.env` (racine du module, non suivi par git). Ce sont les scripts standalone qui chargent ce fichier avec `python-dotenv` ; les controllers eux-mêmes ne lisent jamais `.env` :
 
 - `XGLASS_USER`, `XGLASS_PASS` — identifiants du portail X'Glass
 - `VSF_LOGIN`, `VSF_PASSWORD` — identifiants du portail VSF

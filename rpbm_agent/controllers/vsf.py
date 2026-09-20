@@ -1,5 +1,4 @@
 import logging
-import os
 import requests
 import bs4 as bs
 import json
@@ -8,8 +7,6 @@ import unicodedata
 import html
 from urllib.parse import parse_qs, urljoin, urlparse
 
-import dotenv
-
 try:
     from . import portal_trace
 except ImportError:
@@ -17,9 +14,6 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
-dotenv.load_dotenv()
-VSF_LOGIN = os.getenv("VSF_LOGIN")
-VSF_PASSWORD = os.getenv("VSF_PASSWORD")
 VSF_BASE_URL = "https://client.myvsf.fr"
 VSF_LOGIN_URL = f"{VSF_BASE_URL}/identification"
 VSF_SEARCH_URL = f"{VSF_BASE_URL}/catalogue/vitrage"
@@ -273,7 +267,6 @@ class VSFAgent:
         self.session = requests.Session()
         portal_trace.attach(self.session, "vsf")
         self.session.headers.update(self.headers)
-        # self.auth_r = self.auth()
 
     def get(self, url, **kwargs):
         kwargs.setdefault("timeout", REQUEST_TIMEOUT)

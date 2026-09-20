@@ -6,7 +6,6 @@ export class CalqueComponent extends Component {
     static props = {
         calque: { type: Object },
         selectedCalqueId: { type: Number },
-        // onClickCalque: {type: Function},
     }
     static template = "rpbm_agent.CalqueComponent";
 

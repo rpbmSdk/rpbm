@@ -1,10 +1,8 @@
 /** @odoo-module **/
 
-import { useService } from "@web/core/utils/hooks";
-import { useState } from "@odoo/owl";
+import { onWillStart, useState } from "@odoo/owl";
 
 import { asyncWidget } from "./utils";
-import { onWillStart, useRef, useEffect } from "@odoo/owl";
 
 export class VehiculeComponent extends asyncWidget {
     static props = {
@@ -59,7 +57,6 @@ export class VehiculeComponent extends asyncWidget {
         this.runAsync(async () => {
             const res = await this.rpc("/getOdooVehicule", {
                 immatriculation: this.props.immatriculation,
-                // vehicule: this.props.vehicule,
             })
             this.state.vehiculeExists = Boolean(res);
             if (this.vehiculeExists) {
@@ -79,7 +76,6 @@ export class VehiculeComponent extends asyncWidget {
             })
             this.state.vehiculeId = vehiculeId;
             this.state.vehiculeExists = true;
-            // await this.getOdooVehicule();
         })
     }
 

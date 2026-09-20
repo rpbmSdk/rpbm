@@ -1,12 +1,17 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { useState, Component } from "@odoo/owl";
+import { Component } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
-import { AgentWidgetDialog } from "./agent_widget_dialog";
 import { AgentWidgetDialogCrmLead } from "./agent_widget_dialog_crm_lead";
 import { AgentWidgetDialogSaleOrder } from "./agent_widget_dialog_sale_order";
+
+// Le widget n'est placé que par views/crm_lead_views.xml et views/sale_order_views.xml.
+const DIALOG_BY_MODEL = {
+    "crm.lead": AgentWidgetDialogCrmLead,
+    "sale.order": AgentWidgetDialogSaleOrder,
+};
 
 export class AgentWidget extends Component {
 
@@ -22,22 +27,10 @@ export class AgentWidget extends Component {
     }
 
     onOpenWindow() {
-        const props = {
-            // title: "Agent Widget",
-            // size: "lg",
-            record: this.props.record,
-        };
-        switch (this.props.record.resModel) {
-            case "crm.lead":
-                this.dialog.add(AgentWidgetDialogCrmLead, props);
-                break;
-            case "sale.order":
-                this.dialog.add(AgentWidgetDialogSaleOrder, props);
-                break;
-            default:
-                this.dialog.add(AgentWidgetDialog, props);
+        const dialogClass = DIALOG_BY_MODEL[this.props.record.resModel];
+        if (dialogClass) {
+            this.dialog.add(dialogClass, { record: this.props.record });
         }
-        
     }
 }
 

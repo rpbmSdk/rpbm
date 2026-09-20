@@ -73,6 +73,8 @@
 /**
  * @typedef {Object} OdooVehicule
  * @property {number} id
+ * @property {string} name
+ * @property {[number, string]} driver_id
  */
 
 /**

@@ -1,8 +1,4 @@
 import requests
-import dotenv
-
-dotenv.load_dotenv()
-import os
 import bs4 as bs
 
 import json
@@ -11,11 +7,12 @@ from datetime import datetime
 
 try:
     from . import xglass_lbl
-    getLabel = xglass_lbl.getLabel
     from . import portal_trace
-except:
-    from xglass_lbl import getLabel
+except ImportError:
+    import xglass_lbl
     import portal_trace
+
+getLabel = xglass_lbl.getLabel
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -23,9 +20,6 @@ _logger = logging.getLogger(__name__)
 XGLASS_URL = "https://portail-xglass.com"
 XGLASS_LOGIN_URL = f"{XGLASS_URL}/j_spring_security_check"
 XGLASS_MAIN_URL = f"{XGLASS_URL}/mainMenu.html"
-
-# XGLASS_USER = os.getenv("XGLASS_USER")
-# XGLASS_PASS = os.getenv("XGLASS_PASS")
 
 XGLASS_searchImmat = f"{XGLASS_URL}/ajax/searchImmat.html"
 LOGOUT_URL = "https://portail-xglass.com/logout.html"
@@ -101,18 +95,6 @@ class XGlassCalque():
     def __init__(self,**kwargs):
         for key, value in kwargs.items():
             setattr(self,key,value)
-
-class XGlassPlanche():
-    id:int
-    calques:list[dict]
-    xGlassCalques : list[XGlassCalque]
-
-    def __init__(self, id:int, calques:list[XGlassCalque], **kwargs):
-        for key, value in kwargs.items():
-            setattr(self,key,value)
-        self.id = id
-        self.calques = calques
-        self.xGlassCalques = [XGlassCalque(**c) for c in calques]
 
 class XGlassPieceOeCaracteristiqueType:
         id:int
@@ -243,16 +225,6 @@ class XGlassPiece():
 
         self.xGlassPieceTemps = [XGlassPieceTemps(**t) for t in self.tempsList]
 
-class XGlassPieceAm():
-    id:int
-    eurocode:str
-    pieceAm:dict
-    def __init__(self,**kwargs):
-        for key, value in kwargs.items():
-            setattr(self,key,value)
-        self.eurocode = self.pieceAm.get('reference')
-        self.id = self.pieceAm.get('id')
-
 class XGlassElement():
     pieces : list[XGlassPiece]
     libelle:str
@@ -267,21 +239,11 @@ class XGlassElement():
 
 
 class XGLASS:
-    headers = {
-        "accept": "text/html,application/xhtml+xml,application/xml",
-        "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-        "Host": "portail-xglass.com",
-        "Origin": "https://portail-xglass.com",
-    }
-
     def __init__(self):
         self.session = requests.Session()
         portal_trace.attach(self.session, "xglass")
         self.initRecherche = False
         self.selectedVehiculePage = None
-        # self.auth()
 
     def get(self, url, **kwargs):
         kwargs.setdefault("timeout", REQUEST_TIMEOUT)
@@ -392,10 +354,6 @@ class XGLASS:
         return self.selectedVehiculePage
     
     def getVehiculeMeta(self, idVehicule: str='397899'):
-        # r = self.post(
-        #     "https://portail-xglass.com/selectVehicule.html",
-        #     data={"sessionScopedBean.infoSelectionVehicule.variante.id": idVehicule},
-        # )
         page = self.selectedVehiculePage if self.selectedVehiculePage else self.getSelectedVehiculePage(idVehicule)
         scripts = page.find_all("script",src=False)
         def extract_line_value(line, key):
@@ -421,12 +379,6 @@ class XGLASS:
         return data
     
     def selectVehicule(self, idVehicule: str='397899'):
-        # r = self.post(
-        #     "https://portail-xglass.com/selectVehicule.html",
-        #     data={"sessionScopedBean.infoSelectionVehicule.variante.id": idVehicule},
-        # )
-        # page = bs.BeautifulSoup(r.text, "html.parser")
-        # page = self.selectedVehiculePage if self.selectedVehiculePage else self.getSelectedVehiculePage(idVehicule)
         page = self.getSelectedVehiculePage(idVehicule)
         scripts = page.find_all("script",src=False)
         for script in scripts:
@@ -442,44 +394,6 @@ class XGLASS:
                 _logger.debug("selectVehicule: script ignoré (%s)", e)
         return {}
 
-    def getPlancheData(self, vehicule: XGlassVehicule):
-        raw = self.selectVehicule(vehicule.id)
-        # calques = raw.get("calques")
-        # data = {}
-        # if calques:
-        #     data['calques'] = [XGlassCalque(**c) for c in calques]
-        # data['id'] = raw.get('id')
-        return XGlassPlanche(**raw)
-
-    def affichagePieces(self, planche:XGlassPlanche, calque:XGlassCalque)->requests.Response:
-        response = self.get(f'https://portail-xglass.com/affichagePieces.html?planche.id={planche.id}&calque.id={calque.id}&filtrageVinButtonClickedForDevisRapide=true')
-        self.ensure_logged(response)
-        return response
-
-    def getPieceData(self, planche:XGlassPlanche, calque:XGlassCalque)->dict:
-        html = self.affichagePieces(planche, calque).text
-        page = bs.BeautifulSoup(html, "html.parser")
-        scripts = page.find_all("script",src=False)
-        lines : list[str] = []
-        for script in scripts:
-            try:
-                if "var elementSitMapData =" in script.text:
-                    lines = script.text.splitlines()
-                    break
-            except Exception as e:
-                _logger.debug("getPieceData: script ignoré (%s)", e)
-        for line in lines:
-            if "var elementSitMapData =" in line:
-                raw = line.split("var elementSitMapData = ")[1]
-                raw = raw.replace(";", "")
-                return json.loads(raw)[0]
-        raise XGlassError("Pièce introuvable (elementSitMapData absent de la réponse X'Glass).")
-
-    def getPieces(self, planche:XGlassPlanche, calque:XGlassCalque):
-        data = self.getPieceData(planche, calque)
-        self.elements_principaux = [XGlassElement(**p) for p in data.get('ELEMENTSIT_PRINCIPAUX')]
-        self.elements_complementaires = [XGlassElement(**p) for p in data.get('ELEMENTSIT_COMPLEMENTAIRES')]
-
     def getPiecesData (self, plancheId:int, calqueId:int):
         response = self.get(f'https://portail-xglass.com/affichagePieces.html?planche.id={plancheId}&calque.id={calqueId}&filtrageVinButtonClickedForDevisRapide=true')
         self.ensure_logged(response)
@@ -493,7 +407,7 @@ class XGLASS:
                     lines = script.text.splitlines()
                     break
             except Exception as e:
-                _logger.debug("getPieceData: script ignoré (%s)", e)
+                _logger.debug("getPiecesData: script ignoré (%s)", e)
         for line in lines:
             if "var elementSitMapData =" in line:
                 raw = line.split("var elementSitMapData = ")[1]
@@ -519,24 +433,3 @@ class XGLASS:
         self.ensure_logged(r)
         return r
     
-    def getPieceAm(self, element:XGlassElement, piece:XGlassPiece=None):
-        r = self.findSelectionsPiecesAmView(element, piece)
-        data = r.json()
-        return [XGlassPieceAm(**p) for p in data.get('selectionsPiecesAmView')]
-
-if __name__ == "__main__":
-    from pprint import pprint
-
-    xglass = XGLASS()
-    xglass.auth(os.getenv("XGLASS_USER"), os.getenv("XGLASS_PASS"))
-    try:
-        vehicules = xglass.searchVehiculeImmat()
-        vehicule = vehicules[0]
-        pprint(vehicule.__dict__)
-        planche = xglass.getPlancheData(vehicule)
-        pare_brise = [c for c in planche.calques if c.libelle == "PARE-BRISE"][0]
-        xglass.affichagePieces(planche, pare_brise)
-    except Exception as e:
-        print(e)
-
-    xglass.close()

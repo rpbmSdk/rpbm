@@ -1,9 +1,8 @@
 /** @odoo-module **/
 
 import { useService } from "@web/core/utils/hooks";
-import { useState } from "@odoo/owl";
+import { onWillStart, onWillUnmount, useEffect, useState } from "@odoo/owl";
 import { Dialog } from '@web/core/dialog/dialog';
-import { onWillUnmount, useEffect } from "@odoo/owl";
 
 import {
     asyncWidget,
@@ -43,7 +42,6 @@ export class AgentWidgetDialog extends asyncWidget {
 
     setup() {
         super.setup();
-        this.rpc = useService("rpc");
         this.dialog = useService("dialog");
         /** @type {AbstractWidgetRecord} */
         this.record = new AbstractWidgetRecord(this.props.record);
@@ -53,7 +51,6 @@ export class AgentWidgetDialog extends asyncWidget {
             agentsInitialized: false,
             isReconnecting: false,
             reconnectRequired: false,
-            // loading: false,
             immatriculationValue: "",
             vehicules: [],
             selectedVehicule: undefined,
@@ -80,6 +77,10 @@ export class AgentWidgetDialog extends asyncWidget {
         this._agentLockReleased = false;
         this._lastSearchedBaseEurocode = undefined;
         this._reconnectPromise = undefined;
+
+        // Les sous-classes finissent d'initialiser record/state dans leur setup()
+        // avant que ce crochet ne s'exécute.
+        onWillStart(() => this.onWillStart());
 
         // La croix de la dialog et Échap contournent onDiscard(). Le crochet de
         // cycle de vie garantit que le verrou X'Glass est libéré quel que soit
@@ -162,7 +163,6 @@ export class AgentWidgetDialog extends asyncWidget {
                 this.state.selectedPiece = undefined;
             }
             else {
-                // this.onSelectPiece(this.pieces[0].id);
                 if (this.selectedPiece) {
                     const piece = this.pieces.find(piece => piece.id === this.selectedPiece.id);
                     this.state.selectedPiece = piece;
@@ -191,9 +191,6 @@ export class AgentWidgetDialog extends asyncWidget {
             if (this.agentsInitialized && this.selectedPiece && this.baseEurocode) {
                 this.onSearchBaseEurocode();
             }
-            // else {
-            //     this.state.baseEurocode = undefined;
-            // }
         }, () => [this.baseEurocode, this.selectedPiece, this.agentsInitialized])
 
     }
@@ -526,7 +523,6 @@ export class AgentWidgetDialog extends asyncWidget {
         }
         return await this.rpc("/getOdooVehicule", {
             immatriculation: this.immatriculationValue,
-            // vehicule: this.selectedVehicule,
         })
     }
 
@@ -697,13 +693,7 @@ export class AgentWidgetDialog extends asyncWidget {
 
     async getSelectedPieceAm() {
         if (this.selectedPiece) {
-            const res = await this.getPieceAm(this.selectedPiece);
-            // if (res.length > 0) {
-            //     const basePieceAm = res[0].pieceAm;
-            //     const reference = basePieceAm.reference;
-            //     this.state.baseEurocode = reference.substring(0, 5);
-            //     this.onSearchBaseEurocode();
-            // }
+            await this.getPieceAm(this.selectedPiece);
         }
     }
 

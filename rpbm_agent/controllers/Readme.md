@@ -1,1 +1,0 @@
-Un seul utilisateur actif par identifiant

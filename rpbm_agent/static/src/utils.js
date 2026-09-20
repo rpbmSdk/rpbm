@@ -37,9 +37,6 @@ export class AbstractRecord {
     get recordData() {
         return this.data;
     }
-    get odooId() {
-        return this.recordData.id;
-    }
 }
 
 export class AbstractWidgetRecord extends AbstractRecord {
@@ -58,12 +55,6 @@ export class AbstractWidgetRecord extends AbstractRecord {
     vsfDesignationField = undefined;
     vsfStockField = undefined;
     constructorReferenceField = undefined;
-
-    constructor(record) {
-        super(record);
-        // this.vehiculeField = vehiculeField;
-        // this.immatriculationField = immatriculationField;
-    }
 
     get immatriculation() {
         return this.recordData[this.immatriculationField];

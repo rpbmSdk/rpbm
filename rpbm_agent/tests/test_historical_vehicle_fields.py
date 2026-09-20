@@ -217,14 +217,6 @@ class TestHistoricalVehicleFields(TestCase):
         self.assertIn(('sale.order', 'x_rpbm_vsf_constructor_reference'), specs)
         self.assertNotIn('x_studio_field_aIM13', HISTORICAL_FIELDS)
 
-    def test_legacy_migration_symbol_is_a_noop(self):
-        class ExplodingEnvironment:
-            @property
-            def registry(self):
-                raise AssertionError('the compatibility migration must not inspect the environment')
-
-        self.assertIsNone(hooks._replace_legacy_vehicle_references(ExplodingEnvironment()))
-
     def test_route_returns_explicit_crm_payload_and_reuses_normalized_references(self):
         env = _environment(
             historical_brands=[_Record(31, x_name='Renault')],

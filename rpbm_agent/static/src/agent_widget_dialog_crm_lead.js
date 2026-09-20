@@ -1,13 +1,7 @@
 /** @odoo-module **/
 
-import { AbstractRecord, AbstractWidgetRecord } from "./utils";
+import { AbstractWidgetRecord } from "./utils";
 import { AgentWidgetDialog } from "./agent_widget_dialog";
-import { onWillStart } from "@odoo/owl";
-// /**
-// @typedef {Object} CrmLead
-// @prop {number} id
-
-//  */
 
 class CrmLead extends AbstractWidgetRecord{
     constructor(record) {
@@ -22,8 +16,6 @@ class CrmLead extends AbstractWidgetRecord{
         this.vsfStockField = 'x_studio_field_BKtpw'
         this.constructorReferenceField = 'x_studio_field_MNzfJ'
     }
-
-    
 }
 
 export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
@@ -35,17 +27,5 @@ export class AgentWidgetDialogCrmLead extends AgentWidgetDialog {
 
         this.state.immatriculationValue = this.record.immatriculation;
         this.restoreSelectionFromRecord();
-
-        onWillStart(async () => {
-            await this.onWillStart();
-            
-        });
-        
     }
-
-    async onWillStart(){
-        await super.onWillStart();
-        
-    }
-
 }
