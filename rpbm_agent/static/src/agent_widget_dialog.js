@@ -736,7 +736,9 @@ export class AgentWidgetDialog extends asyncWidget {
             this._lastSearchedBaseEurocode = undefined;
             return;
         }
-        if (baseEurocode === this._lastSearchedBaseEurocode) {
+        // Même base déjà cherchée ET résultats affichés : rien à faire. Sans la seconde condition,
+        // « Rechercher sur VSF » restait muet après restauration (recette 2026-09-20).
+        if (baseEurocode === this._lastSearchedBaseEurocode && this.state.articlesVsf.length) {
             return;
         }
         this._lastSearchedBaseEurocode = baseEurocode;
