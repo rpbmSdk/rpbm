@@ -68,13 +68,13 @@ export class VehiculeComponent extends asyncWidget {
 
     onClickCreateVehicule() {
         this.runAsync(async () => {
-            const vehiculeId = await this.rpc("/createVehicule", {
+            const vehicule = await this.rpc("/createVehicule", {
                 immatriculation: this.props.immatriculation,
                 partner_id: this.record.partnerId,
                 vehicule_info: this.props.vehicule,
                 vehicule_meta: this.vehiculeMeta,
             })
-            this.state.vehiculeId = vehiculeId;
+            this.state.vehiculeId = vehicule.id;
             this.state.vehiculeExists = true;
         })
     }

@@ -10,10 +10,14 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "controllers"))
-
-import vsf  # noqa: E402
-import xglass  # noqa: E402
+try:
+    # Sous Odoo (--test-enable), via tests/test_portal_parsing.py.
+    from .controllers import vsf, xglass
+except ImportError:
+    # Exécution standalone : python test_portal_auth.py
+    sys.path.insert(0, str(Path(__file__).resolve().parent / "controllers"))
+    import vsf  # noqa: E402
+    import xglass  # noqa: E402
 
 MAIN = xglass.XGLASS_MAIN_URL
 LOGIN_KO = "https://portail-xglass.com/login.html?error=password.mismatch"

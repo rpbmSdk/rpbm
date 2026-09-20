@@ -26,19 +26,13 @@
         <xpath expr="//section[@t-if='selectedPiece or hasRestoredPieceContext']/h5" position="replace">
             <h5>5. Article VSF</h5>
         </xpath>
-        <xpath expr="//div[@name='selected_main_article_actions']" position="inside">
-            <t t-if="getProductForArticle(actionArticle.code)">
-                <t t-if="isWidgetArticleInOrder(actionArticle.code)">
-                    <button class="btn btn-outline-danger btn-sm ms-2" t-on-click.stop="()=>this.removeArticleFromSaleOrder(actionArticle.code)">Retirer du devis</button>
-                </t>
-                <t t-elif="isArticleAlreadyInOrder(actionArticle.code)">
-                    <span class="ms-2">Article déjà présent dans le devis.</span>
-                </t>
-                <button t-else="" class="btn btn-primary btn-sm ms-2" t-on-click.stop="()=>this.addArticleToSaleOrder(actionArticle.code)">Ajouter au devis</button>
-            </t>
-        </xpath>
-        <xpath expr="//div[@name='selected_suggested_article_actions']" position="inside">
-            <t t-if="getProductForArticle(actionArticle.code)">
+    </t>
+    <!-- Actions devis, ajoutées à l'encart commun. Le template est partagé avec la
+         dialog CRM : le garde-fou sur addArticleToSaleOrder (défini seulement par
+         AgentWidgetDialogSaleOrder) limite ces boutons au devis. -->
+    <t t-name="rpbm_agent.SaleOrderArticleActions" t-inherit="rpbm_agent.ArticleActions" t-inherit-mode="extension">
+        <xpath expr="//div[@name='article_actions']" position="inside">
+            <t t-if="addArticleToSaleOrder and getProductForArticle(actionArticle.code)">
                 <t t-if="isWidgetArticleInOrder(actionArticle.code)">
                     <button class="btn btn-outline-danger btn-sm ms-2" t-on-click.stop="()=>this.removeArticleFromSaleOrder(actionArticle.code)">Retirer du devis</button>
                 </t>

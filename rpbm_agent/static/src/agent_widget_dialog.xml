@@ -92,26 +92,7 @@
                                     <t t-set-slot="actions">
                                         <t t-if="isArticleSelected(articleVsf.code)">
                                             <t t-set="actionArticle" t-value="articleVsf"/>
-                                            <div name="selected_main_article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
-                                                <button t-att-class="isPrimaryArticle(actionArticle.code) ? 'btn btn-success btn-sm mb-2' : 'btn btn-outline-primary btn-sm mb-2'" t-on-click.stop="()=>this.setPrimaryArticle(actionArticle.code)">
-                                                    <t t-if="isPrimaryArticle(actionArticle.code)">Article principal</t>
-                                                    <t t-else="">Définir comme article principal</t>
-                                                </button>
-                                                <t t-if="isArticleLoading(actionArticle.code)">
-                                                    <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
-                                                </t>
-                                                <t t-else="">
-                                                    <t t-set="articleProduct" t-value="getProductForArticle(actionArticle.code)"/>
-                                                    <t t-if="articleProduct">
-                                                        <span>Produit Odoo trouvé (<t t-esc="productMatchLabel(articleProduct)"/>).</span>
-                                                        <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl(articleProduct)" target="_blank">Voir le produit</a>
-                                                    </t>
-                                                    <t t-else="">
-                                                        <span>Article absent de la base Odoo.</span>
-                                                        <button class="btn btn-primary btn-sm ms-2" t-att-disabled="isArticleLoading(actionArticle.code)" t-on-click.stop="()=>this.createProductForArticle(actionArticle.code)">Créer le produit</button>
-                                                    </t>
-                                                </t>
-                                            </div>
+                                            <t t-call="rpbm_agent.ArticleActions"/>
                                         </t>
                                     </t>
                                 </ArticleComponent>
@@ -124,26 +105,7 @@
                                                     <t t-set-slot="actions">
                                                         <t t-if="isArticleSelected(suggestion.code)">
                                                             <t t-set="actionArticle" t-value="suggestion"/>
-                                                            <div name="selected_suggested_article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
-                                                                <button t-att-class="isPrimaryArticle(actionArticle.code) ? 'btn btn-success btn-sm mb-2' : 'btn btn-outline-primary btn-sm mb-2'" t-on-click.stop="()=>this.setPrimaryArticle(actionArticle.code)">
-                                                                    <t t-if="isPrimaryArticle(actionArticle.code)">Article principal</t>
-                                                                    <t t-else="">Définir comme article principal</t>
-                                                                </button>
-                                                                <t t-if="isArticleLoading(actionArticle.code)">
-                                                                    <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
-                                                                </t>
-                                                                <t t-else="">
-                                                                    <t t-set="articleProduct" t-value="getProductForArticle(actionArticle.code)"/>
-                                                                    <t t-if="articleProduct">
-                                                                        <span>Produit Odoo trouvé (<t t-esc="productMatchLabel(articleProduct)"/>).</span>
-                                                                        <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl(articleProduct)" target="_blank">Voir le produit</a>
-                                                                    </t>
-                                                                    <t t-else="">
-                                                                        <span>Article absent de la base Odoo.</span>
-                                                                        <button class="btn btn-primary btn-sm ms-2" t-att-disabled="isArticleLoading(actionArticle.code)" t-on-click.stop="()=>this.createProductForArticle(actionArticle.code)">Créer le produit</button>
-                                                                    </t>
-                                                                </t>
-                                                            </div>
+                                                            <t t-call="rpbm_agent.ArticleActions"/>
                                                         </t>
                                                     </t>
                                                 </ArticleComponent>
@@ -167,5 +129,31 @@
                 <button class="btn btn-outline-secondary" t-on-click="onDiscard" t-att-disabled="isReconnecting">Annuler</button>
             </t>
         </Dialog>
+    </t>
+
+    <!-- Encart d'actions d'une carte VSF sélectionnée (principale ou suggérée).
+         Attend `actionArticle` dans le scope de l'appelant. La dialog devis
+         l'étend (agent_widget_dialog_sale_order.xml). -->
+    <t t-name="rpbm_agent.ArticleActions">
+        <div name="article_actions" class="alert alert-light border mt-2 mb-0" t-on-click.stop="">
+            <button t-att-class="isPrimaryArticle(actionArticle.code) ? 'btn btn-success btn-sm mb-2' : 'btn btn-outline-primary btn-sm mb-2'" t-on-click.stop="()=>this.setPrimaryArticle(actionArticle.code)">
+                <t t-if="isPrimaryArticle(actionArticle.code)">Article principal</t>
+                <t t-else="">Définir comme article principal</t>
+            </button>
+            <t t-if="isArticleLoading(actionArticle.code)">
+                <i class="fa fa-spinner fa-spin me-1"/> Chargement de l'article VSF…
+            </t>
+            <t t-else="">
+                <t t-set="articleProduct" t-value="getProductForArticle(actionArticle.code)"/>
+                <t t-if="articleProduct">
+                    <span>Produit Odoo trouvé (<t t-esc="productMatchLabel(articleProduct)"/>).</span>
+                    <a class="btn btn-outline-primary btn-sm ms-2" t-att-href="productOdooUrl(articleProduct)" target="_blank">Voir le produit</a>
+                </t>
+                <t t-else="">
+                    <span>Article absent de la base Odoo.</span>
+                    <button class="btn btn-primary btn-sm ms-2" t-on-click.stop="()=>this.createProductForArticle(actionArticle.code)">Créer le produit</button>
+                </t>
+            </t>
+        </div>
     </t>
 </templates>

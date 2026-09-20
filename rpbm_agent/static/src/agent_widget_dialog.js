@@ -107,16 +107,9 @@ export class AgentWidgetDialog extends asyncWidget {
         useEffect(() => {
             if (this.selectedVehicule) {
                 const vehiculeId = this.selectedVehicule.id;
-                this.runAsync(async () => {
-                    // L1.1 — getVehiculeMeta() sélectionne un véhicule côté portail X'Glass.
-                    // La session portail est globale : sérialiser cette sélection avec le
-                    // chargement de la planche évite qu'une autre carte véhicule ne remplace
-                    // l'état entre les deux appels.
-                    await this.getVehiculeMeta(vehiculeId);
-                    if (this.selectedVehicule?.id === vehiculeId) {
-                        await this.getPlanche(vehiculeId);
-                    }
-                }, "Chargement du véhicule en cours...");
+                // L1.1 — un seul appel sélectionne le véhicule côté portail X'Glass
+                // (session globale) et ramène métadonnées et planche ensemble.
+                this.runAsync(() => this.getVehiculeMeta(vehiculeId), "Chargement du véhicule en cours...");
             }
             else {
                 this.state.vehiculeMeta = undefined;
@@ -312,17 +305,14 @@ export class AgentWidgetDialog extends asyncWidget {
         }
     }
 
+    /** @returns {Promise<OdooVehicule>} */
     async createOdooVehicule() {
-        const res = await this.rpc("/createVehicule", {
+        return await this.rpc("/createVehicule", {
             immatriculation: this.state.immatriculationValue,
             partner_id: this.record.partnerId,
             vehicule_info: this.selectedVehicule,
             vehicule_meta: this.vehiculeMeta,
-        })
-        if (res) {
-            return await this.getOdooVehicule();
-        }
-        return res;
+        });
     }
 
     async getRecordData() {
@@ -546,26 +536,19 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.state.vehiculeMeta;
     }
 
+    /**
+     * Sélectionne le véhicule côté portail et charge ses métadonnées et sa planche.
+     * @returns {Promise<VehiculeMeta>}
+     */
     async getVehiculeMeta(vehiculeId = this.selectedVehicule.id) {
-        const res = await this.callPortal("/rpbm_agent/getVehiculeMeta", {
+        const { meta, planche } = await this.callPortal("/rpbm_agent/getVehiculeMeta", {
             vehiculeId,
         });
         if (this.selectedVehicule?.id === vehiculeId) {
-            this.state.vehiculeMeta = res;
+            this.state.vehiculeMeta = meta;
+            this.state.planche = planche;
         }
-        return res;
-    }
-
-
-
-    async getPlanche(vehiculeId = this.selectedVehicule.id) {
-        const res = await this.callPortal("/getPlanche", {
-            vehiculeId,
-        })
-        if (this.selectedVehicule?.id === vehiculeId) {
-            this.state.planche = res;
-        }
-        return res;
+        return meta;
     }
 
     /** @returns {Planche} */

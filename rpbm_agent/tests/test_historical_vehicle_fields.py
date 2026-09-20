@@ -102,6 +102,12 @@ class _Model:
             ]
         return _RecordSet(records)
 
+    def search_read(self, domain, field_names):
+        return [
+            {'id': record.id, **{name: record._values.get(name) for name in field_names}}
+            for record in self.search(domain)
+        ]
+
     def browse(self, record_id):
         records = [record for record in self._records if record.id == record_id]
         if self.deny_read:

@@ -359,12 +359,11 @@ def _historical_reference_value(env, model_name, source_name, label, warnings):
     reference_model = env[model_name]
     searchable_model = reference_model.with_context(active_test=False)
     try:
-        records = searchable_model.search([('x_name', '!=', False)])
-        matches = []
-        for record in records:
-            record_values = _historical_record_values(record, ('x_name',))
-            if _historical_normalized_name(record_values.get('x_name')) == normalized_name:
-                matches.append((record, _historical_text(record_values.get('x_name'))))
+        matches = [
+            (row['id'], _historical_text(row.get('x_name')))
+            for row in searchable_model.search_read([('x_name', '!=', False)], ['x_name'])
+            if _historical_normalized_name(row.get('x_name')) == normalized_name
+        ]
     except AccessError:
         warnings.append(
             _("Lecture du référentiel historique %s interdite ; le champ reste inchangé.")
@@ -378,17 +377,14 @@ def _historical_reference_value(env, model_name, source_name, label, warnings):
             match for match in matches if match[1] == source_text
         ]
         if len(exact_matches) == 1:
-            record, record_name = exact_matches[0]
-            return [record.id, record_name]
+            return list(exact_matches[0])
         warnings.append(
             _("%s historique ambigu (%s correspondances) : première correspondance retenue.")
             % (label, len(matches))
         )
-        record, record_name = matches[0]
-        return [record.id, record_name]
+        return list(matches[0])
     if matches:
-        record, record_name = matches[0]
-        return [record.id, record_name]
+        return list(matches[0])
 
     if normalized_name == 'inconnu':
         warnings.append(
@@ -694,9 +690,11 @@ class AgentController(Controller):
     def getVehiculeMeta(self,vehiculeId:str):
         _logger.info(f"getVehiculeMeta {vehiculeId}")
         try:
-            # Il faut d'abord réinitialiser la planche.
-            self.getPlanche(int(vehiculeId))
-            return xglassAgent.getVehiculeMeta(vehiculeId)
+            # selectVehicule() pose la sélection côté portail et met en cache la
+            # page, que getVehiculeMeta() relit : un seul aller-retour X'Glass
+            # pour la planche et les métadonnées.
+            planche = xglassAgent.selectVehicule(str(vehiculeId))
+            return {'meta': xglassAgent.getVehiculeMeta(vehiculeId), 'planche': planche}
         except XGlassError as error:
             _raise_portal_error(
                 error,
@@ -710,15 +708,12 @@ class AgentController(Controller):
             Permet de retourner l'ID du véhicule enregistré en BDD de Odoo, si 
             le véhicule n'existe pas, retourne False
         """
-        # _logger.info(f"getVehicule {vehicule}")
         vehicules = request.env['fleet.vehicle'].search([('license_plate', '=', immatriculation)])
-        if vehicules:
-            if len(vehicules) > 1:
-                _logger.warning(f"Plusieurs véhicules avec la même immatriculation {immatriculation}")
-            vehicule = vehicules[0]
-            return vehicule.read()[0]
-        else:
+        if not vehicules:
             return False
+        if len(vehicules) > 1:
+            _logger.warning(f"Plusieurs véhicules avec la même immatriculation {immatriculation}")
+        return vehicules[0].read(['name', 'driver_id'])[0]
 
     @route('/prepareHistoricalVehicleFields', auth='user', type='json')
     def prepare_historical_vehicle_fields(
@@ -836,7 +831,7 @@ class AgentController(Controller):
             })
             _logger.info(f"Véhicule créé {vehicule}")
 
-        return vehicule.id
+        return {'id': vehicule.id, 'name': vehicule.name}
 
 
     @route('/getPlanche', auth='user', type='json')
