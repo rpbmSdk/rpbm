@@ -17,8 +17,8 @@ Phases, dans l'ordre des dependances :
     check         lecture seule         controles post-import
     selfcheck     hors ligne            verification de la logique du script
 
-rpbm_agent doit etre installe AVANT la phase products (D5) : son pre_init_hook cree
-x_studio_eurocode, sans lequel les fiches migrees restent invisibles au widget (qui en
+rpbm_agent doit etre installe AVANT la phase products (D5) : son champ natif product.template.
+rpbm_eurocode, sans lequel les fiches migrees restent invisibles au widget (qui en
 creerait des doublons) et hors de portee de la synchronisation VSF.
 
 Aucune donnee d'historique du fichier Excel n'est reprise (D4) : le CSV sert uniquement a
@@ -133,7 +133,7 @@ def read_catalog() -> list[dict[str, str]]:
     """Catalogue importable : produits, tarifs et couts partent tous de la meme liste.
 
     Les references dont l'EUROCODE n'a pas un format exploitable sont exclues (D3) : sans
-    x_studio_eurocode valide, elles seraient invisibles au widget rpbm_agent - qui en creerait
+    rpbm_eurocode valide, elles seraient invisibles au widget rpbm_agent - qui en creerait
     des doublons - et non synchronisables a vie, tout en occupant une fiche Odoo.
     eurocode_format_valide est la seule source de verite sur ce point.
     """
@@ -339,12 +339,12 @@ def build_suppliers() -> tuple[list[list[str]], list[dict[str, str]]]:
 def build_products() -> tuple[list[str], list[list[str]]]:
     """Tous les articles sont stockables (D2) et portent un eurocode valide (D3).
 
-    x_studio_eurocode est renseigne sans condition : rpbm_agent est un prerequis de la phase
+    rpbm_eurocode est renseigne sans condition : rpbm_agent est un prerequis de la phase
     (D5) et le catalogue est deja filtre par read_catalog().
     """
     fields = [
         "id", "name", "default_code", "categ_id/id", "detailed_type", "list_price",
-        "x_studio_eurocode",
+        "rpbm_eurocode",
     ]
     rows = []
     for row in read_catalog():
@@ -512,12 +512,12 @@ def phase_suppliers(odoo: Odoo, limit: int | None) -> None:
 
 
 def phase_products(odoo: Odoo, limit: int | None) -> None:
-    if "x_studio_eurocode" not in odoo.field_names("product.template"):
+    if "rpbm_eurocode" not in odoo.field_names("product.template"):
         # Sans cette cle, le widget de rpbm_agent ne retrouve pas le produit migre : il en
         # cree un doublon et la fiche importee reste non synchronisable (reconciliation §2.1).
         raise SystemExit(
-            "Phase interrompue : x_studio_eurocode absent de product.template.\n"
-            "Installer rpbm_agent (pre_init_hook) AVANT l'import (D5), puis rejouer."
+            "Phase interrompue : rpbm_eurocode absent de product.template.\n"
+            "Installer rpbm_agent AVANT l'import (D5), puis rejouer."
         )
     fields, rows = build_products()
     ecartes = excluded_references()
@@ -625,7 +625,7 @@ def phase_check(odoo: Odoo, limit: int | None) -> None:
         ("Fournisseurs importes", "ir.model.data", imported + [["model", "=", "res.partner"]]),
         ("Produits importes", "ir.model.data", imported + [["model", "=", "product.template"]]),
         ("Tarifs importes", "ir.model.data", imported + [["model", "=", "product.supplierinfo"]]),
-        ("Produits sans eurocode Studio", "product.template", [["x_studio_eurocode", "=", False]]),
+        ("Produits sans eurocode", "product.template", [["rpbm_eurocode", "=", False]]),
         ("Produits a cout nul", "product.product", [["standard_price", "=", 0]]),
     ]:
         try:
@@ -687,10 +687,10 @@ def phase_selfcheck() -> None:
     assert len(ids) == len(set(ids)), "identifiants externes de categorie en doublon"
 
     fields, rows = build_products()
-    assert fields[-1] == "x_studio_eurocode"
+    assert fields[-1] == "rpbm_eurocode"
     assert len(fields) == len(rows[0]), "colonnes et valeurs desalignees"
     # D3 : les references au format d'eurocode douteux ne sont pas importees du tout. Le garde-fou
-    # porte donc sur leur absence, et non plus sur un x_studio_eurocode laisse vide.
+    # porte donc sur leur absence, et non plus sur un rpbm_eurocode laisse vide.
     ecartes = excluded_references()
     assert ecartes, "aucune reference exclue : le filtre de format est-il encore actif ?"
     references = {row[2] for row in rows}
@@ -734,10 +734,10 @@ def phase_selfcheck() -> None:
 
     # Tout produit cree porte la cle de re-synchronisation VSF, egale a sa reference : c'est ce
     # que garantit l'exclusion en amont (reconciliation §2.1 et §2.13).
-    eurocode_index = fields.index("x_studio_eurocode")
+    eurocode_index = fields.index("rpbm_eurocode")
     reference_index = fields.index("default_code")
     assert all(row[eurocode_index] == row[reference_index] for row in rows), \
-        "x_studio_eurocode doit valoir la reference sur chaque produit"
+        "rpbm_eurocode doit valoir la reference sur chaque produit"
 
     # Le filtre doit s'appliquer aux trois constructeurs : un tarif ou un cout qui porterait sur
     # une reference non importee serait rejete par Odoo au chargement, lot entier compris.

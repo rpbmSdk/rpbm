@@ -34,7 +34,7 @@ class FakeOdoo:
         return True
 
     def field_names(self, model):
-        return {"x_studio_eurocode"} if self.commit else set()
+        return {"rpbm_eurocode"} if self.commit else set()
 
     def resolve_id(self, model, domain, label):
         return 42

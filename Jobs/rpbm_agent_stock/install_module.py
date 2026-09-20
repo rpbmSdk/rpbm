@@ -8,7 +8,7 @@ pas ete rafraichie. Sequence :
 
     1. ir.module.module.update_list()          -> fait apparaitre rpbm_agent s'il est absent
     2. recherche name = rpbm_agent              -> etat reel (installed/uninstalled/absent)
-    3. button_immediate_install() si necessaire -> declenche pre_init_hook (FIELDS_TO_ENSURE)
+    3. button_immediate_install() si necessaire -> charge les champs natifs rpbm_* du module
 
 Sans --commit : lecture seule, affiche l'etat trouve et l'action qui serait prise.
 Secrets lus depuis ~/.paradigme/.env, jamais affiches. Voir Jobs/rpbm_agent_stock/README.md
@@ -24,9 +24,9 @@ from typing import Iterable
 from common import Odoo
 
 MODULE_NAME = "rpbm_agent"
-# Champ cree par le pre_init_hook du module (hooks.py, FIELDS_TO_ENSURE) : sa presence
-# apres install est le signal le plus direct que le hook a bien tourne.
-SENTINEL_FIELD = ("product.template", "x_studio_eurocode")
+# Champ natif du module (models/product_template.py) : sa presence apres install est le
+# signal le plus direct que le module est charge.
+SENTINEL_FIELD = ("product.template", "rpbm_eurocode")
 
 
 def check_state(odoo: Odoo) -> str:
@@ -72,7 +72,7 @@ def run(odoo: Odoo) -> int:
     if odoo.commit:
         fields = odoo.field_names(model)
         if field in fields:
-            print(f"Verification : {model}.{field} present -> pre_init_hook execute.")
+            print(f"Verification : {model}.{field} present -> module charge.")
         else:
             print(f"ATTENTION : {model}.{field} absent apres install -> le hook n'a pas tourne.")
             return 1
