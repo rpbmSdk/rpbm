@@ -449,6 +449,9 @@ class AgentController(Controller):
         vehicule_meta = vehicule_meta or {}
         _logger.info("createVehicule %s", immatriculation)
         vehicule = xglass.XGlassVehicule(**vehicule_info)
+        # Deux appels concurrents pour la même plaque (bouton « Créer » puis « Confirmer » avant la fin
+        # du premier) créaient deux véhicules (recette 2026-09-20) : verrou transactionnel par plaque.
+        request.env.cr.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ("rpbm_agent.vehicle:" + immatriculation,))
         vehicules = request.env['fleet.vehicle'].search([('license_plate', '=', immatriculation)])
         if vehicules:
             if len(vehicules) > 1:

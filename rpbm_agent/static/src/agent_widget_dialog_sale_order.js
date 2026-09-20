@@ -28,8 +28,17 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
     }
 
     isLaborOperationInOrder(operation) {
-        const line = this._widgetLaborLinesByKey.get(operation.key);
-        return Boolean(line && this.props.record.data.order_line.records.includes(line));
+        // Recherche par clé : l'objet renvoyé par addNewRecord n'est pas toujours celui conservé
+        // dans records (recette 2026-09-20 : « Retirer » absent, 4 lignes T2 ajoutées à la suite).
+        return this.props.record.data.order_line.records.some(
+            (line) => line.data.rpbm_labor_operation_key === operation.key
+        );
+    }
+
+    _laborLine(operation) {
+        return this.props.record.data.order_line.records.find(
+            (line) => line.data.rpbm_labor_operation_key === operation.key
+        );
     }
 
     isLaborOperationSelected(operation) {
@@ -69,7 +78,7 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
     }
 
     async removeLaborOperation(operation) {
-        const line = this._widgetLaborLinesByKey.get(operation.key);
+        const line = this._laborLine(operation);
         if (!line) {
             return;
         }
