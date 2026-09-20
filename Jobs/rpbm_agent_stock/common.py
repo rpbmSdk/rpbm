@@ -177,7 +177,7 @@ class Odoo:
     """Client XML-RPC minimal. Les lectures sont toujours autorisees ; toute ecriture
     (load/create/write/unlink/methode) est un no-op signale tant que commit est faux."""
 
-    def __init__(self, profile: str | None = None, commit: bool = False, url: str | None = None) -> None:
+    def __init__(self, profile: str | None = None, commit: bool = False, url: str | None = None, db: str | None = None) -> None:
         """url : remplace l'URL du profil (ex. l'URL d'un build Odoo.sh precis) ; base et
         secrets restent ceux du profil."""
         conn = load_profile(profile)
@@ -190,7 +190,7 @@ class Odoo:
         self.profile = conn["profile"]
         self.url = (url or conn["url"]).rstrip("/")
         self.username = conn["username"]
-        self.db = conn["database"]
+        self.db = db or conn["database"]  # un autre build de la meme branche = une autre base
         self.password = conn["password"]
         self.commit = commit
 

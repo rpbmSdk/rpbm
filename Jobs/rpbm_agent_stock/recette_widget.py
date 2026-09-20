@@ -102,7 +102,7 @@ def manifest_version() -> str:
     return manifest["version"]
 
 
-def build_url(explicit: str | None) -> str:
+def build_url(explicit: str | None, db: str | None = None) -> str:
     """URL du build Odoo.sh de la base du profil (https://<base>.dev.odoo.com).
 
     L'alias de branche (*.odoo.com) n'est jamais utilise : il pointe vers le build courant de la
@@ -110,7 +110,7 @@ def build_url(explicit: str | None) -> str:
     """
     if explicit:
         return explicit.rstrip("/")
-    return f"https://{load_profile()['database']}.dev.odoo.com"
+    return f"https://{db or load_profile()['database']}.dev.odoo.com"
 
 
 def installed_version(odoo: Odoo) -> str | None:
@@ -138,7 +138,7 @@ def cmd_wait_build(args) -> int:
     print(f"Attente de rpbm_agent {expected} sur le profil (toutes les {args.interval}s, max {args.timeout}s)...")
     while True:
         try:
-            odoo = Odoo(args.profile, False, build_url(args.url))
+            odoo = Odoo(args.profile, False, build_url(args.url, args.db), args.db)
             version = installed_version(odoo)
         except Exception as error:  # noqa: BLE001 - instance en cours de rebuild
             version = f"indisponible ({type(error).__name__})"
@@ -155,7 +155,7 @@ def cmd_wait_build(args) -> int:
 # --- migration -----------------------------------------------------------------------
 
 def cmd_migration(args) -> int:
-    odoo = Odoo(args.profile, False, build_url(args.url))
+    odoo = Odoo(args.profile, False, build_url(args.url, args.db), args.db)
     report = Report(f"Recette migration champs natifs — {odoo.url}")
     expected = manifest_version()
     version = installed_version(odoo)
@@ -231,11 +231,11 @@ def _reference_lead(odoo: Odoo, plate: str) -> dict:
     return found[0] if found else {}
 
 
-def web_session(url: str) -> tuple[str | None, str]:
+def web_session(url: str, db: str | None = None) -> tuple[str | None, str]:
     """Ouvre une session web avec les identifiants du profil. Retourne (session_id, message)."""
     profile = load_profile()
     payload = {"jsonrpc": "2.0", "method": "call", "id": 1,
-               "params": {"db": profile["database"], "login": profile["username"], "password": profile["password"]}}
+               "params": {"db": db or profile["database"], "login": profile["username"], "password": profile["password"]}}
     request = urllib.request.Request(f"{url}/web/session/authenticate", data=json.dumps(payload).encode(),
                                      headers={"Content-Type": "application/json"})
     try:
@@ -252,7 +252,7 @@ def web_session(url: str) -> tuple[str | None, str]:
 
 
 def cmd_prepare(args) -> int:
-    odoo = Odoo(args.profile, args.commit, build_url(args.url))
+    odoo = Odoo(args.profile, args.commit, build_url(args.url, args.db), args.db)
     report = Report(f"Recette widget — préparation run {args.run} — {odoo.url}")
     expected = manifest_version()
     version = installed_version(odoo)
@@ -306,14 +306,14 @@ def cmd_prepare(args) -> int:
             vals["stage_id"] = stage[0]["id"]
         leads[tag] = odoo.execute("crm.lead", "create", vals)
         report.add("PASS", f"opportunité {tag} créée", f"id {leads[tag]} ({plate})")
-    manifest.update({"partner_id": partner_id, "leads": leads,
+    manifest.update({"partner_id": partner_id, "leads": leads, "url": odoo.url, "db": odoo.db,
                      "urls": {tag: f"{odoo.url}/web#model=crm.lead&view_type=form&id={lead_id}" for tag, lead_id in leads.items()}})
     if "x_studio_field_NVioD" in odoo.field_names("crm.lead"):
         lead = odoo.search_read("crm.lead", [["id", "=", leads["W1"]]], ["x_studio_field_NVioD", "x_studio_lieu_intervention"])[0]
         report.add("PASS" if lead["x_studio_field_NVioD"] == args.plate_new and lead["x_studio_lieu_intervention"] == "GALLERIA" else "FAIL",
                    "double alimentation Studio à la création", str(lead))
 
-    session_id, message = web_session(odoo.url)
+    session_id, message = web_session(odoo.url, odoo.db)
     manifest["session_id"] = session_id
     report.add("PASS" if session_id else "WARN", "session web (profil)", message + ("" if session_id else " — connexion manuelle requise dans le navigateur"))
     manifest_path(args.run).write_text(json.dumps(manifest, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
@@ -328,7 +328,7 @@ def cmd_prepare(args) -> int:
 
 def cmd_verify(args) -> int:
     manifest = load_manifest(args.run)
-    odoo = Odoo(args.profile, False, build_url(args.url or manifest.get("url")))
+    odoo = Odoo(args.profile, False, build_url(args.url or manifest.get("url"), args.db or manifest.get("db")), args.db or manifest.get("db"))
     report = Report(f"Recette widget — vérification run {args.run} — {odoo.url}")
     lead_fields = odoo.field_names("crm.lead")
     w1 = odoo.search_read("crm.lead", [["id", "=", manifest["leads"]["W1"]]], ["id"] + NATIVE_FIELDS["crm.lead"] + [
@@ -420,7 +420,8 @@ def cmd_verify(args) -> int:
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--profile", default=None, help="profil paradigme-mcp (défaut : .paradigme.yaml)")
-    parser.add_argument("--url", default=None, help="URL du build (défaut : https://<base du profil>.dev.odoo.com ; jamais l'alias de branche)")
+    parser.add_argument("--url", default=None, help="URL du build (défaut : https://<base>.dev.odoo.com ; jamais l'alias de branche)")
+    parser.add_argument("--db", default=None, help="base du build (rpbm-pre-prod-<id>) si differente de celle du profil")
     sub = parser.add_subparsers(dest="command", required=True)
     wait = sub.add_parser("wait-build")
     wait.add_argument("--timeout", type=int, default=1800)
