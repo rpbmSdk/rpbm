@@ -23,8 +23,8 @@ analysee dans
 
 ## Outillage
 
-Deux scripts, environnement `pyenv 3.10.11`, bibliotheque standard uniquement (aucune dependance
-a installer).
+Deux scripts, a lancer avec le `.venv` local active ([README racine](../../README.md)), bibliotheque
+standard uniquement (aucune dependance a installer).
 
 | Script | Role |
 |---|---|
@@ -32,8 +32,8 @@ a installer).
 | [`import_odoo.py`](import_odoo.py) | Pousse les fichiers de preparation dans Odoo par XML-RPC, une phase a la fois. |
 
 ```
-pyenv exec python prepare_migration_files.py
-pyenv exec python import_odoo.py <phase> [--commit] [--limit N] [--url ...]
+python prepare_migration_files.py
+python import_odoo.py <phase> [--commit] [--limit N] [--url ...]
 ```
 
 **Sans `--commit`, rien n'est ecrit.** Le script se connecte, lit Odoo, construit et affiche les
@@ -63,7 +63,7 @@ Une reference fautive coute 200 lignes a rejouer, pas 3 272.
 ### Verification hors ligne
 
 ```
-pyenv exec python import_odoo.py selfcheck
+python import_odoo.py selfcheck
 ```
 
 Verifie sans reseau la logique qui n'est pas evidente : normalisation des libelles, conversion des
@@ -141,7 +141,7 @@ les tarifs referencent produits et fournisseurs, les emplacements referencent le
    abandonnes : plus aucune donnee d'historique du fichier Excel n'est reprise dans Odoo.
 3. **Geler le CSV source.** Relever l'empreinte de `Gestion Stock V4 - Stock Complet.csv` :
    l'import lit par index de colonne, une regeneration de l'export decalerait tout.
-4. **Regenerer les fichiers de preparation** : `pyenv exec python prepare_migration_files.py`.
+4. **Regenerer les fichiers de preparation** : `python prepare_migration_files.py`.
 5. **Regenerer `product_reconciliation.csv`** : l'ancien (pipeline PowerShell du 20/07, volumes
    divergents) est passe dans `archive/`. Sans ce rapprochement par `default_code`, l'import peut
    creer un doublon pour chaque reference deja presente dans Odoo — `data_quality_report.md`
@@ -152,7 +152,7 @@ les tarifs referencent produits et fournisseurs, les emplacements referencent le
 
 ## P1 — Categories
 
-**Aucune condition d'entree : D1 et D8 sont tranchees.** `pyenv exec python import_odoo.py categories`
+**Aucune condition d'entree : D1 et D8 sont tranchees.** `python import_odoo.py categories`
 
 Cree 8 categories racines sous `All / Saleable` et 7 sous-categories sous `Autres`
 (decision RPBM du 23/07). Source : [`categories_odoo_proposition.csv`](categories_odoo_proposition.csv),
@@ -189,7 +189,7 @@ base) et les sous-categories a leur parent `Autres` (par identifiant externe).
 unique a 5 zones », **cette phase disparait** et P3 rattache les emplacements a l'arborescence
 existante.
 
-`pyenv exec python import_odoo.py warehouses`
+`python import_odoo.py warehouses`
 
 Cree 5 `stock.warehouse` : `Galleria` (GALL), `Genipa` (GENI), `Depot 1` (DEP1), `Depot 2` (DEP2),
 `Camion` (CAM).
@@ -211,7 +211,7 @@ cree automatiquement par Odoo.
 ## P3 — Emplacements
 
 **Depend de Q1 pour le parent des emplacements. D11, D12, D13 et D14 sont tranchees.**
-`pyenv exec python import_odoo.py locations`
+`python import_odoo.py locations`
 
 Regle validee : **un emplacement par reference distincte de `PLACE`**, sans regroupement par plage.
 
@@ -264,7 +264,7 @@ dans Odoo.
 n'a en revanche pas ete valide ligne a ligne par le client (Q4) — sans consequence sur le
 deroulement de la phase, mais un partenaire mal fusionne se corrige a la main ensuite.
 
-`pyenv exec python import_odoo.py suppliers`
+`python import_odoo.py suppliers`
 
 Cree 30 `res.partner` a partir des 55 valeurs `FRS`, apres fusion des doublons de casse
 (`BLUE AUTO` / `Blue Autos` / `BLUE AUTOS`, `AUTOS GM` / `AUTO GM` / `Auto GM`, `A+ GLASS` /
@@ -286,7 +286,7 @@ Cree 30 `res.partner` a partir des 55 valeurs `FRS`, apres fusion des doublons d
 
 ## P5 — Produits
 
-**Aucune condition d'entree : D2, D3 et D4 sont tranchees.** `pyenv exec python import_odoo.py products`
+**Aucune condition d'entree : D2, D3 et D4 sont tranchees.** `python import_odoo.py products`
 
 Cree **3 229** `product.template`, un par eurocode normalise valide.
 
@@ -344,7 +344,7 @@ lancee** — voir « A faire dans le code ».
 
 ## P6 — Tarifs fournisseurs
 
-**Aucune condition d'entree : D9 et D10 sont tranchees.** `pyenv exec python import_odoo.py supplierinfo`
+**Aucune condition d'entree : D9 et D10 sont tranchees.** `python import_odoo.py supplierinfo`
 
 Cree **2 749** lignes VSF (partenaire `5708`) et **388** lignes pour les autres fournisseurs, prix =
 `PRIX ACHAT`. Les tarifs des 43 references exclues en P5 le sont ici aussi (14 VSF, 18 autres).
@@ -384,7 +384,7 @@ au lieu de les confondre.
 
 ## P7 — Couts
 
-`pyenv exec python import_odoo.py costs`
+`python import_odoo.py costs`
 
 Ecrit `standard_price` = `PRIX RV` (D6) sur **3 188** references. Les 52 references sans `PRIX RV`
 exploitable sont **exclues** plutot que forcees a zero, comme les 43 references exclues en P5
@@ -420,7 +420,7 @@ raison d'etre de la methode `standard` posee en P1.
 
 ## P8 — Controle
 
-`pyenv exec python import_odoo.py check`
+`python import_odoo.py check`
 
 Lectures seules : comptages par modele, produits sans `x_studio_eurocode`, produits a cout nul, et
 le controle qui compte — **les produits portant plus d'un tarif actif pour un meme fournisseur**,
@@ -479,7 +479,7 @@ structurante **« entrepots distincts ou zones d'un meme entrepot »**, numerote
 > garanti : un rebuild d'instance (duplication depuis la production, reset applicatif) remet le
 > catalogue et le module a zero sans que ce document ne le sache. Avant de supposer qu'une phase
 > marquee « OK » est toujours en place, relancer son controle :
-> `pyenv exec python import_odoo.py check` (P1-P8, lecture seule) et
+> `python import_odoo.py check` (P1-P8, lecture seule) et
 > `Jobs/rpbm_agent_stock/install_module.py` sans `--commit` (P0). Voir aussi
 > [`README.md` § « Comment vérifier l'état actuel »](README.md#comment-vérifier-létat-actuel).
 

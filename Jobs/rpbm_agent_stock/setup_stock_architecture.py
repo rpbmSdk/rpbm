@@ -1,6 +1,6 @@
 """Met en place l'architecture stock 1 (entrepot unique, 5 sites en zones) sur rpbm-preprod.
 
-    pyenv exec python setup_stock_architecture.py <phase> [--commit] [--profile ...]
+    python setup_stock_architecture.py <phase> [--commit] [--profile ...]
 
 Implemente Jobs/Gestion Stock/architectures/01-architecture-1-zones.md §2.1-2.7 (l'architecture
 recommandee, cf. questions-ouvertes.md Q1). Ce fichier reste la seule source de verite : toute

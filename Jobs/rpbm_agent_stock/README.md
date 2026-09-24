@@ -66,8 +66,8 @@ et garde-fou anti-dérive comptant les tables de `setup_stock_architecture.py` c
 À lancer avant tout `--commit` réel :
 
 ```
-pyenv exec python tests/test_install_module.py
-pyenv exec python tests/test_setup_stock_architecture.py
+python tests/test_install_module.py
+python tests/test_setup_stock_architecture.py
 ```
 
 ## Rapports d'exécution (`runs/`)

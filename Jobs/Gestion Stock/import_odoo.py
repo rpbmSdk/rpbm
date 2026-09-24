@@ -3,7 +3,7 @@
 Lit les fichiers produits par prepare_migration_files.py et les pousse dans Odoo par XML-RPC.
 Chaque phase est independante, rejouable et sans effet tant que --commit n'est pas passe.
 
-    pyenv exec python import_odoo.py <phase> [--commit] [--limit N]
+    python import_odoo.py <phase> [--commit] [--limit N]
 
 Phases, dans l'ordre des dependances :
 
@@ -122,7 +122,7 @@ def read_csv(filename: str) -> list[dict[str, str]]:
     path = FOLDER / filename
     if not path.exists():
         raise FileNotFoundError(
-            f"{filename} introuvable. Lancer d'abord : pyenv exec python prepare_migration_files.py"
+            f"{filename} introuvable. Lancer d'abord : python prepare_migration_files.py"
         )
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         return list(csv.DictReader(handle, delimiter=";"))

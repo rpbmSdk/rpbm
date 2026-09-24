@@ -1,6 +1,6 @@
 """Annule/supprime les donnees de recette d'un run verify_flows.py -- jamais rien d'autre.
 
-    pyenv exec python rollback.py --run 20260912 [--commit] [--i-understand-this-is-production]
+    python rollback.py --run 20260912 [--commit] [--i-understand-this-is-production]
 
 Ce n'est PAS un nettoyage automatique post-test : c'est un script separe, declenche
 explicitement par un operateur, qui n'agit que sur les enregistrements portant le tag

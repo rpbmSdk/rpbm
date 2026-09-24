@@ -5,7 +5,7 @@ une fois dans ce projet (citations de ligne perimees dans reconciliation-stock-r
 
 Aucun reseau : ne verifie que la coherence interne des tables Python, pas l'etat d'une instance.
 
-    pyenv exec python tests/test_setup_stock_architecture.py
+    python tests/test_setup_stock_architecture.py
 """
 
 from __future__ import annotations

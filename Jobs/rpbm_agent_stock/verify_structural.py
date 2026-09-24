@@ -1,6 +1,6 @@
 """Audit structurel de l'architecture stock 1 -- lecture seule, aucune ecriture, jamais.
 
-    pyenv exec python verify_structural.py [--profile ...]
+    python verify_structural.py [--profile ...]
 
 Operationnalise Jobs/Gestion Stock/architectures/audits/procedure-audit-implementation.md §6
 et architecture-1-compliance-matrix.md : compare l'instance a la cible definie dans
