@@ -14,9 +14,14 @@ Pour récupérer des valeurs ou exécuter des méthodes sur l'instance Odoo de c
 
 ## Code source Odoo (vérification de méthodes)
 
-Le dépôt `D:\git\odoo_17` contient le code source complet d'Odoo 17 (version utilisée par cette instance) :
-- `D:\git\odoo_17\odoo17` : Odoo Community (core)
-- `D:\git\odoo_17\enterprise` : modules Enterprise (dont `web_studio`)
+Le code source complet d'Odoo 17 (version utilisée par cette instance) est disponible localement ; son emplacement dépend du poste :
+
+| Poste | Odoo Community (core) | Modules Enterprise (dont `web_studio`) |
+| --- | --- | --- |
+| VPS de développement (Linux) | `/root/git/odoo17/odoo` | `/root/git/odoo17/enterprise` |
+| Poste Windows | `D:\git\odoo_17\odoo17` | `D:\git\odoo_17\enterprise` |
+
+Les chemins `D:\git\odoo_17` cités dans les documents existants renvoient à cette même source sur le poste Windows.
 
 À utiliser pour vérifier le comportement réel d'une méthode/mécanisme Odoo (signatures, hooks, effets de bord) plutôt que de se fier à la mémoire ou à la documentation officielle, qui peuvent être imprécises sur des détails d'implémentation. Exemple concret : `enterprise/web_studio/models/studio_mixin.py` et `ir_model.py` (`create_studio_model_data`, `get_studio_module`) montrent que passer `context={'studio': True}` lors de la création d'un `ir.model.fields` (ou `ir.ui.view`, `ir.actions.*`, etc.) suffit à le faire reconnaître comme un champ Studio : le mixin crée automatiquement l'`ir.model.data` rattaché au module `studio_customization` (qu'il crée lui-même s'il n'existe pas encore, voir `ir_module_module.get_studio_module()`).
 
