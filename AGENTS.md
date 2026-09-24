@@ -34,6 +34,17 @@ Apres le correctif, le pilote relance le build puis confie de nouveau la
 verification au verificateur. Cette boucle se poursuit jusqu'a une preuve de
 recette ou a un blocage externe documente.
 
+## Code source Odoo 17
+
+Pour verifier le comportement reel d'une methode Odoo, lire le code source local plutot que la memoire ou la documentation. Son emplacement depend du poste :
+
+| Poste | Odoo Community (core) | Modules Enterprise (dont `web_studio`) |
+| --- | --- | --- |
+| VPS de developpement (Linux) | `/root/git/odoo17/odoo` | `/root/git/odoo17/enterprise` |
+| Poste Windows | `D:\git\odoo_17\odoo17` | `D:\git\odoo_17\enterprise` |
+
+Les chemins `D:\git\odoo_17` cites dans les documents existants renvoient a cette meme source sur le poste Windows.
+
 ## Structure recommandee
 
 - `docs/`: documentation permanente.
