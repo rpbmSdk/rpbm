@@ -36,14 +36,14 @@ recette ou a un blocage externe documente.
 
 ## Code source Odoo 17
 
-Pour verifier le comportement reel d'une methode Odoo, lire le code source local plutot que la memoire ou la documentation. Son emplacement depend du poste :
+Pour verifier le comportement reel d'une methode Odoo, lire le code source local plutot que la memoire ou la documentation. Il est clone a cote de ce depot ; chemins relatifs a la racine du depot, selon le poste :
 
 | Poste | Odoo Community (core) | Modules Enterprise (dont `web_studio`) |
 | --- | --- | --- |
-| VPS de developpement (Linux) | `/root/git/odoo17/odoo` | `/root/git/odoo17/enterprise` |
-| Poste Windows | `D:\git\odoo_17\odoo17` | `D:\git\odoo_17\enterprise` |
+| VPS de developpement (Linux) | `../odoo17/odoo` | `../odoo17/enterprise` |
+| Poste Windows | `../odoo_17/odoo17` | `../odoo_17/enterprise` |
 
-Les chemins `D:\git\odoo_17` cites dans les documents existants renvoient a cette meme source sur le poste Windows.
+Les chemins `D:\git\odoo_17` cites dans les documents existants correspondent a `../odoo_17` sur le poste Windows.
 
 ## Structure recommandee
 
