@@ -13,6 +13,8 @@ xglassAgent = xglass.XGLASS()
 
 Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utilisateur Odoo connecté requis, pas de contrôle de droits plus fin).
 
+Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lecture** sur `fleet.vehicle`, `fleet.vehicle.model` et `fleet.vehicle.model.brand` ([`security/ir.model.access.csv`](../../security/ir.model.access.csv)), sans groupe Parc automobile : le groupe Fleet « Officer » restreint la visibilité aux véhicules dont l'utilisateur est conducteur, ce qui masque les véhicules clients. Les créations/écritures du widget (`fleet.vehicle` dans `/createVehicule` et `/enrichVehicule`, `product.product` et `product.supplierinfo` dans `/createProduct`) passent par `sudo()` : elles ne sont possibles que via le widget, pas depuis les menus Parc automobile / Articles.
+
 | Route | Paramètres | Résumé | Modèles/portails touchés |
 |---|---|---|---|
 | `/rpbm_agent_auth` | — | Réinstancie et authentifie `vsfAgent`/`xglassAgent` depuis `ir.config_parameter` (`XGLASS_USER`, `XGLASS_PASS`, `VSF_LOGIN`, `VSF_PASSWORD`) | X'Glass, VSF, `ir.config_parameter` |

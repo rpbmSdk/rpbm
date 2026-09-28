@@ -1,6 +1,6 @@
 """Recette fonctionnelle des chemins logistiques de vente -- ecrit de vraies donnees de test.
 
-    pyenv exec python verify_flows.py --run 20260912 --tests T1,T3 --commit
+    python verify_flows.py --run 20260912 --tests T1,T3 --commit
 
 Operationnalise Jobs/Gestion Stock/architectures/audits/procedure-audit-implementation.md §8-9
 (recette T1-T8/MTO) et architecture-1-test-registry.md (choix des articles/racks de recette).

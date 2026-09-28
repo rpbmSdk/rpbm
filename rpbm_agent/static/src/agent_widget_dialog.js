@@ -411,10 +411,11 @@ export class AgentWidgetDialog extends asyncWidget {
             const data = await this.getRecordData();
             await this.props.record.update(data);
             if (save) {
-                // Record.save({ reload: false }) persiste sans navigation ni
-                // rechargement du formulaire. Il applique la validation Odoo
-                // habituelle, y compris les éventuels champs requis hors widget.
-                const saved = await this.props.record.save({ reload: false });
+                // Record.save() persiste sans navigation et applique la validation Odoo
+                // habituelle. Pas de { reload: false } : les lignes créées gardaient leur
+                // id virtuel, et les retirer ensuite envoyait DELETE 'virtual_…' au serveur
+                // (erreur SQL sur sale_order_line, staging 2026-09-28).
+                const saved = await this.props.record.save();
                 if (!saved) {
                     throw new Error("Le formulaire n'a pas pu être enregistré. Complétez les champs requis puis réessayez.");
                 }

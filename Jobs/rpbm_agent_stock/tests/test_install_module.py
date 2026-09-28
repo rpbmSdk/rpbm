@@ -5,7 +5,7 @@ Aucun reseau, aucun Odoo reel : un faux client Odoo simule les etats possibles
 la bonne branche. A lancer avant tout --commit reel, comme le selfcheck de
 Jobs/Gestion Stock/import_odoo.py.
 
-    pyenv exec python tests/test_install_module.py
+    python tests/test_install_module.py
 """
 
 from __future__ import annotations

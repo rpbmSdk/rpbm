@@ -298,7 +298,7 @@ def _enrich_fleet_vehicle_from_metadata(vehicle, vehicule_meta, warnings):
             if not vehicle[name] or (name == 'vin_sn' and is_legacy_malformed_vin(vehicle.vin_sn))
         }
         if values_to_write:
-            vehicle.write(values_to_write)
+            vehicle.sudo().write(values_to_write)
         return values_to_write
     except AccessError:
         warnings.append(_("Écriture des métadonnées Fleet interdite ; véhicule laissé tel quel."))
@@ -504,7 +504,9 @@ class AgentController(Controller):
                     "Session X'Glass déjà fermée : véhicule %s créé sans image",
                     immatriculation,
                 )
-            vehicule = request.env['fleet.vehicle'].create({
+            # sudo : les commerciaux n'ont que la lecture sur Fleet (security/ir.model.access.csv) ;
+            # la création passe uniquement par ce widget, avec les données X'Glass.
+            vehicule = request.env['fleet.vehicle'].sudo().create({
                 'driver_id': partner_id,
                 'model_id': modele.id,
                 'license_plate': immatriculation,
@@ -690,14 +692,15 @@ class AgentController(Controller):
                 except VSFError:
                     _logger.warning("Image VSF indisponible pour %s ; produit créé sans image", article_vsf.code)
 
-            product = request.env['product.product'].create(
+            # sudo : création réservée au widget, les commerciaux n'ont que la lecture sur les articles.
+            product = request.env['product.product'].sudo().create(
                 vsf.product_creation_values(
                     article_vsf,
                     vsf.product_description(article_vsf),
                     image=image,
                 )
             )
-            request.env['product.supplierinfo'].create(
+            request.env['product.supplierinfo'].sudo().create(
                 vsf.product_supplierinfo_values(
                     article_vsf,
                     get_vsf_partner_id(request.env),

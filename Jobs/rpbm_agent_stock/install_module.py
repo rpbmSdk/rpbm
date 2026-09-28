@@ -1,6 +1,6 @@
 """Installe (ou verifie) le module rpbm_agent sur une instance Odoo, de facon rejouable.
 
-    pyenv exec python install_module.py [--commit] [--profile ...]
+    python install_module.py [--commit] [--profile ...]
 
 Corrige un trou constate en direct sur rpbm-preprod apres un rebuild : le module n'apparait
 meme pas dans ir.module.module (pas seulement desinstalle) tant que la liste des apps n'a

@@ -5,7 +5,7 @@ du 29/01/2025) vers Odoo 17.
 
 Cible : profil `rpbm-preprod` (URL du build `https://<base-du-profil>.dev.odoo.com`, jamais l'alias de branche) — accès **exclusivement** via la skill
 `paradigme-mcp`, profil `rpbm-preprod`. Aucun secret dans ce dossier.
-Environnement Python : `pyenv 3.10.11` (fixé par `.python-version` à la racine du dépôt).
+Environnement Python : le `.venv` local à la racine du dépôt, activé (voir le [README racine](../../README.md)).
 
 ## Comment vérifier l'état actuel
 
@@ -72,10 +72,10 @@ Tâches GRH de rattachement : 1263 (gestion de stock), 1269 (valorisation), 2079
 ## Outillage
 
 ```
-pyenv exec python prepare_migration_files.py          # CSV source -> fichiers de préparation
-pyenv exec python prepare_migration_files.py --check  # vérifications hors ligne du mapping
-pyenv exec python import_odoo.py selfcheck            # vérifie la logique d'import sans réseau
-pyenv exec python import_odoo.py <phase> [--commit]   # une phase à la fois
+python prepare_migration_files.py          # CSV source -> fichiers de préparation
+python prepare_migration_files.py --check  # vérifications hors ligne du mapping
+python import_odoo.py selfcheck            # vérifie la logique d'import sans réseau
+python import_odoo.py <phase> [--commit]   # une phase à la fois
 ```
 
 **Sans `--commit`, rien n'est écrit dans Odoo.** Les identifiants sont lus depuis
