@@ -45,6 +45,6 @@ Les droits sont appliqués par le module `rpbm_agent` lors de sa mise à jour su
 - [`security/rpbm_groups.xml`](../../rpbm_agent/security/rpbm_groups.xml) :
   `sales_team.group_sale_salesman` implique `stock.group_stock_user`. Tout vendeur, actuel ou
   futur, reçoit l'Inventaire.
-- [`migrations/17.0.260928.1/post-roles-achats.py`](../../rpbm_agent/migrations/17.0.260928.1/post-roles-achats.py) :
+- [`migrations/17.0.260928.3/post-roles-achats.py`](../../rpbm_agent/migrations/17.0.260928.3/post-roles-achats.py) :
   ajoute Achats (manager) et Inventaire aux deux acheteurs, identifiés par login. Aucun droit
   n'est retiré. Pour changer d'acheteur, modifier la liste `BUYERS` et bumper la version.
