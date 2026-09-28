@@ -1,6 +1,6 @@
 {
     "name": "RPBM Agent",
-    "version": "17.0.260928.1",
+    "version": "17.0.260928.2",
     "category": "Tools",
     "summary": "Assistant véhicule et pièces X'Glass / VSF pour les pistes et devis",
     "description": """Widget Odoo qui interroge les portails X'Glass (véhicule, catégories, pièces,
