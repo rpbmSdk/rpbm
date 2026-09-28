@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rpbm_fleet_vehicle_salesman,rpbm fleet.vehicle salesman,fleet.model_fleet_vehicle,sales_team.group_sale_salesman,1,0,0,0
+access_rpbm_fleet_vehicle_model_salesman,rpbm fleet.vehicle.model salesman,fleet.model_fleet_vehicle_model,sales_team.group_sale_salesman,1,0,0,0
+access_rpbm_fleet_vehicle_model_brand_salesman,rpbm fleet.vehicle.model.brand salesman,fleet.model_fleet_vehicle_model_brand,sales_team.group_sale_salesman,1,0,0,0
