@@ -5,7 +5,7 @@
 - **Odoo 17**, module `rpbm_agent` (version courante dans [`__manifest__.py`](../../__manifest__.py), bumpée à chaque déploiement), dépend de `crm`, `delivery`, `fleet`, `product`, `sale_crm`. Le module utilise le champ natif `sale.order.carrier_id` ; le routage de ses routes reste fourni par `stock_delivery` dans l'architecture stock.
 - **Backend** : un controller Odoo (`AgentController`, `controllers/main.py`) pour le widget JSON-RPC et une extension ORM `product.template` pour la synchronisation batch VSF. Pas de règle de sécurité (`ir.model.access.csv`) dans le module.
 - **Intégration portails externes** : `requests.Session()` + `BeautifulSoup4` (scraping HTML/formulaires + quelques endpoints AJAX internes renvoyant du JSON). **Aucune API officielle**, aucun Selenium/Playwright.
-- **Frontend** : composants OWL (framework de vues Odoo), déclarés en `web.assets_backend` (glob `rpbm_agent/static/src/*`). Le widget et les champs `x_studio_*` sont placés par les **vues XML versionnées** du module (`views/*.xml`, voir [configuration](configuration.md#intégration-dans-les-vues)) ; le comportement s'adapte selon `resModel` (`crm.lead`, `sale.order`, ou dialog générique).
+- **Frontend** : composants OWL (framework de vues Odoo), déclarés en `web.assets_backend` (glob `rpbm_agent/static/src/*`). Le widget et les champs `rpbm_*` sont placés par les **vues XML versionnées** du module (onglet « Véhicule (X'Glass) », `views/*.xml`) et, dans les sections Studio, par le script `Jobs/rpbm_agent_stock/studio_views.py` (voir [configuration](configuration.md#intégration-dans-les-vues)) ; le dialogue n'existe que pour `crm.lead` et `sale.order`.
 
 ## Vue d'ensemble des composants
 

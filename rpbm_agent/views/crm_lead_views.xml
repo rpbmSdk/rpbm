@@ -49,13 +49,35 @@
                 <field name="rpbm_license_plate"/>
                 <field name="rpbm_vehicle_brand_id"/>
                 <field name="rpbm_vehicle_model_id"/>
+                <field name="rpbm_vin"/>
                 <field name="rpbm_eurocode"/>
+                <field name="rpbm_license_plate" string="Véhicule"
+                       filter_domain="['|','|','|',('rpbm_license_plate','ilike',self),('rpbm_vin','ilike',self),('rpbm_vehicle_brand_id.name','ilike',self),('rpbm_vehicle_model_id.name','ilike',self)]"/>
             </field>
             <xpath expr="//group" position="inside">
                 <filter name="group_by_rpbm_vehicle_brand" string="Marque du véhicule" context="{'group_by': 'rpbm_vehicle_brand_id'}"/>
                 <filter name="group_by_rpbm_vehicle_model" string="Modèle du véhicule" context="{'group_by': 'rpbm_vehicle_model_id'}"/>
                 <filter name="group_by_rpbm_part_type" string="Pièce concernée" context="{'group_by': 'rpbm_part_type'}"/>
             </xpath>
+        </field>
+    </record>
+
+    <!-- Ancres standard uniquement : la vue Studio de la liste remplace country_id par l'ancienne
+         immatriculation et place l'ancien eurocode après activity_user_id ; les colonnes natives
+         s'insèrent donc à côté de leurs homologues Studio. -->
+    <record id="view_crm_lead_tree_rpbm_agent" model="ir.ui.view">
+        <field name="name">crm.lead.tree.rpbm.agent</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+        <field name="arch" type="xml">
+            <field name="country_id" position="before">
+                <field name="rpbm_license_plate" optional="show"/>
+            </field>
+            <field name="activity_user_id" position="after">
+                <field name="rpbm_eurocode" optional="show"/>
+                <field name="rpbm_vehicle_brand_id" optional="hide"/>
+                <field name="rpbm_vehicle_model_id" optional="hide"/>
+            </field>
         </field>
     </record>
 </odoo>

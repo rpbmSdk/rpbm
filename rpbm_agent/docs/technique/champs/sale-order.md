@@ -32,9 +32,20 @@ exige un transporteur.
 
 ## Vue
 
-L'onglet « Véhicule (X'Glass) » (`views/sale_order_views.xml`), visible seulement si une
-opportunité est liée, affiche le widget et les miroirs natifs ; les lignes de devis portent les
-colonnes invisibles `rpbm_xglass_price` et `rpbm_labor_operation_key`.
+`views/sale_order_views.xml` hérite de trois vues standard :
+
+- **formulaire** : l'onglet « Véhicule (X'Glass) », visible seulement si une opportunité est liée,
+  affiche le widget et les miroirs natifs ; les lignes de devis portent les colonnes invisibles
+  `rpbm_xglass_price` et `rpbm_labor_operation_key` ;
+- **liste** (`sale.sale_order_tree`, donc aussi les listes devis et commandes) : immatriculation,
+  marque et modèle après le client ;
+- **recherche** (`sale.view_sales_order_filter`, donc aussi les recherches devis et commandes) :
+  immatriculation, marque, modèle, VIN, eurocode et le champ combiné « Véhicule »
+  (immatriculation, VIN, marque ou modèle) ; regroupements par marque et modèle. VIN et eurocode,
+  non stockés, sont cherchés à travers l'opportunité.
+
+Le bouton et les champs natifs dans l'en-tête Studio du devis sont ajoutés par le script
+`studio_views.py` (voir [`Jobs/rpbm_agent_stock`](../../../../Jobs/rpbm_agent_stock/README.md)).
 
 ## Lu/écrit par
 

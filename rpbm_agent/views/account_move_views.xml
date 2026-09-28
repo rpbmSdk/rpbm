@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Pas de <separator/> : la personnalisation Studio de cette recherche vise search/separator[5]. -->
+    <record id="view_account_move_search_rpbm_agent" model="ir.ui.view">
+        <field name="name">account.move.search.rpbm.agent</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="rpbm_license_plate"/>
+                <field name="rpbm_vehicle_brand_id"/>
+                <field name="rpbm_vehicle_model_id"/>
+                <field name="rpbm_eurocode"/>
+                <field name="rpbm_license_plate" string="Véhicule"
+                       filter_domain="['|','|',('rpbm_license_plate','ilike',self),('rpbm_vehicle_brand_id.name','ilike',self),('rpbm_vehicle_model_id.name','ilike',self)]"/>
+            </field>
+            <xpath expr="//group" position="inside">
+                <filter name="group_by_rpbm_vehicle_brand" string="Marque du véhicule" context="{'group_by': 'rpbm_vehicle_brand_id'}"/>
+                <filter name="group_by_rpbm_vehicle_model" string="Modèle du véhicule" context="{'group_by': 'rpbm_vehicle_model_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- La liste de base porte deux colonnes invoice_partner_display_name : Fournisseur, puis Client
+         (seule visible sur les factures client). La seconde est aussi l'ancre de la personnalisation
+         Studio ; aucun champ de ce nom n'est ajouté ici, pour ne pas la décaler. -->
+    <record id="view_account_move_out_invoice_tree_rpbm_agent" model="ir.ui.view">
+        <field name="name">account.move.out.invoice.tree.rpbm.agent</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_out_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_partner_display_name'][2]" position="after">
+                <field name="rpbm_license_plate" optional="show"/>
+                <field name="rpbm_vehicle_brand_id" optional="hide"/>
+                <field name="rpbm_vehicle_model_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

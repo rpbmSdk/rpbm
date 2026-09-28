@@ -32,6 +32,13 @@ ligne à J-1 et en ouvre une à J). Désignation, image, type et stock restent i
 `rpbm_eurocode`, `rpbm_width_mm` et `rpbm_length_mm` sont affichés sous la référence interne ;
 `rpbm_constructor_reference` dans l'onglet « VSF » (`views/product_product_views.xml`).
 
+La recherche des articles propose un filtre « Eurocode » avant la catégorie
+(`views/product_template_views.xml`, hérité par les recherches `product.product` et stock). Le
+filtre standard « Produit » trouvait déjà la plupart des eurocodes, car la référence interne vaut
+l'eurocode pour presque tous les articles (3 230 sur 3 233 en pre-prod, septembre 2026) ; le filtre
+dédié couvre aussi les articles créés par le widget, dont la référence interne est la référence
+constructeur ou le code VSF.
+
 ## Lu/écrit par
 
 - Écriture : [9 — Création du produit](../../fonctionnel/workflow/09-creation-produit.md) (`/createProduct`)

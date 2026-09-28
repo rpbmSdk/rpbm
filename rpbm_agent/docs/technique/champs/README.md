@@ -13,7 +13,8 @@ détail étape par étape de quand chaque champ est lu/écrit, voir
 - [`sale-order-line.md`](sale-order-line.md) — lignes de devis créées par le widget (articles VSF, main-d'œuvre).
 - [`fleet-vehicle.md`](fleet-vehicle.md) — véhicule Odoo créé/réutilisé par le widget, référentiel canonique.
 - [`product-product.md`](product-product.md) — article créé depuis un résultat VSF.
+- [`account-move.md`](account-move.md) — facture client : véhicule, immatriculation, marque, modèle,
+  eurocode et pièce repris du devis facturé.
 
-`account.move.rpbm_vehicle_id` (calculé depuis les lignes de vente facturées, stocké) et
-`stock.picking.rpbm_vehicle_id` (related `sale_id`, stocké) exposent le véhicule sur la facture et
-la livraison sans vue dédiée.
+`stock.picking.rpbm_vehicle_id` (related `sale_id`, stocké) expose le véhicule sur la livraison
+sans vue dédiée.

@@ -45,10 +45,20 @@ valeur non convertible laisse la cible inchangée. Sans champs Studio, le mixin 
 
 ## Vue
 
-L'onglet « Véhicule (X'Glass) » (`views/crm_lead_views.xml`) affiche le widget et tous les champs
-ci-dessus ; la vue de recherche des opportunités ajoute immatriculation, marque, modèle et
-eurocode, et les regroupements par marque, modèle et pièce concernée. Les vues Studio des équipes
-ne sont pas modifiées.
+`views/crm_lead_views.xml` hérite de trois vues standard :
+
+- **formulaire** : l'onglet « Véhicule (X'Glass) » affiche le widget et tous les champs ci-dessus ;
+- **recherche** : immatriculation, marque, modèle, VIN, eurocode et un champ combiné « Véhicule »
+  (immatriculation, VIN, marque ou modèle en une saisie) ; regroupements par marque, modèle et
+  pièce concernée ;
+- **liste** : immatriculation avant `country_id`, que la liste Studio remplace par l'ancienne
+  immatriculation, donc juste à côté d'elle ; eurocode, puis marque et modèle (masqués par défaut)
+  après `activity_user_id`, où la liste Studio place l'ancien eurocode.
+
+Les vues Studio des équipes (section « Informations Véhicule », libellés « (ancien) ») ne sont pas
+modifiées par le module mais par le script `studio_views.py` (voir
+[`Jobs/rpbm_agent_stock`](../../../../Jobs/rpbm_agent_stock/README.md)) ; règles d'ancrage dans
+[configuration](../configuration.md#intégration-dans-les-vues).
 
 ## Lu/écrit par
 

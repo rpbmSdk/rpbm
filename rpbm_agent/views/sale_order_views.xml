@@ -44,4 +44,41 @@
             </notebook>
         </field>
     </record>
+
+    <!-- Hérite aussi des listes devis et commandes (vues primaires filles). -->
+    <record id="view_sale_order_tree_rpbm_agent" model="ir.ui.view">
+        <field name="name">sale.order.tree.rpbm.agent</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="rpbm_license_plate" optional="show"/>
+                <field name="rpbm_vehicle_brand_id" optional="show"/>
+                <field name="rpbm_vehicle_model_id" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Hérite aussi des recherches devis et commandes. Pas de <separator/> : il décalerait les
+         xpaths positionnels des personnalisations Studio. -->
+    <record id="view_sale_order_search_rpbm_agent" model="ir.ui.view">
+        <field name="name">sale.order.search.rpbm.agent</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="rpbm_license_plate"/>
+                <field name="rpbm_vehicle_brand_id"/>
+                <field name="rpbm_vehicle_model_id"/>
+                <field name="rpbm_vin"/>
+                <field name="rpbm_eurocode"/>
+                <field name="rpbm_license_plate" string="Véhicule"
+                       filter_domain="['|','|','|',('rpbm_license_plate','ilike',self),('rpbm_vin','ilike',self),('rpbm_vehicle_brand_id.name','ilike',self),('rpbm_vehicle_model_id.name','ilike',self)]"/>
+            </field>
+            <xpath expr="//group" position="inside">
+                <filter name="group_by_rpbm_vehicle_brand" string="Marque du véhicule" context="{'group_by': 'rpbm_vehicle_brand_id'}"/>
+                <filter name="group_by_rpbm_vehicle_model" string="Modèle du véhicule" context="{'group_by': 'rpbm_vehicle_model_id'}"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

@@ -91,7 +91,27 @@ Les champs Studio historiques des utilisateurs ne sont jamais supprimés par le 
 
 ## Intégration dans les vues
 
-Le widget et les champs natifs `rpbm_*` sont ajoutés par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`, `views/sale_order_carrier_views.xml`, `views/fleet_vehicle_views.xml`, `views/product_product_views.xml`), chacune héritant de la vue formulaire de base du modèle concerné et ajoutant un nouvel onglet ou le champ logistique. Le comportement du widget s'adapte automatiquement selon `resModel` de l'enregistrement courant (`crm.lead`, `sale.order`, ou dialog générique pour tout autre modèle — voir [frontend](frontend.md)).
+Le widget et les champs natifs `rpbm_*` sont ajoutés par les vues versionnées du module :
+
+| Fichier | Vues standard héritées | Ajouts |
+|---|---|---|
+| `views/crm_lead_views.xml` | formulaire, recherche et liste des opportunités | onglet « Véhicule (X'Glass) » ; recherche et regroupements véhicule ; colonnes immatriculation, eurocode, marque, modèle — voir [crm-lead](champs/crm-lead.md#vue) |
+| `views/sale_order_views.xml` | formulaire, liste et recherche des devis | onglet ; colonnes immatriculation, marque, modèle ; recherche et regroupements — voir [sale-order](champs/sale-order.md#vue) |
+| `views/sale_order_carrier_views.xml` | formulaire des devis | transporteur `carrier_id` |
+| `views/sale_order_report_views.xml` | rapports QWeb Studio des devis | mode de remise (AG01-04) |
+| `views/account_move_views.xml` | recherche des factures, liste des factures client | recherche et regroupements véhicule ; colonnes — voir [account-move](champs/account-move.md#vue) |
+| `views/fleet_vehicle_views.xml` | formulaire véhicule | onglet « X'Glass » |
+| `views/product_product_views.xml`, `views/product_template_views.xml` | formulaires et recherche des articles | eurocode, dimensions, onglet « VSF », filtre « Eurocode » |
+
+Règles d'ancrage des formulaires, listes et recherches :
+
+- **une vue du module n'ancre que sur un nœud standard.** Si une cible créée par Studio disparaît, le formulaire ne s'ouvre plus et l'éditeur Studio casse. Tout ajout dans une section Studio (bouton et champs natifs dans « Informations Véhicule », l'en-tête du devis ou le bloc facture ; libellés « (ancien) » des champs historiques) passe par le script `studio_views.py` (voir [`Jobs/rpbm_agent_stock`](../../../Jobs/rpbm_agent_stock/README.md)), à rejouer après la mise à jour du module. Les rapports QWeb, qui héritent de vues Studio par leur identifiant externe, sont l'exception historique d'AG01-04 ;
+- **jamais de `<separator/>` dans une recherche** : les personnalisations Studio des recherches opportunités et factures visent des séparateurs par position (`separator[6]`, `separator[5]`) ;
+- **jamais de champ nommé `phone` ni `invoice_partner_display_name` dans une liste** : les listes Studio des opportunités et des factures visent la deuxième occurrence de ces champs (`[2]`).
+
+Le champ combiné « Véhicule » des recherches cherche en une saisie dans l'immatriculation, le VIN (sauf sur la facture), la marque et le modèle.
+
+Le comportement du widget s'adapte selon `resModel` de l'enregistrement courant (`crm.lead` ou `sale.order`) ; aucun autre modèle n'a de dialog — voir [frontend](frontend.md).
 
 ### `carrier_id` et préremplissage logistique
 
@@ -115,7 +135,7 @@ vérification de la vue versionnée du module, sans supprimer la vue ni aucun
 champ. Toute autre vue active contenant `carrier_id` doit être contrôlée avant
 la mise à jour pour éviter un affichage en double.
 
-**Caveat de déploiement** : sur toute instance où le tag `<widget name="rpbm_agent_widget"/>` aurait déjà été ajouté à la main via Studio (probable en production, la documentation historique indiquant le widget déjà en usage), il faut le retirer de la vue Studio **avant** de déployer cette version du module, sous peine d'afficher le bouton en double. Vérification : `env['ir.ui.view'].search([('model','in',['crm.lead','sale.order'])]).filtered(lambda v: 'rpbm_agent_widget' in (v.arch_db or ''))`.
+**Double bouton assumé (décision du 2026-09-28)** : le widget est présent à la fois dans l'onglet du module et dans la section Studio où `studio_views.py` l'ajoute ; les deux ouvrent la même dialog. Un widget ajouté **à la main** via Studio en dehors du script ferait en revanche un troisième bouton : le retirer. Contrôle : `env['ir.ui.view'].search([('model','in',['crm.lead','sale.order'])]).filtered(lambda v: 'rpbm_agent_widget' in (v.arch_db or ''))` ne doit renvoyer que les vues du module et les vues Studio patchées par le script.
 
 ## Gestion d'erreurs
 

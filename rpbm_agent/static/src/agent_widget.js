@@ -7,7 +7,8 @@ import { useService } from "@web/core/utils/hooks";
 import { AgentWidgetDialog } from "./agent_widget_dialog";
 import { AgentWidgetDialogSaleOrder } from "./agent_widget_dialog_sale_order";
 
-// Le widget n'est placé que par views/crm_lead_views.xml et views/sale_order_views.xml.
+// Le widget est placé par views/crm_lead_views.xml et views/sale_order_views.xml, et dans les
+// sections Studio par Jobs/rpbm_agent_stock/studio_views.py.
 // Les champs natifs portent les mêmes noms sur les deux modèles ; seul le devis ajoute
 // les lignes d'article et de main-d'œuvre.
 const DIALOG_BY_MODEL = {

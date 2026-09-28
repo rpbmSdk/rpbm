@@ -1,6 +1,6 @@
 # Roadmap — UI & transfert vers Odoo
 
-## Reste à faire (état au 2026-09-21)
+## Reste à faire (état au 2026-09-28)
 
 Tout ce qui suit cette section est l'historique du chantier (diagnostic de juillet, lots
 livrés, décisions) : il est conservé tel quel comme trace, mais seule cette table fait foi
@@ -15,6 +15,8 @@ pour ce qui reste ouvert.
 | R5 | Bouton « Synchroniser VSF » masqué (`base.group_no_one`) | `views/product_template_views.xml` | en attente d'ouverture métier |
 | R6 | Recette live de la refonte des champs natifs (`17.0.260921.x`) : migration sans FAIL dans le journal, taux de remplissage des natifs ≈ ceux des Studio, champs du hook et alias `x_rpbm_vehicle_*` absents de `ir.model.fields`, parcours widget complet | refonte 2026-09-21 | à rejouer avec [`jeu-de-test.md`](jeu-de-test.md) |
 | R7 | Exports draw.io obsolètes à la racine du module (`Readme.jpeg/.pdf/.png/.html`, 5,4 Mo livrés à chaque build) | — | à supprimer (source archivée dans `_archive/Readme.drawio`) |
+| R8 | Recette de la conformité des vues (`17.0.260928.4`, puis `studio_views.py apply`) : champs facture calculés (≈ 7 100 factures avec immatriculation), chaque champ « Véhicule » passe un `search_count`, ordre des colonnes dans l'arch combinée, bouton de la section Studio, libellés « (ancien) », éditeur Studio ouvrable sur le formulaire opportunité | conformité des vues 2026-09-28 | à rejouer sur le build pre-prod (`rpbm-verificateur-computer-use`) |
+| R9 | Marque et modèle sur les articles : aucun lien article → véhicule ; Many2many vers `fleet.vehicle.model` ou table « code véhicule » sur l'eurocode, après dédoublonnage des marques et modèles Fleet | décision du 2026-09-28 | lot ultérieur, à concevoir |
 
 Réglé le 2026-09-20 : alias de route `/rbm_agent/getVehiculeMeta`, accent « Non renseigné » des
 rapports, énergie Fleet à la création de véhicule, produits main-d'œuvre paramétrables, code
@@ -25,6 +27,13 @@ Réglé le 2026-09-21 (refonte des champs, lots 1-5) : champs natifs `rpbm_*` su
 synchronisation bidirectionnelle avec les champs Studio historiques ; migration avec backfill ;
 suppression du `pre_init_hook`, des champs Studio-like qu'il créait et des alias orphelins ; le
 constat sur les miroirs `readonly` du devis disparaît par construction.
+
+Implémenté le 2026-09-28, à déployer (conformité des vues, module `17.0.260928.4`) : immatriculation,
+marque, modèle, eurocode et pièce stockés sur la facture ; recherches véhicule (dont le champ combiné
+« Véhicule ») sur opportunités, devis et factures, filtre « Eurocode » sur les articles ; colonnes
+véhicule dans les listes opportunités, devis et factures client. Le bouton et les champs natifs dans
+les sections Studio relèvent du script `studio_views.py` (voir
+[`Jobs/rpbm_agent_stock`](../../Jobs/rpbm_agent_stock/README.md)). Recette : R8.
 
 ---
 

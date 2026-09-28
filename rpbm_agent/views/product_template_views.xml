@@ -13,4 +13,16 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Propagé aux recherches product.product et stock (vues primaires filles). -->
+    <record id="view_product_template_search_rpbm_agent" model="ir.ui.view">
+        <field name="name">product.template.search.rpbm.agent</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <field name="categ_id" position="before">
+                <field name="rpbm_eurocode"/>
+            </field>
+        </field>
+    </record>
 </odoo>
