@@ -30,3 +30,7 @@ Les chemins `D:\git\odoo_17` cités dans les documents existants correspondent �
 ### Commits
 
 Les commits de ce dépôt sont effectués avec Claude Haiku 4.5 — ce modèle plus léger suffit pour les tâches de staging/commit (analyse d'intention, composition de message) et laisse le contexte plus large disponible pour le travail analytique lourd sur le code source (exploration, refactoring, débogage).
+
+## Contexte métier
+
+- **Rôles achats** : Yan (Yvan PAPUS) et Mickaël (Mickaël MOHAMED) valident les achats ; les autres vendeurs voient les achats et font livraisons/réceptions sans valider. Détail, audit des droits et automatisation : [`docs/metier/roles-achats.md`](docs/metier/roles-achats.md).
