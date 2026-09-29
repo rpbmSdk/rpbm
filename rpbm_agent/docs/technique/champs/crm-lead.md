@@ -58,7 +58,8 @@ valeur non convertible laisse la cible inchangée. Sans champs Studio, le mixin 
 Les vues Studio des équipes (section « Informations Véhicule », libellés « (ancien) ») ne sont pas
 modifiées par le module mais par le script `studio_views.py` (voir
 [`Jobs/rpbm_agent_stock`](../../../../Jobs/rpbm_agent_stock/README.md)) ; règles d'ancrage dans
-[configuration](../configuration.md#intégration-dans-les-vues).
+[configuration](../configuration.md#intégration-dans-les-vues). Le script place les champs natifs
+dans la section Studio et déplace les anciens champs doublés dans un onglet « Anciens champs ».
 
 ## Lu/écrit par
 

@@ -83,13 +83,18 @@ en fin d'arch de la vue Studio (résolue par la règle de `web_studio`, jamais p
 - **Idempotent, patch par patch** : chaque ajout a un contrôle qui vérifie l'effet à sa place dans
   l'arch combinée ; seuls les blocs dont le contrôle échoue sont ajoutés. Un deuxième `apply`
   répond « rien à faire ». Un nœud `rpbm_*` déplacé dans Studio n'est pas rajouté.
+- **Onglet « Anciens champs »** (formulaires opportunité, devis, facture) : les anciens champs Studio
+  doublés par un natif y sont déplacés (`<xpath position="move">`, un bloc par champ) ; le natif
+  reste à l'ancienne place. Les champs sans équivalent natif (kilométrage, autres infos, prix VSF…)
+  ne bougent pas ; listes et recherches gardent seulement le suffixe « (ancien) ».
 - **Vues ignorées** tant que les champs natifs manquent (modèle ou colonnes/recherches du
   module) : mettre `rpbm_agent` à jour d'abord.
 - **Vérification intégrée** (`--commit`) : contrôles rejoués et ouverture en mode Studio strict ;
   en cas d'échec, la sauvegarde est restaurée automatiquement.
 - **Sauvegardes** dans `runs/<run>-studio-views/` : arch avant écriture, sha256 avant/après,
   `manifest.json`, `rapport.md`. `rollback` ne restaure que si l'arch n'a pas bougé depuis l'apply ;
-  sinon il refuse, et les ajouts se retirent à la main dans Studio.
+  sinon il refuse, et les ajouts se retirent à la main dans Studio. Plusieurs runs : annuler le
+  plus récent d'abord.
 - **Production** : `--url` (URL de l'instance, pas de build `.dev.odoo.com`) et
   `--i-understand-this-is-production` avec `--commit`.
 

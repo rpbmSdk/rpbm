@@ -1,0 +1,55 @@
+<data>
+  <xpath expr="//field[@name='probability']" position="replace"/>
+  <xpath expr="//field[@name=&quot;activity_user_id&quot;]" position="after">
+    <field name="x_studio_field_NwRik"/>
+    <field name="x_studio_field_z5iaE"/>
+  </xpath>
+  <xpath expr="//field[@name='country_id']" position="replace">
+    <field name="x_studio_field_NVioD"/><field name="country_id" column_invisible="1"/>
+  </xpath>
+  <xpath expr="//field[@name='partner_id']" position="replace">
+    <field name="phone" column_invisible="1"/>
+  </xpath>
+  <xpath expr="//tree[1]" position="attributes">
+    <attribute name="default_order">create_date desc</attribute>
+  </xpath>
+  <xpath expr="//field[@name='date_deadline']" position="after">
+    <field name="id"/>
+  </xpath>
+  <xpath expr="//field[@name='create_date']" position="attributes">
+    <attribute name="widget">datetime</attribute>
+  </xpath>
+  <xpath expr="//field[@name='create_date']" position="after">
+    <field name="write_date"/>
+    <field name="x_studio_field_U2Wuh" string="Dernière Modif" column_invisible="1"/>
+  </xpath>
+  <xpath expr="//field[@name='contact_name']" position="attributes">
+    <attribute name="column_invisible">1</attribute></xpath>
+  <xpath expr="//field[@name='email_from']" position="attributes">
+    <attribute name="column_invisible">1</attribute></xpath>
+  <xpath expr="//tree[1]/field[@name='phone'][2]" position="attributes">
+    <attribute name="options">{"enable_sms":false}</attribute>
+    <attribute name="widget">phone</attribute>
+  </xpath>
+  <xpath expr="//field[@name='team_id']" position="attributes">
+    <attribute name="column_invisible">1</attribute></xpath>
+  <xpath expr="//field[@name='team_id']" position="after">
+    <field name="x_studio_field_ZiY2J"/>
+    <field name="activity_date_deadline" widget="remaining_days" string="Prochaine Activité"/>
+  </xpath>
+  <xpath expr="//field[@name='activity_ids']" position="attributes">
+    <attribute name="column_invisible">1</attribute></xpath>
+  <xpath expr="//field[@name='recurring_revenue']" position="after">
+    <field name="x_studio_revenu_parrain_ttc"/>
+  </xpath>
+  <xpath expr="//field[@name='stage_id']" position="after">
+    <field name="x_studio_field_h7awX" widget="priority" string="Étoiles (RPB)"/>
+    <field name="x_studio_field_h06UD"/>
+    <field name="x_studio_field_F0vnM"/>
+    <field name="x_studio_field_0RYCW"/>
+    <field name="x_studio_field_OMuUZ"/>
+    <xpath expr="//field[@name='expected_revenue']" position="move"/>
+    <field name="create_uid"/>
+    <xpath expr="//field[@name='user_id']" position="move"/>
+  </xpath>
+</data>

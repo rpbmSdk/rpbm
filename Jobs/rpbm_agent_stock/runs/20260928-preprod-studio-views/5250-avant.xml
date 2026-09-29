@@ -1,0 +1,10 @@
+<data>
+  <xpath expr="//search[1]/field[@name='date']" position="after">
+    <field name="x_studio_immatriculation"/>
+    <field name="x_studio_assurance_5"/>
+    <field name="amount_total"/>
+  </xpath>
+    <xpath expr="//search[1]/separator[5]" position="after">
+    <filter domain="[(&quot;invoice_payment_term_id&quot;, &quot;in&quot;, [17]), (&quot;state&quot;, &quot;=&quot;, &quot;posted&quot;), (&quot;payment_state&quot;, &quot;in&quot;, [&quot;not_paid&quot;, &quot;partial&quot;]), (&quot;invoice_date_due&quot;, &quot;&lt;&quot;, (datetime.datetime.now().to_utc() - relativedelta(days=1)).strftime('%Y-%m-%d'))]" name="studio_filter_9u_1ii9a8ha1" string="Retard Assurance 30j"/>
+  </xpath>
+</data>

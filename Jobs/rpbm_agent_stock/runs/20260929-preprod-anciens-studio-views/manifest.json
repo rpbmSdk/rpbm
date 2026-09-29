@@ -1,0 +1,31 @@
+{
+  "run": "20260929-preprod-anciens",
+  "url": "https://rpbm-pre-prod-37939198.dev.odoo.com",
+  "db": "rpbm-pre-prod-37939198",
+  "views": [
+    {
+      "xmlid": "crm.crm_lead_view_form",
+      "studio_id": 4820,
+      "backup": "4820-avant.xml",
+      "sha256_before": "35656d9729d8b45ea03173fd2220dee28841a0fcc075776d6a1cb67655ccfd3b",
+      "sha256_after": "b2f07201f5321a4645ec79cb856247cede14021eb160895475f97a5c5bee67f9",
+      "restored": false
+    },
+    {
+      "xmlid": "sale.view_order_form",
+      "studio_id": 4858,
+      "backup": "4858-avant.xml",
+      "sha256_before": "63a47f0d33f4e4f4b04583fec3c400143c3c9374659530a5384ac3715c453429",
+      "sha256_after": "8a24aed879ca8c904047fa65bcea8d98f1049c874c873ecedac213f112bebcc9",
+      "restored": false
+    },
+    {
+      "xmlid": "account.view_move_form",
+      "studio_id": 4894,
+      "backup": "4894-avant.xml",
+      "sha256_before": "52128e4ce271a6d282efe852625b28aa1e81efcd84dde4b55450d4783e6aaeda",
+      "sha256_after": "73f9b285db8bd17e8d62e8d017945bd3520e28d72ce358ea8f635073d272b6c8",
+      "restored": false
+    }
+  ]
+}

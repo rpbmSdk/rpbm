@@ -1,0 +1,56 @@
+<data>
+  <xpath expr="//filter[@name='source']" position="replace">
+    <filter string="Jour de création" context="{'group_by': 'create_date:day'}" name="create_date"/>
+  </xpath>
+  <xpath expr="//filter[@name='compaign']" position="replace"/>
+  <xpath expr="//filter[@name='company']" position="replace"/>
+  <xpath expr="//filter[@name='stage']" position="replace">
+    <filter name="studio_group_by_BTL4W" string="Étape" context="{'group_by': 'stage_id'}"/>
+    <filter context="{'group_by': 'x_studio_field_eENQz'}" name="x_studio_field_eENQz" string="Pièce concernée"/>
+    <filter context="{'group_by': 'x_studio_field_KyCjB'}" name="x_studio_field_KyCjB" string="Marque"/>
+  </xpath>
+  <xpath expr="//filter[@name='saleschannel']" position="replace"/>
+  <xpath expr="//filter[@name='salesperson']" position="replace"/>
+  <xpath expr="//field[@name='stage_id']" position="replace">
+    <field name="x_studio_field_ZiY2J"/>
+    <field name="x_studio_field_NwRik"/>
+  </xpath>
+  <xpath expr="//field[@name='team_id']" position="replace"/>
+  <xpath expr="//field[@name='user_id']" position="replace"/>
+  <xpath expr="//field[@name='partner_id']" position="replace">
+    <field name="phone" string="Téléphone" filter_domain="['|','|','|','|','|','|','|','|',('phone','ilike',self),('x_studio_field_Z1n5A','ilike',self),('x_studio_field_mnj0C','ilike',self),('x_studio_field_OiyXV','ilike',self),('x_studio_field_mLeJl','ilike',self),('x_studio_field_YNMPF','ilike',self),('x_studio_field_m66My','ilike',self),('x_studio_field_xJPqa','ilike',self),('name','ilike',self)]"/>
+    <field name="phone" string="Téléphone 1"/>
+    <field name="x_studio_field_NVioD"/>
+    <field name="id"/>
+  </xpath>
+  <xpath expr="//field[@name='phone_mobile_search']" position="after">
+    <filter domain="[[&quot;stage_id.name&quot;,&quot;ilike&quot;,&quot;À commander&quot;]]" name="studio_filter_4b3eD" string="Étape = À Commander"/>
+    <filter domain="[[&quot;stage_id.name&quot;,&quot;=&quot;,&quot;Prêt pour RDV&quot;]]" name="studio_filter_MUhsE" string="Étape = Prêt pour RDV"/>
+  </xpath>
+  <xpath expr="//search[1]/separator[6]" position="after">
+    <filter domain="[&quot;&amp;&quot;,&quot;&amp;&quot;,[&quot;active&quot;,&quot;=&quot;,True],[&quot;probability&quot;,&quot;&lt;&quot;,100],[&quot;stage_id&quot;,&quot;!=&quot;,&quot;Dossiers Incertains&quot;]]" name="studio_filter_yCQ94" string="En cours"/>
+    <filter domain="[&quot;&amp;&quot;,[&quot;stage_id&quot;,&quot;=&quot;,&quot;Dossiers Incertains&quot;],[&quot;active&quot;,&quot;=&quot;,True]]" name="studio_filter_vFFsJ" string="Incertains"/>
+  </xpath>
+  <xpath expr="//filter[@name='month']" position="after">
+    <filter name="studio_group_by_0qJZx" string="Last Updated on" context="{'group_by': 'write_date'}"/>
+    <filter string="Dernières modifs" context="{'group_by': 'x_studio_field_U2Wuh:day'}" name="x_studio_field_U2Wuh"/>
+  </xpath>
+  <xpath expr="//filter[@name='studio_group_by_0qJZx']" position="attributes">
+    <attribute name="string">Date de mise à jour</attribute>
+  </xpath>
+  <xpath expr="//filter[@name='x_studio_field_U2Wuh']" position="replace"/>
+  <xpath expr="//filter[@name='date_closed']" position="replace"/>
+  <xpath expr="//filter[@name='date_conversion']" position="replace"/>
+  <xpath expr="//filter[@name='city']" position="replace"/>
+  <xpath expr="//filter[@name='country']" position="replace"/>
+  <xpath expr="//filter[@name='medium']" position="replace"/>
+  <xpath expr="/search[1]/separator[6]" position="after">
+    <filter name="studio_filter_Ejnw7" string="TOUT AFFICHER" domain="[&quot;&amp;&quot;,[&quot;active&quot;,&quot;=&quot;,True],[&quot;active&quot;,&quot;=&quot;,False]]"/>
+  </xpath>
+  <xpath expr="//filter[@name='studio_filter_Ejnw7']" position="attributes">
+    <attribute name="domain">["|",["active","=",True],["active","=",False]]</attribute>
+  </xpath>
+  <xpath expr="//field[@name='phone_mobile_search']" position="after">
+    <field name="x_studio_field_F0vnM"/>
+  </xpath>
+</data>

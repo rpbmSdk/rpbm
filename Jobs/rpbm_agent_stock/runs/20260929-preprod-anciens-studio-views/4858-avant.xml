@@ -1,0 +1,1123 @@
+<data>
+  <xpath expr="//field[@name='payment_term_id']" position="replace"/>
+  <xpath expr="//field[@name='partner_shipping_id']" position="replace"/>
+  <xpath expr="//form[1]/header[1]/button[@name='action_confirm']" position="attributes">
+    <attribute name="studio_approval">False</attribute>
+  </xpath>
+  <xpath expr="//form[1]/header[1]/button[@name='action_confirm'][2]" position="attributes">
+    <attribute name="studio_approval">False</attribute>
+  </xpath>
+  <xpath expr="//group[@name='sale_header']" position="before">
+    <group name="studio_group_c5CMT">
+      <group name="studio_group_c5CMT_left"/>
+    </group>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_c5CMT_left']" position="inside">
+    <xpath expr="//field[@name='validity_date']" position="move"/>
+    <xpath expr="//field[@name='partner_invoice_id']" position="move"/>
+    <xpath expr="//field[@name='partner_id']" position="move"/>
+    <field name="x_studio_tlphone_" string="Téléphone :"/>
+    <field name="x_studio_email__1" string="Email :"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_c5CMT']" position="inside">
+    <group name="studio_group_c5CMT_right">
+      <field name="x_studio_assurance_" string="Assurance :"/>
+      <field name="x_studio_n_contrat_" string="N° Contrat :"/>
+      <field name="x_studio_n_sinistre_" string="N° Sinistre :"/>
+      <field name="x_studio_date_sinistre_" string="Date sinistre :"/>
+      <field name="x_studio_lieu_sinistre_" string="Lieu Sinistre :"/>
+      <field name="x_studio_circonstances_sinistre_" string="Circonstances :"/>
+      <field name="recompute_delivery_price"/>
+    </group>
+  </xpath>
+  <xpath expr="//field[@name='sale_order_template_id']" position="attributes">
+    <attribute name="string">Modèle de devis</attribute>
+  </xpath>
+  <xpath expr="//field[@name='sale_order_template_id']" position="after">
+    <field name="x_studio_kilomtrage__1"/>
+    <field name="x_studio_immatriculation_" string="Immatriculation :"/>
+    <field name="x_studio_modle_" string="Modèle :"/>
+    <field name="x_studio_marque__1" string="Marque :"/>
+    <field name="x_studio_vin_"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[@name='sale_header']/group[@name='order_details']/div[1]" position="before">
+    <field name="x_studio_modle_de_devis_" string="Modèle de devis :" force_save="True" options="{&quot;no_open&quot;:true,&quot;no_create&quot;:true}"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[@name='sale_header']/group[@name='order_details']/div[2]/label[1]" position="attributes">
+    <attribute name="string">Date devis :</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[@name='sale_header']/group[@name='order_details']/label[1]" position="attributes">
+    <attribute name="string">Tarif Client : </attribute>
+  </xpath>
+  <xpath expr="//group[@name='note_group']" position="after">
+    <group name="studio_group_0Hlzh">
+      <group name="studio_group_0Hlzh_right">
+        <field widget="signature" name="x_studio_signature_client_" string="Signature Client :"/>
+      </group>
+    </group>
+  </xpath>
+  <xpath expr="//field[@name='partner_id']" position="attributes">
+    <attribute name="string">Client : </attribute>
+  </xpath>
+  <xpath expr="//field[@name='partner_invoice_id']" position="attributes">
+    <attribute name="string">Client : </attribute>
+  </xpath>
+  <xpath expr="//field[@name='validity_date']" position="attributes">
+    <attribute name="string">Date expiration devis : </attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/form//field[@name='invoice_lines']" position="inside">
+    <form string="Journal Item" create="false">
+      <sheet>
+        <field name="company_id" invisible="1"/>
+        <field name="parent_state" invisible="1"/>
+        <group>
+          <field name="name"/>
+          <field name="partner_id" domain="['|', ('parent_id', '=', False), ('is_company', '=', True)]" readonly="1"/>
+        </group>
+        <notebook colspan="4">
+          <page string="Information" name="information">
+            <group>
+              <group string="Amount">
+                <field name="account_id" options="{'no_create': True}" domain="[('company_id', '=', company_id)]" readonly="1"/>
+                <field name="debit" readonly="1"/>
+                <field name="credit" readonly="1"/>
+                <field name="quantity" readonly="1"/>
+                <field name="company_id" invisible="1"/>
+              </group>
+              <group string="Accounting Documents">
+                <field name="move_id" readonly="1"/>
+                <field name="asset_ids" invisible="set(asset_ids).intersection([])"/>
+                <field name="statement_id" readonly="True" invisible="statement_id == False"/>
+              </group>
+              <group string="Dates">
+                <field name="date" groups="account.group_account_readonly"/>
+                <field name="date_maturity"/>
+              </group>
+              <group string="Taxes" invisible="(set(tax_ids).intersection([])) and (tax_line_id == False)">
+                <field name="tax_line_id" readonly="1" invisible="tax_line_id == False"/>
+                <field name="tax_ids" widget="many2many_tags" readonly="1" invisible="set(tax_ids).intersection([])"/>
+              </group>
+              <group string="Matching" invisible="(set(matched_credit_ids).intersection([])) and (set(matched_debit_ids).intersection([]))">
+                <label for="full_reconcile_id"/>
+                <div>
+                  <field name="full_reconcile_id" invisible="full_reconcile_id == False"/>
+                  <field name="matched_debit_ids" invisible="1"/>
+                  <field name="matched_credit_ids" invisible="1"/>
+                  <button name="open_reconcile_view" class="oe_link" type="object" string="-&gt; View partially reconciled entries" invisible="((set(matched_credit_ids).intersection([])) and (set(matched_debit_ids).intersection([]))) or (full_reconcile_id != False)">
+                                            </button>
+                </div>
+              </group>
+              <group string="Currency" groups="base.group_multi_currency">
+                <field name="currency_id" invisible="1"/>
+                <field name="amount_currency"/>
+              </group>
+              <group string="Product" invisible="product_id == False">
+                <field name="product_id" readonly="1"/>
+              </group>
+              <group string="States">
+                <field name="blocked"/>
+              </group>
+              <group string="Analytic" groups="analytic.group_analytic_accounting,analytic.group_analytic_tags">
+                <field name="subscription_id"/>
+              </group>
+            </group>
+          </page>
+          <page string="Analytic Lines" name="analytic_lines" groups="analytic.group_analytic_accounting">
+            <field name="date" invisible="1"/>
+            <field name="analytic_line_ids" context="{'tree_view_ref':'analytic.view_account_analytic_line_tree', 'default_general_account_id':account_id, 'default_name': name, 'default_date':date, 'amount': (debit or 0.0)-(credit or 0.0)}"/>
+          </page>
+        </notebook>
+      </sheet>
+    </form>
+    <tree string="Journal Items" create="false" expand="context.get('expand', False)" multi_edit="1" js_class="account_move_line_list">
+      <field name="date" optional="show" readonly="1"/>
+      <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}" optional="show"/>
+      <field name="company_id" invisible="1"/>
+      <field name="move_id" optional="show"/>
+      <field name="account_id" optional="show" options="{'no_open': True, 'no_create': True}" domain="[('company_id', '=', company_id)]" groups="account.group_account_readonly"/>
+      <field name="statement_id" column_invisible="1"/>
+      <field name="partner_id" optional="show" readonly="1"/>
+      <field name="ref" optional="hide"/>
+      <field name="name"/>
+      <field name="reconciled" column_invisible="1"/>
+      <field name="matching_number" string="Matching" optional="show"/>
+      <field name="reconcile_model_id" column_invisible="1"/>
+      <field name="date_maturity" optional="hide"/>
+      <field name="debit" sum="Total Debit" readonly="1"/>
+      <field name="credit" sum="Total Credit" readonly="1"/>
+      <field name="balance" sum="Total Balance" readonly="1" optional="hide"/>
+      <field name="amount_currency" readonly="1" groups="base.group_multi_currency"/>
+      <field name="currency_id" readonly="1" groups="base.group_multi_currency" optional="hide" string="Original Currency"/>
+      <field name="company_currency_id" column_invisible="1"/>
+      <field name="parent_state" column_invisible="1"/>
+      <field name="tax_ids" widget="many2many_tags" width="0.5" optional="hide" readonly="1"/>
+      <field name="tax_tag_ids" widget="many2many_tags" width="0.5" optional="hide" string="Tax Grids" options="{'no_open': True, 'no_create': True}" domain="[('applicability', '=', 'taxes')]"/>
+      <groupby name="move_id">
+        <field name="state" invisible="1"/>
+        <button name="edit" type="edit" icon="fa-edit" title="Edit"/>
+        <button name="action_post" icon="fa-check" title="Post" type="object" groups="account.group_account_invoice" invisible="state not in ['draft']"/>
+        <button name="202" title="Reverse" icon="fa-refresh" type="action" groups="account.group_account_invoice" invisible="state not in ['posted']"/>
+        <button name="action_duplicate" icon="fa-files-o" title="Duplicate" type="object" groups="account.group_account_invoice"/>
+      </groupby>
+      <header>
+        <button name="action_reconcile" type="object" string="Reconcile" groups="account.group_account_user"/>
+        <button name="turn_as_asset" type="object" string="Create Asset" groups="account.group_account_user"/>
+      </header>
+      <field name="move_attachment_ids" column_invisible="1">
+        <tree>
+          <field name="mimetype"/>
+          <!--  We want to fetch the data for using it in the js-->
+        </tree>
+      </field>
+      <field name="company_id" column_invisible="1"/>
+    </tree>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/field[1]" position="attributes">
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='discount']" position="attributes">
+    <attribute name="string">Rem.%</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='tax_id']" position="attributes">
+    <attribute name="string">TVA</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='product_uom']" position="attributes">
+    <attribute name="string">Unités</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]/field[2]" position="attributes">
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="//field[@name='partner_invoice_id'][not(ancestor::field)]" position="attributes">
+    <attribute name="force_save">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]/field[2]" position="attributes">
+    <attribute name="invisible">1</attribute>
+    <attribute name="readonly">state not in ['draft', 'sent', 'sale']</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/div[3]/field[1]" position="attributes">
+    <attribute name="invisible">1</attribute>
+    <attribute name="readonly">state not in ['draft', 'sent']</attribute>
+  </xpath>
+  <xpath expr="//field[@name='pricelist_id'][not(ancestor::field)]" position="attributes">
+    <attribute name="invisible"/>
+    <attribute name="readonly">state not in ['draft', 'sent']</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='tax_id']" position="after">
+    <field name="price_reduce"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_reduce']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='tax_id']" position="after">
+    <field name="x_studio_float_field_Ycdbf"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_float_field_Ycdbf']" position="attributes">
+    <attribute name="sum">Sum of New Décimal</attribute>
+    <attribute name="avg"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_float_field_Ycdbf']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='tax_id']" position="after">
+    <field name="x_studio_monetary_field_ekm16"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_monetary_field_ekm16']" position="attributes">
+    <attribute name="sum"/>
+    <attribute name="avg">Average of New Monétaire</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_monetary_field_ekm16']" position="attributes">
+    <attribute name="sum">Sum of New Monétaire</attribute>
+    <attribute name="avg"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_monetary_field_ekm16']" position="attributes">
+    <attribute name="sum"/>
+    <attribute name="avg"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_monetary_field_ekm16']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='tax_id']" position="after">
+    <field name="sale_order_option_ids"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='sale_order_option_ids']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='tax_id']" position="after">
+    <field name="invoice_lines"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='invoice_lines']" position="attributes">
+    <attribute name="domain">[["price_unit","=","*1,50"]]</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='invoice_lines']" position="attributes">
+    <attribute name="domain">[["price_unit","=",1.5]]</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='invoice_lines']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_unit']" position="after">
+    <field name="product_custom_attribute_value_ids"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='product_custom_attribute_value_ids']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_unit']" position="after">
+    <field name="x_studio_integer_field_5Zssd"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_integer_field_5Zssd']" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">handle</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_integer_field_5Zssd']" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">many2one_reference</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_unit']" position="after">
+    <field name="x_studio_html_field_hGDum"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_integer_field_5Zssd']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_html_field_hGDum']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='product_id']" position="attributes">
+    <attribute name="string">Acompte sur Facture</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='product_id']" position="attributes">
+    <attribute name="string">Article</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='product_uom']" position="after">
+    <field name="x_studio_prix_x_glass"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_prix_x_glass']" position="attributes">
+    <attribute name="string">Prix X glass</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[1]/field[1]" position="before">
+    <field name="x_studio_related_field_BVrw9"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">date</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">date</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[1]/field[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="invisible">state in ['sale', 'done']</attribute>
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="force_save">True</attribute>
+    <attribute name="invisible">state in ['sale', 'done']</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="invisible">state in ['sale', 'done']</attribute>
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="force_save">True</attribute>
+    <attribute name="invisible">state in ['sale', 'done']</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_prix_x_glass']" position="attributes">
+    <attribute name="string">Prix XGlass</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='tax_id']" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[1]/field[5]" position="after">
+    <field name="x_studio_dtails_modle"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[1]/field[6]" position="attributes">
+    <attribute name="string">Détail</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[1]/field[6]" position="attributes">
+    <attribute name="string">Détails Modèle</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[1]/field[7]" position="after">
+    <field name="x_studio_base_eurocode"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[1]/field[8]" position="attributes">
+    <attribute name="string">Base Eurocode</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[1]/field[7]" position="attributes">
+    <attribute name="string">VIN</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_unit']" position="after">
+    <field name="x_studio_related_field_VuH3e"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_related_field_VuH3e']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_unit']" position="after">
+    <field name="x_studio_related_field_NyMTk"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_related_field_NyMTk']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_unit']" position="after">
+    <field name="x_studio_related_field_G0sgU"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='discount']" position="after">
+    <field name="x_studio_related_field_Pb1gS"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_related_field_Pb1gS']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_subtotal']" position="after">
+    <field name="x_studio_related_field_azWMB"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_related_field_azWMB']" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_related_field_G0sgU']" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">percentage</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_related_field_G0sgU']" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">percentpie</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_related_field_G0sgU']" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">percentage</attribute>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='x_studio_related_field_G0sgU']" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]/field[5]" position="replace"/>
+  <xpath expr="//div[@class='oe_title']" position="after">
+    <group name="studio_group_gV6kW">
+      <group name="studio_group_gV6kW_left"/>
+      <group name="studio_group_gV6kW_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]" position="attributes">
+    <attribute name="string">--------------------  Informations Dossier</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[2]" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]" position="after">
+    <group name="studio_group_QIe5h">
+      <group name="studio_group_QIe5h_left"/>
+      <group name="studio_group_QIe5h_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[3]/group[1]" position="attributes">
+    <attribute name="string">--------------------  Informations Assurance</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[3]/group[1]" position="attributes">
+    <attribute name="string"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[3]/group[1]" position="attributes">
+    <attribute name="string">--------------------  Informations Dossier</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[3]/group[1]" position="attributes">
+    <attribute name="string">--------------------  Informations Générales</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[3]/group[2]" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[1]" position="before">
+    <field name="x_studio_pice_concerne"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Pièce concernée</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[8]" position="after">
+    <xpath expr="//field[@name='x_studio_kilomtrage__1'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[4]" position="attributes">
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[8]" position="attributes">
+    <attribute name="string">Kilométrage</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[8]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[6]" position="after">
+    <field name="x_studio_kilomtrage"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[7]" position="attributes">
+    <attribute name="string">Kilométrage</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[6]" position="after">
+    <field name="x_studio_kilomtrage_1"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[8]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[7]" position="attributes">
+    <attribute name="string">Kilométrage</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[4]" position="attributes">
+    <attribute name="string">Modèle</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[5]" position="attributes">
+    <attribute name="string">Marque</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[3]" position="attributes">
+    <attribute name="string">Immatriculation</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[2]/div[1]" position="before">
+    <field name="x_studio_date_1re_mec"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[2]/field[1]" position="attributes">
+    <attribute name="string">Date de</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[2]/field[1]" position="attributes">
+    <attribute name="string">Date 1ère MEC</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[2]/field[1]" position="after">
+    <field name="x_studio_nergie_moteur"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[2]/field[2]" position="attributes">
+    <attribute name="string">Énergie Moteur</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[2]/field[2]" position="after">
+    <xpath expr="//field[@name='x_studio_base_eurocode'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]" position="after">
+    <group name="studio_group_qC3t8">
+      <group name="studio_group_qC3t8_left"/>
+      <group name="studio_group_qC3t8_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[1]" position="attributes">
+    <attribute name="string">-------------------- Références Pièces</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]" position="attributes">
+    <attribute name="string">Références Joints  --------------------</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]" position="attributes">
+    <attribute name="string">--------------------  Références Joints</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]" position="after">
+    <group name="studio_group_tIYeE">
+      <group name="studio_group_tIYeE_left"/>
+      <group name="studio_group_tIYeE_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]" position="inside">
+    <field name="x_studio_eurocode_complet"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Eurocode </attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Eurocode (Complet)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[1]" position="after">
+    <field name="x_studio_vsf_dsignation_1"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[2]" position="attributes">
+    <attribute name="string">VSF - Désignation</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[2]" position="after">
+    <field name="x_studio_vsf_qt_dispo"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[3]" position="attributes">
+    <attribute name="string">VSF - Qté Dispo</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[3]" position="after">
+    <field name="x_studio_vsf_prix_vit_1"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[4]" position="attributes">
+    <attribute name="string">VSF - Prix VIT</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[4]" position="after">
+    <field name="x_studio_note_sur_la_pice"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[5]" position="attributes">
+    <attribute name="string">Note sur la pièce</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]" position="inside">
+    <field name="x_studio_eurocode_joint"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[1]" position="attributes">
+    <attribute name="string">Eurocode (Joint)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[1]" position="after">
+    <field name="x_studio_vsf_prix_jt1_1"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[2]" position="attributes">
+    <attribute name="string">VSF - Prix JT1</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[2]" position="after">
+    <field name="x_studio_vsf_prix_jt2"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[3]" position="attributes">
+    <attribute name="string">VSF - Prix JT2</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[3]" position="after">
+    <field name="x_studio_vsf_prix_jt3"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[4]" position="attributes">
+    <attribute name="string">VSF - Prix JT3</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]" position="after">
+    <group name="studio_group_dAKRM">
+      <group name="studio_group_dAKRM_left"/>
+      <group name="studio_group_dAKRM_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[1]" position="inside">
+    <field name="x_studio_attributs_pare_brise"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Attributs Pare Brise</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[1]/field[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[1]" position="inside">
+    <field widget="many2many_tags" name="x_studio_many2many_field_y5lRT"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]" position="inside">
+    <field name="x_studio_pb_couleur"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]/field[1]" position="attributes">
+    <attribute name="string">PB - Couleur</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]/field[1]" position="after">
+    <field name="x_studio_pb_bandeau"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]/field[2]" position="attributes">
+    <attribute name="string">PB - Bandeau</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]/field[2]" position="after">
+    <field name="x_studio_related_field_slpsr"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]/field[3]" position="attributes">
+    <attribute name="string">PB - Autres Infos...</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[1]" position="attributes">
+    <attribute name="invisible">(x_studio_pice_concerne != 'Autre...') and ((x_studio_pice_concerne != 'Glace Latérale') and (x_studio_pice_concerne != 'Lunette arrière'))</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[1]" position="attributes">
+    <attribute name="invisible">(x_studio_pice_concerne == 'Autre...') and ((x_studio_pice_concerne == 'Glace Latérale') and (x_studio_pice_concerne == 'Lunette arrière'))</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]" position="attributes">
+    <attribute name="invisible">(x_studio_pice_concerne == 'Autre...') and ((x_studio_pice_concerne == 'Glace Latérale') and (x_studio_pice_concerne == 'Lunette arrière'))</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]" position="after">
+    <group name="studio_group_bqZ7w">
+      <group name="studio_group_bqZ7w_left"/>
+      <group name="studio_group_bqZ7w_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]" position="inside">
+    <field name="x_studio_ap1_pice_concerne"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]/field[1]" position="attributes">
+    <attribute name="string">AP1 - Pièce concernée</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]" position="inside">
+    <field name="x_studio_ap1_description"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[1]" position="attributes">
+    <attribute name="string">AP1 - Description</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]" position="attributes">
+    <attribute name="invisible">(x_studio_pice_concerne == 'Glace Latérale') and ((x_studio_pice_concerne == 'Lunette arrière') and (x_studio_pice_concerne == 'Pare-Brise'))</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]" position="attributes">
+    <attribute name="invisible">(x_studio_pice_concerne == 'Glace Latérale') and ((x_studio_pice_concerne == 'Lunette arrière') and (x_studio_pice_concerne == 'Pare-Brise'))</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]" position="after">
+    <group name="studio_group_UpSAr">
+      <group name="studio_group_UpSAr_left"/>
+      <group name="studio_group_UpSAr_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]" position="inside">
+    <field widget="many2many_tags" name="x_studio_many2many_field_vSplB"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]" position="inside">
+    <field name="x_studio_related_field_33SYr"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[1]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Pare-Brise'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[5]/group[2]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Pare-Brise'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]/field[1]" position="attributes">
+    <attribute name="string">LUN - Autres Infos...</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[2]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Lunette arrière'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]/group[1]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Lunette arrière'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[7]/group[1]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Autre...'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[7]/group[2]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Autre...'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[6]" position="after">
+    <group name="studio_group_Frj4n">
+      <group name="studio_group_Frj4n_left"/>
+      <group name="studio_group_Frj4n_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[7]/group[1]" position="inside">
+    <field widget="many2many_tags" name="x_studio_many2many_field_ExOig"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[7]/group[2]" position="inside">
+    <field name="x_studio_lat1_autres_infos"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[7]/group[2]/field[1]" position="attributes">
+    <attribute name="string">LAT1 - Autres Infos...</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[7]/group[1]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Glace Latérale'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[7]/group[2]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Glace Latérale'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[10]" position="after">
+    <group name="studio_group_P2red">
+      <group name="studio_group_P2red_left"/>
+      <group name="studio_group_P2red_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[11]/group[1]" position="attributes">
+    <attribute name="string">--------------------  Tarif Opération Hors Assurances</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[11]/group[2]" position="inside">
+    <field name="x_studio_difficult_montage"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[11]/group[2]/field[1]" position="attributes">
+    <attribute name="string">Difficulté Montage</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[11]" position="after">
+    <group name="studio_group_uNI7y">
+      <group name="studio_group_uNI7y_left"/>
+      <group name="studio_group_uNI7y_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]" position="inside">
+    <field name="x_studio_temps_main_oeuvre"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Temps Main Oeuvre</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[1]" position="after">
+    <field name="x_studio_prix_op_ht"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[2]" position="attributes">
+    <attribute name="string">Prix OP (HT)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]" position="inside">
+    <field name="x_studio_prix_pose_ttc"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[1]" position="attributes">
+    <attribute name="string">Prix + Pose (TTC)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[3]" position="after">
+    <field name="x_studio_modle"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[5]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[4]" position="attributes">
+    <attribute name="string">Modèle</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[3]" position="after">
+    <field name="x_studio_many2one_field_rP62C"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[5]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[5]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[4]" position="after">
+    <field name="x_studio_many2one_field_DkgHx"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[1]" position="before">
+    <xpath expr="//field[@name='x_studio_prix_op_ht'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[1]" position="before">
+    <field name="x_studio_prix_de_la_pice"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Prix de la Pièce</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[1]/group[1]/field[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[1]/group[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[2]/group[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[2]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[1]" position="after">
+    <group name="studio_group_HiaBj">
+      <group name="studio_group_HiaBj_left"/>
+      <group name="studio_group_HiaBj_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[2]/group[1]" position="attributes">
+    <attribute name="string">--------------------  Disponibilités Pièces</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[2]/group[2]" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]" position="after">
+    <group name="studio_group_fYGZ8">
+      <group name="studio_group_fYGZ8_left"/>
+      <group name="studio_group_fYGZ8_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[2]" position="after">
+    <group name="studio_group_ARver">
+      <group name="studio_group_ARver_left"/>
+      <group name="studio_group_ARver_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[3]/group[1]" position="inside">
+    <field name="x_studio_pice_trouve"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[3]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Pièce Trouvée</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[3]/group[2]" position="inside">
+    <field name="x_studio_je_valide_la_piece"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[3]/group[2]/field[1]" position="attributes">
+    <attribute name="string">JE VALIDE LA PIECE</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[3]/group[2]/field[1]" position="after">
+    <field name="x_studio_validation_pice"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[3]/group[2]/field[2]" position="attributes">
+    <attribute name="string">Validation Pièce</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[3]/group[2]/field[1]" position="attributes">
+    <attribute name="required">1</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[3]" position="after">
+    <notebook name="studio_notebook_0blIc">
+      <page string="New Page" name="studio_page_0blIc">
+        <group name="studio_group_0blIc">
+          <group name="studio_group_0blIc_left"/>
+          <group name="studio_group_0blIc_right"/>
+        </group>
+      </page>
+    </notebook>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[1]" position="attributes">
+    <attribute name="string">Stock RPBM</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[1]/group[1]/group[1]" position="inside">
+    <field name="x_studio_stock"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[1]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Stock</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[1]/group[1]/group[1]/field[1]" position="after">
+    <field name="x_studio_rv_ht_stock"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[1]/group[1]/group[1]/field[2]" position="attributes">
+    <attribute name="string">RV HT (Stock)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]" position="inside">
+    <page string="New Page" name="studio_page_HvLoJ">
+      <group name="studio_group_HvLoJ">
+        <group name="studio_group_HvLoJ_left"/>
+        <group name="studio_group_HvLoJ_right"/>
+      </group>
+    </page>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[2]" position="attributes">
+    <attribute name="string">Stock VSF</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[2]/group[1]/group[1]" position="inside">
+    <field name="x_studio_vsf_prix_rv"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[2]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="string">VSF - Prix RV</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]" position="inside">
+    <page string="New Page" name="studio_page_Ke7Oh">
+      <group name="studio_group_Ke7Oh">
+        <group name="studio_group_Ke7Oh_left"/>
+        <group name="studio_group_Ke7Oh_right"/>
+      </group>
+    </page>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[3]" position="attributes">
+    <attribute name="string">MPB</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[3]/group[1]/group[1]" position="inside">
+    <field name="x_studio_rv_ht_mpb"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[3]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="string">RV HT (MPB)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]" position="inside">
+    <page string="New Page" name="studio_page_GHTDa">
+      <group name="studio_group_GHTDa">
+        <group name="studio_group_GHTDa_left"/>
+        <group name="studio_group_GHTDa_right"/>
+      </group>
+    </page>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[4]" position="attributes">
+    <attribute name="string">Concession</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[4]/group[1]/group[1]" position="inside">
+    <field name="x_studio_ttc_avr_concess"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[4]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="string">TTC AVR (Concess)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[4]/group[1]/group[1]/field[1]" position="after">
+    <field name="x_studio_rv_ht_concess"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[4]/group[1]/group[1]/field[2]" position="attributes">
+    <attribute name="string">RV HT (Concess)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]" position="inside">
+    <page string="New Page" name="studio_page_ANnq1">
+      <group name="studio_group_ANnq1">
+        <group name="studio_group_ANnq1_left"/>
+        <group name="studio_group_ANnq1_right"/>
+      </group>
+    </page>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[5]" position="attributes">
+    <attribute name="string">Autres</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[5]/group[1]/group[1]" position="inside">
+    <field name="x_studio_rv_autres_ht"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[5]/group[1]/group[1]/field[1]" position="attributes">
+    <attribute name="string">RV Autres (HT)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[5]/group[1]/group[1]/field[1]" position="after">
+    <field name="x_studio_autres"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[5]/group[1]/group[1]/field[2]" position="attributes">
+    <attribute name="string">Autres...</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[5]/group[1]/group[1]/field[1]" position="before">
+    <xpath expr="//field[@name='x_studio_autres'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[1]" position="attributes">
+    <attribute name="invisible">x_studio_pice_trouve != 'En Stock'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[2]" position="attributes">
+    <attribute name="invisible">x_studio_pice_trouve != 'VSF'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[4]" position="attributes">
+    <attribute name="invisible">x_studio_pice_trouve != 'Concession'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[5]" position="attributes">
+    <attribute name="invisible">x_studio_pice_concerne != 'Autre...'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[3]" position="attributes">
+    <attribute name="invisible">x_studio_pice_trouve != 'MPB'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/notebook[1]/page[5]" position="attributes">
+    <attribute name="invisible">x_studio_pice_trouve != 'Autre...'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="before">
+    <field name="x_studio_related_field_QueKt"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="before">
+    <field name="x_studio_related_field_82G8q"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="before">
+    <field name="x_studio_assurances_simples"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="attributes">
+    <attribute name="string">Assurances Simples</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[2]" position="after">
+    <field name="x_studio_attention_ajouter_un_kit_colle_supplementaire"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[3]" position="attributes">
+    <attribute name="string">ATTENTION AJOUTER UN LIT COLLE SUPPLEMENTAIRE</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]" position="after">
+    <group name="studio_group_nztzM">
+      <group name="studio_group_nztzM_left"/>
+      <group name="studio_group_nztzM_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[13]/group[2]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[13]/group[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[13]" position="inside">
+    <xpath expr="//field[@name='x_studio_attention_ajouter_un_kit_colle_supplementaire'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_attention_ajouter_un_kit_colle_supplementaire'][not(ancestor::field)]" position="attributes">
+    <attribute name="string">ATTENTION AJOUTER UN KIT COLLE SUPPLEMENTAIRE</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[13]/field[1]" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">badge</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[13]/field[1]" position="attributes">
+    <attribute name="options"/>
+    <attribute name="widget">char</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[2]" position="after">
+    <xpath expr="//field[@name='x_studio_attention_ajouter_un_kit_colle_supplementaire'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[13]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[3]" position="attributes">
+    <attribute name="invisible">x_studio_difficult_montage != 'Difficile'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[3]" position="after">
+    <field name="x_studio_text_field_yixN6"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[4]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[3]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[12]" position="after">
+    <group name="studio_group_p85Ao">
+      <group name="studio_group_p85Ao_left"/>
+      <group name="studio_group_p85Ao_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[13]/group[2]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[13]/group[1]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[13]" position="attributes">
+    <attribute name="string">ATTENTION: Ajouter un Kit Colle supplémentaire</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[13]" position="attributes">
+    <attribute name="invisible">x_studio_difficult_montage != 'Difficile'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="replace"/>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_total']" position="attributes">
+    <attribute name="invisible"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_total']" position="attributes">
+    <attribute name="invisible"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_total']" position="attributes">
+    <attribute name="groups"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_total']" position="attributes">
+    <attribute name="invisible"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_subtotal']" position="attributes">
+    <attribute name="column_invisible">1</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[7]" position="attributes">
+    <attribute name="invisible">1</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[1]" position="after">
+    <field name="x_studio_many2one_field_iSVlQ"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[10]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[10]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[9]" position="attributes">
+    <attribute name="string">Immatriculation</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[2]" position="after">
+    <xpath expr="//field[@name='x_studio_immatriculation_'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[10]" position="after">
+    <xpath expr="//field[@name='x_studio_kilomtrage_1'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[2]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[2]" position="after">
+    <field name="sale_order_template_id"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[1]" position="after">
+    <xpath expr="//field[@name='sale_order_template_id'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[4]/group[1]/field[2]" position="attributes">
+    <attribute name="string">Modèle de devis : </attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[4]" position="after">
+    <field name="x_studio_lieu_de_sinistre_"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[6]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[5]" position="attributes">
+    <attribute name="string">Lieu de sinistre :</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[5]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[3]" position="after">
+    <field name="x_studio_test_lieu"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[4]" position="attributes">
+    <attribute name="string">test lieu</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[4]" position="replace"/>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[2]" position="after">
+    <field name="x_studio_prix_pice_seule_ht"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[1]" position="after">
+    <xpath expr="//field[@name='x_studio_prix_pice_seule_ht'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[2]" position="attributes">
+    <attribute name="string">Prix Pièce Seule</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[2]" position="attributes">
+    <attribute name="string">Prix Pièce Seule (HT)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[1]/field[1]" position="attributes">
+    <attribute name="string">Prix Pièce dans l'OP (HT)</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[5]" position="after">
+    <field name="x_studio_related_field_hiT9N"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[6]" position="attributes">
+    <attribute name="string">Chèque cadeaux RAD</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="after">
+    <field name="x_studio_avez_vous_imprim_la_dbdg_eurodommages"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[2]" position="attributes">
+    <attribute name="string">Avez-vous imprimé la DBDG Eurodommages?</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[2]" position="attributes">
+    <attribute name="invisible">x_studio_assurance_ != 'EURODOMMAGE'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[4]" position="attributes">
+    <attribute name="required">x_studio_assurance_ == 'EURODOMMAGE'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[2]" position="attributes">
+    <attribute name="invisible">x_studio_assurance_ != 'EURODOMMAGE'</attribute>
+    <attribute name="required">x_studio_assurance_ == 'EURODOMMAGE'</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="before">
+    <xpath expr="//field[@name='analytic_account_id'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="attributes">
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="//field[@name='analytic_account_id'][not(ancestor::field)]" position="attributes">
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="attributes">
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="attributes">
+    <attribute name="string">Lieu de Facturation?</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="attributes">
+    <attribute name="readonly">state in ['sale', 'done', 'cancel']</attribute>
+    <attribute name="required">1</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="attributes">
+    <attribute name="readonly">state in ['sale', 'done', 'cancel']</attribute>
+    <attribute name="required"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[12]/group[2]/field[2]" position="after">
+    <xpath expr="//field[@name='analytic_account_id'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[3]/group[1]/group[2]/field[1]" position="after">
+    <xpath expr="//field[@name='analytic_account_id'][not(ancestor::field)]" position="move"/>
+  </xpath>
+  <xpath expr="//field[@name='order_line']/tree//field[@name='price_total']" position="attributes">
+    <attribute name="string">Total TTC</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[1]" position="after">
+    <group name="studio_group_9mPwY">
+      <group name="studio_group_9mPwY_left"/>
+      <group name="studio_group_9mPwY_right"/>
+    </group>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/group[2]/group[1]" position="inside">
+    <field name="note"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[1]" position="after">
+    <field name="x_studio_necessite_numero_sinistre"/>
+    <div colspan="2" invisible="not x_studio_necessite_numero_sinistre or (x_studio_necessite_numero_sinistre and x_studio_n_sinistre_)">
+        <strong style="color:red">
+        Attention, l'assurance sélectionnée nécessite un numéro de sinistre, vous devrez le renseigner pour pouvoir facturer
+    </strong>
+    </div>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[2]" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[2]/group[2]/field[2]" position="attributes">
+    <attribute name="invisible">False</attribute>
+  </xpath>
+  <xpath expr="//group[@name='sale_header'][not(ancestor::field)]" position="after"><group name="rpbm_vehicle_native" string="Informations véhicule" invisible="not opportunity_id"><group name="rpbm_vehicle_native_left"><widget name="rpbm_agent_widget" colspan="2"/><field name="rpbm_part_type" string="Pièce concernée"/><field name="rpbm_license_plate" string="Immatriculation"/><field name="rpbm_vehicle_brand_id" string="Marque"/><field name="rpbm_vehicle_model_id" string="Modèle"/><field name="rpbm_vehicle_detail_model" string="Détails Modèle"/><field name="rpbm_vehicle_id" string="Véhicule (Flotte)"/></group><group name="rpbm_vehicle_native_right"><field name="rpbm_first_registration_date" string="Date 1ère MEC"/><field name="rpbm_fuel_type" string="Énergie Moteur"/><field name="rpbm_eurocode_base" string="Base Eurocode"/><field name="rpbm_vin" string="VIN"/></group></group></xpath>
+  <xpath expr="//field[@name='x_studio_eurocode_complet'][not(ancestor::field)]" position="before"><field name="rpbm_eurocode" string="Eurocode (Complet)"/></xpath>
+  <xpath expr="//field[@name='x_studio_vsf_dsignation_1'][not(ancestor::field)]" position="before"><field name="rpbm_vsf_designation" string="VSF - Désignation"/></xpath>
+  <xpath expr="//field[@name='x_studio_vsf_qt_dispo'][not(ancestor::field)]" position="before"><field name="rpbm_vsf_stock" string="VSF - Qté Dispo"/></xpath>
+  <xpath expr="//field[@name='x_studio_pice_concerne'][not(ancestor::field)]" position="attributes"><attribute name="string">Pièce concernée (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_immatriculation_'][not(ancestor::field)]" position="attributes"><attribute name="string">Immatriculation (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_many2one_field_rP62C'][not(ancestor::field)]" position="attributes"><attribute name="string">Marque du véhicule (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_many2one_field_DkgHx'][not(ancestor::field)]" position="attributes"><attribute name="string">Modèle d'un véhicule (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_dtails_modle'][not(ancestor::field)]" position="attributes"><attribute name="string">Détails Modèle (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_vin_'][not(ancestor::field)]" position="attributes"><attribute name="string">VIN (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_date_1re_mec'][not(ancestor::field)]" position="attributes"><attribute name="string">Date 1ère MEC (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_nergie_moteur'][not(ancestor::field)]" position="attributes"><attribute name="string">Énergie Moteur (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_base_eurocode'][not(ancestor::field)]" position="attributes"><attribute name="string">Base Eurocode (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_eurocode_complet'][not(ancestor::field)]" position="attributes"><attribute name="string">Eurocode (Complet) (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_vsf_dsignation_1'][not(ancestor::field)]" position="attributes"><attribute name="string">VSF - Désignation (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_vsf_qt_dispo'][not(ancestor::field)]" position="attributes"><attribute name="string">VSF - Qté Dispo (ancien)</attribute></xpath>
+</data>

@@ -90,6 +90,29 @@ def test_label_from_fields_get_without_double_suffix() -> None:
     assert "(ancien) (ancien)" not in item.block(already), "jamais de double suffixe"
 
 
+TAB_SPEC = studio_views.Spec("mod.view", "form", [
+    studio_views.before("x_old", ("rpbm_new", "Plaque")),
+    studio_views.ancien("field", "x_old"),
+] + studio_views.legacy_tab("p", ["x_old"], []))
+TAB_RAW = '<form><sheet><group name="g"><field name="x_old"/></group><notebook><page name="p"/></notebook></sheet></form>'
+# Natif reste a l'ancienne place, ancien champ deplace dans l'onglet « Anciens champs ».
+TAB_DONE = ('<form><sheet><group name="g"><field name="rpbm_new" string="Plaque"/></group><notebook><page name="p"/>'
+            '<page name="rpbm_legacy_fields"><group name="rpbm_legacy_fields_group">'
+            '<group name="rpbm_legacy_left"><field name="x_old" string="Immatriculation (ancien)"/></group>'
+            '<group name="rpbm_legacy_right"/></group></page></notebook></sheet></form>')
+
+
+def test_legacy_tab_and_move() -> None:
+    # L'onglet et le deplacement sont en attente dans le meme run : l'ancre creee par le bloc
+    # precedent n'est pas un FAIL.
+    odoo = FakeOdoo(combined=TAB_RAW)
+    assert studio_views.apply(odoo, "t5", [TAB_SPEC]) == 0 and not odoo.writes
+    labels = {name: value["string"] for name, value in LABELS.items()}
+    assert all(item.check(studio_views.Arch(TAB_DONE, labels)) for item in TAB_SPEC.items), "natif, onglet, deplacement, suffixe"
+    odoo = FakeOdoo(combined=TAB_DONE, commit=True)
+    assert studio_views.apply(odoo, "t6", [TAB_SPEC]) == 0 and not odoo.writes, "deja deplace : rien a ecrire"
+
+
 def test_rollback_refuses_when_arch_changed() -> None:
     folder = studio_views.run_dir("t4")
     folder.mkdir(parents=True)
@@ -110,8 +133,9 @@ def main() -> None:
         test_dry_run_writes_nothing()
         test_second_apply_is_noop()
         test_label_from_fields_get_without_double_suffix()
+        test_legacy_tab_and_move()
         test_rollback_refuses_when_arch_changed()
-    print("test_studio_views : OK (5 scenarios)")
+    print("test_studio_views : OK (6 scenarios)")
 
 
 if __name__ == "__main__":

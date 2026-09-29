@@ -1,0 +1,151 @@
+<data>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='invoice_tab']/field[@name='invoice_line_ids']/tree[1]/field[@name='account_id']" position="replace"/>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='invoice_tab']/field[@name='invoice_line_ids']/tree[1]/field[@name='product_id']" position="replace"/>
+  <xpath expr="//form[1]/header[1]/button[@name='action_post']" position="attributes">
+    <attribute name="groups">account.group_account_manager</attribute>
+  </xpath>
+  <xpath expr="//button[@name='button_draft']" position="attributes">
+    <attribute name="groups">account.group_account_user,account.group_account_manager</attribute>
+    <attribute name="studio_approval">True</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/div[not(@name)][1]" position="after">
+    <group name="studio_group_OrAJj">
+      <group name="studio_group_OrAJj_left" string="--------------------  Informations Dossier"/>
+      <group name="studio_group_OrAJj_right" string="-----------------------------------------------------------------------"/>
+    </group>
+  </xpath>
+  <xpath expr="//field[@name='invoice_date']" position="attributes">
+    <attribute name="invisible">(move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')) or (move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'])</attribute>
+  </xpath>
+  <xpath expr="//field[@name='invoice_date']" position="after">
+    <field name="x_studio_ratio_2" string="Ratio" invisible="1"/>
+    <field name="x_studio_moyen_1er_contact" string="Moyen 1er contact" invisible="1"/>
+  </xpath>
+  <xpath expr="//field[@name='payment_reference']" position="after">
+    <!--<field name="move_type" invisible="1"/>-->
+    <field name="x_studio_n_carte_de_lavage" string="N° Carte de Lavage" invisible="1"/>
+    <field name="x_studio_assur_bdg" string="Assuré BDG" invisible="1"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]/group[2]/field[@name='partner_bank_id']" position="after">
+    <field name="x_studio_lieu_de_facture" string="Lieu de Facture?" required="(move_type in ('out_invoice', 'out_refund'))"/>
+    <field name="x_studio_lieu_de_facturation_1" string="Lieu de Facturation?" force_save="True" readonly="1" invisible="1"/>
+  </xpath>
+  <xpath expr="//field[@name='invoice_payment_term_id']" position="attributes">
+    <attribute name="required">state == "draft" and move_type in ["out_invoice", "out_refund"]</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]" position="after">
+    <group name="studio_group_4fc_1ihnv62cr" invisible="move_type not in [&quot;out_invoice&quot;, &quot;out_refund&quot;]">
+      <group name="studio_group_4fc_left"/>
+      <group name="studio_group_4fc_right">
+        <field name="x_studio_mensualits_2" string="Mensualités" placeholder="Calcul auto" help="Mensualité calculée directement après sélection en plusieurs fois sans frais" force_save="True" readonly="1"/>
+        <field name="x_studio_assurance_5" string="Assurance"/>
+        <field name="x_studio_n_contrat" string="N° Contrat" required="False"/>
+        <field name="x_studio_n_sinistre" string="N° Sinistre" required="False"/>
+        <field name="x_studio_date_de_sinistre" string="Date de Sinistre" required="False"/>
+        <field name="x_studio_kilomtrage" string="Kilométrage" required="False"/>
+        <field name="x_studio_ident_carte_lavage" string="Ident Carte Lavage" required="(x_studio_pice_concerne_1 == 'Pare-Brise') and (x_studio_assurance_5 != False)"/>
+        <field name="x_studio_pice_concerne_1" string="Pièce concernée" required="False"/>
+        <field name="x_studio_many2one_field_hPbms" required="False" widget="many2one" options="{&quot;no_create&quot;:true}"/>
+        <field name="x_studio_moyen_de_paiement" string="Moyen de Paiement" required="False"/>
+        <field name="x_studio_qui_factur" string="Qui à facturé?" required="(move_type in ('out_invoice', 'out_refund'))"/>
+      </group>
+    </group>
+    <group name="studio_group_gimZt" invisible="move_type not in [&quot;out_invoice&quot;, &quot;out_refund&quot;]">
+      <group name="studio_group_gimZt_left" string="--------------------  Réservé Comptabilité">
+        <field name="x_studio_date_envoi_facture" string="Date envoi Facture"/>
+        <field name="x_studio_date_paiement_assurance" string="Date Paiement Assurance"/>
+        <field name="x_studio_parrain" string="Parrain"/>
+        <field name="x_studio_revenu_parrain_ttc" string="Revenu Parrain € TTC"/>
+      </group>
+      <group name="studio_group_gimZt_right" string="--------------------  Informations Chèques">
+        <field name="x_studio_date_remise_chque" string="Date Remise Chqe 1"/>
+        <field name="x_studio_n_bordereau_remise" string="Bordereau Remise Chq 1"/>
+        <field name="x_studio_date_remise_chq_2" string="Date Remise Chq 2"/>
+        <field name="x_studio_bordereau_remise_chq_2" string="Bordereau Remise Chq 2"/>
+        <field name="x_studio_date_remise_chq_3" string="Date Remise Chq 3"/>
+        <field name="x_studio_bordereau_remise_chq_3" string="Bordereau Remise Chq 3"/>
+        <field name="x_studio_date_remise_chq_4_1" string="Date Remise Chq 4"/>
+        <field name="x_studio_bordereau_remise_chq_4" string="Bordereau Remise Chq 4"/>
+      </group>
+    </group>
+    <group name="studio_group_tMirK">
+      <group name="studio_group_tMirK_left">
+    
+    
+    
+  </group>
+      <group name="studio_group_tMirK_right">
+        
+    
+        
+      </group>
+    </group>
+    <group name="studio_group_Ivimf" invisible="move_type not in [&quot;out_invoice&quot;, &quot;out_refund&quot;]">
+      <group name="studio_group_Ivimf_left" string="--------------------  Traitement Chèques KDO"/>
+      <group name="studio_group_Ivimf_right" string="-----------------------------------------------------------------------">
+        
+    
+  </group>
+    </group>
+    <group name="studio_group_D4zlR" invisible="move_type not in [&quot;out_invoice&quot;, &quot;out_refund&quot;]">
+      <group name="studio_group_D4zlR_left">
+        <field name="x_studio_chque_cadeaux_rad_1"/>
+        <field name="x_studio_rad_kdo_devis" string="RAD KDO devis" invisible="1"/>
+        <field name="x_studio_related_field_1MyuG" string="RAD Cadeaux" invisible="1"/>
+        <field name="x_studio_valeur_totale_des_chques_kdo_indiquer_ici" string="Valeur totale des chèques KDO à indiquer ICI"/>
+        <field name="x_studio_chque_cadeaux_rad" string="Chèque cadeaux RAD" invisible="1"/>
+        <field name="x_studio_valeur_totale_des_chq_kdo" string="Valeur totale des Chq Kdo?" help="Indiquer la valeur totale des Chq Kdo ICI" invisible="1"/>
+      </group>
+      <group name="studio_group_D4zlR_right">
+        </group>
+    </group>
+    <group name="studio_group_P8mND">
+      <group name="studio_group_P8mND_left"/>
+      <group name="studio_group_P8mND_right"/>
+    </group>
+    <group name="studio_group_vZmgP" invisible="move_type not in [&quot;out_invoice&quot;, &quot;out_refund&quot;]">
+      <group name="studio_group_vZmgP_left" string="-------------------- Déclarez les techniciens">
+        <field name="x_studio_a_main_doeuvre" invisible="True" readonly="True"/>
+      </group>
+      <group name="studio_group_vZmgP_right" string="-----------------------------------------------------------------------"/>
+    </group>
+    <group name="studio_group_dWvy6" invisible="move_type not in [&quot;out_invoice&quot;, &quot;out_refund&quot;] and not x_studio_a_main_doeuvre">
+      <group name="studio_group_dWvy6_left">
+        <field name="x_studio_poseur_1" string="Poseur 1" invisible="not x_studio_a_main_doeuvre" required="(move_type in ('out_invoice', 'out_refund'))"/>
+      </group>
+      <group name="studio_group_dWvy6_right">
+        <field name="x_studio_poseur_2" string="Poseur 2" invisible="not x_studio_a_main_doeuvre"/>
+      </group>
+    </group>
+  </xpath>
+  <xpath expr="//field[@name='team_id']" position="after">
+    <field name="x_sale_order"/>
+  </xpath>
+  <xpath expr="//field[@name='invoice_origin']" position="attributes">
+    <attribute name="invisible"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='other_info']/group[1]" position="after">
+    <group name="studio_group_5tr_1it06o6i2">
+      <group name="studio_group_5tr_left">
+        <field name="x_studio_motifs_pdc"/>
+      </group>
+      <group name="studio_group_5tr_right"/>
+    </group>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]" position="after">
+    <group name="studio_group_uGq8Q">
+      <group name="studio_group_uGq8Q_left" string="INFORMATIONS EMAIL" invisible="1"/>
+      <group name="studio_group_uGq8Q_right" invisible="1">
+        <field name="x_studio_assurance_3" string="Assurance"/>
+        <field name="x_studio_immatriculation" string="Immatriculation"/>
+        <field name="x_studio_marque" string="Marque"/>
+        <field name="x_studio_modle" string="Modèle"/>
+        <field name="x_studio_pice_concerne" string="Pièce concernée"/>
+        <field name="x_studio_nom_client" string="Nom client"/>
+      </group>
+    </group>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_4fc_left'][not(ancestor::field)]" position="inside"><field name="rpbm_license_plate" string="Immatriculation"/><field name="rpbm_vehicle_brand_id" string="Marque"/><field name="rpbm_vehicle_model_id" string="Modèle"/><field name="rpbm_eurocode" string="Eurocode"/></xpath>
+  <xpath expr="//field[@name='x_studio_pice_concerne_1'][not(ancestor::field)]" position="before"><field name="rpbm_part_type" string="Pièce concernée"/></xpath>
+  <xpath expr="//field[@name='x_studio_pice_concerne_1'][not(ancestor::field)]" position="attributes"><attribute name="string">Pièce concernée (ancien)</attribute></xpath>
+</data>

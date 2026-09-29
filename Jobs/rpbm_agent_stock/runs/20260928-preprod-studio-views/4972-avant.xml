@@ -1,0 +1,27 @@
+<data>
+  <xpath expr="//tree[1]" position="attributes">
+    <attribute name="multi_edit">true</attribute>
+  </xpath>
+  <xpath expr="//tree[1]/field[@name='invoice_partner_display_name'][2]" position="after">
+    <field name="x_studio_related_field_JyuVb" string="Immatriculation"/>
+    <field name="x_studio_assurance_4" string="Assurance"/>
+  </xpath>
+  <xpath expr="//field[@name='activity_ids']" position="after">
+    <field name="activity_date_deadline" widget="remaining_days"/>
+    <field name="x_studio_ident_carte_lavage"/>
+    <field name="x_studio_many2one_field_hPbms"/>
+    <field name="x_studio_many2one_field_ImfdB" column_invisible="True"/>
+    <field name="x_studio_moyen_de_paiement"/>
+    <field name="x_studio_date_envoi_facture_1" string="Date envoi Facture"/>
+  </xpath>
+  <xpath expr="//field[@name='payment_state']" position="after">
+    <field name="x_studio_chque_cadeaux_rad_1"/>
+    <field name="x_studio_valeur_totale_des_chques_kdo_indiquer_ici"/>
+    <field name="x_studio_qui_factur"/>
+    <field name="x_studio_parrain"/>
+    <field name="x_studio_poseur_1"/>
+    <field name="x_studio_poseur_2"/>
+    <field name="x_studio_eurocode" string="Eurocode" column_invisible="1"/>
+    <field name="x_studio_lieu_de_facture"/>
+  </xpath>
+</data>

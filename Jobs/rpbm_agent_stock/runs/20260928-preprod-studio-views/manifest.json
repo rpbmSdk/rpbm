@@ -1,0 +1,63 @@
+{
+  "run": "20260928-preprod",
+  "url": "https://rpbm-pre-prod-37939198.dev.odoo.com",
+  "db": "rpbm-pre-prod-37939198",
+  "views": [
+    {
+      "xmlid": "crm.crm_lead_view_form",
+      "studio_id": 4820,
+      "backup": "4820-avant.xml",
+      "sha256_before": "fad6d48233ae75819728f8f01c1177cfc0bb20f7dd23e333a2b030b23ef7a560",
+      "sha256_after": "35656d9729d8b45ea03173fd2220dee28841a0fcc075776d6a1cb67655ccfd3b",
+      "restored": false
+    },
+    {
+      "xmlid": "sale.view_order_form",
+      "studio_id": 4858,
+      "backup": "4858-avant.xml",
+      "sha256_before": "676dab7b12bd4c91ca93af2f8aa366bee5c2f4ecbd4949794dc1cea16725037b",
+      "sha256_after": "63a47f0d33f4e4f4b04583fec3c400143c3c9374659530a5384ac3715c453429",
+      "restored": false
+    },
+    {
+      "xmlid": "account.view_move_form",
+      "studio_id": 4894,
+      "backup": "4894-avant.xml",
+      "sha256_before": "49e981ee4e948b6b9316e5579cd454ee565e37a724e11d2cf69b7c308ee5c630",
+      "sha256_after": "52128e4ce271a6d282efe852625b28aa1e81efcd84dde4b55450d4783e6aaeda",
+      "restored": false
+    },
+    {
+      "xmlid": "crm.crm_case_tree_view_oppor",
+      "studio_id": 417,
+      "backup": "417-avant.xml",
+      "sha256_before": "518d4a17a2e040513d43fd9b5c6f8fb2cb32ab3ef1404077378fc7c1ea4aaaf3",
+      "sha256_after": "785b33998df76d09089f31e4a729add80aeb3979c27463fc6e2023e18e4c0570",
+      "restored": false
+    },
+    {
+      "xmlid": "account.view_out_invoice_tree",
+      "studio_id": 4972,
+      "backup": "4972-avant.xml",
+      "sha256_before": "a4d2281180af364b3530b8d3288aa318d31d4ac58d0f5ed5442d0549f24a1b80",
+      "sha256_after": "7271e40c7ae64134a9ad4eba3a25c384d5cd6594330af3569f8e10ff547d6167",
+      "restored": false
+    },
+    {
+      "xmlid": "crm.view_crm_case_opportunities_filter",
+      "studio_id": 426,
+      "backup": "426-avant.xml",
+      "sha256_before": "5cd7e51034d84ce0fc52e4757f34d833f131471dd99b351d5e2af923abe4e0fc",
+      "sha256_after": "e01f818ccf2a3ce70bd6981e8c51020a3ac12bfd61728db226dc00d6b8698674",
+      "restored": false
+    },
+    {
+      "xmlid": "account.view_account_invoice_filter",
+      "studio_id": 5250,
+      "backup": "5250-avant.xml",
+      "sha256_before": "e03745eaa8d5a813f5d59da7ece31504eafd5a5364c9c32cea082e780720eee6",
+      "sha256_after": "025ae6da0e2e411f30d9ef19b6b299c1b1ca94bf95dcd5a1f322b78e422667ca",
+      "restored": false
+    }
+  ]
+}

@@ -39,5 +39,7 @@ pièces comptables (environ 20 400 par champ, dont 7 292 factures et avoirs clie
   marque et modèle (masqués par défaut) après la colonne « Client ».
 
 Les champs du formulaire facture (section Studio) sont ajoutés par le script `studio_views.py`
-(voir [`Jobs/rpbm_agent_stock`](../../../../Jobs/rpbm_agent_stock/README.md)). La facture n'a pas
+(voir [`Jobs/rpbm_agent_stock`](../../../../Jobs/rpbm_agent_stock/README.md)). Les anciens champs
+(immatriculation, marque, modèle, les deux « Pièce concernée ») vont dans un onglet « Anciens
+champs », visible sur les factures et avoirs client. La facture n'a pas
 de widget : aucune dialog n'existe pour `account.move` (voir [frontend](../frontend.md)).

@@ -44,6 +44,7 @@ LEGACY_PATH = ROOT / "rpbm_agent" / "models" / "legacy_fields.py"
 RUNS_DIR = Path(__file__).resolve().parent / "runs"
 FR = {"lang": "fr_FR"}  # seule langue active : en_US est aligne par Odoo
 MODULE_PAGE = "rpbm_agent_xglass"  # onglet du module : contient deja les champs natifs, ne compte pas
+LEGACY_PAGE = "rpbm_legacy_fields"  # onglet « Anciens champs » cree par ce script
 SUFFIX = " (ancien)"
 
 
@@ -67,6 +68,12 @@ class Arch:
         """Premier noeud visible, dans l'ordre du document : celui que vise l'xpath du bloc."""
         return next((node for node in self.root.iter(tag) if node.get("name") == name and not self._ignored(node)), None)
 
+    def in_legacy_page(self, node) -> bool:
+        while (node := self.parent.get(node)) is not None:
+            if node.tag == "page" and node.get("name") == LEGACY_PAGE:
+                return True
+        return False
+
     def _ignored(self, node) -> bool:
         while (node := self.parent.get(node)) is not None:
             if node.tag == "field" or (node.tag == "page" and node.get("name") == MODULE_PAGE):
@@ -82,6 +89,7 @@ class Item(NamedTuple):
     check: Callable[[Arch], bool]
     nodes: tuple = ()  # noeuds rpbm_* de premier niveau ajoutes par le bloc
     fields: frozenset = frozenset()  # champs natifs que le bloc reference
+    requires: tuple = ()  # noeuds qui doivent exister en plus de l'ancre (champ a deplacer)
 
     def block(self, arch: Arch) -> str:
         tag, name = self.anchor
@@ -108,6 +116,8 @@ def placed(position: str, anchor_tag: str, anchor: str, xml: str) -> Item:
             return False
         if position == "inside":
             return all(arch.parent.get(node) is target for node in found)
+        if arch.in_legacy_page(target):
+            return True  # l'ancien champ servant d'ancre est parti dans l'onglet ; le natif est reste en place
         siblings = list(arch.parent[target])
         i = siblings.index(target)
         around = siblings[max(0, i - len(found)):i] if position == "before" else siblings[i + 1:i + 1 + len(found)]
@@ -117,21 +127,49 @@ def placed(position: str, anchor_tag: str, anchor: str, xml: str) -> Item:
                 nodes, frozenset(node.get("name") for node in top.iter("field")))
 
 
-def ancien(tag: str, name: str, optional: bool = False) -> Item:
-    """Libelle du noeud (sinon fields_get) + « (ancien) », sans double suffixe ; listes : masque."""
+def ancien(tag: str, name: str, optional: bool = False, label: str | None = None) -> Item:
+    """Libelle du noeud (sinon fields_get) + « (ancien) », sans double suffixe ; listes : masque.
+    `label` impose le libelle complet (deux anciens champs de meme libelle)."""
     def text(arch: Arch) -> str:
         node = arch.find(tag, name)
         return (node.get("string") if node is not None else None) or arch.labels.get(name, name)
 
     def check(arch: Arch) -> bool:
         node = arch.find(tag, name)
-        return node is not None and text(arch).endswith(SUFFIX) and (not optional or node.get("optional") == "hide")
+        done = text(arch) == label if label else text(arch).endswith(SUFFIX)
+        return node is not None and done and (not optional or node.get("optional") == "hide")
 
     def content(arch: Arch) -> str:
-        label = text(arch) if text(arch).endswith(SUFFIX) else text(arch) + SUFFIX
-        return f'<attribute name="string">{escape(label)}</attribute>' + ('<attribute name="optional">hide</attribute>' if optional else "")
+        new = label or (text(arch) if text(arch).endswith(SUFFIX) else text(arch) + SUFFIX)
+        return f'<attribute name="string">{escape(new)}</attribute>' + ('<attribute name="optional">hide</attribute>' if optional else "")
 
     return Item(f"{name}{SUFFIX}", (tag, name), "attributes", content, check)
+
+
+def legacy_page(anchor_page: str, attrs: str = "") -> Item:
+    """Onglet « Anciens champs » (groupes vides nommes) apres un onglet standard."""
+    return placed("after", "page", anchor_page,
+                  f'<page name="{LEGACY_PAGE}" string="Anciens champs"{attrs}><group name="rpbm_legacy_fields_group">'
+                  '<group name="rpbm_legacy_left" string="Véhicule"/><group name="rpbm_legacy_right" string="Pièce et intervention"/>'
+                  '</group></page>')
+
+
+def moved(field: str, group: str) -> Item:
+    """Deplace un ancien champ dans un groupe de l'onglet. Un bloc par champ : <xpath position="move">
+    n'est traite qu'en enfant direct d'un bloc, et une cible absente fait echouer tout le bloc."""
+    def check(arch: Arch) -> bool:
+        node = arch.find("field", field)
+        parent = arch.parent.get(node) if node is not None else None
+        return parent is not None and parent.tag == "group" and parent.get("name") == group
+
+    return Item(f"{field} -> {group}", ("group", group), "inside",
+                lambda arch: f"<xpath expr=\"//field[@name='{field}'][not(ancestor::field)]\" position=\"move\"/>",
+                check, requires=(("field", field),))
+
+
+def legacy_tab(anchor_page: str, left: list[str], right: list[str], attrs: str = "") -> list[Item]:
+    """Onglet puis deplacements, en fin de Spec : apres les natifs ancres sur les anciens champs."""
+    return [legacy_page(anchor_page, attrs)] + [moved(f, "rpbm_legacy_left") for f in left] + [moved(f, "rpbm_legacy_right") for f in right]
 
 
 def fields_xml(*fields: tuple[str, str]) -> str:
@@ -165,7 +203,12 @@ VIEWS = [
         before("x_studio_field_BKtpw", ("rpbm_vsf_stock", "VSF - Qté Dispo")),
         before("x_studio_field_MNzfJ", ("rpbm_constructor_reference", "Code Constructeur")),
         before("x_studio_lieu_intervention", ("rpbm_intervention_location", "Lieu Intervention")),
-    ] + [ancien("field", name) for name in legacy_fields("crm.lead")]),
+    ] + [ancien("field", name) for name in legacy_fields("crm.lead")] + legacy_tab(
+        "lead",
+        ["x_studio_field_NVioD", "x_studio_field_KyCjB", "x_studio_field_ZhaeY", "x_studio_field_i8fWl",
+         "x_studio_field_Eh6Wd", "x_studio_field_TAhpP", "x_studio_field_ORIyy", "x_studio_field_PfJlB"],
+        ["x_studio_field_eENQz", "x_studio_field_NwRik", "x_studio_field_j8eh3", "x_studio_field_BKtpw",
+         "x_studio_field_MNzfJ", "x_studio_lieu_intervention"])),
     Spec("sale.view_order_form", "form", [
         placed("after", "group", "sale_header", vehicle_group(
             ' string="Informations véhicule" invisible="not opportunity_id"',
@@ -176,14 +219,26 @@ VIEWS = [
     ] + [ancien("field", name) for name in (
         "x_studio_pice_concerne", "x_studio_immatriculation_", "x_studio_many2one_field_rP62C", "x_studio_many2one_field_DkgHx",
         "x_studio_dtails_modle", "x_studio_vin_", "x_studio_date_1re_mec", "x_studio_nergie_moteur", "x_studio_base_eurocode",
-        "x_studio_eurocode_complet", "x_studio_vsf_dsignation_1", "x_studio_vsf_qt_dispo")]),
+        "x_studio_eurocode_complet", "x_studio_vsf_dsignation_1", "x_studio_vsf_qt_dispo")] + legacy_tab(
+        "other_information",
+        ["x_studio_immatriculation_", "x_studio_many2one_field_rP62C", "x_studio_many2one_field_DkgHx", "x_studio_dtails_modle",
+         "x_studio_vin_", "x_studio_date_1re_mec", "x_studio_nergie_moteur", "x_studio_base_eurocode"],
+        ["x_studio_pice_concerne", "x_studio_eurocode_complet", "x_studio_vsf_dsignation_1", "x_studio_vsf_qt_dispo"],
+        ' invisible="not opportunity_id"')),
     Spec("account.view_move_form", "form", [  # pas de widget : account.move n'est pas gere
         placed("inside", "group", "studio_group_4fc_left", fields_xml(
             ("rpbm_license_plate", "Immatriculation"), ("rpbm_vehicle_brand_id", "Marque"),
             ("rpbm_vehicle_model_id", "Modèle"), ("rpbm_eurocode", "Eurocode"))),
         before("x_studio_pice_concerne_1", ("rpbm_part_type", "Pièce concernée")),
-        ancien("field", "x_studio_pice_concerne_1"),
-    ]),
+        # Anciens related Studio (lecture seule) : le visible et ceux du groupe cache « INFORMATIONS EMAIL ».
+        ancien("field", "x_studio_pice_concerne_1", label="Pièce concernée (ancien, devis)"),
+        ancien("field", "x_studio_pice_concerne", label="Pièce concernée (ancien, opportunité)"),
+        ancien("field", "x_studio_immatriculation"), ancien("field", "x_studio_marque"), ancien("field", "x_studio_modle"),
+    ] + legacy_tab(
+        "other_info",
+        ["x_studio_immatriculation", "x_studio_marque", "x_studio_modle"],
+        ["x_studio_pice_concerne_1", "x_studio_pice_concerne"],
+        ' invisible="move_type not in (\'out_invoice\', \'out_refund\')"')),
     Spec("crm.crm_case_tree_view_oppor", "list", [ancien("field", "x_studio_field_NVioD", True), ancien("field", "x_studio_field_NwRik", True)],
          natives=("rpbm_license_plate", "rpbm_eurocode")),
     Spec("account.view_out_invoice_tree", "list", [ancien("field", "x_studio_related_field_JyuVb", True)], natives=("rpbm_license_plate",)),
@@ -277,16 +332,19 @@ def apply(odoo: Odoo, run_id: str, views: list[Spec] = VIEWS) -> int:
             report.add("WARN", title, f"ignoree : natifs absents du modele ou de la vue {missing} (module pas encore a jour ?)")
             continue
 
-        expected, pending = [], []
+        expected, pending, created = [], [], set()  # created : @name crees par les blocs en attente
         for item in spec.items:
             if item.check(arch):
                 expected.append(item)
             elif any(arch.find(*node) is not None for node in item.nodes):
                 report.add("WARN", title, f"{item.label} present ailleurs (deplace dans Studio ?) : non rajoute")
-            elif arch.find(*item.anchor) is None:
+            elif arch.find(*item.anchor) is None and item.anchor[1] not in created:
                 report.add("FAIL", title, f"ancre {item.anchor[1]} introuvable : {item.label} non ajoute")
+            elif any(arch.find(*node) is None for node in item.requires):
+                report.add("FAIL", title, f"{item.label} : champ introuvable, non deplace")
             else:
                 pending.append(item)
+                created.update(node.get("name") for node in ET.fromstring(f"<x>{item.content(arch)}</x>").iter() if node.get("name"))
         if not pending:
             report.add("PASS", title, f"rien a faire ({len(expected)} controle(s) en place)")
             continue

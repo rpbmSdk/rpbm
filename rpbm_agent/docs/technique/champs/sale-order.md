@@ -45,7 +45,9 @@ exige un transporteur.
   non stockés, sont cherchés à travers l'opportunité.
 
 Le bouton et les champs natifs dans l'en-tête Studio du devis sont ajoutés par le script
-`studio_views.py` (voir [`Jobs/rpbm_agent_stock`](../../../../Jobs/rpbm_agent_stock/README.md)).
+`studio_views.py` (voir [`Jobs/rpbm_agent_stock`](../../../../Jobs/rpbm_agent_stock/README.md)),
+qui déplace aussi les anciens champs doublés dans un onglet « Anciens champs » (visible avec une
+opportunité liée).
 
 ## Lu/écrit par
 

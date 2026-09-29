@@ -1,0 +1,1018 @@
+<data>
+  <xpath expr="//field[@name='x_studio_field_LKreG']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_txWOU']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_FTs4T']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_p9rYg']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_AKH5W']" position="replace">
+    <field widget="many2many_tags" name="x_studio_many2many_field_OIkOP"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_VP4x6']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_WlA5T']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_wycWX']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_F0CDq']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_iHX17']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_lwG5T']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_8Hh1Z']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_Q6dJN']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_0pnW0']" position="replace">
+    <field widget="many2many_tags" name="x_studio_many2many_field_88dTV" options="{&quot;no_create&quot;:true}"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_S4aLt']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_O5Bvc']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_8MDL3']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_nTbVk']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_3qLzV']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_BQlO1']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_mrudZ']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_BepEe']" position="replace">
+    <field widget="many2many_tags" name="x_studio_many2many_field_5yh3d" options="{&quot;no_create&quot;:true}"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_h6ozm']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_iLAHF']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_Tv90Y']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_iZMhR']" position="replace">
+    <xpath expr="//field[@name='x_studio_field_vn3Ki']" position="move"/>
+    <xpath expr="//field[@name='x_studio_field_8NaTF']" position="move"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_HyapV']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_CI8DO']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_Nj8Ur']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_GURVO']" position="replace">
+    <field widget="many2many_tags" name="x_studio_many2many_field_erJNc" options="{&quot;no_create&quot;:true}"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_yc0ck']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_AmOY7']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_Xasf0']" position="replace"/>
+  <xpath expr="//field[@name='x_studio_field_37HTF']" position="replace"/>
+  <xpath expr="//form[1]/sheet[1]/div[not(@name)][1]" position="after">
+    <group name="studio_group_AsZqh">
+      <group name="studio_group_AsZqh_left">
+        <field name="x_studio_lieu_intervention" string="Lieu Intervention"/>
+      </group>
+      <group name="studio_group_AsZqh_right">
+        <field name="x_studio_moyen_1er_contact" string="Moyen 1er Contact" help="Par quel moyen le client nous a contacté pour la première fois ? (Téléphone, Galléria, Génipa, etc...)" required="name != False"/>
+      </group>
+    </group>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]/group[@name='opportunity_partner']/div[2]/field[@name='phone']" position="attributes">
+    <attribute name="options">{"enable_sms":false}</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]/group[@name='opportunity_partner']/div[2]/field[@name='x_studio_field_Z1n5A']" position="attributes">
+    <attribute name="invisible">1</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]/group[@name='opportunity_partner']/div[2]/field[@name='x_studio_field_bn2AB']" position="attributes">
+    <attribute name="invisible">1</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]/group[@name='opportunity_partner']/div[2]" position="after">
+    <field name="x_studio_field_Z1n5A" string="Téléphone 2"/>
+    <field name="x_studio_field_bn2AB" string="Notes dossier"/>
+    <field name="x_studio_chque_cadeaux_rad" string="Chèque cadeaux RAD" force_save="True" readonly="1"/>
+    <field name="x_studio_audit_1" string="Audit" invisible="1"/>
+  </xpath>
+  <xpath expr="//group[@name='lead_info']" position="attributes">
+    <attribute name="invisible">x_studio_y_a_til_un_parrain != 'Oui'</attribute>
+    <attribute name="string">Parrainage</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]/group[@name='lead_info']/div[3]/field[@name='phone']" position="attributes">
+    <attribute name="options">{"enable_sms":false}</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]/group[@name='lead_info']/div[4]" position="after">
+    <xpath expr="//field[@name='x_studio_field_F0vnM']" position="move"/>
+    <xpath expr="//field[@name='x_studio_field_mLeJl']" position="move"/>
+    <xpath expr="//field[@name='x_studio_field_YNMPF']" position="move"/>
+    <field name="x_studio_revenu_parrain_ttc" string="Revenu Parrain € TTC"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_iPWD0']" position="after">
+    <field name="x_studio_y_a_til_un_parrain" string="Y a t'il un parrain?"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_mnj0C']" position="attributes">
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_OiyXV']" position="attributes">
+    <attribute name="readonly"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[not(@name)][1]/group[not(@name)][2]/field[@name='team_id']" position="attributes">
+    <attribute name="required">1</attribute>
+  </xpath>
+  <xpath expr="//field[@name='create_date']" position="after">
+    <field name="write_date"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_U2Wuh']" position="attributes">
+    <attribute name="invisible">1</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_p2Pum_left']" position="attributes">
+    <attribute name="string">--------------------  Informations Dossier</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_p2Pum_left']" position="inside">
+    <field name="x_studio_modifs" string="Modifs" invisible="1">
+      <tree default_order="x_studio_date_modification desc">
+        <field name="x_studio_date_modification" string="Date Modification"/>
+        <field name="x_studio_utilisateur_id" string="Utilisateur"/>
+        <field name="x_studio_type_modification" string="Type Modification"/>
+        <field name="x_studio_id_opportunit_crm"/>
+        <field name="x_studio_opportunite_id" string="Opportunité"/>
+        <field name="x_studio_notes_internes" string="Notes internes"/>
+        <field name="x_studio_sequence" widget="handle"/>
+        <field name="x_name" column_invisible="1"/>
+      </tree>
+    </field>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_p2Pum_right']" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_VGmbJ']" position="attributes">
+    <attribute name="required">partner_id != False</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_kylCN']" position="attributes">
+    <attribute name="required">(x_studio_field_h7awX == '1 : Verrouillé pour CMDE') and (stage_id == 6)</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_hEEHI_left']" position="attributes">
+    <attribute name="string">--------------------  Informations Assurance</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_hEEHI_right']" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_ZiY2J']" position="attributes">
+    <attribute name="options">{"no_create":true}</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_ZiY2J']" position="after">
+    <field name="x_studio_procedure_assurance"/>
+    <field widget="pdf_viewer" filename="x_studio_dclaration_de_sinistre_filename" name="x_studio_dclaration_de_sinistre"/>
+    <field widget="file" invisible="True" name="x_studio_dclaration_de_sinistre_filename"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_TkrvA']" position="after">
+    <field name="x_studio_date_field_RSjsp" string="Date Début contrat"/>
+    <field name="x_studio_date_fin_contrat" string="Date Fin contrat" widget="date"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_pBB78']" position="attributes">
+    <attribute name="invisible">1</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_pBB78']" position="after">
+    <field name="x_studio_circonstance" string="Circonstance"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_09urJ_left']" position="attributes">
+    <attribute name="string">--------------------  Informations Véhicule</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_09urJ_right']" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_i8fWl']" position="after">
+    <xpath expr="//field[@name='x_studio_field_aIM13']" position="move"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_P7mUc_left']" position="attributes">
+    <attribute name="string">--------------------  Informations Intervention</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_P7mUc_right']" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_Zq4H0']" position="after">
+    <group name="studio_group_eLcTx">
+      <group name="studio_group_eLcTx_left" string="--------------------  Devis"/>
+      <group name="studio_group_eLcTx_right" string="-----------------------------------------------------------------------"/>
+    </group>
+    <field name="x_studio_one2many_field_NXSnV">
+      <tree string="Sales Orders" multi_edit="1" sample="1">
+        <field name="message_needaction" column_invisible="1"/>
+        <field name="name" string="Number" readonly="1" decoration-bf="1"/>
+        <field name="date_order" string="Order Date" widget="date" optional="show"/>
+        <field name="commitment_date" optional="hide"/>
+        <field name="expected_date" optional="hide"/>
+        <field name="website_id" optional="show" column_invisible="1"/>
+        <field name="partner_id" readonly="1"/>
+        <field name="user_id" optional="show" widget="many2one_avatar_user"/>
+        <field name="activity_ids" widget="list_activity" optional="show"/>
+        <field name="team_id" optional="hide"/>
+        <field name="warehouse_id" options="{'no_create': True}" groups="stock.group_stock_multi_warehouses" optional="hide"/>
+        <field name="company_id" groups="base.group_multi_company" optional="show" readonly="1"/>
+        <field name="company_id" invisible="1"/>
+        <field name="amount_untaxed" sum="Total Tax Excluded" widget="monetary" optional="hide"/>
+        <field name="amount_tax" sum="Tax Total" widget="monetary" optional="hide"/>
+        <field name="amount_total" sum="Total Tax Included" widget="monetary" decoration-bf="1" optional="show"/>
+        <field name="currency_id" column_invisible="1"/>
+        <field name="invoice_status" decoration-success="invoice_status == 'invoiced'" decoration-info="invoice_status == 'to invoice'" decoration-warning="invoice_status == 'upselling'" widget="badge" optional="show"/>
+        <field name="tag_ids" optional="hide" widget="many2many_tags" options="{'color_field': 'color'}"/>
+        <field name="state" column_invisible="1"/>
+      </tree>
+      <form string="Sales Order" class="o_sale_order" js_class="sale_discount_form">
+        <header>
+          <field name="authorized_transaction_ids" invisible="1"/>
+          <button name="payment_action_capture" type="object" string="Capture Transaction" class="oe_highlight" invisible="set(authorized_transaction_ids).intersection([])"/>
+          <button name="payment_action_void" type="object" string="Void Transaction" confirm="Are you sure you want to void the authorized transaction? This action can't be undone." invisible="set(authorized_transaction_ids).intersection([])"/>
+          <button name="471" string="Create Invoice" type="action" class="btn-primary" invisible="invoice_status != 'to invoice'"/>
+          <button name="471" string="Create Invoice" type="action" context="{'default_advance_payment_method': 'percentage'}" invisible="(state != 'sale') or (invoice_status != 'no')"/>
+          <button name="action_quotation_send" string="Send by Email" type="object" class="btn-primary" data-upgrade-invalid-domain-invisible-fd21a3="['|', '&amp;', ('is_abandoned_cart', '=', True), ('cart_recovery_email_sent', '=', False)]" invisible="state not in ['draft']"/>
+          <button name="action_recovery_email_send" string="Send a Recovery Email" type="object" class="btn-primary" invisible="(cart_recovery_email_sent == True) or (is_abandoned_cart == False)"/>
+          <button name="action_quotation_send" type="object" string="Send PRO-FORMA Invoice" groups="sale.group_proforma_sales" class="btn-primary" context="{'proforma': True}" invisible="(invoice_count &gt;= 1) or (state != 'draft')"/>
+          <button name="action_confirm" id="action_confirm" string="Confirm" class="btn-primary" type="object" studio_approval="False" invisible="state not in ['sent']"/>
+          <button name="action_confirm" string="Confirm" type="object" studio_approval="False" invisible="state not in ['draft']"/>
+          <button name="action_quotation_send" type="object" string="Send PRO-FORMA Invoice" groups="sale.group_proforma_sales" context="{'proforma': True}" invisible="(invoice_count &gt;= 1) or (state == 'draft')"/>
+          <button name="action_quotation_send" string="Send by Email" type="object" invisible="state not in ['sent','sale']"/>
+          <button name="action_cancel" type="object" string="Cancel" invisible="(id == False) or (state not in ['draft', 'sent', 'sale'])"/>
+          <button name="action_draft" type="object" string="Set to Quotation" invisible="state not in ['cancel']"/>
+          <field name="state" widget="statusbar" statusbar_visible="draft,sent,sale"/>
+        </header>
+        <sheet name="studio_sheet_a51345">
+          <div class="oe_button_box" name="button_box">
+            <button class="oe_stat_button" name="action_open_subscriptions" type="object" icon="fa-book">
+              </button>
+            <button name="action_view_attendee_list" type="object" class="oe_stat_button" icon="fa-users" invisible="attendee_count == 0">
+              <field name="attendee_count" widget="statinfo" string="Attendees"/>
+            </button>
+            <button name="action_preview_sale_order" type="object" class="oe_stat_button" icon="fa-globe icon">
+              <div class="o_field_widget o_stat_info" name="studio_div_8144d2">
+                <span class="o_stat_text">Customer</span>
+                <span class="o_stat_text">Preview</span>
+              </div>
+            </button>
+            <field name="picking_ids" invisible="1"/>
+            <button type="object" name="action_view_delivery" class="oe_stat_button" icon="fa-truck" groups="base.group_user" invisible="delivery_count == 0">
+              <field name="delivery_count" widget="statinfo" string="Delivery"/>
+            </button>
+            <button type="action" name="1086" class="oe_stat_button" icon="fa-money" invisible="expense_count == 0">
+              <field name="expense_count" widget="statinfo" string="Expenses"/>
+            </button>
+            <button type="object" name="action_view_task" class="oe_stat_button" icon="fa-tasks" groups="project.group_project_user" invisible="tasks_count == 0">
+              <field name="tasks_count" widget="statinfo" string="Tasks"/>
+            </button>
+            <button type="object" name="action_view_project_ids" class="oe_stat_button" icon="fa-puzzle-piece" string="Project Overview" groups="project.group_project_manager" invisible="(set(project_ids).intersection([])) or (state in ['draft', 'sent'])">
+              <field name="project_ids" invisible="1"/>
+            </button>
+            <field name="timesheet_count" invisible="1"/>
+            <button type="object" name="action_view_timesheet" class="oe_stat_button" icon="fa-clock-o" groups="hr_timesheet.group_hr_timesheet_user" invisible="timesheet_count == 0">
+              <div class="o_field_widget o_stat_info" name="studio_div_4a9554">
+                <span class="o_stat_value">
+                  <field name="timesheet_total_duration" class="mr4" widget="statinfo" nolabel="1"/>
+                  <field name="timesheet_encode_uom_id" options="{'no_open' : True}"/>
+                </span>
+                <span class="o_stat_text">Recorded</span>
+              </div>
+            </button>
+            <button name="action_view_invoice" type="object" class="oe_stat_button" icon="fa-pencil-square-o" invisible="invoice_count == 0">
+              <field name="invoice_count" widget="statinfo" string="Invoices"/>
+            </button>
+            <button class="oe_stat_button" name="action_view_purchase_orders" type="object" icon="fa-credit-card" groups="purchase.group_purchase_user" invisible="purchase_order_count == 0">
+              <div class="o_field_widget o_stat_info" name="studio_div_66f820">
+                <span class="o_stat_value">
+                  <field name="purchase_order_count"/>
+                </span>
+                <span class="o_stat_text">Purchase</span>
+              </div>
+            </button>
+            <button class="oe_stat_button" name="action_view_mrp_production" type="object" icon="fa-wrench" groups="mrp.group_mrp_user" invisible="mrp_production_count == 0">
+              <div class="o_field_widget o_stat_info" name="studio_div_da0479">
+                <span class="o_stat_value">
+                  <field name="mrp_production_count"/>
+                </span>
+                <span class="o_stat_text">Manufacturing</span>
+              </div>
+            </button>
+          </div>
+          <div class="oe_title" name="studio_div_55e733">
+            <h1>
+              <field name="name" readonly="1"/>
+            </h1>
+          </div>
+          <group name="studio_group_gV6kW">
+            <group name="studio_group_gV6kW_left" string="--------------------  Informations Dossier"/>
+            <group name="studio_group_gV6kW_right" string="-----------------------------------------------------------------------"/>
+          </group>
+          <group name="studio_group_c5CMT">
+            <group name="studio_group_c5CMT_left">
+              <field name="validity_date" string="Date expiration devis :" force_save="True" invisible="state in ['sale', 'done']"/>
+              <field name="partner_invoice_id" groups="account.group_delivery_invoice_address" context="{'default_type':'invoice'}" options="{&quot;always_reload&quot;: True}" string="Client :" force_save="True" invisible="1" readonly="state not in ['draft', 'sent', 'sale']"/>
+              <field name="partner_invoice_id" invisible="1"/>
+              <field name="partner_id" widget="res_partner_many2one" context="{&#10;                    'display_website': True,&#10;                    'res_partner_search_mode': 'customer',&#10;                    'show_address': 1,&#10;                    'show_vat': True,&#10;                }" options="{&quot;always_reload&quot;: True}" string="Client :"/>
+              <field name="x_studio_tlphone_" string="Téléphone :"/>
+            </group>
+            <group name="studio_group_c5CMT_right">
+              <field name="x_studio_assurance_" string="Assurance :"/>
+              <field name="x_studio_avez_vous_imprim_la_dbdg_eurodommages" string="Avez-vous imprimé la DBDG Eurodommages?" invisible="x_studio_assurance_ != 'EURODOMMAGE'" required="x_studio_assurance_ == 'EURODOMMAGE'"/>
+              <field name="x_studio_n_contrat_" string="N° Contrat :"/>
+              <field name="x_studio_n_sinistre_" string="N° Sinistre :" required="x_studio_assurance_ == 'EURODOMMAGE'"/>
+              <field name="x_studio_date_sinistre_" string="Date sinistre :"/>
+              <field name="x_studio_circonstances_sinistre_" string="Circonstances :"/>
+              <field name="x_studio_related_field_hiT9N" string="Chèque cadeaux RAD"/>
+              <field name="recompute_delivery_price" invisible="1"/>
+            </group>
+          </group>
+          <group name="studio_group_QIe5h">
+            <group name="studio_group_QIe5h_left" string="--------------------  Informations Générales"/>
+            <group name="studio_group_QIe5h_right" string="-----------------------------------------------------------------------"/>
+          </group>
+          <group name="sale_header">
+            <group name="partner_details">
+              <field name="x_studio_pice_concerne" string="Pièce concernée"/>
+              <field name="sale_order_template_id" string="Modèle de devis :"/>
+              <field name="x_studio_immatriculation_" string="Immatriculation"/>
+              <field name="delivery_set" invisible="1"/>
+              <field name="is_all_service" invisible="1" string="Immatriculation"/>
+              <field name="x_studio_many2one_field_rP62C"/>
+              <field name="x_studio_many2one_field_DkgHx"/>
+              <field name="x_studio_dtails_modle" string="Détails Modèle"/>
+              <field name="x_studio_vin_"/>
+              <field name="x_studio_kilomtrage_1" string="Kilométrage"/>
+            </group>
+            <group name="order_details">
+              <field name="x_studio_date_1re_mec" string="Date 1ère MEC"/>
+              <field name="x_studio_nergie_moteur" string="Énergie Moteur"/>
+              <field name="x_studio_base_eurocode" string="Base Eurocode"/>
+              <div class="o_td_label" groups="base.group_no_one" name="studio_div_3bcfbc" invisible="state in ['sale', 'done', 'cancel']">
+                <label for="date_order" string="Quotation Date"/>
+              </div>
+              <field name="date_order" nolabel="1" groups="base.group_no_one" widget="date" invisible="state in ['sale', 'done', 'cancel']"/>
+              <div class="o_td_label" name="studio_div_a0113f" invisible="state in ['draft', 'sent']">
+                <label for="date_order" string="Date devis :"/>
+              </div>
+              <field name="date_order" nolabel="1" invisible="state in ['draft', 'sent']" required="state in ['sale', 'done']"/>
+              <field name="show_update_pricelist" invisible="1"/>
+              <label for="pricelist_id" groups="product.group_product_pricelist" string="Tarif Client :"/>
+              <div groups="product.group_product_pricelist" class="o_row" name="studio_div_3deecd">
+                <field name="pricelist_id" options="{'no_open':True,'no_create': True}" readonly="state not in ['draft', 'sent']"/>
+                <button name="action_update_prices" type="object" string="Update Prices" help="Recompute all prices based on this pricelist" class="btn-link mb-1 px-0" icon="fa-refresh" confirm="This will update all unit prices based on the currently set pricelist." invisible="(state in ['sale', 'done', 'cancel']) or (show_update_pricelist == False)"/>
+              </div>
+              <field name="pricelist_id" invisible="1"/>
+              <field name="currency_id" invisible="1"/>
+            </group>
+          </group>
+          <group name="studio_group_dAKRM">
+            <group name="studio_group_dAKRM_left" invisible="x_studio_pice_concerne != 'Pare-Brise'">
+              <field widget="many2many_tags" name="x_studio_many2many_field_y5lRT"/>
+            </group>
+            <group name="studio_group_dAKRM_right" invisible="x_studio_pice_concerne != 'Pare-Brise'">
+              <field name="x_studio_pb_couleur" string="PB - Couleur"/>
+              <field name="x_studio_pb_bandeau" string="PB - Bandeau"/>
+              <field name="x_studio_related_field_slpsr" string="PB - Autres Infos..."/>
+            </group>
+          </group>
+          <group name="studio_group_UpSAr">
+            <group name="studio_group_UpSAr_left" invisible="x_studio_pice_concerne != 'Lunette arrière'">
+              <field widget="many2many_tags" name="x_studio_many2many_field_vSplB"/>
+            </group>
+            <group name="studio_group_UpSAr_right" invisible="x_studio_pice_concerne != 'Lunette arrière'">
+              <field name="x_studio_related_field_33SYr" string="LUN - Autres Infos..."/>
+            </group>
+          </group>
+          <group name="studio_group_Frj4n">
+            <group name="studio_group_Frj4n_left" invisible="x_studio_pice_concerne != 'Glace Latérale'">
+              <field widget="many2many_tags" name="x_studio_many2many_field_ExOig"/>
+            </group>
+            <group name="studio_group_Frj4n_right" invisible="x_studio_pice_concerne != 'Glace Latérale'">
+              <field name="x_studio_lat1_autres_infos" string="LAT1 - Autres Infos..."/>
+            </group>
+          </group>
+          <group name="studio_group_bqZ7w">
+            <group name="studio_group_bqZ7w_left" invisible="x_studio_pice_concerne != 'Autre...'">
+              <field name="x_studio_ap1_pice_concerne" string="AP1 - Pièce concernée"/>
+            </group>
+            <group name="studio_group_bqZ7w_right" invisible="x_studio_pice_concerne != 'Autre...'">
+              <field name="x_studio_ap1_description" string="AP1 - Description"/>
+            </group>
+          </group>
+          <group name="studio_group_qC3t8">
+            <group name="studio_group_qC3t8_left" string="-------------------- Références Pièces"/>
+            <group name="studio_group_qC3t8_right" string="--------------------  Références Joints"/>
+          </group>
+          <group name="studio_group_tIYeE">
+            <group name="studio_group_tIYeE_left">
+              <field name="x_studio_eurocode_complet" string="Eurocode (Complet)"/>
+              <field name="x_studio_vsf_dsignation_1" string="VSF - Désignation"/>
+              <field name="x_studio_vsf_qt_dispo" string="VSF - Qté Dispo"/>
+              <field name="x_studio_vsf_prix_vit_1" string="VSF - Prix VIT"/>
+              <field name="x_studio_note_sur_la_pice" string="Note sur la pièce"/>
+            </group>
+            <group name="studio_group_tIYeE_right">
+              <field name="x_studio_eurocode_joint" string="Eurocode (Joint)"/>
+              <field name="x_studio_vsf_prix_jt1_1" string="VSF - Prix JT1"/>
+              <field name="x_studio_vsf_prix_jt2" string="VSF - Prix JT2"/>
+              <field name="x_studio_vsf_prix_jt3" string="VSF - Prix JT3"/>
+            </group>
+          </group>
+          <group name="studio_group_P2red">
+            <group name="studio_group_P2red_left" string="--------------------  Tarif Opération Hors Assurances"/>
+            <group name="studio_group_P2red_right">
+              <field name="x_studio_difficult_montage" string="Difficulté Montage"/>
+            </group>
+          </group>
+          <group name="studio_group_uNI7y">
+            <group name="studio_group_uNI7y_left">
+              <field name="x_studio_prix_de_la_pice" string="Prix Pièce dans l'OP (HT)"/>
+              <field name="x_studio_prix_pice_seule_ht" string="Prix Pièce Seule (HT)"/>
+              <field name="x_studio_temps_main_oeuvre" string="Temps Main Oeuvre"/>
+            </group>
+            <group name="studio_group_uNI7y_right">
+              <field name="x_studio_prix_op_ht" string="Prix OP (HT)"/>
+              <field name="x_studio_prix_pose_ttc" string="Prix + Pose (TTC)"/>
+            </group>
+          </group>
+          <group name="studio_group_p85Ao" string="ATTENTION: Ajouter un Kit Colle supplémentaire" invisible="x_studio_difficult_montage != 'Difficile'">
+      </group>
+          <notebook name="studio_notebook_388382">
+            <page string="Order Lines" name="order_lines">
+              <field name="order_line" widget="section_and_note_one2many" mode="tree,kanban">
+                <form>
+                  <field name="display_type" invisible="1"/>
+                  <!--
+                                        We need the sequence field to be here for new lines to be added at the correct position.
+                                        TODO: at some point we want to fix this in the framework so that an invisible field is not required.
+                                    -->
+                  <field name="sequence" invisible="1"/>
+                  <field name="product_uom_category_id" invisible="1"/>
+                  <group name="studio_group_9f80eb">
+                    <group name="studio_group_dd6e3d" invisible="display_type != False">
+                      <field name="product_updatable" invisible="1"/>
+                      <field name="product_id" domain="[('sale_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]" context="{'partner_id':parent.partner_id, 'quantity':product_uom_qty, 'pricelist':parent.pricelist_id, 'uom':product_uom, 'company_id': parent.company_id}" force_save="1" widget="many2one_barcode" readonly="product_updatable == False" required="display_type == False"/>
+                      <field name="event_id" domain="[                         ('event_ticket_ids.product_id','=', product_id),                         ('date_end','&gt;=',time.strftime('%Y-%m-%d 00:00:00')),                         '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)                     ]" options="{'no_open': True, 'no_create': True}"/>
+                      <field name="event_ticket_id" domain="[('event_id', '=', event_id), ('product_id','=',product_id),  ('seats_limited', '=', False), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]" options="{'no_open': True, 'no_create': True}" invisible="event_id == False" required="event_id != False"/>
+                      <field name="invoice_status" invisible="1"/>
+                      <field name="qty_to_invoice" invisible="1"/>
+                      <field name="qty_delivered_method" invisible="1"/>
+                      <field name="price_total" invisible="1"/>
+                      <field name="price_tax" invisible="1"/>
+                      <field name="price_subtotal" invisible="1"/>
+                      <field name="product_uom_readonly" invisible="1"/>
+                      <label for="product_uom_qty"/>
+                      <div class="o_row" name="ordered_qty">
+                        <field context="{'partner_id':parent.partner_id, 'quantity':product_uom_qty, 'pricelist':parent.pricelist_id, 'uom':product_uom, 'uom_qty_change':True, 'company_id': parent.company_id}" name="product_uom_qty"/>
+                        <field name="product_uom" force_save="1" groups="uom.group_uom" class="oe_no_button" readonly="product_uom_readonly == True" required="display_type == False"/>
+                        <field name="product_uom" invisible="1"/>
+                        <!-- below fields are used in the widget qty_at_date_widget -->
+                        <field name="product_type" invisible="1"/>
+                        <field name="virtual_available_at_date" invisible="1"/>
+                        <field name="qty_available_today" invisible="1"/>
+                        <field name="free_qty_today" invisible="1"/>
+                        <field name="scheduled_date" invisible="1"/>
+                        <field name="forecast_expected_date" invisible="1"/>
+                        <field name="warehouse_id" invisible="1"/>
+                        <field name="qty_to_deliver" invisible="1"/>
+                        <field name="is_mto" invisible="1"/>
+                        <field name="display_qty_widget" invisible="1"/>
+                        <widget name="qty_at_date_widget" width="0.1"/>
+                      </div>
+                      <label for="qty_delivered" string="Delivered" invisible="parent.state not in ['sale', 'done']"/>
+                      <div name="delivered_qty" invisible="parent.state not in ['sale', 'done']">
+                        <field name="qty_delivered" readonly="qty_delivered_method != 'manual'"/>
+                      </div>
+                      <label for="qty_invoiced" string="Invoiced" invisible="parent.state not in ['sale', 'done']"/>
+                      <div name="invoiced_qty" invisible="parent.state not in ['sale', 'done']">
+                        <field name="qty_invoiced" invisible="parent.state not in ['sale', 'done']"/>
+                      </div>
+                      <field name="product_packaging_id" context="{'default_product_id': product_id, 'tree_view_ref':'product.product_packaging_tree_view', 'form_view_ref':'product.product_packaging_form_view'}" domain="[(1, '=', 1)]" groups="product.group_stock_packaging" invisible="product_id == False"/>
+                      <field name="recompute_delivery_price" invisible="1"/>
+                      <field name="is_delivery" invisible="1"/>
+                      <field name="price_unit"/>
+                      <field name="tax_id" widget="many2many_tags" options="{'no_create': True}" context="{'search_view_ref': 'account.account_tax_view_search'}" domain="[('type_tax_use','=','sale'),('company_id','=',parent.company_id)]" readonly="qty_invoiced &gt; 0"/>
+                      <label for="discount" groups="product.group_discount_per_so_line"/>
+                      <div name="discount" groups="product.group_discount_per_so_line">
+                        <field name="discount" class="oe_inline"/> %
+                                            </div>
+                      <!--
+                                                We need the sequence field to be here
+                                                because we want to be able to overwrite the default sequence value in the JS
+                                                in order for new lines to be added at the correct position.
+                                                NOTE: at some point we want to fix this in the framework so that an invisible field is not required.
+                                            -->
+                      <field name="sequence" invisible="1"/>
+                    </group>
+                    <group name="studio_group_1ca7c7" invisible="display_type != False">
+                      <label for="customer_lead"/>
+                      <div name="lead">
+                        <field name="customer_lead" class="oe_inline"/> days
+                                            </div>
+                      <field name="route_id" groups="stock.group_adv_location" options="{'no_create': True}"/>
+                    </group>
+                  </group>
+                  <label for="name" string="Description" invisible="display_type != False"/>
+                  <label for="name" string="Section Name (eg. Products, Services)" invisible="display_type != 'line_section'"/>
+                  <label for="name" string="Note" invisible="display_type != 'line_note'"/>
+                  <field name="name"/>
+                  <div name="invoice_lines" groups="base.group_no_one" invisible="display_type != False">
+                    <label for="invoice_lines"/>
+                    <field name="invoice_lines">
+                      <form string="Journal Item" create="false">
+                        <sheet name="studio_sheet_65fd02">
+                          <field name="company_id" invisible="1"/>
+                          <field name="parent_state" invisible="1"/>
+                          <group name="studio_group_7388c4">
+                            <field name="name"/>
+                            <field name="partner_id" domain="['|', ('parent_id', '=', False), ('is_company', '=', True)]" readonly="1"/>
+                          </group>
+                          <notebook colspan="4" name="studio_notebook_85ba7d">
+                            <page string="Information" name="information">
+                              <group name="studio_group_7239e8">
+                                <group string="Amount" name="studio_group_b329ad">
+                                  <field name="account_id" options="{'no_create': True}" domain="[('company_id', '=', company_id)]" readonly="1"/>
+                                  <field name="debit" readonly="1"/>
+                                  <field name="credit" readonly="1"/>
+                                  <field name="quantity" readonly="1"/>
+                                </group>
+                                <group string="Accounting Documents" name="studio_group_93ac8f">
+                                  <field name="move_id" readonly="1"/>
+                                  <field name="asset_ids" invisible="set(asset_ids).intersection([])"/>
+                                  <field name="statement_id" readonly="True" invisible="statement_id == False"/>
+                                </group>
+                                <group string="Dates" name="studio_group_9352ae">
+                                  <field name="date" groups="account.group_account_readonly"/>
+                                  <field name="date_maturity"/>
+                                </group>
+                                <group string="Taxes" name="studio_group_45cda0" invisible="(set(tax_ids).intersection([])) and (tax_line_id == False)">
+                                  <field name="tax_line_id" readonly="1" invisible="tax_line_id == False"/>
+                                  <field name="tax_ids" widget="many2many_tags" readonly="1" invisible="set(tax_ids).intersection([])"/>
+                                </group>
+                                <group string="Matching" name="studio_group_8c9a19" invisible="(set(matched_credit_ids).intersection([])) and (set(matched_debit_ids).intersection([]))">
+                                  <label for="full_reconcile_id"/>
+                                  <div name="studio_div_7d8fe6">
+                                    <field name="full_reconcile_id" invisible="full_reconcile_id == False"/>
+                                    <field name="matched_debit_ids" invisible="1"/>
+                                    <field name="matched_credit_ids" invisible="1"/>
+                                    <button name="open_reconcile_view" class="oe_link" type="object" string="-&gt; View partially reconciled entries" invisible="((set(matched_credit_ids).intersection([])) and (set(matched_debit_ids).intersection([]))) or (full_reconcile_id != False)">
+                                            </button>
+                                  </div>
+                                </group>
+                                <group string="Currency" groups="base.group_multi_currency" name="studio_group_2ef491">
+                                  <field name="currency_id" invisible="1"/>
+                                  <field name="amount_currency"/>
+                                </group>
+                                <group string="Product" name="studio_group_5721a2" invisible="product_id == False">
+                                  <field name="product_id" readonly="1"/>
+                                </group>
+                                <group string="States" name="studio_group_66a33e">
+                                  <field name="blocked"/>
+                                </group>
+                                <group string="Analytic" groups="analytic.group_analytic_accounting,analytic.group_analytic_tags" name="studio_group_5bee6a">
+                                  </group>
+                              </group>
+                            </page>
+                            <page string="Analytic Lines" name="analytic_lines" groups="analytic.group_analytic_accounting">
+                              <field name="date" invisible="1"/>
+                              <field name="analytic_line_ids" context="{'tree_view_ref':'analytic.view_account_analytic_line_tree', 'default_general_account_id':account_id, 'default_name': name, 'default_date':date, 'amount': (debit or 0.0)-(credit or 0.0)}"/>
+                            </page>
+                          </notebook>
+                        </sheet>
+                      </form>
+                      <tree string="Journal Items" create="false" expand="context.get('expand', False)" multi_edit="1" js_class="account_move_line_list">
+                        <field name="date" optional="show" readonly="1"/>
+                        <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}" optional="show"/>
+                        <field name="company_id" invisible="1"/>
+                        <field name="move_id" optional="show"/>
+                        <field name="account_id" optional="show" options="{'no_open': True, 'no_create': True}" domain="[('company_id', '=', company_id)]" groups="account.group_account_readonly"/>
+                        <field name="statement_id" column_invisible="1"/>
+                        <field name="partner_id" optional="show" readonly="1"/>
+                        <field name="ref" optional="hide"/>
+                        <field name="name"/>
+                        <field name="reconciled" column_invisible="1"/>
+                        <field name="matching_number" string="Matching" optional="show"/>
+                        <field name="reconcile_model_id" column_invisible="1"/>
+                        <field name="date_maturity" optional="hide"/>
+                        <field name="debit" sum="Total Debit" readonly="1"/>
+                        <field name="credit" sum="Total Credit" readonly="1"/>
+                        <field name="balance" sum="Total Balance" readonly="1" optional="hide"/>
+                        <field name="amount_currency" readonly="1" groups="base.group_multi_currency"/>
+                        <field name="currency_id" readonly="1" groups="base.group_multi_currency" optional="hide" string="Original Currency"/>
+                        <field name="company_currency_id" column_invisible="1"/>
+                        <field name="parent_state" column_invisible="1"/>
+                        <field name="tax_ids" widget="many2many_tags" width="0.5" optional="hide" readonly="1"/>
+                        <field name="tax_tag_ids" widget="many2many_tags" width="0.5" optional="hide" string="Tax Grids" options="{'no_open': True, 'no_create': True}" domain="[('applicability', '=', 'taxes')]"/>
+                        <groupby name="move_id">
+                          <field name="state" invisible="1"/>
+                          <button name="edit" type="edit" icon="fa-edit" title="Edit"/>
+                          <button name="action_post" icon="fa-check" title="Post" type="object" groups="account.group_account_invoice" invisible="state not in ['draft']"/>
+                          <button name="202" title="Reverse" icon="fa-refresh" type="action" groups="account.group_account_invoice" invisible="state not in ['posted']"/>
+                          <button name="action_duplicate" icon="fa-files-o" title="Duplicate" type="object" groups="account.group_account_invoice"/>
+                        </groupby>
+                        <header>
+                          <button name="action_reconcile" type="object" string="Reconcile" groups="account.group_account_user"/>
+                          <button name="turn_as_asset" type="object" string="Create Asset" groups="account.group_account_user"/>
+                        </header>
+                        <field name="move_attachment_ids" column_invisible="1">
+                          <tree>
+                            <field name="mimetype"/>
+                            <!--  We want to fetch the data for using it in the js-->
+                          </tree>
+                        </field>
+                      </tree>
+                    </field>
+                  </div>
+                  <field name="state" invisible="1"/>
+                  <field name="company_id" invisible="1"/>
+                </form>
+                <tree string="Sales Order Lines" editable="bottom" decoration-warning="recompute_delivery_price and is_delivery">
+                  <control>
+                    <create name="add_product_control" string="Add a product"/>
+                    <create name="add_section_control" string="Add a section" context="{'default_display_type': 'line_section'}"/>
+                    <create name="add_note_control" string="Add a note" context="{'default_display_type': 'line_note'}"/>
+                  </control>
+                  <field name="sequence" widget="handle"/>
+                  <!-- We do not display the type because we don't want the user to be bothered with that information if he has no section or note. -->
+                  <field name="display_type" column_invisible="1"/>
+                  <field name="product_uom_category_id" column_invisible="1"/>
+                  <field name="product_updatable" column_invisible="1"/>
+                  <field name="product_id" options="{'no_open': True}" force_save="1" context="{                                             'partner_id': parent.partner_id,                                             'quantity': product_uom_qty,                                             'pricelist': parent.pricelist_id,                                             'uom':product_uom,                                             'company_id': parent.company_id,                                             'default_lst_price': price_unit,                                             'default_description_sale': name                                         }" domain="[('sale_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]" widget="product_configurator" string="Article" readonly="product_updatable == False" required="display_type == False"/>
+                  <field name="product_template_id" string="Product" options="{'no_open': True}" context="{                                           'partner_id': parent.partner_id,                                           'quantity': product_uom_qty,                                           'pricelist': parent.pricelist_id,                                           'uom':product_uom,                                           'company_id': parent.company_id,                                           'default_list_price': price_unit,                                           'default_description_sale': name                                       }" domain="[('sale_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]" widget="product_configurator" column_invisible="1" readonly="product_updatable == False" required="display_type == False"/>
+                  <field name="event_id" optional="hide" domain="['|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"/>
+                  <field name="event_ticket_id" optional="hide" domain="['|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"/>
+                  <field name="name" widget="section_and_note_text" optional="show"/>
+                  <field name="route_id" groups="stock.group_adv_location" options="{'no_create': True}" optional="hide"/>
+                  <field name="product_uom_qty" decoration-info="(not display_type and invoice_status == 'to invoice')" decoration-bf="(not display_type and invoice_status == 'to invoice')" context="{                                             'partner_id': parent.partner_id,                                             'quantity': product_uom_qty,                                             'pricelist': parent.pricelist_id,                                             'uom': product_uom,                                             'company_id': parent.company_id                                         }"/>
+                  <field name="qty_delivered" decoration-info="(not display_type and invoice_status == 'to invoice')" decoration-bf="(not display_type and invoice_status == 'to invoice')" string="Delivered" optional="show" readonly="qty_delivered_method != 'manual'" column_invisible="parent.state not in ['sale', 'done']"/>
+                  <!-- below fields are used in the widget qty_at_date_widget -->
+                  <field name="product_type" column_invisible="1"/>
+                  <field name="virtual_available_at_date" column_invisible="1"/>
+                  <field name="qty_available_today" column_invisible="1"/>
+                  <field name="free_qty_today" column_invisible="1"/>
+                  <field name="scheduled_date" column_invisible="1"/>
+                  <field name="forecast_expected_date" column_invisible="1"/>
+                  <field name="warehouse_id" column_invisible="1"/>
+                  <field name="qty_to_deliver" column_invisible="1"/>
+                  <field name="is_mto" column_invisible="1"/>
+                  <field name="display_qty_widget" column_invisible="1"/>
+                  <widget name="qty_at_date_widget" width="20px"/>
+                  <field name="qty_delivered_method" column_invisible="1"/>
+                  <field name="qty_invoiced" decoration-info="(not display_type and invoice_status == 'to invoice')" decoration-bf="(not display_type and invoice_status == 'to invoice')" string="Invoiced" optional="show" column_invisible="parent.state not in ['sale', 'done']"/>
+                  <field name="qty_to_invoice" column_invisible="1"/>
+                  <field name="product_uom_readonly" column_invisible="1"/>
+                  <field name="product_uom" force_save="1" string="Unités" context="{'company_id': parent.company_id}" groups="uom.group_uom" options="{&quot;no_open&quot;: True}" optional="show" readonly="product_uom_readonly == True" required="display_type == False"/>
+                  <field name="product_uom" invisible="1"/>
+                  <field name="x_studio_prix_x_glass" string="Prix XGlass"/>
+                  <field name="customer_lead" optional="hide" readonly="parent.state not in ['draft', 'sent', 'sale']"/>
+                  <field name="product_packaging_id" context="{'default_product_id': product_id, 'tree_view_ref':'product.product_packaging_tree_view', 'form_view_ref':'product.product_packaging_form_view'}" domain="[(1, '=', 1)]" groups="product.group_stock_packaging" optional="show" invisible="product_id == False"/>
+                  <field name="recompute_delivery_price" column_invisible="1"/>
+                  <field name="is_delivery" column_invisible="1"/>
+                  <field name="price_unit" readonly="qty_invoiced &gt; 0"/>
+                  <field name="discount" string="Rem.%" groups="product.group_discount_per_so_line" optional="show" widget="product_discount"/>
+                  <field name="price_subtotal" widget="monetary" groups="account.group_show_line_subtotals_tax_excluded" column_invisible="1"/>
+                  <field name="price_total" widget="monetary"/>
+                  <field name="state" column_invisible="1"/>
+                  <field name="invoice_status" column_invisible="1"/>
+                  <field name="currency_id" column_invisible="1"/>
+                  <field name="price_tax" column_invisible="1"/>
+                  <field name="company_id" column_invisible="1"/>
+                  <field string="Related Task" name="task_id" optional="hidden"/>
+                </tree>
+                <kanban class="o_kanban_mobile">
+                  <field name="name"/>
+                  <field name="product_id"/>
+                  <field name="product_uom_qty"/>
+                  <field name="product_uom" groups="uom.group_uom"/>
+                  <field name="product_uom" invisible="1"/>
+                  <field name="price_subtotal"/>
+                  <field name="price_total"/>
+                  <field name="price_tax"/>
+                  <field name="price_total"/>
+                  <field name="price_unit"/>
+                  <field name="display_type"/>
+                  <field name="tax_id"/>
+                  <field name="company_id"/>
+                  <templates>
+                    <t t-name="kanban-box">
+                      <div t-attf-class="oe_kanban_card oe_kanban_global_click {{ record.display_type.raw_value ? 'o_is_' + record.display_type.raw_value : '' }}" name="studio_div_598f57">
+                        <t t-if="!record.display_type.raw_value">
+                          <div class="row" name="studio_div_3b4220">
+                            <div class="col-8" name="studio_div_daccc3">
+                              <strong>
+                                <span>
+                                  <t t-esc="record.product_id.value"/>
+                                </span>
+                              </strong>
+                            </div>
+                            <div class="col-4" name="studio_div_18be40">
+                              <strong>
+                                <span class="float-right text-right">
+                                  <t t-set="line_price" t-value="record.price_subtotal.value" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                  <t t-set="line_price" t-value="record.price_total.value" groups="account.group_show_line_subtotals_tax_included"/>
+                                  <t t-esc="line_price"/>
+                                </span>
+                              </strong>
+                            </div>
+                          </div>
+                          <div class="row" name="studio_div_b23ae8">
+                            <div class="col-12 text-muted" name="studio_div_b1b3dc">
+                              <span>
+                                                                Quantity:
+                                                                <t t-esc="record.product_uom_qty.value"/>
+                                <t t-esc="record.product_uom.value"/>
+                              </span>
+                            </div>
+                          </div>
+                          <div class="row" name="studio_div_410f26">
+                            <div class="col-12 text-muted" name="studio_div_8b098c">
+                              <span>
+                                                                Unit Price:
+                                                                <t t-esc="record.price_unit.value"/>
+                              </span>
+                            </div>
+                          </div>
+                        </t>
+                        <t t-if="record.display_type.raw_value === 'line_section' || record.display_type.raw_value === 'line_note'">
+                          <div class="row" name="studio_div_2241d0">
+                            <div class="col-12" name="studio_div_605f7d">
+                              <span>
+                                <t t-esc="record.name.value"/>
+                              </span>
+                            </div>
+                          </div>
+                        </t>
+                      </div>
+                    </t>
+                  </templates>
+                </kanban>
+              </field>
+              <div class="oe_right" name="studio_div_89a9b8">
+                <button name="1858" class="btn btn-secondary" string="Coupon" type="action" groups="base.group_user" invisible="state not in ['draft','sent','sale']"/>
+                <button name="action_open_reward_wizard" class="btn btn-secondary" string="Promotions" help="When clicked, the content of the order will be checked to detect (and apply) possible promotion programs." type="object" invisible="state not in ['draft','sent','sale']"/>
+              </div>
+              <div class="oe_right" name="studio_div_3612fc">
+                <button string="Add shipping" name="action_open_delivery_wizard" type="object" invisible="(delivery_set == True) or ((set(order_line).intersection([])) or (is_all_service == True))"/>
+                <button string="Update shipping cost" name="action_open_delivery_wizard" context="{'carrier_recompute':True}" type="object" class="text-warning btn-secondary" invisible="(delivery_set == False) or ((recompute_delivery_price == False) or (is_all_service == True))"/>
+                <button string="Update shipping cost" name="action_open_delivery_wizard" context="{'carrier_recompute':True}" type="object" invisible="(delivery_set == False) or ((recompute_delivery_price == True) or (is_all_service == True))"/>
+              </div>
+              <group name="note_group" col="6" class="mt-2 mt-md-0">
+                <group class="oe_subtotal_footer oe_right" colspan="2" name="sale_total">
+                  <field name="amount_untaxed" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                  <field name="amount_tax" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                  <div class="oe_subtotal_footer_separator oe_inline o_td_label" name="studio_div_4eda9b">
+                    <label for="amount_total"/>
+                  </div>
+                  <field name="amount_total" nolabel="1" class="oe_subtotal_footer_separator" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                </group>
+                <div class="oe_clear" name="studio_div_76a274"/>
+              </group>
+              <group name="studio_group_HiaBj">
+                <group name="studio_group_HiaBj_left" string="--------------------  Disponibilités Pièces"/>
+                <group name="studio_group_HiaBj_right" string="-----------------------------------------------------------------------"/>
+              </group>
+              <group name="studio_group_ARver">
+                <group name="studio_group_ARver_left">
+                  <field name="x_studio_pice_trouve" string="Pièce Trouvée"/>
+                </group>
+                <group name="studio_group_ARver_right">
+                  <field name="x_studio_je_valide_la_piece" string="JE VALIDE LA PIECE" required="1"/>
+                  <field name="x_studio_validation_pice" string="Validation Pièce"/>
+                </group>
+              </group>
+              <notebook name="studio_notebook_0blIc">
+                <page string="Stock RPBM" name="studio_page_0blIc" invisible="x_studio_pice_trouve != 'En Stock'">
+                  <group name="studio_group_0blIc">
+                    <group name="studio_group_0blIc_left">
+                      <field name="x_studio_stock" string="Stock"/>
+                      <field name="x_studio_rv_ht_stock" string="RV HT (Stock)"/>
+                    </group>
+                    <group name="studio_group_0blIc_right"/>
+                  </group>
+                </page>
+                <page string="Stock VSF" name="studio_page_HvLoJ" invisible="x_studio_pice_trouve != 'VSF'">
+                  <group name="studio_group_HvLoJ">
+                    <group name="studio_group_HvLoJ_left">
+                      <field name="x_studio_vsf_prix_rv" string="VSF - Prix RV"/>
+                    </group>
+                    <group name="studio_group_HvLoJ_right"/>
+                  </group>
+                </page>
+                <page string="MPB" name="studio_page_Ke7Oh" invisible="x_studio_pice_trouve != 'MPB'">
+                  <group name="studio_group_Ke7Oh">
+                    <group name="studio_group_Ke7Oh_left">
+                      <field name="x_studio_rv_ht_mpb" string="RV HT (MPB)"/>
+                    </group>
+                    <group name="studio_group_Ke7Oh_right"/>
+                  </group>
+                </page>
+                <page string="Concession" name="studio_page_GHTDa" invisible="x_studio_pice_trouve != 'Concession'">
+                  <group name="studio_group_GHTDa">
+                    <group name="studio_group_GHTDa_left">
+                      <field name="x_studio_ttc_avr_concess" string="TTC AVR (Concess)"/>
+                      <field name="x_studio_rv_ht_concess" string="RV HT (Concess)"/>
+                    </group>
+                    <group name="studio_group_GHTDa_right"/>
+                  </group>
+                </page>
+                <page string="Autres" name="studio_page_ANnq1" invisible="x_studio_pice_trouve != 'Autre...'">
+                  <group name="studio_group_ANnq1">
+                    <group name="studio_group_ANnq1_left">
+                      <field name="x_studio_autres" string="Autres..."/>
+                      <field name="x_studio_rv_autres_ht" string="RV Autres (HT)"/>
+                    </group>
+                    <group name="studio_group_ANnq1_right"/>
+                  </group>
+                </page>
+              </notebook>
+            </page>
+            <page string="Optional Products" name="optional_products" invisible="state not in ['draft', 'sent']">
+              <field name="sale_order_option_ids" mode="tree,form,kanban">
+                <form string="Optional Products">
+                  <group name="studio_group_5ebec4">
+                    <field name="product_id" domain="[('sale_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"/>
+                    <field name="name"/>
+                    <field name="quantity"/>
+                    <field name="product_uom_category_id" invisible="1"/>
+                    <field name="uom_id" groups="uom.group_uom"/>
+                    <field name="price_unit"/>
+                    <field name="discount" groups="product.group_discount_per_so_line"/>
+                    <field name="is_present"/>
+                  </group>
+                </form>
+                <kanban class="o_kanban_mobile">
+                  <field name="product_id"/>
+                  <field name="quantity"/>
+                  <field name="uom_id" groups="uom.group_uom"/>
+                  <field name="price_unit"/>
+                  <field name="is_present"/>
+                  <templates>
+                    <t t-name="kanban-box">
+                      <div class="oe_kanban_card oe_kanban_global_click" name="studio_div_248325">
+                        <div class="row" name="studio_div_05ab70">
+                          <div class="col-10" name="studio_div_9112e2">
+                            <strong>
+                              <span>
+                                <t t-esc="record.product_id.value"/>
+                              </span>
+                            </strong>
+                          </div>
+                          <div class="col-2" name="studio_div_208533">
+                            <button name="button_add_to_order" class="btn btn-link oe_link fa fa-shopping-cart" title="Add to order lines" type="object" invisible="is_present == True"/>
+                          </div>
+                        </div>
+                        <div class="row" name="studio_div_587873">
+                          <div class="col-12 text-muted" name="studio_div_4b216e">
+                            <span>
+                                                    Quantity:
+                                                    <t t-esc="record.quantity.value"/>
+                              <t t-esc="record.uom_id.value"/>
+                            </span>
+                          </div>
+                        </div>
+                        <div class="row" name="studio_div_71cba5">
+                          <div class="col-12 text-muted" name="studio_div_2851b5">
+                            <span>
+                                                    Unit Price:
+                                                    <t t-esc="record.price_unit.value"/>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </t>
+                  </templates>
+                </kanban>
+                <tree string="Sales Quotation Template Lines" editable="bottom" decoration-success="is_present == True">
+                  <control>
+                    <create name="add_product_control" string="Add a product"/>
+                  </control>
+                  <field name="sequence" widget="handle"/>
+                  <field name="product_id" domain="[('sale_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"/>
+                  <field name="name" optional="show"/>
+                  <field name="quantity"/>
+                  <field name="uom_id" string="UoM" groups="uom.group_uom" optional="show"/>
+                  <field name="product_uom_category_id" column_invisible="1"/>
+                  <field name="price_unit"/>
+                  <field name="discount" string="Disc.%" groups="product.group_discount_per_so_line" optional="show"/>
+                  <field name="is_present" column_invisible="1"/>
+                  <button name="button_add_to_order" class="oe_link" icon="fa-shopping-cart" title="Add to order lines" type="object" invisible="is_present == True"/>
+                </tree>
+              </field>
+            </page>
+            <page string="Other Info" name="other_information">
+              <group name="studio_group_003714">
+                <group name="sales_person" string="Sales">
+                  <field name="user_id" widget="many2one_avatar_user"/>
+                  <field name="team_id" kanban_view_ref="338" options="{'no_create': True}"/>
+                  <field name="website_id" groups="website.group_multi_website" invisible="website_id == False"/>
+                  <field name="is_abandoned_cart" invisible="1"/>
+                  <field name="cart_recovery_email_sent" invisible="1"/>
+                  <field name="company_id" options="{'no_create': True}" groups="base.group_multi_company"/>
+                  <field name="company_id" invisible="1"/>
+                  <field name="require_signature"/>
+                  <field name="require_payment"/>
+                  <field name="reference" readonly="1" invisible="reference == False"/>
+                  <field name="client_order_ref"/>
+                  <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color', 'no_create_edit': True}"/>
+                </group>
+                <group name="sale_info" string="Invoicing">
+                  <field name="fiscal_position_id" options="{'no_create': True}"/>
+                  <field name="visible_project" invisible="1"/>
+                  <field name="project_id" options="{'no_create': True}" invisible="visible_project == False"/>
+                  <field name="invoice_status" groups="base.group_no_one" invisible="state not in ['sale','done']"/>
+                  <field name="invoice_status" invisible="1"/>
+                </group>
+              </group>
+              <group name="studio_group_f3893e">
+                <group name="sale_shipping" string="Delivery">
+                  <field name="warehouse_id" options="{'no_create': True}" groups="stock.group_stock_multi_warehouses" force_save="1"/>
+                  <field name="incoterm" widget="selection" groups="sale_stock.group_display_incoterm"/>
+                  <field name="picking_policy" required="True"/>
+                  <label for="commitment_date" string="Delivery Date"/>
+                  <div class="o_row" name="studio_div_bc033d">
+                    <field name="commitment_date"/>
+                    <span class="text-muted" invisible="(commitment_date != False) and (effective_date != False)">Expected: <field name="expected_date" widget="date"/>
+                      <field name="show_json_popover" invisible="1"/>
+                      <field string=" " name="json_popover" widget="stock_rescheduling_popover" invisible="show_json_popover == False"/>
+                    </span>
+                  </div>
+                  <field name="effective_date" invisible="effective_date == False"/>
+                </group>
+                <group string="Reporting" name="sale_reporting" groups="base.group_no_one">
+                  <group name="technical" colspan="2" class="mb-0">
+                    <field name="origin"/>
+                    <field name="opportunity_id" help="Log in the chatter from which opportunity the order originates" groups="base.group_no_one"/>
+                  </group>
+                  <group name="utm_link" colspan="2" class="mt-0">
+                    <field name="campaign_id"/>
+                    <field name="medium_id"/>
+                    <field name="source_id"/>
+                  </group>
+                </group>
+              </group>
+            </page>
+            <page groups="base.group_no_one" string="Customer Signature" name="customer_signature" invisible="(signed_on == False) and ((signature == False) and ((signed_by == False) and (require_signature == False)))">
+              <group name="studio_group_f6ea9a">
+                <field name="signed_by"/>
+                <field name="signed_on"/>
+                <field name="signature" widget="image"/>
+              </group>
+            </page>
+          </notebook>
+          <group name="studio_group_fYGZ8">
+            <group name="studio_group_fYGZ8_left"/>
+            <group name="studio_group_fYGZ8_right"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_wgD6e_left']" position="attributes">
+    <attribute name="string">---------------------  Références Pièce</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_wgD6e_right']" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_F0zf7']" position="after">
+    <field name="x_studio_eurocode_joint" string="Eurocode (Joint)"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_ca9kd_left']" position="attributes">
+    <attribute name="string">--------------------  Disponibilité Pièce</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_ca9kd_right']" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_3lm5n']" position="before">
+    <field name="x_studio_je_valide_la_piece" string="JE VALIDE LA PIECE"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_3lm5n']" position="after">
+    <field name="x_studio_validation_stock"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_Fp7Gs_left']" position="attributes">
+    <attribute name="string">--------------------  Montant Intervention</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_Fp7Gs_right']" position="attributes">
+    <attribute name="string">-----------------------------------------------------------------------</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_0RYCW']" position="before">
+    <field name="x_studio_prix_retenu" string="Prix Retenu" required="x_studio_field_h06UD &gt; 0.01"/>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_field_OMuUZ']" position="attributes">
+    <attribute name="help">= Marge Brute / Revenu Espéré HT</attribute>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_nxP6R']" position="after">
+    <group name="studio_group_eLarA">
+      <group name="studio_group_eLarA_left" string="--------------------  Devis Rapide">
+        <field name="x_studio_difficult_montage" string="Difficulté Montage"/>
+      </group>
+      <group name="studio_group_eLarA_right" string="-----------------------------------------------------------------------"/>
+    </group>
+    <group name="studio_group_4nUDp">
+      <group name="studio_group_4nUDp_left">
+        <field name="x_studio_prix_achat_ht" string="Prix Achat (HT)"/>
+        <field name="x_studio_prix_rv_ht" string="Prix RV (HT)"/>
+        <field name="x_studio_prix_rv_coef" string="Prix RV + Coef"/>
+        <field name="x_studio_prix_op_ht" string="Prix OP (HT)"/>
+        <field name="x_studio_marge_brute_" string="Marge Brute (€)"/>
+        <field name="x_studio_taux_marque_" string="Taux Marque (%)"/>
+      </group>
+      <group name="studio_group_4nUDp_right">
+        <field name="x_studio_prix_pose_ttc" string="Prix + Pose (TTC)"/>
+        <field name="x_studio_temps_montage_pour_autres_vitrages" string="Temps Montage (pour &quot;Autres vitrages&quot;)" required="x_studio_field_eENQz == 'Autre...'"/>
+        <field name="x_studio_montant_montage_pour_autres_vitrages" string="Montant Montage (pour &quot;Autres Vitrages&quot;)" invisible="1"/>
+        <field name="x_studio_prix_pice_seule_ht" string="Prix Pièce Seule (HT)"/>
+      </group>
+    </group>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_09urJ_left'][not(ancestor::field)]" position="inside"><widget name="rpbm_agent_widget" colspan="2"/></xpath>
+  <xpath expr="//group[@name='studio_group_GVpfN'][not(ancestor::field)]" position="before"><group name="rpbm_vehicle_native"><group name="rpbm_vehicle_native_left"><field name="rpbm_license_plate" string="Immatriculation"/><field name="rpbm_vehicle_brand_id" string="Marque"/><field name="rpbm_vehicle_model_id" string="Modèle"/><field name="rpbm_vehicle_detail_model" string="Détails Modèle"/><field name="rpbm_vehicle_id" string="Véhicule (Flotte)"/></group><group name="rpbm_vehicle_native_right"><field name="rpbm_first_registration_date" string="Date 1ère MEC"/><field name="rpbm_fuel_type" string="Énergie Moteur"/><field name="rpbm_eurocode_base" string="Base Eurocode"/><field name="rpbm_vin" string="VIN"/></group></group></xpath>
+  <xpath expr="//field[@name='x_studio_field_eENQz'][not(ancestor::field)]" position="before"><field name="rpbm_part_type" string="Pièce concernée"/><field name="rpbm_xglass_category" string="Catégorie X'Glass"/></xpath>
+  <xpath expr="//field[@name='x_studio_field_NwRik'][not(ancestor::field)]" position="before"><field name="rpbm_eurocode" string="Eurocode (Complet)"/></xpath>
+  <xpath expr="//field[@name='x_studio_field_j8eh3'][not(ancestor::field)]" position="before"><field name="rpbm_vsf_designation" string="VSF - Désignation"/></xpath>
+  <xpath expr="//field[@name='x_studio_field_BKtpw'][not(ancestor::field)]" position="before"><field name="rpbm_vsf_stock" string="VSF - Qté Dispo"/></xpath>
+  <xpath expr="//field[@name='x_studio_field_MNzfJ'][not(ancestor::field)]" position="before"><field name="rpbm_constructor_reference" string="Code Constructeur"/></xpath>
+  <xpath expr="//field[@name='x_studio_lieu_intervention'][not(ancestor::field)]" position="before"><field name="rpbm_intervention_location" string="Lieu Intervention"/></xpath>
+  <xpath expr="//field[@name='x_studio_field_NVioD'][not(ancestor::field)]" position="attributes"><attribute name="string">Immatriculation (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_KyCjB'][not(ancestor::field)]" position="attributes"><attribute name="string">Marque (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_ZhaeY'][not(ancestor::field)]" position="attributes"><attribute name="string">Modèle (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_PfJlB'][not(ancestor::field)]" position="attributes"><attribute name="string">VIN (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_TAhpP'][not(ancestor::field)]" position="attributes"><attribute name="string">Énergie Moteur (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_i8fWl'][not(ancestor::field)]" position="attributes"><attribute name="string">Détails Modèle (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_Eh6Wd'][not(ancestor::field)]" position="attributes"><attribute name="string">Date 1ère MEC (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_eENQz'][not(ancestor::field)]" position="attributes"><attribute name="string">Pièce concernée (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_ORIyy'][not(ancestor::field)]" position="attributes"><attribute name="string">Base Eurocode (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_NwRik'][not(ancestor::field)]" position="attributes"><attribute name="string">Eurocode (Complet) (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_j8eh3'][not(ancestor::field)]" position="attributes"><attribute name="string">VSF - Désignation (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_BKtpw'][not(ancestor::field)]" position="attributes"><attribute name="string">VSF - Qté Dispo (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_field_MNzfJ'][not(ancestor::field)]" position="attributes"><attribute name="string">Code Constructeur (ancien)</attribute></xpath>
+  <xpath expr="//field[@name='x_studio_lieu_intervention'][not(ancestor::field)]" position="attributes"><attribute name="string">Lieu Intervention (ancien)</attribute></xpath>
+</data>
