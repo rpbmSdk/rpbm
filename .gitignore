@@ -8,6 +8,7 @@ __pycache__/
 *.csv
 *.ipynb
 .venv/
+.venv-doc/
 
 Jobs/**/*.js
 Jobs/

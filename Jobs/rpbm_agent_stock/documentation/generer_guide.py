@@ -120,9 +120,9 @@ story.append(Spacer(1,15))
 P('Document de validation et guide d’utilisation','h2')
 P('Ce guide explique comment le module **rpbm_agent** aide à préparer un devis, et comment Odoo organise ensuite les achats, les déplacements de pièces et la remise au client.')
 Box('Le geste indispensable du vendeur','Choisir le **transporteur / mode de remise** sur chaque vente : Galleria, Genipa ou Camion. Ce choix détermine le parcours logistique.')
-P('Édition du 11 septembre 2026 · Préproduction RPBM','small')
+P('Édition du 29 septembre 2026 · Préproduction RPBM · Assistant et écrans mis à jour ; organisation logistique inchangée depuis l’édition du 11 septembre','small')
 P('Organisation déployée pour essais. La validation du client et les essais restant à réaliser sont regroupés en fin de document. Ce guide ne vaut pas autorisation de démarrage en production.','small')
-T(['Pour décider','Pour travailler'],[['Organisation et circuits : pages 2 à 7','Assistant véhicule : pages 9 à 12'],['Reprise du stock : page 8','Résultats et validation : pages 13 et 14']],[.5,.5])
+T(['Pour décider','Pour travailler'],[['Organisation et circuits : pages 2 à 7','Assistant véhicule et écrans : pages 9 à 13'],['Reprise du stock : page 8','Résultats et validation : pages 14 et 15']],[.5,.5])
 
 Page('Ce que le projet change','Une même chaîne relie la recherche de la pièce, la vente et le mouvement physique.')
 T(['Jusqu’ici, selon la procédure existante','Avec l’organisation proposée'],[
@@ -206,19 +206,19 @@ Bullet('Choisir la date à laquelle Odoo devient la référence des mouvements e
 Box('Ne pas reprendre les anciennes couleurs comme des quantités fiables','Les couleurs vendu / réservé / cassé du tableau ne sont pas conservées dans l’export CSV. Le modèle de fichier de stock initial est volontairement vide. L’import du catalogue ne prouve donc pas la reprise du stock physique.',True)
 P('Les volumes du catalogue ci-dessus viennent du dernier compte rendu d’import ; ils n’ont pas été recomptés article par article pour ce guide. Les quantités présentes en préproduction ne constituent pas un inventaire de démarrage.','small')
 
-Page('Ouvrir l’assistant véhicule','L’assistant est le bouton du module rpbm_agent. Il est accessible depuis une opportunité ou depuis son devis lié.')
+Page('Ouvrir l’assistant véhicule','Le bouton « Assistant véhicule » figure à deux endroits d’une opportunité et de son devis lié ; les deux ouvrent la même fenêtre.')
 Shot('02-acces-assistant.png',(25,1055,735,180),125,'Capture de préproduction, cadrée sur l’onglet « Véhicule (X’Glass) » et le bouton « Assistant véhicule ».')
 H2('Le parcours conseillé')
 Bullet('Ouvrir le dossier client dans le CRM et vérifier le client concerné.')
-Bullet('Utiliser l’assistant dans ce dossier, ou ouvrir le devis associé à cette opportunité.')
-Bullet('Sur le devis, ouvrir l’onglet **Véhicule (X’Glass)**, puis cliquer sur **Assistant véhicule**.')
-Box('L’onglet est absent sur un devis indépendant','Le devis doit être lié à une opportunité. L’absence de cet onglet sur un devis sans opportunité est un comportement prévu du module. Repartir du dossier CRM ou faire vérifier le lien.')
+Bullet('Sur l’opportunité, cliquer sur **Assistant véhicule** dans la section **Informations Véhicule**, ou dans l’onglet **Véhicule (X’Glass)**.')
+Bullet('Sur le devis lié, le bouton est dans le bloc **Informations véhicule** sous l’en-tête, et dans l’onglet **Véhicule (X’Glass)**.')
+Box('Bouton absent sur un devis indépendant','Le devis doit être lié à une opportunité. Sans opportunité, le bloc et l’onglet ne s’affichent pas : c’est prévu. Repartir du dossier CRM ou faire vérifier le lien.')
 H2('La connexion aux fournisseurs doit être prête')
 P('L’ouverture de la fenêtre lance la connexion à X’Glass et VSF. L’équipe de déploiement doit avoir configuré les accès aux deux portails. Les utilisateurs ne doivent pas copier de mot de passe dans le dossier client.')
-Box('État constaté pendant la préparation du guide','Lors de la préparation, les quatre paramètres de connexion n’étaient pas encore présents sur la préproduction et l’ouverture est restée sur la connexion. Ils ont depuis été configurés ; l’authentification complète et les recherches sur les portails restent à rejouer.',True)
+Box('Accès validés en préproduction','Les accès X’Glass et VSF sont configurés sur la préproduction. La recette du 20 septembre a validé le parcours complet : véhicule, pièce, article VSF et confirmation. Ils restent à configurer sur la production.')
 P('Un seul utilisateur peut employer l’assistant à la fois avec les accès partagés actuels. Fermer la fenêtre après utilisation pour libérer la place.','small')
 
-Page('Identifier le véhicule et la pièce','Parcours prévu par le module ; à vérifier sur les portails une fois les accès configurés.')
+Page('Identifier le véhicule et la pièce','Parcours validé sur la préproduction lors de la recette du 20 septembre 2026.')
 Flow(['1. Véhicule','2. Catégorie','3. Pièce','4. Article VSF'])
 T(['Étape dans la fenêtre','Ce que vous faites et contrôlez'],[
  ['1. Véhicule','Saisir ou vérifier l’immatriculation, puis cliquer sur « Rechercher ». Le premier résultat peut être sélectionné automatiquement : vérifier le modèle et la version.'],
@@ -233,24 +233,25 @@ Box('Aucun résultat ?','Vérifier d’abord l’immatriculation et le choix du 
 Page('Choisir un article et l’ajouter au devis','Le choix d’une référence VSF et son ajout au devis sont deux actions distinctes.')
 Flow(['Sélectionner\nl’article VSF','Retrouver ou créer\nla fiche Odoo','Ajouter au devis'])
 T(['Ce qui est affiché','Ce que cela signifie'],[
- ['Prix / Coût','Informations fournies par le parcours VSF. Vérifier ensuite le prix final de la ligne de devis, calculé avec les règles commerciales existantes.'],
+ ['Prix / Coût','Prix fourni par VSF. Sur la ligne ajoutée, le « Prix X’Glass » vaut ce prix moins la remise RPBM (20 %), et le prix unitaire vaut Prix X’Glass × 1,5. Un prix unitaire corrigé à la main est conservé.'],
  ['En stock / Indisponible','Disponibilité présentée par VSF. **Ce n’est pas le stock physique RPBM** ni une promesse de délai de réception.'],
  ['Voir le produit','Une fiche Odoo a été retrouvée. L’assistant indique le critère utilisé : référence, Eurocode ou nom. Vérifier qu’il s’agit bien du même article.'],
  ['Créer le produit','Aucune fiche correspondante n’a été trouvée. Créer la fiche seulement après vérification ; cela ne crée aucune quantité en stock.'],
  ['Ajouter au devis','Ajoute une ligne de quantité 1. Contrôler la quantité, la référence, la description et le prix dans le devis.'],
- ['Articles suggérés','Les accessoires ne sont pas ajoutés automatiquement. Sélectionner et ajouter séparément ceux qui sont nécessaires.']],[.27,.73])
-P('Cliquer sur une image pour l’agrandir lorsque cette possibilité est proposée. Le lien **Fiche technique** permet de consulter les détails de l’article.')
-Box('Éviter les doublons dans le devis','« Article déjà présent dans le devis » signifie qu’une ligne existe déjà. « Retirer du devis » n’est disponible que pour une ligne ajoutée par cette fenêtre pendant la session en cours. Une ligne existante se corrige dans le devis.')
+ ['Articles suggérés','Les accessoires ne sont pas ajoutés automatiquement. Sélectionner et ajouter séparément ceux qui sont nécessaires.'],
+ ['Définir comme article principal','Désigne l’article dont l’Eurocode et la désignation VSF sont reportés sur le dossier à la confirmation.']],[.27,.73])
+Box('Toujours désigner l’article principal','Ajouter un article au devis ne renseigne pas l’Eurocode du dossier. Cliquer sur **Définir comme article principal**, puis sur **Confirmer** : sans article principal, l’Eurocode et la désignation VSF du dossier restent inchangés, sans message.',True)
+P('« Article déjà présent dans le devis » signifie qu’une ligne existe déjà. « Retirer du devis » n’est disponible que pour une ligne ajoutée par cette fenêtre pendant la session en cours.','small')
 P('Sur une opportunité CRM, la confirmation prépare les informations du dossier. L’ajout de lignes décrit ici concerne le widget ouvert depuis une vente.','small')
 
 Page('Enregistrer et reprendre son travail','Les boutons de la fenêtre assistant ne confirment pas la commande client.')
 T(['Bouton','Effet attendu'],[
- ['Confirmer, dans l’assistant','Reporte les informations sélectionnées dans le formulaire. Il reste à enregistrer ce formulaire.'],
+ ['Confirmer, dans l’assistant','Reporte le véhicule, la pièce, la base Eurocode et, si un article principal est désigné, l’Eurocode et la désignation VSF. Il reste à enregistrer le formulaire.'],
  ['Confirmer et enregistrer','Reporte les informations puis enregistre le dossier ou le devis.'],
  ['Annuler ou fermer la fenêtre','Quitte la recherche. Ne pas l’utiliser comme une annulation générale : une fiche créée ou une ligne déjà ajoutée peut nécessiter un contrôle séparé.'],
  ['Confirmer, sur la vente','Valide commercialement la vente et peut déclencher les documents logistiques. Vérifier les articles et le transporteur avant ce clic.']],[.34,.66])
 H2('Les contrôles de fin de saisie')
-P('Vérifier le client, le véhicule, la pièce concernée et la référence complète. Relire les lignes ajoutées, les quantités et les prix. Choisir le transporteur / mode de remise et enregistrer le devis.')
+P('Vérifier le client, le véhicule, la pièce concernée et l’Eurocode complet du dossier (article principal). Relire les lignes ajoutées, les quantités et les prix. Choisir le transporteur / mode de remise et enregistrer le devis.')
 H2('Si l’assistant ne répond pas comme prévu')
 T(['Message ou situation','Réflexe'],[
  ['Assistant utilisé par une autre personne','Attendre qu’elle termine et ferme sa fenêtre. Éviter les connexions concurrentes aux portails partagés.'],
@@ -259,14 +260,27 @@ T(['Message ou situation','Réflexe'],[
  ['Onglet ou bouton introuvable','Vérifier l’opportunité liée, l’installation du module et les droits du compte utilisateur.']],[.40,.60])
 P('Le verrou d’utilisation expire après 15 minutes sans activité prévue par le module. Une panne du portail ou du réseau peut demander une intervention ; attendre ne corrige pas un problème d’accès.','small')
 
-Page('Ce qui a été vérifié','Les résultats ci-dessous concernent la préproduction contrôlée le 11 septembre 2026.')
+Page('Retrouver un véhicule ou une pièce','Les informations véhicule sont les mêmes sur l’opportunité, le devis et la facture, et se recherchent sur les trois.')
+T(['Écran','Ce que vous y trouvez'],[
+ ['Opportunité','Section **Informations Véhicule** : bouton, immatriculation, marque, modèle, date de 1re MEC, énergie, base Eurocode, VIN. Kilométrage et autres informations sans équivalent restent en place.'],
+ ['Devis lié','Bloc **Informations véhicule** sous l’en-tête, avec le bouton et les mêmes champs.'],
+ ['Facture client','Immatriculation, marque, modèle, eurocode et pièce, repris automatiquement du devis lié, en lecture seule.'],
+ ['Onglet « Anciens champs »','Anciennes saisies suffixées « (ancien) », gardées pour contrôle. Saisir dans les nouveaux champs ou avec l’assistant.']],[.27,.73])
+H2('Rechercher et trier')
+Bullet('Dans les opportunités, devis et factures : taper une valeur puis choisir **Immatriculation**, **Marque du véhicule**, **Modèle du véhicule**, **VIN**, **Eurocode** ou **Véhicule**, qui cherche partout à la fois. Pour un modèle, taper son nom seul : « 208 ».')
+Bullet('Regrouper par marque ou par modèle depuis le menu de regroupement. Dans les listes, les colonnes Immatriculation, Marque et Modèle s’affichent ou se masquent depuis le menu des colonnes.')
+Bullet('Pour les articles, choisir **Eurocode**, ou taper la référence dans « Produit ». Marque et modèle se tapent dans « Produit » : les noms VSF les contiennent souvent, parfois abrégés (VW, MB).')
+Box('Pas encore de recherche d’article par véhicule','Aucun lien n’existe aujourd’hui entre un article et les véhicules compatibles. Il fera l’objet d’un lot ultérieur ; en attendant, vérifier la compatibilité dans l’assistant.')
+
+Page('Ce qui a été vérifié','Logistique contrôlée le 11 septembre 2026, assistant le 20 septembre, écrans les 28 et 29 septembre, sur la préproduction.')
 T(['Contrôle','Résultat et portée'],[
- ['Module rpbm_agent','Version 17.0.260730.6 observée sur la cible lors du contrôle ; la version source actuelle est 17.0.260911.1. Bouton visible sur un devis lié à une opportunité.'],
+ ['Module rpbm_agent','Version 17.0.260928.4 déployée ; bouton visible sur l’opportunité et sur un devis lié. Recherches et colonnes véhicule ajoutées sur les opportunités, devis et factures.'],
  ['Organisation logistique','Un entrepôt RPBM ; trois routes métier, 34 types d’opération, six règles métier et une règle de rangement vers le Dépôt 2.'],
  ['Contrôle structurel rejoué','53 entrées : **50 conformes, 2 observations, 1 essai non réalisé**. Aucune anomalie ou alerte parmi les contrôles exécutés.'],
  ['Transporteur sur la vente','Champ rétabli, liste des choix vérifiée dans Chrome et valeur Galleria sauvegardée puis relue sur le devis de démonstration.'],
  ['Essais du dernier commit','T1 : livraison Galleria générée avec stock au comptoir. T3 : en rupture, achat préparé vers le Dépôt 2, transfert et livraison en attente. Résultats issus du compte rendu du lancement précédent.'],
- ['Recherche X’Glass et VSF','Les paramètres ont été configurés après ce contrôle ; l’authentification et la recherche de bout en bout restent à valider.']],[.30,.70])
+ ['Assistant X’Glass et VSF','Recette du 20/09 : **37 contrôles conformes** (véhicule, pièce, article principal, report sur le dossier et sur les anciens champs).'],
+ ['Écrans Studio','Bouton, nouveaux champs et onglet « Anciens champs » posés par script les 28 et 29/09 ; contrôles automatiques conformes, éditeur Studio opérationnel. Vérification visuelle par les utilisateurs en cours.']],[.30,.70])
 Box('La recette logistique n’est pas encore complète','Les tests T1 et T3 n’ont pas validé physiquement une réception, un transfert ou une livraison. Les cas Genipa, camion, retour, casse, réception directe au comptoir et quantités partielles restent à éprouver avec les utilisateurs.',True)
 P('La présence des routes ne garantit pas tous les cas particuliers : disponibilité insuffisante, autres réservations, article nouvellement créé ou absence de fournisseur. Le référent doit vérifier l’achat automatique pour les articles concernés.','small')
 P('Les anciennes routes et l’ancien mode gratuit sont encore présents. Les résultats du contrôle structurel ne valent pas validation de leur usage.','small')
@@ -280,12 +294,12 @@ T(['Décision à consigner','Accord / réserve / responsable'],[
  ['Valider le tarif « Pose à domicile », actuellement à 0 €, et le traitement des exceptions.','________________________________'],
  ['Fixer le comptage initial, le traitement des pièces à contrôler et la date de bascule.','________________________________']],[.64,.36])
 H2('Conditions à lever avant utilisation réelle')
-P('Rejouer et valider les accès X’Glass/VSF ; réaliser les cas métier restants ; vérifier les droits avec un vendeur et un magasinier ; intégrer puis contrôler le stock initial ; reprendre la visibilité du transporteur sur la cible de production.')
+P('Configurer les accès X’Glass/VSF et appliquer les écrans (script des vues Studio) sur la production ; réaliser les cas métier restants ; vérifier les droits avec un vendeur et un magasinier ; intégrer puis contrôler le stock initial ; reprendre la visibilité du transporteur sur la cible de production.')
 P('**Décision :** accord sur l’organisation / accord avec réserves / à revoir\n**Nom et fonction :** __________________________________________\n**Date et signature :** _________________________________________')
 P('Un accord sur l’organisation n’efface pas les réserves de recette. Le lancement opérationnel fera l’objet d’une décision distincte une fois les conditions levées.','small')
 H2('Origine du document')
-P('Sources : commit de recette 08b6b1d et commit de configuration rpbm_agent e6c7364 du dépôt RPBM ; compte rendu « module et architecture » du 11/09/2026 ; dossier Gestion Stock ; code et documentation fonctionnelle de rpbm_agent ; lectures MCP et captures Chrome du 11/09/2026. Les anciens documents de cadrage sont interprétés avec les amendements du dernier compte rendu.','small')
-P('Préproduction : rpbm-pre-prod-37860002.dev.odoo.com. Les notes de vérification, captures et sources reproductibles de cette édition se trouvent dans Jobs/rpbm_agent_stock/documentation.','small')
+P('Sources : commit de recette 08b6b1d et commit de configuration rpbm_agent e6c7364 du dépôt RPBM ; compte rendu « module et architecture » du 11/09/2026 ; recette de l’assistant du 20/09/2026 ; rapports du script des vues Studio des 28 et 29/09/2026 ; dossier Gestion Stock ; code et documentation fonctionnelle de rpbm_agent ; lectures MCP et captures Chrome du 11/09/2026. Les anciens documents de cadrage sont interprétés avec les amendements du dernier compte rendu.','small')
+P('Préproduction : rpbm-pre-prod-37939198.dev.odoo.com (captures prises sur l’édition du 11 septembre, rpbm-pre-prod-37860002). Les notes de vérification, captures et sources reproductibles de cette édition se trouvent dans Jobs/rpbm_agent_stock/documentation.','small')
 
 class NumberedCanvas(canvas.Canvas):
     def __init__(self,*a,**kw):
@@ -298,7 +312,7 @@ class NumberedCanvas(canvas.Canvas):
             self.__dict__.update(state)
             self.setStrokeColor(colors.HexColor('#D7E3E6'));self.line(42,45,W-42,45)
             self.setFillColor(MUTED);self.setFont('Guide',8)
-            self.drawString(42,31,'RPBM · Logistique & assistant véhicule · 11 septembre 2026')
+            self.drawString(42,31,'RPBM · Logistique & assistant véhicule · 29 septembre 2026')
             self.drawRightString(W-42,31,f'{self._pageNumber} / {total}')
             canvas.Canvas.showPage(self)
         canvas.Canvas.save(self)

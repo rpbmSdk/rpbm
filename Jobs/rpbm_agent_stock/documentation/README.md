@@ -1,8 +1,8 @@
 # Guide client : logistique et assistant véhicule
 
-Édition du 11 septembre 2026, pour validation de l'organisation et prise en main.
+Édition du 29 septembre 2026, pour validation de l'organisation et prise en main. Elle met à jour la partie assistant et écrans (boutons dans les sections Studio, onglet « Anciens champs », recherches véhicule, article principal, prix des lignes) ; l'organisation logistique et les captures sont celles de l'édition du 11 septembre.
 
-- [Guide PDF destiné au client](Guide_client_RPBM_logistique_et_assistant.pdf) : 14 pages, schémas des sites et des circuits, captures cadrées, mode opératoire du widget et fiche de validation.
+- [Guide PDF destiné au client](Guide_client_RPBM_logistique_et_assistant.pdf) : 15 pages, schémas des sites et des circuits, captures cadrées, mode opératoire du widget et fiche de validation.
 - [Texte du guide en Markdown](guide-client.md), généré en même temps que le PDF.
 - [Notes de vérification et modification de la vue](notes-verification-2026-09-11.md).
 - [Résultat brut du contrôle structurel](controle-structurel-2026-09-11.txt).
@@ -19,7 +19,7 @@ python -m venv .venv-doc
 pdftoppm -r 100 -png Jobs/rpbm_agent_stock/documentation/Guide_client_RPBM_logistique_et_assistant.pdf tmp/pdfs/guide
 ```
 
-Exécuter depuis la racine du dépôt. Contrôler les 14 pages rendues après toute modification ; les références de pages en couverture doivent suivre la pagination finale. Le fichier Markdown est une sortie, à ne pas modifier isolément.
+Exécuter depuis la racine du dépôt. Contrôler les 15 pages rendues après toute modification ; les références de pages en couverture doivent suivre la pagination finale. Le fichier Markdown est une sortie, à ne pas modifier isolément.
 
 ## Lectures et correctif de préproduction
 
