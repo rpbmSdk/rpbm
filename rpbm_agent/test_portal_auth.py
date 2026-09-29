@@ -335,6 +335,57 @@ def test_vsf_suggestion_indisponible_reste_affichee():
     assert suggestion["detailsUnavailable"] is True
 
 
+def _carousel_page(codes):
+    links = "".join(
+        f'<div class="col-md-4"><a href="/catalogue/article/{code}">{code}</a></div>' for code in codes
+    )
+    return f'<div id="article-reference-complementaires-carousel">{links}</div>'
+
+
+def test_vsf_suggestions_enrichies_en_parallele_et_dans_l_ordre():
+    import threading
+
+    codes = ["PP-A", "PP-B", "PP-C", "PP-D"]
+    # Les 4 lectures doivent être en vol en même temps pour franchir la barrière :
+    # lues l'une après l'autre, la première attend en vain et le test échoue.
+    barrier = threading.Barrier(vsf.MAX_PARALLEL_SUGGESTIONS, timeout=5)
+
+    class FakeParallelAgent(vsf.VSFAgent):
+        def __init__(self):
+            pass
+
+        def get(self, url, **kwargs):
+            if url.endswith("/catalogue/article/PRINCIPAL"):
+                return SimpleNamespace(status_code=200, url=url, text=_carousel_page(codes))
+            barrier.wait()
+            return SimpleNamespace(status_code=200, url=url, text="<h1>Fiche</h1>")
+
+    details = FakeParallelAgent().getArticleDetails(
+        {"code": "PRINCIPAL"}, enrich_suggestions=True
+    )
+    assert [s["code"] for s in details["suggestedArticles"]] == codes
+    assert all(s["detailsLoaded"] for s in details["suggestedArticles"])
+
+
+def test_vsf_suggestion_session_expiree_remonte_malgre_le_parallelisme():
+    class FakeExpiredAgent(vsf.VSFAgent):
+        def __init__(self):
+            pass
+
+        def get(self, url, **kwargs):
+            if url.endswith("/catalogue/article/PRINCIPAL"):
+                return SimpleNamespace(status_code=200, url=url, text=_carousel_page(["PP-A", "PP-B"]))
+            if url.endswith("/catalogue/article/PP-B"):
+                raise vsf.VSFAuthError("Session VSF expirée ou invalide.")
+            return SimpleNamespace(status_code=200, url=url, text="<h1>Fiche</h1>")
+
+    try:
+        FakeExpiredAgent().getArticleDetails({"code": "PRINCIPAL"}, enrich_suggestions=True)
+    except vsf.VSFAuthError:
+        return
+    raise AssertionError("VSFAuthError aurait dû remonter")
+
+
 def test_vsf_valeurs_de_creation_produit():
     article = vsf.VSFArticle(
         code="6571AGRCHIMVZ",

@@ -5,6 +5,7 @@ import json
 import re
 import unicodedata
 import html
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import parse_qs, urljoin, urlparse
 
 try:
@@ -19,6 +20,10 @@ VSF_LOGIN_URL = f"{VSF_BASE_URL}/identification"
 VSF_SEARCH_URL = f"{VSF_BASE_URL}/catalogue/vitrage"
 VSF_SEARCH_ARTICLES_URL = f"{VSF_BASE_URL}/catalogue/articles-client"
 REQUEST_TIMEOUT = 20  # secondes, appliqué à tous les appels vers le portail VSF
+# Fiches de suggestions lues en parallèle : mesuré ≈ 3 s par fiche (267 Ko, attente serveur VSF),
+# 5 fiches en série ≈ 16 s contre ≈ 6 s à 4 en parallèle. Le plafond reste sous les 10 connexions
+# du pool HTTP de `requests`.
+MAX_PARALLEL_SUGGESTIONS = 4
 DEFAULT_RPBM_DISCOUNT = 0.2
 
 
@@ -383,14 +388,11 @@ class VSFAgent:
         details = self.extractArticleDetails(
             page, article_info, url, include_suggestions=include_suggestions
         )
-        if enrich_suggestions:
-            enriched_suggestions = []
-            for suggestion in details["suggestedArticles"]:
+        if enrich_suggestions and details["suggestedArticles"]:
+            def enrich(suggestion):
                 try:
-                    enriched_suggestions.append(
-                        self.getArticleDetails(
-                            suggestion, include_suggestions=False, enrich_suggestions=False
-                        )
+                    return self.getArticleDetails(
+                        suggestion, include_suggestions=False, enrich_suggestions=False
                     )
                 except VSFAuthError:
                     raise
@@ -402,8 +404,15 @@ class VSFAgent:
                         suggestion.get("code"),
                     )
                     suggestion["detailsUnavailable"] = True
-                    enriched_suggestions.append(suggestion)
-            details["suggestedArticles"] = enriched_suggestions
+                    return suggestion
+
+            suggestions = details["suggestedArticles"]
+            # ponytail: session partagée en lecture seule (les threads ne font que
+            # HTTP + parse), plafond fixe ; `map` conserve l'ordre du carrousel.
+            with ThreadPoolExecutor(
+                max_workers=min(len(suggestions), MAX_PARALLEL_SUGGESTIONS)
+            ) as pool:
+                details["suggestedArticles"] = list(pool.map(enrich, suggestions))
         return details
 
     def getArticleDetailsByCode(self, code):

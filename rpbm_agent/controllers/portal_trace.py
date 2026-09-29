@@ -15,6 +15,7 @@ sont systématiquement masquées — ce module ne doit jamais faire fuiter les
 identifiants dans les logs Odoo.
 """
 
+import itertools
 import logging
 import os
 import re
@@ -27,7 +28,8 @@ _SECRET_RE = re.compile(r"pass|pwd|token|secret", re.I)
 
 _enabled = bool(os.getenv("RPBM_TRACE"))
 _dump_dir = None
-_seq = 0
+# Compteur de requêtes : `next()` est atomique, les fiches VSF étant lues en parallèle.
+_seq = itertools.count(1)
 
 
 def configure(enabled=True, dump_dir=None):
@@ -35,7 +37,7 @@ def configure(enabled=True, dump_dir=None):
     global _enabled, _dump_dir, _seq
     _enabled = bool(enabled)
     _dump_dir = Path(dump_dir) if dump_dir else None
-    _seq = 0
+    _seq = itertools.count(1)
     if _dump_dir:
         _dump_dir.mkdir(parents=True, exist_ok=True)
     return _enabled
@@ -68,10 +70,9 @@ def _slug(url):
 def _trace(portal, r):
     if not _enabled:
         return
-    global _seq
-    _seq += 1
+    seq = next(_seq)
     req = r.request
-    parts = [f"[{portal}#{_seq:03d}] {req.method} {req.url} -> {r.status_code}"]
+    parts = [f"[{portal}#{seq:03d}] {req.method} {req.url} -> {r.status_code}"]
     if r.is_redirect:
         parts.append(f"redirect -> {r.headers.get('Location', '')}")
     body = _redact_body(req.body)
@@ -82,5 +83,5 @@ def _trace(portal, r):
     parts.append(f"{r.elapsed.total_seconds() * 1000:.0f} ms, {len(r.content)} o")
     _logger.info(" | ".join(parts))
     if _dump_dir:
-        dump = _dump_dir / f"{portal}-{_seq:03d}-{r.status_code}-{_slug(req.url)}.html"
+        dump = _dump_dir / f"{portal}-{seq:03d}-{r.status_code}-{_slug(req.url)}.html"
         dump.write_bytes(r.content)

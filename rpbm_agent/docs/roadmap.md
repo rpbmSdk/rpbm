@@ -1,6 +1,6 @@
 # Roadmap — UI & transfert vers Odoo
 
-## Reste à faire (état au 2026-09-28)
+## Reste à faire (état au 2026-09-29)
 
 Tout ce qui suit cette section est l'historique du chantier (diagnostic de juillet, lots
 livrés, décisions) : il est conservé tel quel comme trace, mais seule cette table fait foi
@@ -17,6 +17,7 @@ pour ce qui reste ouvert.
 | R7 | Exports draw.io obsolètes à la racine du module (`Readme.jpeg/.pdf/.png/.html`, 5,4 Mo livrés à chaque build) | — | à supprimer (source archivée dans `_archive/Readme.drawio`) |
 | R8 | Recette de la conformité des vues (`17.0.260928.4`, puis `studio_views.py apply`) : champs facture calculés (≈ 7 100 factures avec immatriculation), chaque champ « Véhicule » passe un `search_count`, ordre des colonnes dans l'arch combinée, bouton de la section Studio, libellés « (ancien) », éditeur Studio ouvrable sur le formulaire opportunité | conformité des vues 2026-09-28 | à rejouer sur le build pre-prod (`rpbm-verificateur-computer-use`) |
 | R9 | Marque et modèle sur les articles : aucun lien article → véhicule ; Many2many vers `fleet.vehicle.model` ou table « code véhicule » sur l'eurocode, après dédoublonnage des marques et modèles Fleet | décision du 2026-09-28 | lot ultérieur, à concevoir |
+| R10 | Lenteur du clic sur un article VSF : recette live de la lecture parallèle des suggestions (`17.0.260929.1`) — durée de `/getVsfArticleDetails` avant/après sur pre-prod (trace `rpbm_agent.trace=1`), cartes suggérées identiques. Pistes non retenues, à reprendre au besoin : spinner pendant `/searchBaseEurocode` et garde anti-doublon, recherche VSF lancée dès l'auth quand la base eurocode est déjà connue, session VSF réutilisée entre ouvertures, `/createProduct` sans second téléchargement de la fiche, cache court par fiche | mesure du 2026-09-29 (ci-dessous) | à rejouer sur le build pre-prod |
 
 Réglé le 2026-09-20 : alias de route `/rbm_agent/getVehiculeMeta`, accent « Non renseigné » des
 rapports, énergie Fleet à la création de véhicule, produits main-d'œuvre paramétrables, code
@@ -34,6 +35,18 @@ marque, modèle, eurocode et pièce stockés sur la facture ; recherches véhicu
 véhicule dans les listes opportunités, devis et factures client. Le bouton et les champs natifs dans
 les sections Studio relèvent du script `studio_views.py` (voir
 [`Jobs/rpbm_agent_stock`](../../Jobs/rpbm_agent_stock/README.md)). Recette : R8.
+
+Implémenté le 2026-09-29, à déployer (lenteur du clic sur un article VSF, module `17.0.260929.1`) :
+`/getVsfArticleDetails` lisait la fiche puis chaque suggestion du carrousel l'une après l'autre. Mesure
+sur le portail réel (base `6539R`, 4 articles, 4 suggestions chacun) : une fiche pèse ≈ 267 Ko et met
+≈ 3 s à répondre (attente serveur VSF, pas le téléchargement) ; le parsing BeautifulSoup + extraction ne
+représente que ≈ 1 % du temps (≈ 27 ms par fiche) ; le clic prenait ≈ 15,9 s (médiane) et prend
+maintenant ≈ 6,0 s, les 4 suggestions étant lues en parallèle (`MAX_PARALLEL_SUGGESTIONS` dans
+`controllers/vsf.py`, latence par fiche inchangée à 4 requêtes simultanées). Ordre des suggestions,
+tolérance à une fiche indisponible et remontée de la session expirée inchangés. La liste de résultats
+(`/searchBaseEurocode`) reste ≈ 3 à 5 s : une page de 626 Ko (≈ 1,4 à 2,8 s) puis un POST (≈ 1 à 2 s),
+non traités ici. Le compteur de `portal_trace` devient atomique pour rester cohérent sous threads.
+Recette : R10.
 
 ---
 
