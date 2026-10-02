@@ -27,9 +27,9 @@
                 </p>
                 <div t-if="props.article.images and props.article.images.length" class="d-flex flex-wrap align-items-start gap-2 mb-2">
                     <t t-foreach="props.article.images" t-as="image" t-key="image.thumbnailUrl">
-                        <button t-if="image.fullUrl" type="button" class="btn p-0 border-0 bg-transparent" title="Agrandir l'image de l'article" t-on-click.stop="()=>this.openImage(image.fullUrl)">
+                        <a t-if="image.fullUrl" t-att-href="image.fullUrl" target="_blank" rel="noopener" class="d-inline-block" title="Agrandir l'image de l'article" t-on-click="(event) => this.openImage(event, image.fullUrl)" t-on-auxclick="stopImagePropagation">
                             <img t-att-src="image.thumbnailUrl" class="img-thumbnail" style="width: 96px; height: 72px; object-fit: contain; cursor: zoom-in;" alt="Image article VSF"/>
-                        </button>
+                        </a>
                         <img t-else="" t-att-src="image.thumbnailUrl" class="img-thumbnail" style="width: 96px; height: 72px; object-fit: contain;" alt="Image article VSF"/>
                     </t>
                 </div>

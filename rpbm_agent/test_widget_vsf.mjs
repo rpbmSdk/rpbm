@@ -14,6 +14,7 @@ const context = {
     PieceComponent: emptyComponent,
     PieceAMComponent: emptyComponent,
     ArticleComponent: emptyComponent,
+    VsfImagePreviewDialog: emptyComponent,
 };
 vm.runInNewContext(`${source}\nthis.AgentWidgetDialog = AgentWidgetDialog;`, context);
 
@@ -46,3 +47,80 @@ assert.equal(dialog.vsfSearchUrl, "https://client.myvsf.fr/catalogue/vitrage?sea
 dialog.onSelectPieceAM({ pieceAm: { reference: "6574AGABCHM" } });
 assert.equal(dialog.baseEurocode, "6574A");
 assert.equal(dialog.vsfSearchUrl, "https://client.myvsf.fr/catalogue/vitrage?search=6574A");
+
+const articleSource = (await readFile(new URL("./static/src/ArticleComponent.js", import.meta.url), "utf8"))
+    .replace(/^import[\s\S]*?;\n/gm, "")
+    .replace("export class ArticleComponent", "class ArticleComponent");
+vm.runInNewContext(`${articleSource}\nthis.ArticleComponent = ArticleComponent;`, context);
+
+const openedImages = [];
+const article = Object.create(context.ArticleComponent.prototype);
+article.props = {
+    article: {
+        images: [
+            { thumbnailUrl: "sm-1", fullUrl: "xlg-1" },
+            { thumbnailUrl: "sm-2", fullUrl: "xlg-2" },
+        ],
+    },
+    onOpenImage: (...args) => openedImages.push(args),
+};
+const click = (overrides = {}) => ({
+    button: 0,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    altKey: false,
+    stopped: 0,
+    prevented: 0,
+    stopPropagation() { this.stopped += 1; },
+    preventDefault() { this.prevented += 1; },
+    ...overrides,
+});
+const simpleClick = click();
+article.openImage(simpleClick, "xlg-2");
+assert.deepEqual(openedImages, [[ ["xlg-1", "xlg-2"], 1 ]]);
+assert.equal(simpleClick.stopped, 1);
+assert.equal(simpleClick.prevented, 1);
+
+const ctrlClick = click({ ctrlKey: true });
+article.openImage(ctrlClick, "xlg-2");
+assert.equal(openedImages.length, 1);
+assert.equal(ctrlClick.stopped, 1);
+assert.equal(ctrlClick.prevented, 0);
+
+const middleClick = click({ button: 1 });
+article.stopImagePropagation(middleClick);
+assert.equal(middleClick.stopped, 1);
+assert.equal(middleClick.prevented, 0);
+
+const hotkeys = [];
+const previewContext = {
+    Component: emptyComponent,
+    Dialog: emptyComponent,
+    useState: (state) => state,
+    useHotkey: (key, callback, options) => hotkeys.push({ key, callback, options }),
+};
+const previewSource = (await readFile(new URL("./static/src/VsfImagePreviewDialog.js", import.meta.url), "utf8"))
+    .replace(/^import[\s\S]*?;\n/gm, "")
+    .replace("export class VsfImagePreviewDialog", "class VsfImagePreviewDialog");
+vm.runInNewContext(`${previewSource}\nthis.VsfImagePreviewDialog = VsfImagePreviewDialog;`, previewContext);
+
+const preview = Object.create(previewContext.VsfImagePreviewDialog.prototype);
+preview.props = { images: ["xlg-1", "xlg-2"], index: 0 };
+preview.setup();
+assert.deepEqual(hotkeys.map(({ key, options }) => [key, options.allowRepeat]), [
+    ["arrowleft", true],
+    ["arrowright", true],
+]);
+hotkeys[1].callback();
+assert.equal(preview.imageUrl, "xlg-2");
+hotkeys[1].callback();
+assert.equal(preview.imageUrl, "xlg-1");
+hotkeys[0].callback();
+assert.equal(preview.imageUrl, "xlg-2");
+
+const singlePreview = Object.create(previewContext.VsfImagePreviewDialog.prototype);
+singlePreview.props = { images: ["xlg-unique"], index: 0 };
+singlePreview.setup();
+singlePreview.move(1);
+assert.equal(singlePreview.imageUrl, "xlg-unique");

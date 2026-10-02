@@ -1038,9 +1038,9 @@ export class AgentWidgetDialog extends asyncWidget {
         }, "Création du produit en cours...");
     }
 
-    openImagePreview(imageUrl) {
-        if (imageUrl) {
-            this.dialog.add(VsfImagePreviewDialog, { imageUrl });
+    openImagePreview(images, index) {
+        if (images?.length && index >= 0) {
+            this.dialog.add(VsfImagePreviewDialog, { images, index });
         }
     }
 

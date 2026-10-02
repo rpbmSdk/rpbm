@@ -23,9 +23,27 @@ export class ArticleComponent extends asyncWidget {
         return this.props.article;
     }
 
-    openImage(imageUrl) {
-        if (imageUrl && this.props.onOpenImage) {
-            this.props.onOpenImage(imageUrl);
+    openImage(event, imageUrl) {
+        event.stopPropagation();
+        if (
+            event.button ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.altKey ||
+            !imageUrl ||
+            !this.props.onOpenImage
+        ) {
+            return;
         }
+        event.preventDefault();
+        const images = (this.props.article.images || [])
+            .map((image) => image.fullUrl)
+            .filter(Boolean);
+        this.props.onOpenImage(images, images.indexOf(imageUrl));
+    }
+
+    stopImagePropagation(event) {
+        event.stopPropagation();
     }
 }

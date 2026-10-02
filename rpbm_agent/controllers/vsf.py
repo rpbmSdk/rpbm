@@ -352,6 +352,7 @@ class VSFAgent:
             for product_line in product_lines_data:
                 if article['code'] == product_line['eurocode']:
                     article['imgUrls'] = product_line['imgUrls']
+                    article['images'] = product_line['images']
                     article['url'] = product_line['url']
                     article['name'] = product_line['name']
                     article['refConstructeur'] = product_line['refConstructeur']
@@ -360,13 +361,29 @@ class VSFAgent:
         
     def extractProductInfo(self, product_line:bs.BeautifulSoup):
         product_line_tds = product_line.find_all("td")
-        imgUrls = [img["src"] for img in product_line_tds[0].find_all("img")]
+        imgUrls = [
+            _absolute_url(img["src"])
+            for img in product_line_tds[0].find_all("img")
+            if img.get("src")
+        ]
+        images = []
+        for link in product_line_tds[0].select("a[data-fslightbox][href]"):
+            thumbnail = link.select_one("img[src]")
+            full_url = _absolute_url(link["href"])
+            if thumbnail and parse_qs(urlparse(full_url).query).get("p") == ["xlg"]:
+                images.append(
+                    {
+                        "thumbnailUrl": _absolute_url(thumbnail["src"]),
+                        "fullUrl": full_url,
+                    }
+                )
         url = product_line_tds[1].find("a")["href"]
         eurocode = product_line_tds[1].find('a').text.strip()
         refConstructeur = product_line_tds[2].text.strip()
         name = product_line_tds[3].text.strip()
         return {
             'imgUrls': imgUrls,
+            'images': images,
             'url': url,
             'eurocode': eurocode,
             'refConstructeur': refConstructeur,
@@ -482,20 +499,36 @@ class VSFAgent:
         if title and not details.get("name"):
             details["name"] = title
 
-        thumbnails = [_absolute_url(value) for value in details.get("imgUrls", [])]
-        full_images = self._extractFullImageUrls(page)
-        details["fullImageUrls"] = full_images
-        details["absoluteImgUrls"] = thumbnails
-        details["images"] = [
-            {
-                "thumbnailUrl": thumbnail,
-                "fullUrl": full_images[index] if index < len(full_images) else None,
-            }
-            for index, thumbnail in enumerate(thumbnails)
-        ]
-        for index, full_url in enumerate(full_images):
-            if index >= len(thumbnails):
-                details["images"].append({"thumbnailUrl": full_url, "fullUrl": full_url})
+        images = list(details.get("images") or [])
+        if any(image.get("fullUrl") for image in images):
+            # La recherche fournit déjà les paires signées par VSF. Ne jamais
+            # reconstruire ni réordonner ces URLs depuis la fiche.
+            details["images"] = images
+            details["absoluteImgUrls"] = [
+                image.get("thumbnailUrl") for image in images if image.get("thumbnailUrl")
+            ]
+            details["fullImageUrls"] = [
+                image.get("fullUrl") for image in images if image.get("fullUrl")
+            ]
+        else:
+            thumbnails = [
+                _absolute_url(image["thumbnailUrl"])
+                for image in images
+                if image.get("thumbnailUrl")
+            ] or [_absolute_url(value) for value in details.get("imgUrls", [])]
+            full_images = self._extractFullImageUrls(page)
+            details["fullImageUrls"] = full_images
+            details["absoluteImgUrls"] = thumbnails
+            details["images"] = [
+                {
+                    "thumbnailUrl": thumbnail,
+                    "fullUrl": full_images[index] if index < len(full_images) else None,
+                }
+                for index, thumbnail in enumerate(thumbnails)
+            ]
+            for index, full_url in enumerate(full_images):
+                if index >= len(thumbnails):
+                    details["images"].append({"thumbnailUrl": full_url, "fullUrl": full_url})
 
         details["suggestedArticles"] = (
             self._extractSuggestedArticles(page, details.get("code"))
@@ -587,7 +620,11 @@ class VSFAgent:
                 seen.add(url)
                 urls.append(url)
 
-        for node in page.select("[data-zoom-image], [data-large-image], [data-src], a[href], img[src], img[srcset]"):
+        carousel = page.select_one("#carousel-article-photos")
+        scope = carousel or page  # Anciennes fiches et fixtures sans carrousel dédié.
+        for node in scope.select("[data-zoom-image], [data-large-image], [data-src], a[href], img[src], img[srcset]"):
+            if node.find_parent(id="carousel-modele-photos"):
+                continue
             for attribute in ("data-zoom-image", "data-large-image", "data-src", "href", "src", "srcset"):
                 add(node.get(attribute))
         return urls

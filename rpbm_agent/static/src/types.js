@@ -52,7 +52,7 @@
  * @property {number|null} prixHT
  * @property {number} stock
  * @property {boolean} available
- * @property {{thumbnailUrl: string, fullUrl?: string}[]} images
+ * @property {{thumbnailUrl: string, fullUrl?: string|null}[]} images
  * @property {string[]} fullImageUrls
  * @property {{label: string, value: string}[]} technicalDetails
  * @property {number|null} largeurMm

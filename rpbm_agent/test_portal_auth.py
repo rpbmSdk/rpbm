@@ -197,6 +197,99 @@ def test_vsf_article_stock_renomme():
     assert article.absoluteImgUrls == []  # imgUrls absent : ne doit pas planter
 
 
+def test_vsf_recherche_apparie_les_images_signees():
+    page = vsf.bs.BeautifulSoup(
+        '''
+        <meta name="csrf-token" content="tok"/>
+        <div id="articles-list-container" data-articles-ids="[42]"/>
+        <table><tr class="product-line">
+          <td><a data-fslightbox="article" href="/photos/6108A.jpg?p=xlg&amp;s=signature-xlg">
+            <img src="/photos/6108A.jpg?p=sm&amp;s=signature-sm"/>
+          </a><a data-fslightbox="article" href="/photos/ignoree.jpg?p=lg&amp;s=signature-lg">
+            <img src="/photos/ignoree.jpg?p=sm&amp;s=signature-sm"/>
+          </a></td>
+          <td><a href="/catalogue/article/6108A">6108A</a></td>
+          <td>REF-6108</td><td>Pare-brise</td>
+        </tr></table>
+        ''',
+        "html.parser",
+    )
+
+    class FakeSearchAgent(vsf.VSFAgent):
+        def searchEurocodePage(self, eurocode):
+            return page
+
+        def post(self, *args, **kwargs):
+            return SimpleNamespace(
+                url=vsf.VSF_BASE_URL,
+                status_code=200,
+                json=lambda: {
+                    "response": True,
+                    "data": [{"code": "6108A", "total_stock": "1"}],
+                },
+            )
+
+    article = FakeSearchAgent().searchEurocodeArticlesClient("6108A")[0]
+    assert article.images == [
+        {
+            "thumbnailUrl": "https://client.myvsf.fr/photos/6108A.jpg?p=sm&s=signature-sm",
+            "fullUrl": "https://client.myvsf.fr/photos/6108A.jpg?p=xlg&s=signature-xlg",
+        }
+    ]
+
+
+def test_vsf_fiche_exclut_le_carrousel_modele_et_conserve_la_recherche():
+    page = vsf.bs.BeautifulSoup(
+        '''
+        <div id="carousel-article-photos">
+          <a href="/photos/article.jpg?p=xlg&amp;s=signature-article"><img src="/photos/article.jpg?p=sm&amp;s=signature-sm"/></a>
+        </div>
+        <div id="carousel-modele-photos">
+          <a href="/photos/modele.jpg?p=xlg&amp;s=signature-modele"><img src="/photos/modele.jpg?p=sm&amp;s=signature-modele-sm"/></a>
+        </div>
+        ''',
+        "html.parser",
+    )
+    images = [{
+        "thumbnailUrl": "https://client.myvsf.fr/photos/resultat.jpg?p=sm&s=signature-resultat-sm",
+        "fullUrl": "https://client.myvsf.fr/photos/resultat.jpg?p=xlg&s=signature-resultat",
+    }]
+    details = vsf.VSFAgent().extractArticleDetails(
+        page,
+        {"code": "6108A", "images": images},
+        "https://client.myvsf.fr/catalogue/article/6108A",
+    )
+    assert vsf.VSFAgent._extractFullImageUrls(page) == [
+        "https://client.myvsf.fr/photos/article.jpg?p=xlg&s=signature-article"
+    ]
+    assert details["images"] == images
+    assert details["fullImageUrls"] == [images[0]["fullUrl"]]
+
+
+def test_vsf_fiche_complete_les_miniatures_heritees_depuis_l_ancien_html():
+    page = vsf.bs.BeautifulSoup(
+        '''
+        <a data-zoom-image="/photos/article.jpg?p=xlg&amp;s=signature-article"/>
+        <div id="carousel-modele-photos">
+          <a data-zoom-image="/photos/modele.jpg?p=xlg&amp;s=signature-modele"/>
+        </div>
+        ''',
+        "html.parser",
+    )
+    details = vsf.VSFAgent().extractArticleDetails(
+        page,
+        {
+            "code": "6108A",
+            "images": [{"thumbnailUrl": "/photos/article.jpg?p=sm&s=signature-sm", "fullUrl": None}],
+        },
+        "https://client.myvsf.fr/catalogue/article/6108A",
+    )
+    assert details["images"] == [{
+        "thumbnailUrl": "https://client.myvsf.fr/photos/article.jpg?p=sm&s=signature-sm",
+        "fullUrl": "https://client.myvsf.fr/photos/article.jpg?p=xlg&s=signature-article",
+    }]
+
+
 def test_vsf_fiche_article_extrait_dimensions_images_et_suggestions():
     page = vsf.bs.BeautifulSoup(
         '''
