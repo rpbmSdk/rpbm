@@ -83,9 +83,9 @@
                                             <i class="fa fa-spinner fa-spin me-1"/> Chargement des autres marques AM…
                                         </div>
                                         <div t-elif="!autresAm.entries.length" class="text-muted">Aucune autre référence après-marché.</div>
-                                        <div t-else="" class="d-flex flex-column gap-2">
+                                        <div t-else="" class="list-group list-group-flush">
                                             <t t-foreach="autresAm.entries" t-as="metaPieceAM" t-key="metaPieceAM.pieceAm.id">
-                                                <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" t-on-click="()=>this.onSelectPieceAM(metaPieceAM)"/>
+                                                <PieceAMComponent metaPieceAM="metaPieceAM" selectedPieceAMId="selectedPieceAMId" compact="true" t-on-click="()=>this.onSelectPieceAM(metaPieceAM)"/>
                                             </t>
                                         </div>
                                     </div>

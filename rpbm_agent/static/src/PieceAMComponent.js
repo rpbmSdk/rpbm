@@ -68,6 +68,8 @@ export class PieceAMComponent extends Component {
     static props = {
         metaPieceAM: { type: Object },
         selectedPieceAMId: { type: Number, optional: true },
+        // Ligne compacte (encart « Autres marques AM ») au lieu d'une carte.
+        compact: { type: Boolean, optional: true },
     }
     static template = "rpbm_agent.PieceAMComponent";
 

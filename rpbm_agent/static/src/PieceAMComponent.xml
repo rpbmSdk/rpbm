@@ -1,7 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.PieceAMComponent">
-        <div class="card h-100">
+        <!-- Ligne compacte de l'encart « Autres marques AM », mise en page X'Glass -->
+        <div t-if="props.compact" class="list-group-item list-group-item-action d-flex flex-column flex-sm-row gap-sm-3 py-1 small lh-sm" role="button" t-att-style="style">
+            <div class="flex-shrink-0" style="width: 10rem;">
+                <div t-esc="fournisseur"/>
+                <div class="fw-bold" t-esc="pieceAM.reference"/>
+            </div>
+            <div class="flex-grow-1">
+                <div t-esc="pieceAM.libelle"/>
+                <div t-if="dateLibelle"><strong>Validité :</strong> <t t-esc="dateLibelle"/></div>
+                <div t-if="description"><strong>Description :</strong> <t t-esc="description"/></div>
+            </div>
+            <div t-if="hasPrix" class="text-nowrap fw-bold">Prix : <t t-esc="pieceAM.prix"/></div>
+        </div>
+        <div t-else="" class="card h-100">
             <div class="card-body" t-att-style="style">
                 <h6 class="card-title">
                     <t t-esc="pieceAM.libelle"/>

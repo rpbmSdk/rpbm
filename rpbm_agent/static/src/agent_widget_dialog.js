@@ -81,6 +81,8 @@ export class AgentWidgetDialog extends asyncWidget {
         this._agentLockReleased = false;
         this._lastSearchedBaseEurocode = undefined;
         this._reconnectPromise = undefined;
+        // Immatriculation de la dernière recherche aboutie, rejouée après une reconnexion.
+        this._searchedImmatriculation = undefined;
         this.state.immatriculationValue = this.record.immatriculation || "";
         this.restoreSelectionFromRecord();
 
@@ -240,6 +242,10 @@ export class AgentWidgetDialog extends asyncWidget {
         // X'Glass garde le véhicule sélectionné côté serveur. Réchauffer cette
         // sélection après le login sans réassigner la planche dans l'état Owl :
         // toutes les données déjà visibles restent ainsi intactes.
+        // Traces du 2026-10-02 : dans une session neuve, selectVehicule sans recherche préalable
+        // échoue sans erreur (planche vide, pièces AM sans contexte véhicule). Rejouer la recherche
+        // faite rend aussi VIN, CNIT et date de MEC à la session ; la page des pièces est inutile.
+        await this.rpc("/searchImmatriculation", { immatriculation: this._searchedImmatriculation });
         await this.rpc("/getPlanche", { vehiculeId: this.selectedVehicule.id });
     }
 
@@ -254,6 +260,8 @@ export class AgentWidgetDialog extends asyncWidget {
             try {
                 await this.auth_agents();
                 await this.restorePortalContext();
+                // Aucune liste « AUTRE AM » obtenue avant ou pendant la reconnexion ne survit.
+                this.state.autresAm = {};
             } catch (error) {
                 this.state.reconnectRequired = true;
                 throw error;
@@ -452,9 +460,10 @@ export class AgentWidgetDialog extends asyncWidget {
             this.state.vehicules = [];
             return;
         }
-        const res = await this.callPortal("/searchImmatriculation", {
-            immatriculation: this.immatriculationValue,
-        })
+        // Le champ peut changer après la recherche : on garde la valeur réellement recherchée.
+        const immatriculation = this.immatriculationValue;
+        const res = await this.callPortal("/searchImmatriculation", { immatriculation });
+        this._searchedImmatriculation = immatriculation;
         this.state.vehicules = res;
     }
 
@@ -705,9 +714,12 @@ export class AgentWidgetDialog extends asyncWidget {
         this.state.baseEurocode = metaPieceAM.pieceAm.reference.substring(0, 5);
     }
 
-    /** La liste « AUTRE AM » est celle de la famille X'Glass, commune à ses pièces. */
+    /**
+     * La liste « AUTRE AM » est celle de la famille X'Glass pour le véhicule : planche et
+     * famille sont partagées entre véhicules (26881-3464 pour GS600HH et GJ495CP, recette R11).
+     */
     autresAmKey(piece) {
-        return `${this.planche?.id}-${piece.elementSitId}`;
+        return `${this.selectedVehicule?.id}-${piece.elementSitId}`;
     }
 
     get autresAm() {
