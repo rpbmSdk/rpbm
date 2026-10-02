@@ -42,7 +42,7 @@ import { Component } from "@odoo/owl";
  * @property {number|null} idcaracteristiquepieceam
  * @property {number} id
  * @property {string} libelle
- * @property {number} prix
+ * @property {number|null} prix
  * @property {string} reference
  * @property {string} referenceClean
  * @property {string|null} referenceCmt
@@ -56,7 +56,7 @@ import { Component } from "@odoo/owl";
 /**
  * @typedef {Object} MetaPieceAM
  * @property {string} debutValidite
- * @property {string} finValidite
+ * @property {string|null} finValidite
  * @property {PieceAM} pieceAm
  * @property {number|null} prixImport
  * @property {number} quantiteInDevis
@@ -71,25 +71,43 @@ export class PieceAMComponent extends Component {
     }
     static template = "rpbm_agent.PieceAMComponent";
 
-    setup() {
-        super.setup();
-        
-        /** @type {PieceAM} */
-        this.pieceAM = this.props.metaPieceAM.pieceAm;
+    /** @returns {PieceAM} */
+    get pieceAM() {
+        return this.props.metaPieceAM.pieceAm;
     }
 
     get style() {
         return this.pieceAM.id === this.props.selectedPieceAMId ? "background-color: azure !important;" : "";
     }
+
+    get fournisseur() {
+        return this.pieceAM.fournisseur?.libelle || "";
+    }
+
     /**
-     * Retourne la date de début et de fin de validité formatée, si il n'y a pas de date de fin, retourne uniquement la date de début
+     * Validité portée par l'entrée (pas par pieceAm), libellés X'Glass
+     * `elementSit.lbl.validite.*` (controllers/xglass_lbl.py).
      * @return {string}
      */
     get dateLibelle() {
-        if (this.pieceAM.debutValidite && this.pieceAM.finValidite) {
-            return `De ${this.pieceAM.debutValidite} à ${this.pieceAM.finValidite}`;
-        } else if (this.pieceAM.debutValidite) {
-            return `A partir du ${this.pieceAM.debutValidite}`;
+        const { debutValidite, finValidite } = this.props.metaPieceAM;
+        if (debutValidite && finValidite) {
+            return `De ${debutValidite} à ${finValidite}`;
+        } else if (debutValidite) {
+            return `A partir de ${debutValidite}`;
+        } else if (finValidite) {
+            return `Jusqu'à ${finValidite}`;
         }
+        return "";
+    }
+
+    /** Comme X'Glass : remarque de l'entrée puis description, sauf remarque vide ou « - ». */
+    get description() {
+        const remarque = (this.props.metaPieceAM.remarque || "").trim();
+        return [remarque === "-" ? "" : remarque, this.pieceAM.description].filter(Boolean).join("; ");
+    }
+
+    get hasPrix() {
+        return this.pieceAM.prix !== null && this.pieceAM.prix !== undefined;
     }
 }

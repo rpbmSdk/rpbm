@@ -64,6 +64,9 @@ export class AgentWidgetDialog extends asyncWidget {
             selectedPiece: undefined,
             piecesAm: [],
             selectedPieceAm: undefined,
+            // Encart « AUTRE AM » (R11) : listes par planche + famille X'Glass.
+            autresAm: {},
+            autresAmOpen: false,
             baseEurocode: undefined,
             articlesVsf: [],
             selectedArticleCodes: {},
@@ -650,6 +653,7 @@ export class AgentWidgetDialog extends asyncWidget {
     clearSelectedPiece(preserveRestoredBase = false) {
         this.state.selectedPiece = undefined;
         this.state.selectedPieceAm = undefined;
+        this.state.autresAmOpen = false;
         if (!preserveRestoredBase) {
             this.state.baseEurocode = undefined;
         }
@@ -694,13 +698,55 @@ export class AgentWidgetDialog extends asyncWidget {
         return res;
     }
 
-    onSelectPieceAM(pieceAmId) {
-        if (this.selectedPiece && this.selectedPiece.PiecesAM) {
-            this.state.selectedPieceAm = this.selectedPiece.PiecesAM.find(metaPieceAM => metaPieceAM.pieceAm.id === pieceAmId);
-            // Seul un choix explicite de l'utilisateur dérive la base de la pièce AM.
-            if (this.selectedPieceAm) {
-                this.state.baseEurocode = this.selectedPieceAm.pieceAm.reference.substring(0, 5);
-            }
+    /** Clic sur une carte « Équivalence AM » ou une ligne « Autres marques AM ». */
+    onSelectPieceAM(metaPieceAM) {
+        this.state.selectedPieceAm = metaPieceAM;
+        // Seul un choix explicite de l'utilisateur dérive la base de la pièce AM.
+        this.state.baseEurocode = metaPieceAM.pieceAm.reference.substring(0, 5);
+    }
+
+    /** La liste « AUTRE AM » est celle de la famille X'Glass, commune à ses pièces. */
+    autresAmKey(piece) {
+        return `${this.planche?.id}-${piece.elementSitId}`;
+    }
+
+    get autresAm() {
+        return this.selectedPiece ? this.state.autresAm[this.autresAmKey(this.selectedPiece)] : undefined;
+    }
+
+    get autresAmOpen() {
+        return this.state.autresAmOpen;
+    }
+
+    async onToggleAutresAm() {
+        this.state.autresAmOpen = !this.state.autresAmOpen;
+        if (this.state.autresAmOpen && this.selectedPiece) {
+            await this.runAsync(() => this.loadAutresAm(this.selectedPiece), "Chargement des autres marques AM...");
+        }
+    }
+
+    /**
+     * Sans pieceId, /getPieceAm interroge X'Glass au niveau famille (idElementSit) :
+     * c'est l'encart « AUTRE AM » du portail. Un seul appel par famille.
+     */
+    async loadAutresAm(piece) {
+        const key = this.autresAmKey(piece);
+        if (this.state.autresAm[key]) {
+            return;
+        }
+        this.state.autresAm = { ...this.state.autresAm, [key]: { loading: true } };
+        try {
+            const entries = await this.callPortal("/getPieceAm", {
+                element_withPiecesAm: piece['element.withPiecesAm'],
+                elementSitId: piece.elementSitId,
+            });
+            this.state.autresAm = { ...this.state.autresAm, [key]: { entries: entries || [] } };
+        } catch (error) {
+            // Sans entrée en cache, replier puis déplier relance l'appel.
+            const autresAm = { ...this.state.autresAm };
+            delete autresAm[key];
+            this.state.autresAm = autresAm;
+            throw error;
         }
     }
 

@@ -6,15 +6,11 @@
                 <h6 class="card-title">
                     <t t-esc="pieceAM.libelle"/>
                 </h6>
-                <p>
-                    Validité: <t t-esc="dateLibelle"/>
-                    <br/>
-                    Description: <t t-esc="pieceAM.description"/>
-                    <br/>
-                    Référence : <t t-esc="pieceAM.reference"/>
-                    <br/>
-                    Prix: <t t-esc="pieceAM.prix"/>
-                </p>
+                <div t-if="fournisseur">Fournisseur : <t t-esc="fournisseur"/></div>
+                <div>Référence : <t t-esc="pieceAM.reference"/></div>
+                <div t-if="dateLibelle">Validité : <t t-esc="dateLibelle"/></div>
+                <div t-if="description">Description : <t t-esc="description"/></div>
+                <div t-if="hasPrix">Prix : <t t-esc="pieceAM.prix"/></div>
             </div>
         </div>
     </t>
