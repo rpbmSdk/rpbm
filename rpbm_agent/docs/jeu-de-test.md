@@ -157,6 +157,36 @@ Résultats attendus :
 - les lignes manuelles, le champ Studio agrégé et le produit « Pose à Domicile »
   restent inchangés.
 
+## Présentation VSF — recette sans écriture (R13 à R15)
+
+Ouvrir un dossier de test ayant une base Eurocode mémorisée. Ne pas confirmer le dialogue,
+créer un produit, définir un article principal ni ajouter de ligne ; fermer par **Annuler**.
+Relever par RPC `write_date` et les champs `rpbm_*` avant et après sur le dossier, son
+opportunité et le véhicule lié : toutes ces valeurs doivent rester inchangées.
+
+1. Rechercher `6108A` puis `6574A` : une seule colonne de cartes, y compris à grande largeur.
+   Le titre est la désignation seule ; « Eurocode : … » est en chasse fixe, immédiatement
+   au-dessus de la référence constructeur. Comparer des codes de longueurs différentes.
+2. Sélectionner un article avec suggestions : celles-ci sont aussi sur une colonne et
+   reprennent la même présentation, avec leurs actions dans leur propre carte.
+3. Modifier la base sans lancer la recherche : le lien **Ouvrir dans un nouvel onglet**
+   suit la valeur saisie, également par Ctrl+clic ou clic central avant validation du champ.
+   Vérifier l'encodage avec une valeur synthétique contenant `+`, `&` et un espace, sans
+   envoyer cette valeur au portail. La saisie ne lance pas un RPC par caractère.
+4. Vider le champ, puis saisir uniquement des espaces : le lien est désactivé au clavier
+   comme à la souris. Renseigner une base valide : il redevient utilisable.
+5. Ouvrir une base valide dans le nouvel onglet : VSF affiche la recherche, après connexion
+   si nécessaire ; le contexte du widget reste disponible dans l'onglet d'origine.
+6. Rejouer CRM-03 et CRM-05 : base restaurée avec et sans pièce AM, aucune recherche
+   automatique sans pièce mémorisée, « Autres marques AM » chargé une seule fois par
+   véhicule et famille, puis base remplie au clic.
+
+Les références de dossiers et les preuves live restent dans le document de travail local.
+Ces critères ne constituent pas une recette réussie avant leur exécution sur le build cible.
+Le contrôle hors réseau de la saisie, du lien et de la priorité de restauration se lance
+depuis la racine du dépôt : `node rpbm_agent/test_widget_vsf.mjs`
+([script](../test_widget_vsf.mjs)).
+
 ## Scénarios de robustesse
 
 | ID | Précondition | Action | Résultat attendu |

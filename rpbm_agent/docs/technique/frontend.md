@@ -4,7 +4,20 @@
 
 `AgentWidgetDialog` garde les sélections dans `selectedArticleCodes`, indexé par code VSF, et les produits Odoo dans `articleProducts`, également par code. Une carte sélectionnée possède donc son propre chargement, sa recherche/création produit et, sur un devis, son ajout ou retrait.
 
-La sélection d'un article principal charge sa fiche et hydrate ses suggestions à un seul niveau. Les suggestions ne rejoignent jamais `articlesVsf` : elles restent sous leur principal. Une carte principale sélectionnée et son groupe de suggestions occupent toute la largeur de la grille, afin qu'aucun résultat voisin ne les intercale. Les aperçus d'images et les caractéristiques techniques restent compacts. Désélectionner le principal retire les sélections de ce groupe. `AgentWidgetDialogSaleOrder` mémorise uniquement les lignes qu'il a ajoutées pendant la dialog et appelle `order_line.delete(line)` pour les retirer sans toucher aux lignes préexistantes.
+La sélection d'un article principal charge sa fiche et hydrate ses suggestions à un seul niveau. Les suggestions ne rejoignent jamais `articlesVsf` : elles restent sous leur principal. Toutes les cartes, principales ou suggérées, occupent une seule colonne (`col-12`), sélectionnées ou non. Les aperçus d'images et les caractéristiques techniques restent compacts. Désélectionner le principal retire les sélections de ce groupe. `AgentWidgetDialogSaleOrder` mémorise uniquement les lignes qu'il a ajoutées pendant la dialog et appelle `order_line.delete(line)` pour les retirer sans toucher aux lignes préexistantes.
+
+Le titre d'`ArticleComponent` affiche uniquement `article.name`. La ligne « Eurocode : … »
+affiche `article.code` avec `font-monospace`, immédiatement avant la référence constructeur.
+Ce gabarit est partagé par les résultats et les suggestions.
+
+Le lien « Ouvrir dans un nouvel onglet » vise
+`https://client.myvsf.fr/catalogue/vitrage?search=<base encodée>` (`target="_blank"`,
+`rel="noopener"`). Sa destination suit la saisie courante sans lancer de RPC sur chaque
+événement `input` ; une valeur vide ou composée d'espaces désactive le lien. L'authentification
+dans l'onglet appartient au navigateur de l'utilisateur, indépendamment des agents serveur.
+`baseEurocodeInput` porte la saisie affichée et la destination du lien ; `baseEurocode` ne
+change qu'à la validation du champ ou à une sélection/restauration. `setBaseEurocode()`
+synchronise ces deux valeurs pour les changements programmatiques.
 
 | Méthode JS | Composant | Usage |
 |---|---|---|

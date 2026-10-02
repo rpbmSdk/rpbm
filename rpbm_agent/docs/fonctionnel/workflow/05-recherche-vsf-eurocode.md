@@ -6,6 +6,17 @@
 
 Aucun champ Odoo n'est lu ou écrit à cette étape : la recherche externe VSF reste dans l'état local (`state.articlesVsf`). La sélection est multiple : un second clic désélectionne une carte ; désélectionner un article principal retire aussi ses suggestions sélectionnées. La sélection d'un principal enrichit ses suggestions à partir de leurs fiches VSF (lues en parallèle) avant affichage, sans les ajouter à la liste des résultats principaux.
 
+Les résultats et les « Articles suggérés par VSF » s'affichent sur une seule colonne. Le titre
+contient la désignation seule ; la ligne « Eurocode : … », en police à chasse fixe, précède
+« Référence constructeur ». Le code VSF est l'eurocode complet : les caractères restent
+alignés d'une carte à l'autre, sans séparation ajoutée entre les rangs.
+
+À côté de « Rechercher sur VSF », « Ouvrir dans un nouvel onglet » ouvre le catalogue VSF
+sur la valeur courante du champ, même si elle n'a pas encore été recherchée dans le widget.
+Le lien est désactivé lorsque le champ est vide ou ne contient que des espaces. Il utilise
+la session VSF du navigateur ; si nécessaire, VSF demande une connexion avant de revenir
+à la recherche. La saisie seule ne déclenche pas de recherche à chaque caractère.
+
 Chaque carte sélectionnée garde ses propres actions de produit Odoo. Sur un devis, l'ajout et le retrait sont indépendants par article ; le retrait ne concerne que la ligne ajoutée par le widget pendant la dialog courante.
 
 La base Eurocode restaurée depuis l'enregistrement relance la recherche VSF à la
