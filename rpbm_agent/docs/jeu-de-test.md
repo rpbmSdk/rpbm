@@ -95,7 +95,11 @@ Résultats attendus :
   autre pièce de la même famille n'en relance pas ;
 - les lignes suivent l'ordre X'Glass, doublons de fournisseurs compris (cas observé : 13 lignes,
   ARGIC puis PILKINGTON, `6108AGACMU` en premier, validité « A partir de 11/2022 ») ;
-- un clic sur une ligne la met en évidence, remplit la base (`6108A`) et lance la recherche VSF ;
+- chaque référence tient sur une ligne compacte, comme X'Glass : fournisseur au-dessus de la
+  référence à gauche ; libellé, validité et description à droite ; prix en bout de ligne pour
+  les seules lignes PILKINGTON ; les cartes « Équivalence AM » restent des cartes ;
+- un clic n'importe où sur une ligne la met en évidence, remplit la base (`6108A`) et lance la
+  recherche VSF ;
 - une famille sans entrée affiche « Aucune autre référence après-marché. », sans erreur.
 
 ## Scénarios devis
@@ -158,7 +162,7 @@ Résultats attendus :
 | ID | Précondition | Action | Résultat attendu |
 |---|---|---|---|
 | ROB-01 | Deux véhicules candidats | Changer rapidement de véhicule | Une seule planche et une seule métadonnée correspondent au véhicule finalement sélectionné |
-| ROB-02 | Session X'Glass expirée | Déclencher une recherche ou une sélection | Reconnexion proposée, contexte conservé, action rejouée au plus une fois |
+| ROB-02 | Session X'Glass expirée | Déclencher une recherche ou une sélection | Reconnexion proposée, contexte conservé, action rejouée au plus une fois. Après reconnexion, mêmes pièces AM qu'avant (GS600HH, pièce `G27006RA3E` : aucune « Équivalence AM », 13 « Autres marques AM » avec validité) |
 | ROB-03 | VIN Fleet déjà renseigné | Confirmer avec une valeur X'Glass différente | Le VIN Fleet valide n'est pas écrasé |
 | ROB-04 | VIN Fleet de forme `var = <VIN>;` | Confirmer avec une valeur X'Glass valide | Le VIN malformé est nettoyé et remplacé par le VIN valide |
 | ROB-05 | Article sans image ou stock | Sélectionner l'article | La carte reste utilisable, sans erreur JavaScript |

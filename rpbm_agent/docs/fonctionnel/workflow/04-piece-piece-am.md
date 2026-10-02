@@ -27,11 +27,16 @@ même quand « Équivalence AM » est vide.
 
 - **Déclencheur** : dépliage de l'encart (`onToggleAutresAm()` → `loadAutresAm()`).
 - **Route** : `POST /getPieceAm` sans `pieceId` : X'Glass est interrogé par `idElementSit`.
-- **Cache** : la liste est gardée par planche et famille pendant la vie de la dialog. Replier,
+- **Cache** : la liste est gardée par véhicule et famille pendant la vie de la dialog. Replier,
   déplier ou changer de pièce dans la même famille ne relance pas d'appel. En cas d'erreur, rien
-  n'est gardé : replier puis déplier relance l'appel.
+  n'est gardé : replier puis déplier relance l'appel. Une reconnexion aux portails vide le
+  cache.
 - **Contenu** : toutes les lignes renvoyées par X'Glass, dans son ordre, doublons de fournisseurs
   compris. Une famille sans entrée affiche « Aucune autre référence après-marché. ».
+- **Présentation** : une ligne compacte par référence, comme X'Glass : fournisseur au-dessus de
+  la référence à gauche ; libellé, « Validité : … » et « Description : … » à droite ; prix en
+  bout de ligne seulement s'il est connu. Un séparateur sépare les lignes. Les cartes
+  « Équivalence AM » restent des cartes sur deux colonnes.
 - **Clic sur une ligne** : même effet qu'une carte « Équivalence AM » (sélection, base Eurocode,
   recherche VSF). Vérifier qu'une seule base Eurocode ressort de la liste reste à la charge de
   l'utilisateur.

@@ -185,9 +185,35 @@ Alternative non retenue (business, pas technique) : un pool de plusieurs identif
 
 L'expiration du verrou ou d'une session authentifiée est remontée au widget sous le type
 JSON-RPC `AgentSessionExpiredError`. Le widget peut alors appeler à nouveau
-`/rpbm_agent_auth` : le verrou est repris par le même utilisateur, les agents sont recréés et
-le véhicule déjà sélectionné est réactivé côté X'Glass. Une erreur réseau, une erreur de
-parsing ou des identifiants refusés ne sont pas considérés comme récupérables automatiquement.
+`/rpbm_agent_auth` : le verrou est repris par le même utilisateur, les agents sont recréés,
+puis la dernière recherche par immatriculation aboutie et la sélection du véhicule sont
+rejouées côté X'Glass (`/searchImmatriculation` puis `/getPlanche`). Une erreur réseau, une
+erreur de parsing ou des identifiants refusés ne sont pas considérés comme récupérables
+automatiquement.
+
+Faits établis par deux traces réelles du 2026-10-02 (GS600HH : véhicule 471612, planche 26881,
+calque 59, famille 3464, pièce OE 3510699), à ne pas modifier sans nouvelle trace :
+
+- **Sélection sans recherche.** Dans une session neuve, `POST selectVehicule.html` sans
+  recherche préalable mène à `displayPlanche.html`, qui redirige vers `mainMenu.html?errorCode=`.
+  La sélection est refusée sans erreur : `/getPlanche` renvoie `{}`.
+- **Pièces AM sans contexte véhicule.** Dans ce cas, `findSelectionsPiecesAmView` répond :
+  - par pièce OE : une entrée non filtrée (`6108AGABCHMU`, « Volant à droite »), sans
+    validité ni remarque, au lieu de `[]` ;
+  - par famille : `{"errorCode": "10", "selectionsPiecesAmView": null}`.
+
+  Ce sont les trois symptômes relevés en recette R11.
+- **Page des pièces refusée.** `affichagePieces.html` est lui-même refusé (302 vers
+  `mainMenu.html?errorCode=10`) : rejouer la page des pièces ne suffit pas.
+- **`initRechercheVehicule.html` seul.** Il fait aboutir la sélection et redonne les mêmes
+  listes AM. La planche n'a toutefois plus ni VIN, ni immatriculation, ni CNIT, ni date de MEC
+  (`critereAAAIsNull = 'true'`).
+- **Séquence retenue.** `/searchImmatriculation` (`initRechercheVehicule` + `searchImmat`) puis
+  `/getPlanche` redonne une planche identique à la référence et des listes AM identiques
+  (identifiants, `debutValidite`, `remarque`). `affichagePieces` n'est pas nécessaire.
+- **Immatriculation rejouée.** Le widget rejoue celle de la dernière recherche aboutie, et non
+  la valeur courante du champ.
+- **Cache vidé.** Le cache « Autres marques AM » est vidé après une reconnexion réussie.
 
 ## Assets
 

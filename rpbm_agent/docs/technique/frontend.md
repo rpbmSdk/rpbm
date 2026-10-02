@@ -71,7 +71,10 @@ Les pièces après-marché ne sont affichées que sous la pièce OE active, dans
 explicitement son libellé. La pièce active occupe toute la largeur de la grille ; sous elle,
 l'encart repliable « Autres marques AM » reprend l'encart X'Glass « AUTRE AM » de sa famille
 (`loadAutresAm()`). Ses lignes utilisent le même `PieceAMComponent` que les cartes
-« Équivalence AM » et le même `onSelectPieceAM()`. Cliquer de nouveau sur cette pièce la désélectionne et efface les
+« Équivalence AM » et le même `onSelectPieceAM()` ; la prop optionnelle `compact` choisit le
+gabarit en ligne (`list-group-item` dans une `list-group-flush`, environ 60 px par ligne en
+largeur `xl` au lieu d'environ 155 px par carte), avec les mêmes getters `fournisseur`,
+`dateLibelle`, `description`, `hasPrix` et `style`. Cliquer de nouveau sur cette pièce la désélectionne et efface les
 données qui en dépendent (pièce après-marché, eurocode, résultats et article VSF).
 
 `PieceComponent` affiche les données déjà reçues par `/getPieces`, sans nouvel appel vers
@@ -167,10 +170,10 @@ cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAll
 | `createOdooVehicule()` / `onClickCreateVehicule()` | `AgentWidgetDialog` et `VehiculeComponent` | `/createVehicule` | Création du véhicule ; retourne `{id, name}` |
 | `enrichOdooVehicule()` | `AgentWidgetDialog` à la confirmation si le véhicule existe déjà | `/enrichVehicule` | Complément des champs Fleet VIN/date manquants depuis les métadonnées X'Glass ; avertissements |
 | `getVehiculeMeta()` | `AgentWidgetDialog` pour le seul véhicule sélectionné | `/rpbm_agent/getVehiculeMeta` | VIN/CNIT/date MEC **et** planche (catégories/calques), en un appel |
-| `restorePortalContext()` | `AgentWidgetDialog` après reconnexion | `/getPlanche` | Re-sélection du véhicule côté portail sans toucher l'état Owl |
+| `restorePortalContext()` | `AgentWidgetDialog` après reconnexion | `/searchImmatriculation` puis `/getPlanche` | Rejoue la dernière recherche aboutie puis la sélection du véhicule côté portail, sans toucher l'état Owl |
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce (« Équivalence AM ») |
-| `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de « Autres marques AM » | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par planche + `elementSitId` |
+| `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de « Autres marques AM » | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par véhicule + `elementSitId` |
 | `onSearchBaseEurocode()` | `AgentWidgetDialog` | `/searchBaseEurocode` | Articles VSF par eurocode |
 | `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'une carte sélectionnée (+ suggestions pour un article principal) |
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour une carte VSF donnée |
@@ -202,10 +205,15 @@ routes custom de `main.py`.
 ## Reconnexion à chaud des portails
 
 Les appels dépendants de X'Glass ou VSF passent par `callPortal()`. Lorsqu'une erreur
-JSON-RPC `AgentSessionExpiredError` remonte, la dialog réauthentifie une fois les deux agents,
-rejoue silencieusement `/getPlanche` pour restaurer la sélection serveur du véhicule courant,
-puis rejoue une seule fois l'appel interrompu. Cette restauration n'écrit pas dans l'état Owl :
-véhicule, catégorie, pièces, articles et sélections affichés restent inchangés.
+JSON-RPC `AgentSessionExpiredError` remonte, la dialog réauthentifie une fois les deux agents.
+Elle rejoue ensuite silencieusement `/searchImmatriculation`, avec l'immatriculation de la
+dernière recherche aboutie (`_searchedImmatriculation`), puis `/getPlanche`, pour restaurer la
+sélection serveur du véhicule courant. Elle rejoue enfin une seule fois l'appel interrompu.
+
+Sans la recherche, X'Glass refuse la sélection sans erreur (voir
+[configuration](configuration.md#reconnexion-à-chaud)). Hormis le cache « Autres marques AM »,
+vidé, cette restauration n'écrit pas dans l'état Owl : véhicule, catégorie, pièces, articles
+et sélections affichés restent inchangés.
 
 Si la reconnexion ou le rejeu échoue à nouveau, `reconnectRequired` affiche le bouton
 « Reconnecter » dans le footer. Le bouton conserve le contexte mais ne relance pas l'action
