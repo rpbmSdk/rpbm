@@ -68,6 +68,7 @@ export class AgentWidgetDialog extends asyncWidget {
             autresAm: {},
             autresAmOpen: false,
             baseEurocode: undefined,
+            baseEurocodeInput: undefined,
             articlesVsf: [],
             selectedArticleCodes: {},
             primaryArticleCode: undefined,
@@ -593,6 +594,22 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.state.baseEurocode;
     }
 
+    get baseEurocodeInput() {
+        return this.state.baseEurocodeInput || "";
+    }
+
+    get vsfSearchUrl() {
+        const baseEurocode = this.baseEurocodeInput;
+        return baseEurocode.trim()
+            ? `https://client.myvsf.fr/catalogue/vitrage?search=${encodeURIComponent(baseEurocode)}`
+            : undefined;
+    }
+
+    setBaseEurocode(baseEurocode) {
+        this.state.baseEurocode = baseEurocode;
+        this.state.baseEurocodeInput = baseEurocode;
+    }
+
     onClickCalque(calqueId) {
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
         this.state.showAllCalques = false;
@@ -664,7 +681,7 @@ export class AgentWidgetDialog extends asyncWidget {
         this.state.selectedPieceAm = undefined;
         this.state.autresAmOpen = false;
         if (!preserveRestoredBase) {
-            this.state.baseEurocode = undefined;
+            this.setBaseEurocode(undefined);
         }
         this.state.articlesVsf = [];
         this.resetVsfSelection();
@@ -697,7 +714,7 @@ export class AgentWidgetDialog extends asyncWidget {
             // La base enregistrée prévaut sur celle de la pièce AM restaurée (décision R12
             // du 2026-10-02) ; à défaut (base vide, pièce resélectionnée), on la dérive.
             if (this.selectedPieceAm && !this.baseEurocode) {
-                this.state.baseEurocode = this.selectedPieceAm.pieceAm.reference.substring(0, 5);
+                this.setBaseEurocode(this.selectedPieceAm.pieceAm.reference.substring(0, 5));
             }
             this._restorePending = false;
         }
@@ -711,7 +728,7 @@ export class AgentWidgetDialog extends asyncWidget {
     onSelectPieceAM(metaPieceAM) {
         this.state.selectedPieceAm = metaPieceAM;
         // Seul un choix explicite de l'utilisateur dérive la base de la pièce AM.
-        this.state.baseEurocode = metaPieceAM.pieceAm.reference.substring(0, 5);
+        this.setBaseEurocode(metaPieceAM.pieceAm.reference.substring(0, 5));
     }
 
     /**
@@ -762,8 +779,12 @@ export class AgentWidgetDialog extends asyncWidget {
         }
     }
 
+    onInputBaseEurocode(ev) {
+        this.state.baseEurocodeInput = ev.target.value;
+    }
+
     onChangeBaseEurocode(ev) {
-        this.state.baseEurocode = ev.target.value;
+        this.setBaseEurocode(ev.target.value);
     }
 
     restoreSelectionFromRecord() {
@@ -776,7 +797,7 @@ export class AgentWidgetDialog extends asyncWidget {
             this._restorePieceId || this._restorePieceOeId || this._restorePieceAmId || this._restoreBaseEurocode
         );
         if (this._restoreBaseEurocode) {
-            this.state.baseEurocode = this._restoreBaseEurocode;
+            this.setBaseEurocode(this._restoreBaseEurocode);
         }
     }
 

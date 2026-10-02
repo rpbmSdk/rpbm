@@ -101,13 +101,14 @@
                     <div class="d-flex flex-wrap gap-2 align-items-end">
                         <div>
                             <label for="baseEurocode" class="form-label">Base Eurocode</label>
-                            <input class="o_input" id="baseEurocode" t-att-value="baseEurocode" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-change="onChangeBaseEurocode"/>
+                            <input class="o_input" id="baseEurocode" t-att-value="baseEurocodeInput" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-input="onInputBaseEurocode" t-on-change="onChangeBaseEurocode"/>
                         </div>
                         <button class="btn btn-primary" t-on-click="onSearchBaseEurocode">Rechercher sur VSF</button>
+                        <a t-att-class="vsfSearchUrl ? 'btn btn-outline-primary' : 'btn btn-outline-primary disabled'" t-att-href="vsfSearchUrl" target="_blank" rel="noopener" t-att-aria-disabled="vsfSearchUrl ? 'false' : 'true'" t-att-tabindex="vsfSearchUrl ? undefined : -1">Ouvrir dans un nouvel onglet</a>
                     </div>
                     <div t-if="articlesVsf.length > 0" class="row g-2 mt-2">
                         <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
-                            <div t-att-class="isArticleSelected(articleVsf.code) ? 'col-12' : 'col-12 col-lg-6'">
+                            <div class="col-12">
                                 <ArticleComponent record="record" article="articleVsf" selected="isArticleSelected(articleVsf.code)" onOpenImage.bind="openImagePreview" t-on-click="()=>this.onClickArticleVsf(articleVsf.code)">
                                     <t t-set-slot="actions">
                                         <t t-if="isArticleSelected(articleVsf.code)">
@@ -120,7 +121,7 @@
                                     <h6 class="mb-3">Articles suggérés par VSF</h6>
                                     <div class="row g-2">
                                         <t t-foreach="articleVsf.suggestedArticles" t-as="suggestion" t-key="suggestion.code">
-                                            <div class="col-12 col-md-6">
+                                            <div class="col-12">
                                                 <ArticleComponent record="record" article="suggestion" selected="isArticleSelected(suggestion.code)" onOpenImage.bind="openImagePreview" t-on-click="()=>this.onClickSuggestedArticle(suggestion.code, articleVsf.code)">
                                                     <t t-set-slot="actions">
                                                         <t t-if="isArticleSelected(suggestion.code)">

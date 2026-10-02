@@ -4,8 +4,11 @@
         <div class="card flex-grow-1" t-att-class="props.selected ? 'border-primary shadow-sm' : 'h-100'">
             <div class="card-body" t-att-style="style">
                 <h5 class="card-title">
-                    <t t-esc="props.article.code"/> <t t-esc="props.article.name"/>
+                    <t t-esc="props.article.name"/>
                 </h5>
+                <h6 t-if="props.article.code" class="font-monospace">
+                    Eurocode : <t t-esc="props.article.code"/>
+                </h6>
                 <h6 t-if="props.article.refConstructeur">
                     Référence constructeur: <t t-esc="props.article.refConstructeur"/>
                 </h6>
