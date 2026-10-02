@@ -140,7 +140,9 @@ export class AgentWidgetDialog extends asyncWidget {
         useEffect(() => {
             if (!this.selectedCalque) {
                 this.state.pieces = [];
-                this.clearSelectedPiece();
+                // Au montage aucun calque n'est encore choisi : sans ce drapeau, la base
+                // Eurocode restaurée était effacée avant d'être affichée (R12).
+                this.clearSelectedPiece(this._restorePending);
             }
             else {
                 if (!this._restorePending || !this.pieceConcernee) {
@@ -169,17 +171,6 @@ export class AgentWidgetDialog extends asyncWidget {
                 this.runAsync(() => this.getSelectedPieceAm(), "Chargement des pièces compatibles en cours...");
             }
         }, () => [this.selectedPiece])
-
-        useEffect(() => {
-            if (this.selectedPieceAm) {
-                const basePieceAm = this.selectedPieceAm.pieceAm;
-                const reference = basePieceAm.reference
-                this.state.baseEurocode = reference.substring(0, 5);
-            }
-            else {
-                this.state.baseEurocode = undefined;
-            }
-        }, () => [this.selectedPieceAm])
 
         useEffect(() => {
             if (this.agentsInitialized && this.selectedPiece && this.baseEurocode) {
@@ -690,8 +681,10 @@ export class AgentWidgetDialog extends asyncWidget {
         piece.PiecesAM = res;
         if (this._restorePieceAmId) {
             this.state.selectedPieceAm = res.find(meta => String(meta.pieceAm?.id) === this._restorePieceAmId);
-            if (this.state.selectedPieceAm && this._restoreBaseEurocode) {
-                this.state.baseEurocode = this._restoreBaseEurocode;
+            // La base enregistrée prévaut sur celle de la pièce AM restaurée (décision R12
+            // du 2026-10-02) ; à défaut (base vide, pièce resélectionnée), on la dérive.
+            if (this.selectedPieceAm && !this.baseEurocode) {
+                this.state.baseEurocode = this.selectedPieceAm.pieceAm.reference.substring(0, 5);
             }
             this._restorePending = false;
         }
@@ -704,6 +697,10 @@ export class AgentWidgetDialog extends asyncWidget {
     onSelectPieceAM(pieceAmId) {
         if (this.selectedPiece && this.selectedPiece.PiecesAM) {
             this.state.selectedPieceAm = this.selectedPiece.PiecesAM.find(metaPieceAM => metaPieceAM.pieceAm.id === pieceAmId);
+            // Seul un choix explicite de l'utilisateur dérive la base de la pièce AM.
+            if (this.selectedPieceAm) {
+                this.state.baseEurocode = this.selectedPieceAm.pieceAm.reference.substring(0, 5);
+            }
         }
     }
 
