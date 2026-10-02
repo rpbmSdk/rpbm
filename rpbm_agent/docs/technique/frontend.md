@@ -68,7 +68,10 @@ d'erreur.
 ## Détails discriminants des pièces OE
 
 Les pièces après-marché ne sont affichées que sous la pièce OE active, dans un encadré portant
-explicitement son libellé. Cliquer de nouveau sur cette pièce la désélectionne et efface les
+explicitement son libellé. La pièce active occupe toute la largeur de la grille ; sous elle,
+l'encart repliable « Autres marques AM » reprend l'encart X'Glass « AUTRE AM » de sa famille
+(`loadAutresAm()`). Ses lignes utilisent le même `PieceAMComponent` que les cartes
+« Équivalence AM » et le même `onSelectPieceAM()`. Cliquer de nouveau sur cette pièce la désélectionne et efface les
 données qui en dépendent (pièce après-marché, eurocode, résultats et article VSF).
 
 `PieceComponent` affiche les données déjà reçues par `/getPieces`, sans nouvel appel vers
@@ -138,8 +141,8 @@ flowchart TD
     PI --> SP["selectedPiece re-matché dans la nouvelle liste (ou réinitialisé)"]
     SP --> SPC[selectedPiece change]
     SPC --> GPA["getSelectedPieceAm() → GET /getPieceAm"]
-    GPA --> PA[selectedPieceAm change]
-    PA --> EU["baseEurocode = 5 premiers caractères de selectedPieceAm.pieceAm.reference"]
+    GPA --> PA["clic sur une pièce AM (« Équivalence AM » ou « Autres marques AM ») → onSelectPieceAM()"]
+    PA --> EU["baseEurocode = 5 premiers caractères de pieceAm.reference"]
     EU --> EUC[baseEurocode change]
     EUC --> SB["onSearchBaseEurocode() → GET /searchBaseEurocode"]
 ```
@@ -166,7 +169,8 @@ cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAll
 | `getVehiculeMeta()` | `AgentWidgetDialog` pour le seul véhicule sélectionné | `/rpbm_agent/getVehiculeMeta` | VIN/CNIT/date MEC **et** planche (catégories/calques), en un appel |
 | `restorePortalContext()` | `AgentWidgetDialog` après reconnexion | `/getPlanche` | Re-sélection du véhicule côté portail sans toucher l'état Owl |
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
-| `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce |
+| `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce (« Équivalence AM ») |
+| `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de « Autres marques AM » | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par planche + `elementSitId` |
 | `onSearchBaseEurocode()` | `AgentWidgetDialog` | `/searchBaseEurocode` | Articles VSF par eurocode |
 | `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'une carte sélectionnée (+ suggestions pour un article principal) |
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour une carte VSF donnée |

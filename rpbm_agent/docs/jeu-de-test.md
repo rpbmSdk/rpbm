@@ -82,6 +82,22 @@ Résultats attendus : la recherche vide affiche une information exploitable,
 ne crée aucun véhicule et ne lève pas d'exception non gérée. La base saisie
 manuellement permet néanmoins de rechercher les articles VSF.
 
+### CRM-05 — Autres marques AM sans équivalence AM
+
+Sur un véhicule dont les pare-brises OE n'ont aucune « Équivalence AM » (cas observé : Nissan
+X-Trail IV T33, 2022-09 →, pare-brise OE `G27006RA3E`), sélectionner la pièce puis déplier
+« Autres marques AM ».
+
+Résultats attendus :
+
+- l'encart est présent et replié tant qu'on ne le déplie pas ;
+- au dépliage, un seul appel `/getPieceAm` sans `pieceId` ; replier, déplier ou choisir une
+  autre pièce de la même famille n'en relance pas ;
+- les lignes suivent l'ordre X'Glass, doublons de fournisseurs compris (cas observé : 13 lignes,
+  ARGIC puis PILKINGTON, `6108AGACMU` en premier, validité « A partir de 11/2022 ») ;
+- un clic sur une ligne la met en évidence, remplit la base (`6108A`) et lance la recherche VSF ;
+- une famille sans entrée affiche « Aucune autre référence après-marché. », sans erreur.
+
 ## Scénarios devis
 
 ### SO-01 — Devis avec opportunité
