@@ -17,6 +17,12 @@ Le lien est désactivé lorsque le champ est vide ou ne contient que des espaces
 la session VSF du navigateur ; si nécessaire, VSF demande une connexion avant de revenir
 à la recherche. La saisie seule ne déclenche pas de recherche à chaque caractère.
 
+Chaque vignette reçue dès la recherche associe la miniature à son URL VSF plein format signée.
+Un clic simple ouvre l'aperçu interne ; tout clic modifié garde le comportement natif sans
+sélectionner la carte (Ctrl/Cmd-clic ou clic central ouvre l'image dans un nouvel onglet). Les flèches ← et →
+font défiler en boucle les seules photos de l'article dans l'aperçu ; les photos du modèle sont
+exclues. La recette live R16/R17 reste ouverte.
+
 Chaque carte sélectionnée garde ses propres actions de produit Odoo. Sur un devis, l'ajout et le retrait sont indépendants par article ; le retrait ne concerne que la ligne ajoutée par le widget pendant la dialog courante.
 
 La base Eurocode restaurée depuis l'enregistrement relance la recherche VSF à la

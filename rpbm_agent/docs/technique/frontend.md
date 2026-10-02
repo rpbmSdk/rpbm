@@ -112,7 +112,13 @@ Au clic sur un article principal, le widget lit sa fiche VSF et hydrate les cart
 carrousel « références complémentaires » sans les ajouter aux résultats principaux. Les cartes
 principales et suggérées partagent le même contenu (photo, référence, prix, stock et
 caractéristiques) ; les suggestions ne sont pas développées récursivement. Les miniatures avec
-une URL pleine taille signée par VSF ouvrent une prévisualisation dans une dialog Odoo.
+une URL pleine taille signée par VSF sont des liens natifs (`target="_blank"` et
+`rel="noopener"`) : clic simple = aperçu interne ; tout clic modifié garde le comportement
+natif sans modifier la sélection de la carte (Ctrl/Cmd-clic ou clic central ouvre un nouvel
+onglet). Le dialog reçoit uniquement les URL plein
+format et l'index courant ; `useState` et `useHotkey` font défiler ←/→ en boucle, y compris avec
+une seule photo qui reste stable. Les photos du modèle sont exclues côté backend. La recette live
+R16/R17 reste ouverte.
 
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 

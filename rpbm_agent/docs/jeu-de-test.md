@@ -157,7 +157,7 @@ Résultats attendus :
 - les lignes manuelles, le champ Studio agrégé et le produit « Pose à Domicile »
   restent inchangés.
 
-## Présentation VSF — recette sans écriture (R13 à R15)
+## Présentation VSF — recette sans écriture (R13 à R17)
 
 Ouvrir un dossier de test ayant une base Eurocode mémorisée. Ne pas confirmer le dialogue,
 créer un produit, définir un article principal ni ajouter de ligne ; fermer par **Annuler**.
@@ -180,10 +180,16 @@ opportunité et le véhicule lié : toutes ces valeurs doivent rester inchangée
 6. Rejouer CRM-03 et CRM-05 : base restaurée avec et sans pièce AM, aucune recherche
    automatique sans pièce mémorisée, « Autres marques AM » chargé une seule fois par
    véhicule et famille, puis base remplie au clic.
+7. Dès les résultats, ouvrir une vignette : clic simple = aperçu interne ; tout clic modifié
+   garde le comportement natif sans sélectionner la carte. Vérifier en particulier Ctrl/Cmd-clic
+   et clic central, qui ouvrent l'image VSF signée dans un nouvel onglet.
+   Dans l'aperçu, vérifier ←/→, le rebouclage après la dernière et avant la première image, et
+   l'absence des photos du modèle de véhicule.
 
 Les références de dossiers et les preuves live restent dans le document de travail local.
-Ces critères ne constituent pas une recette réussie avant leur exécution sur le build cible.
-Le contrôle hors réseau de la saisie, du lien et de la priorité de restauration se lance
+Ces critères ne constituent pas une recette réussie avant leur exécution sur le build cible : la
+recette live R16/R17 reste ouverte. Le contrôle hors réseau de la saisie, du lien, de l'aperçu
+et de la priorité de restauration se lance
 depuis la racine du dépôt : `node rpbm_agent/test_widget_vsf.mjs`
 ([script](../test_widget_vsf.mjs)).
 
