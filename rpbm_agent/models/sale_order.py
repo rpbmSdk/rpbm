@@ -44,6 +44,7 @@ class SaleOrder(models.Model):
     rpbm_xglass_piece_id = fields.Char(related="opportunity_id.rpbm_xglass_piece_id", readonly=False)
     rpbm_piece_oe_id = fields.Char(related="opportunity_id.rpbm_piece_oe_id", readonly=False)
     rpbm_piece_am_id = fields.Char(related="opportunity_id.rpbm_piece_am_id", readonly=False)
+    rpbm_xglass_vehicle_id = fields.Char(related="opportunity_id.rpbm_xglass_vehicle_id", readonly=False)
 
     @api.model
     def _rpbm_carrier_name(self, opportunity):

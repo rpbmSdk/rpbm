@@ -51,6 +51,7 @@ export class AbstractWidgetRecord extends AbstractRecord {
     categorieXglassField = "rpbm_xglass_category";
     pieceConcerneeField = "rpbm_part_type";
     baseEurocodeField = "rpbm_eurocode_base";
+    xglassVehicleIdField = "rpbm_xglass_vehicle_id";
     xglassPieceIdField = "rpbm_xglass_piece_id";
     pieceOeIdField = "rpbm_piece_oe_id";
     pieceAmIdField = "rpbm_piece_am_id";

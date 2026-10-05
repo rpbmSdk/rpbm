@@ -142,8 +142,9 @@ class TestLegacySyncWithStudio(TransactionCase):
         lead = self._lead(rpbm_eurocode_base="7275A")
         order = self.env["sale.order"].create({"partner_id": self.partner.id, "opportunity_id": lead.id})
         self.assertEqual(order.rpbm_eurocode_base, "7275A")
-        order.write({"rpbm_eurocode_base": "7310A", "rpbm_part_type": "other"})
+        order.write({"rpbm_eurocode_base": "7310A", "rpbm_part_type": "other", "rpbm_xglass_vehicle_id": "471613"})
         self.assertEqual(lead.rpbm_eurocode_base, "7310A")
+        self.assertEqual(lead.rpbm_xglass_vehicle_id, "471613")
         self.assertEqual(lead.x_studio_field_ORIyy, "7310A")
         self.assertEqual(lead.x_studio_field_eENQz, "Autre...")
 

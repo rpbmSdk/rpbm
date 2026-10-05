@@ -39,6 +39,7 @@
                         <field name="rpbm_xglass_piece_id"/>
                         <field name="rpbm_piece_oe_id"/>
                         <field name="rpbm_piece_am_id"/>
+                        <field name="rpbm_xglass_vehicle_id"/>
                     </group>
                 </page>
             </notebook>

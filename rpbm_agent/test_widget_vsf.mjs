@@ -9,6 +9,7 @@ const emptyComponent = class {};
 // Crochets Owl simulés : setup() réel (utils.js compris), effets rejoués à la main.
 const effects = [];
 const rpcCalls = [];
+const mountedHooks = [];
 const context = {
     Component: class { setup() {} },
     standardWidgetProps: {},
@@ -19,6 +20,13 @@ const context = {
     useEffect: (fn, deps) => effects.push({ fn, deps }),
     onWillStart() {},
     onWillUnmount() {},
+    onMounted: (fn) => mountedHooks.push(fn),
+    FormController: class { setup() {} },
+    // Comme le patch d'Odoo : `super` dans l'extension appelle la méthode d'origine.
+    patch(target, extension) {
+        Object.setPrototypeOf(extension, Object.create(Object.getPrototypeOf(target), Object.getOwnPropertyDescriptors(target)));
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(extension));
+    },
     Dialog: emptyComponent,
     VehiculeComponent: emptyComponent,
     CalqueComponent: emptyComponent,
@@ -27,8 +35,10 @@ const context = {
     ArticleComponent: emptyComponent,
     VsfImagePreviewDialog: emptyComponent,
 };
+const dialogSources = ["utils.js", "agent_widget_dialog.js", "agent_widget_dialog_sale_order.js", "agent_widget_dialog_crm_lead.js"];
 vm.runInNewContext(
-    `${await load("utils.js")}\n${await load("agent_widget_dialog.js")}\nthis.AgentWidgetDialog = AgentWidgetDialog;`,
+    `${(await Promise.all(dialogSources.map(load))).join("\n")}
+    Object.assign(this, { AgentWidgetDialog, AgentWidgetDialogSaleOrder, AgentWidgetDialogCrmLead });`,
     context,
 );
 
@@ -154,23 +164,25 @@ assert.deepEqual(plain(am.state.autresAm), {});
 assert.deepEqual(plain(am.state.autresAmOpen), {});
 
 // Recherche VSF automatique : setup() réel, effet VSF rejoué comme Owl (deps comparées par ===).
-const mount = (data) => {
+const mount = (data, Dialog = context.AgentWidgetDialog) => {
     effects.length = 0;
     rpcCalls.length = 0;
-    const widget = new context.AgentWidgetDialog();
+    const widget = new Dialog();
     widget.props = { record: { data }, close() {} };
     widget.setup();
     widget.state.agentsInitialized = true;
     return widget;
 };
-const runVsfEffect = () => {
-    const effect = effects.at(-1);
+const runEffect = (effect) => {
     const deps = effect.deps();
     if (!effect.previous || deps.some((dep, index) => dep !== effect.previous[index])) {
         effect.previous = deps;
         effect.fn(...deps);
     }
 };
+const runVsfEffect = () => runEffect(effects.at(-1));
+// Deuxième effet de setup(), après canConfirm.
+const runVehiculesEffect = () => runEffect(effects[1]);
 const vsfSearches = async () => {
     await new Promise(resolve => setImmediate(resolve));
     return plain(rpcCalls.filter(({ route }) => route === "/searchBaseEurocode").map(({ params }) => params));
@@ -204,6 +216,110 @@ runVsfEffect();
 both.state.selectedPieceAm = { pieceAm: { id: 3365069, reference: "6108AGNSMVZ1B" } };
 runVsfEffect();
 assert.deepEqual(await vsfSearches(), [{ baseEurocode: "6108A" }]);
+
+// Lot E1 : véhicule X'Glass mémorisé s'il figure dans la liste, sinon le premier.
+const memorized = mount({ rpbm_xglass_vehicle_id: "2" });
+memorized.state.vehicules = [{ id: 1 }, { id: 2 }];
+runVehiculesEffect();
+assert.equal(memorized.selectedVehicule.id, 2);
+memorized.state.vehiculeMeta = {};
+memorized.getOdooVehicule = async () => ({ id: 5, name: "GS600HH" });
+assert.equal((await memorized.getRecordData()).rpbm_xglass_vehicle_id, "2");
+
+const unknownVehicle = mount({ rpbm_xglass_vehicle_id: "9" });
+unknownVehicle.state.vehicules = [{ id: 1 }, { id: 2 }];
+runVehiculesEffect();
+assert.equal(unknownVehicle.selectedVehicule.id, 1);
+
+const noVehicle = mount({ rpbm_xglass_vehicle_id: "2" });
+noVehicle.state.selectedVehicule = { id: 2 };
+runVehiculesEffect();
+assert.equal(noVehicle.selectedVehicule, undefined);
+
+// L'opportunité s'arrête à la base Eurocode : même pièce AM et même base, aucune recherche VSF.
+for (const [Dialog, searches] of [
+    [context.AgentWidgetDialog, [{ baseEurocode: "6108A" }]],
+    [context.AgentWidgetDialogCrmLead, []],
+]) {
+    const widget = mount({ rpbm_eurocode_base: "6108A" }, Dialog);
+    runVsfEffect();
+    widget.state.selectedPieceAm = { pieceAm: { id: 3365069, reference: "6108AGNSMVZ1B" } };
+    runVsfEffect();
+    assert.deepEqual(await vsfSearches(), searches, Dialog.name);
+}
+
+// « Créer un devis » sur l'opportunité 42 : chaque étape est journalisée dans events.
+const crmFor = (events, recordOverrides = {}) => {
+    const widget = mount({ partner_id: [7, "Client de test"], type: "opportunity" }, context.AgentWidgetDialogCrmLead);
+    Object.assign(widget.props.record, {
+        resId: 42,
+        context: { lang: "fr_FR" },
+        async update() { events.push("update"); },
+        async save() { events.push("save"); return true; },
+    }, recordOverrides);
+    widget.props.close = () => events.push("close");
+    widget.rpc = async (route) => { events.push(route); return []; };
+    widget.action = { async doActionButton() { events.push("doActionButton"); } };
+    return widget;
+};
+// Montage simulé d'un FormController : patch appliqué, puis crochets onMounted.
+const openedDialogs = [];
+const mountForm = (resModel, root) => {
+    mountedHooks.length = 0;
+    const controller = new context.FormController();
+    Object.assign(controller, {
+        props: { resModel },
+        model: { root },
+        dialogService: { add: (Dialog, props) => openedDialogs.push([Dialog, props]) },
+    });
+    controller.setup();
+    mountedHooks.forEach(hook => hook());
+};
+const quotation = (opportunity_id, isNew = true) => ({ isNew, data: { opportunity_id } });
+const newQuotation = quotation([42, "Opportunité de recette"]);
+
+// Double clic : une seule écriture, puis fermeture, action native et dialog du devis.
+const events = [];
+let actionParams;
+const crm = crmFor(events);
+crm.action.doActionButton = async (params) => {
+    events.push("doActionButton");
+    actionParams = params;
+    mountForm("crm.lead", newQuotation);
+    mountForm("sale.order", quotation(false));
+    mountForm("sale.order", quotation([42, "Opportunité de recette"], false));
+    mountForm("sale.order", quotation([43, "Autre opportunité"]));
+    assert.equal(openedDialogs.length, 0);
+    mountForm("sale.order", newQuotation);
+    mountForm("sale.order", newQuotation);
+};
+await Promise.all([crm.onCreateQuotation(), crm.onCreateQuotation()]);
+assert.deepEqual(events, ["update", "save", "/rpbm_agent_close", "close", "doActionButton"]);
+assert.deepEqual(plain(actionParams), {
+    type: "object", name: "action_sale_quotations_new", resModel: "crm.lead", resId: 42, context: { lang: "fr_FR" },
+});
+assert.equal(actionParams.context, crm.props.record.context);
+assert.equal(openedDialogs.length, 1, "un seul dialog, au premier montage du devis");
+assert.equal(openedDialogs[0][0], context.AgentWidgetDialogSaleOrder);
+assert.equal(openedDialogs[0][1].record, newQuotation);
+assert.equal(crm.state.writing, false);
+mountForm("sale.order", newQuotation);
+mountForm("sale.order", quotation(false));
+assert.equal(openedDialogs.length, 1, "drapeau à usage unique ; sans drapeau, un devis sans opportunité n'ouvre rien");
+
+// Formulaire non enregistrable : ni fermeture ni action, boutons réactivés.
+const refusedEvents = [];
+const refused = crmFor(refusedEvents, { async save() { refusedEvents.push("save"); return false; } });
+await refused.onCreateQuotation();
+assert.deepEqual(refusedEvents, ["update", "save"]);
+assert.equal(refused.state.writing, false);
+
+// Action refusée par le serveur : l'erreur remonte et le drapeau est vidé.
+const rejected = crmFor([]);
+rejected.action.doActionButton = async () => { throw new Error("Accès refusé"); };
+await assert.rejects(rejected.onCreateQuotation(), /Accès refusé/);
+mountForm("sale.order", newQuotation);
+assert.equal(openedDialogs.length, 1, "un rejet vide le drapeau");
 
 vm.runInNewContext(`${await load("ArticleComponent.js")}\nthis.ArticleComponent = ArticleComponent;`, context);
 

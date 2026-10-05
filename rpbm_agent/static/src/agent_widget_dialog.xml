@@ -165,8 +165,8 @@
                     <i t-if="isReconnecting" class="fa fa-spinner fa-spin me-1"/>
                     Reconnecter
                 </button>
-                <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!state.canConfirm or isReconnecting">Confirmer</button>
-                <button class="btn btn-secondary" t-on-click="onConfirmAndSave" t-att-disabled="!state.canConfirm or isReconnecting">Confirmer et enregistrer</button>
+                <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!state.canConfirm or isReconnecting or state.writing">Confirmer</button>
+                <button class="btn btn-secondary" t-on-click="onConfirmAndSave" t-att-disabled="!state.canConfirm or isReconnecting or state.writing">Confirmer et enregistrer</button>
                 <button class="btn btn-outline-secondary" t-on-click="onDiscard" t-att-disabled="isReconnecting">Annuler</button>
             </t>
         </Dialog>

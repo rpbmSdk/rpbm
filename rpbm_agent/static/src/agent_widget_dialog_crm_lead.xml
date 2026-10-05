@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Opportunité (lot E) : la section VSF s'arrête à la base Eurocode ; « Créer un devis » enchaîne sur le devis. -->
+    <t t-name="rpbm_agent.CrmLeadDialog" t-inherit="rpbm_agent.AgentWidgetDialog" t-inherit-mode="primary">
+        <xpath expr="//section[@name='vsf_section']/h5" position="replace"><h5>4. Base Eurocode</h5></xpath>
+        <xpath expr="//button[@name='vsf_search']" position="replace"/>
+        <xpath expr="//table[@name='vsf_articles']" position="replace"/>
+        <!-- Après « Confirmer et enregistrer » : Ctrl+Entrée clique le premier bouton visible du pied, qui reste « Confirmer ». -->
+        <xpath expr="//button[@t-on-click='onConfirmAndSave']" position="after">
+            <button t-if="record.partnerId and props.record.data.type !== 'lead'" class="btn btn-primary" t-on-click="onCreateQuotation" t-att-disabled="!state.canConfirm or isReconnecting or state.writing">Créer un devis</button>
+        </xpath>
+    </t>
+</templates>

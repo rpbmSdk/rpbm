@@ -54,6 +54,7 @@ export class AgentWidgetDialog extends asyncWidget {
         this.state = useState({
             ...this.state,
             canConfirm: false,
+            writing: false,
             agentsInitialized: false,
             authError: "",
             isReconnecting: false,
@@ -113,7 +114,8 @@ export class AgentWidgetDialog extends asyncWidget {
                 this.state.selectedVehicule = undefined;
             }
             else {
-                this.onSelectVehicule(this.vehicules[0].id);
+                const restored = this.vehicules.find(vehicule => String(vehicule.id) === this._restoreVehiculeId);
+                this.onSelectVehicule((restored || this.vehicules[0]).id);
             }
         }, () => [this.vehicules])
 
@@ -379,6 +381,9 @@ export class AgentWidgetDialog extends asyncWidget {
         if (this.record.baseEurocodeField) {
             data[this.record.baseEurocodeField] = this.baseEurocode || "";
         }
+        if (this.record.xglassVehicleIdField) {
+            data[this.record.xglassVehicleIdField] = this.selectedVehicule ? String(this.selectedVehicule.id) : "";
+        }
         if (this.record.xglassPieceIdField) {
             data[this.record.xglassPieceIdField] = this.selectedPiece ? String(this.selectedPiece.id) : "";
         }
@@ -411,8 +416,14 @@ export class AgentWidgetDialog extends asyncWidget {
      * lorsque l'utilisateur le demande explicitement.
      *
      * @param {boolean} save sauvegarde via le mécanisme natif du formulaire
+     * @returns {Promise<boolean>} true si tout a réussi
      */
-    async confirmRecord(save = false) {
+    async writeRecord(save = false) {
+        // Anti-doublon : un double clic arrive avant le rendu qui désactive les boutons.
+        if (this.state.writing) {
+            return false;
+        }
+        this.state.writing = true;
         // L1.0 — créer le véhicule / écrire les champs AVANT de fermer la session portail.
         // closeAgents() relâche le verrou de concurrence (les routes sont décorées
         // @_touch_agent_lock) ET déconnecte X'Glass ; or getRecordData() → createVehicule a
@@ -437,10 +448,15 @@ export class AgentWidgetDialog extends asyncWidget {
             await this.closeAgents();
             done = true;
         }, "Enregistrement en cours...");
+        this.state.writing = false;
+        return done;
+    }
+
+    async confirmRecord(save = false) {
         // close() hors du runAsync : il détruit le composant, or runAsync met à jour l'état
         // (stopLoading) après le callback — fermer ici évite un update sur composant détruit.
         // On ne ferme que si tout a réussi ; sinon la dialog reste ouverte pour réessai.
-        if (done) {
+        if (await this.writeRecord(save)) {
             this.props.close();
         }
     }
@@ -851,6 +867,7 @@ export class AgentWidgetDialog extends asyncWidget {
 
     restoreSelectionFromRecord() {
         const read = (field) => field ? this.record.recordData[field] : undefined;
+        this._restoreVehiculeId = read(this.record.xglassVehicleIdField) || undefined;
         this._restorePieceId = read(this.record.xglassPieceIdField) || undefined;
         this._restorePieceOeId = read(this.record.pieceOeIdField) || undefined;
         this._restorePieceAmId = read(this.record.pieceAmIdField) || undefined;

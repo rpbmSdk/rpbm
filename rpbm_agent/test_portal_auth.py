@@ -135,16 +135,19 @@ def test_xglass_pieces_am_null_ou_illisible():
         raise AssertionError("XGlassError attendue pour une réponse AM non JSON")
 
 
-def test_xpath_du_devis_ciblent_un_seul_noeud():
+def test_xpath_des_dialogs_ciblent_un_seul_noeud():
     static = Path(__file__).resolve().parent / "static" / "src"
     parent = ET.parse(static / "agent_widget_dialog.xml").getroot().find(
         "t[@t-name='rpbm_agent.AgentWidgetDialog']")
-    devis = ET.parse(static / "agent_widget_dialog_sale_order.xml").getroot().find(
-        "t[@t-name='rpbm_agent.SaleOrderDialog']")
-    exprs = [spec.get("expr") for spec in devis.iter("xpath")]
-    assert len(exprs) == 2, exprs
-    for expr in exprs:
-        assert len(parent.findall("." + expr)) == 1, expr
+    for fichier, template, nombre in (
+        ("agent_widget_dialog_sale_order.xml", "rpbm_agent.SaleOrderDialog", 2),
+        ("agent_widget_dialog_crm_lead.xml", "rpbm_agent.CrmLeadDialog", 4),
+    ):
+        enfant = ET.parse(static / fichier).getroot().find(f"t[@t-name='{template}']")
+        exprs = [spec.get("expr") for spec in enfant.iter("xpath")]
+        assert len(exprs) == nombre, (template, exprs)
+        for expr in exprs:
+            assert len(parent.findall("." + expr)) == 1, (template, expr)
 
 
 def test_dialog_principal_en_plein_ecran():
