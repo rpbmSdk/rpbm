@@ -2,13 +2,16 @@
 
 ## Articles VSF et suggestions
 
-`AgentWidgetDialog` garde les sélections dans `selectedArticleCodes`, indexé par code VSF, et les produits Odoo dans `articleProducts`, également par code. Une carte sélectionnée possède donc son propre chargement, sa recherche/création produit et, sur un devis, son ajout ou retrait.
+`AgentWidgetDialog` garde les sélections dans `selectedArticleCodes`, indexé par code VSF, et les produits Odoo dans `articleProducts`, également par code. Un article sélectionné possède donc son propre chargement, sa recherche/création produit et, sur un devis, son ajout ou retrait.
 
-La sélection d'un article principal charge sa fiche et hydrate ses suggestions à un seul niveau. Les suggestions ne rejoignent jamais `articlesVsf` : elles restent sous leur principal. Toutes les cartes, principales ou suggérées, occupent une seule colonne (`col-12`), sélectionnées ou non. Les aperçus d'images et les caractéristiques techniques restent compacts. Désélectionner le principal retire les sélections de ce groupe. `AgentWidgetDialogSaleOrder` mémorise uniquement les lignes qu'il a ajoutées pendant la dialog et appelle `order_line.delete(line)` pour les retirer sans toucher aux lignes préexistantes.
+**Tableau (R21, lot D, build B `17.0.261005.2`).** Les résultats forment un `<table name="vsf_articles">` (`table table-sm table-hover align-middle`) qui remplace les cartes de R13 et R14. Il a sept colonnes : Eurocode, Désignation, Réf. constructeur, Stock, Prix, Coût et Photo ; Stock, Prix et Coût sont alignés à droite (`text-end`). Chaque article principal a son propre `<tbody>` (`t-foreach`), qui sépare les groupes de lignes. Le bouton « Rechercher sur VSF » porte `name="vsf_search"`, comme le tableau et la section `vsf_section` : ancres XPath pour les dialogs héritiers. `ArticleComponent` rend deux `<tr>` racines :
 
-Le titre d'`ArticleComponent` affiche uniquement `article.name`. La ligne « Eurocode : … »
-affiche `article.code` avec `font-monospace`, immédiatement avant la référence constructeur.
-Ce gabarit est partagé par les résultats et les suggestions.
+- **ligne principale** : la classe `table-primary` marque l'article sélectionné (le getter `style` est supprimé) et un clic appelle la prop obligatoire `onSelect`. Cellules : Eurocode (`article.code`, `font-monospace text-nowrap`) ; désignation (`article.name`) suivie du lien « Fiche technique » (`article.url`, `target="_blank"`, `rel="noopener"`, `t-on-click.stop` pour ne pas sélectionner la ligne) ; référence constructeur ; stock, ou « Indisponible » quand il est nul (`available` vaut `stock > 0`) ; prix et coût, vides si le prix est absent ; première vignette ;
+- **ligne de détail** : rendue seulement si l'article est sélectionné, sur toute la largeur du tableau (`colspan="7"`). Elle contient toutes les vignettes, les caractéristiques techniques, « Détails VSF indisponibles pour cet article » le cas échéant, puis le slot `actions` (voir [plus bas](#vignettes-et-actions-par-article)).
+
+`onSelect` remplace le `t-on-click` posé sur le composant : Owl attache un tel gestionnaire à l'élément parent et le déclenche pour toutes les racines du composant, ligne de détail comprise, dont un clic désélectionnerait l'article. `AgentWidgetDialog` passe `onClickArticleVsf(articleCode)` aux résultats et `onClickSuggestedArticle(articleCode, parentArticleCode)` aux suggestions (tous deux délèguent à `toggleVsfArticle()`) : résultats et suggestions partagent le même gabarit.
+
+La sélection d'un article principal charge sa fiche et hydrate ses suggestions à un seul niveau. Les suggestions ne rejoignent jamais `articlesVsf` : elles suivent leur principal dans son `<tbody>`, après sa ligne de détail, sous une ligne de légende « Articles suggérés par VSF », et se sélectionnent comme lui. Désélectionner le principal retire les sélections de ce groupe. `AgentWidgetDialogSaleOrder` mémorise uniquement les lignes de devis qu'il a ajoutées pendant la dialog et appelle `order_line.delete(line)` pour les retirer sans toucher aux lignes préexistantes.
 
 Le lien « Ouvrir dans un nouvel onglet » vise
 `https://client.myvsf.fr/catalogue/vitrage?search=<base encodée>` (`target="_blank"`,
@@ -21,11 +24,24 @@ synchronise ces deux valeurs pour les changements programmatiques.
 
 | Méthode JS | Composant | Usage |
 |---|---|---|
-| `toggleVsfArticle()` | `AgentWidgetDialog` | Sélection/désélection d'une carte et désélection du groupe parent |
-| `findProductForArticle()` / `createProductForArticle()` | `AgentWidgetDialog` | Recherche ou création du produit de la carte concernée |
+| `toggleVsfArticle()` | `AgentWidgetDialog` | Sélection/désélection d'un article (clic sur sa ligne) et désélection du groupe parent |
+| `findProductForArticle()` / `createProductForArticle()` | `AgentWidgetDialog` | Recherche ou création du produit de l'article concerné |
 | `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | Ajout/retrait sûr d'une ligne créée par le widget |
 
 Le widget (`<widget name="rpbm_agent_widget" />`) est placé à deux endroits de chaque formulaire, ce qui donne volontairement deux boutons : l'onglet « Véhicule (X'Glass) » des **vues XML versionnées** du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`), qui héritent de la vue formulaire de base, et les sections Studio utilisées par les équipes (« Informations Véhicule » de l'opportunité, groupe sous l'en-tête du devis), où le script `studio_views.py` l'ajoute (voir [`Jobs/rpbm_agent_stock`](../../../Jobs/rpbm_agent_stock/README.md) et [configuration](configuration.md#intégration-dans-les-vues)). Les deux boutons ouvrent la même dialog.
+
+## Dialog en plein écran (R22)
+
+Lot D, build B (`17.0.261005.2`). `agent_widget_dialog.xml` ouvre le dialog avec `<Dialog size="'fullscreen'" …>`, ce qui pose la classe Bootstrap `modal-fullscreen` sur `.modal-dialog` (`web/core/dialog/dialog.js` accepte `sm`, `md`, `lg`, `xl`, `fs` et `fullscreen`, avec `lg` par défaut). Les guillemets intérieurs sont obligatoires : avant ce build, le gabarit écrivait `size="xl"` sans eux, Owl évaluait `xl` comme une expression du contexte du composant (`undefined`) et le dialog retombait sur `lg`, soit 980 px (voir l'[état des lieux](../etat-des-lieux.md#6-uiux)). [`test_portal_auth.py`](../../test_portal_auth.py) (`test_dialog_principal_en_plein_ecran`) vérifie donc que le template principal porte le littéral `size="'fullscreen'"` (garde-fou R22).
+
+La taille ne change pas le défilement : dans Odoo 17, tout dialog a déjà un corps défilant avec en-tête et pied fixes (`web/static/src/scss/bootstrap_review.scss`, l. 61-79, active dès 576 px), si bien que « Confirmer », « Confirmer et enregistrer » et « Annuler » restent visibles avec un long tableau. Elle change les marges (lecture du code Odoo 17 local, à confirmer à la recette) :
+
+| Taille | Largeur | Hauteur | Coins |
+|---|---|---|---|
+| `fs` | pleine largeur moins 1,75 rem de chaque côté | suit le contenu, jusqu'à l'écran | arrondis |
+| `fullscreen` (retenue) | toute la largeur | toute la hauteur | carrés |
+
+Odoo conserve 1,75 rem de marge verticale dans les deux cas. `'fullscreen'` est le choix du 2026-10-05, à la place de `'fs'` d'abord noté ; une règle SCSS du module ne serait ajoutée que si la recette demandait un bord à bord vertical. `VsfImagePreviewDialog` garde `size="'xl'"`, déjà écrit correctement, et s'ouvre par-dessus. Aucune recette live n'a encore été exécutée sur ce build.
 
 ## Arborescence des composants
 
@@ -80,9 +96,7 @@ d'erreur.
 
 ## Groupes de pièces et encarts AUTRE AM par famille (R19, R20)
 
-Lot D, build A (`17.0.261005.1`). Rédigé d'après le plan approuvé du 2026-10-05 puis relu contre l'état
-du code du 2026-10-05 (en cours d'écriture : à relire après le dernier commit). Aucune recette
-n'a été exécutée.
+Lot D, build A (`17.0.261005.1`) : recette réussie le 2026-10-05 sur le build `ab31793`.
 
 **Données reçues.** `/getPieces` renvoie toujours une liste plate : éléments principaux puis
 complémentaires, pièces dans l'ordre du portail (jamais trié). Chaque pièce porte `elementKey`
@@ -147,17 +161,17 @@ condition cassait l'héritage sans erreur visible. La section VSF porte maintena
 enfant direct de la section). La condition peut évoluer sans toucher au devis. Contrôle hors
 Odoo prévu : un seul nœud par XPath, avec `xml.etree.ElementTree` (`lxml` absent du `.venv`).
 
-**Contrôles hors réseau** (écrits par le codeur dans l'arbre de travail le 2026-10-05, **non
-exécutés** par l'auteur de cette documentation : à rejouer avant le push). `test_widget_vsf.mjs`
-couvre `pieceGroups` et `visiblePieceGroups` (tout, focalisé, restauré sans pièce, `elementKey`
+**Contrôles hors réseau.** `test_widget_vsf.mjs` couvre `pieceGroups` et `visiblePieceGroups` (tout, focalisé, restauré sans pièce, `elementKey`
 absent, aucune pièce), un seul `callPortal` par couple véhicule-famille après replier puis déplier,
 l'état ouvert indépendant par famille, les listes distinctes de deux véhicules, l'absence
 d'entrée en cache après erreur, la table vidée à la reconnexion, la recherche VSF lancée par une
 ligne AM sans pièce, et l'absence de recherche pour une base restaurée seule. Le harnais rejoue
 les effets Owl à la main. `test_portal_auth.py` couvre la tolérance de
 `findSelectionsPiecesAmView` (liste, `null`, corps non JSON) et le contrôle des deux XPath du
-devis (un seul nœud chacun, `xml.etree.ElementTree`, `lxml` étant absent du `.venv`). Le rendu Owl
-local (Chromium et Owl du code Odoo) des trois modes reste à faire.
+devis (un seul nœud chacun, `xml.etree.ElementTree`, `lxml` étant absent du `.venv`). Les trois
+modes de pièces (tout, focalisé, restauré sans pièce) ont été vérifiés à la recette live du build A
+(2026-10-05). Le rendu Owl local (Chromium et Owl du code Odoo, scripts hors dépôt) couvre le lien
+direct VSF, les vignettes et l'aperçu, et le tableau VSF.
 
 ## Détails discriminants des pièces OE
 
@@ -167,8 +181,8 @@ repliable « Autres marques AM » reprend l'encart X'Glass « AUTRE AM » et se 
 fin de chaque famille (voir [ci-dessus](#groupes-de-pièces-et-encarts-autre-am-par-famille-r19-r20) ;
 `loadAutresAm()`). Ses lignes utilisent le même `PieceAMComponent` que les cartes
 « Équivalence AM » et le même `onSelectPieceAM()` ; la prop optionnelle `compact` choisit le
-gabarit en ligne (`list-group-item` dans une `list-group-flush`, environ 60 px par ligne dans
-le dialog actuel de 980 px, voir l'[état des lieux](../etat-des-lieux.md#6-uiux), au lieu d'environ 155 px par carte), avec les mêmes getters `fournisseur`,
+gabarit en ligne (`list-group-item` dans une `list-group-flush`, environ 60 px par ligne, mesurés
+dans l'ancien dialog de 980 px avant le plein écran R22, voir l'[état des lieux](../etat-des-lieux.md#6-uiux), au lieu d'environ 155 px par carte), avec les mêmes getters `fournisseur`,
 `dateLibelle`, `description`, `hasPrix` et `style`. Cliquer de nouveau sur cette pièce la désélectionne et efface les
 données qui en dépendent (pièce après-marché, eurocode, résultats et article VSF).
 
@@ -178,29 +192,39 @@ typées marquées discriminantes par le portail. L'affichage est limité à quat
 préserver la lisibilité des cartes ; ces éléments distinguent notamment les capteurs, teintes,
 chauffage, acoustique et états de livraison.
 
-Dans la liste VSF, chaque article sélectionné possède son propre encart de création ou de
-consultation Odoo. Une sélection par code permet de conserver plusieurs cartes en parallèle ;
-retirer un principal retire aussi les suggestions de son groupe.
+### Vignettes et actions par article
 
-`ArticleComponent` expose un slot Owl optionnel `actions`, rendu dans le corps de la carte.
-La dialog principale y injecte l'encart produit ; la dialog devis l'enrichit par héritage avec
-l'ajout ou le retrait de la ligne, tant pour l'article principal que pour chaque suggestion.
-Les deux encarts utilisent des points d'insertion XML distincts afin que l'héritage Owl ajoute
-les actions de devis à chaque carte. Le conteneur d'actions arrête la propagation du clic afin
-qu'une action interne ne modifie pas la sélection de la carte. `h-100` est réservé aux cartes
-non sélectionnées : une carte sélectionnée contenant ses actions garde une hauteur naturelle.
+Dans le tableau VSF, chaque article sélectionné possède son propre encart de création ou de
+consultation Odoo, dans sa ligne de détail. Une sélection par code permet de conserver plusieurs
+articles ouverts en parallèle ; retirer un principal retire aussi les suggestions de son groupe.
 
-Au clic sur un article principal, le widget lit sa fiche VSF et hydrate les cartes de son
-carrousel « références complémentaires » sans les ajouter aux résultats principaux. Les cartes
-principales et suggérées partagent le même contenu (photo, référence, prix, stock et
-caractéristiques) ; les suggestions ne sont pas développées récursivement. Les miniatures avec
-une URL pleine taille signée par VSF sont des liens natifs (`target="_blank"` et
-`rel="noopener"`) : clic simple = aperçu interne ; tout clic modifié garde le comportement
-natif sans modifier la sélection de la carte (Ctrl/Cmd-clic ou clic central ouvre un nouvel
-onglet). Le dialog reçoit uniquement les URL plein
-format et l'index courant ; `useState` et `useHotkey` font défiler ←/→ en boucle, y compris avec
-une seule photo qui reste stable. Les photos du modèle sont exclues côté backend. La recette live
-R16/R17 reste ouverte.
+`ArticleComponent` expose un slot Owl optionnel `actions`, rendu dans la ligne de détail, après les
+vignettes et les caractéristiques. La dialog principale y injecte l'encart produit ; la dialog devis
+l'enrichit par héritage avec l'ajout ou le retrait de la ligne de devis, tant pour l'article
+principal que pour chaque suggestion. Les deux encarts utilisent des points d'insertion XML
+distincts afin que l'héritage Owl ajoute les actions de devis à chaque article. Un clic dans la
+ligne de détail ne modifie pas la sélection, puisque seule la ligne principale porte `onSelect` ;
+le conteneur d'actions garde en plus son `t-on-click.stop`.
+
+Au clic sur un article principal, le widget lit sa fiche VSF et hydrate les articles de son
+carrousel « références complémentaires » sans les ajouter aux résultats principaux ; les
+suggestions ne sont pas développées récursivement.
+
+Les vignettes avec une URL pleine taille signée par VSF sont des liens natifs (`target="_blank"` et
+`rel="noopener"`). La colonne Photo n'affiche que la première ; la ligne de détail les affiche
+toutes, avec le même balisage. Clic simple = aperçu interne, sans changer la sélection (`openImage`
+arrête la propagation) ; tout clic modifié garde le comportement natif (Ctrl/Cmd-clic ou clic
+central ouvre un nouvel onglet), lui aussi sans modifier la sélection. Le dialog d'aperçu reçoit
+uniquement les URL plein format de l'article et l'index courant : `openImage` lui passe la liste des
+`fullUrl` de `article.images`, quelle que soit la vignette cliquée (colonne Photo ou ligne de détail).
+`useState` et `useHotkey` font défiler ←/→ en boucle, y compris avec une seule photo qui reste
+stable. Les photos du modèle sont exclues côté backend. L'URL de fiche (`article.url`) est absolue
+dès la recherche : `extractProductInfo` la passe par `_absolute_url` (voir
+[backend](backend.md#vsf-controllersvsfpy)), ce que vérifie une assertion de
+`test_vsf_recherche_apparie_les_images_signees` dans
+[`test_portal_auth.py`](../../test_portal_auth.py). La recette live du tableau (reprise de R15 à R17)
+reste à exécuter : voir le
+[jeu de test](../jeu-de-test.md#tableau-vsf-en-plein-écran-r21-r22-reprise-de-r15-à-r17).
 
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 
@@ -280,14 +304,15 @@ cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAll
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce (« Équivalence AM ») |
 | `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de l'encart « Autres marques AM » d'une famille (sans pièce requise) | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par véhicule + `elementSitId` |
 | `onSearchBaseEurocode()` | `AgentWidgetDialog` | `/searchBaseEurocode` | Articles VSF par eurocode |
-| `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'une carte sélectionnée (+ suggestions pour un article principal) |
-| `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour une carte VSF donnée |
-| `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cette carte |
+| `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'un article sélectionné (+ suggestions pour un article principal) |
+| `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour un article VSF donné |
+| `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cet article |
 | `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget |
 | `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce), provenance `rpbm_labor_operation_key` |
 
-L'encart d'actions d'une carte VSF est le sous-template `rpbm_agent.ArticleActions`
-(`agent_widget_dialog.xml`), appelé pour les cartes principales et suggérées ; la dialog devis
+L'encart d'actions d'un article VSF est le sous-template `rpbm_agent.ArticleActions`
+(`agent_widget_dialog.xml`), appelé pour les articles principaux et suggérés (slot `actions` de la
+ligne de détail) ; la dialog devis
 l'étend une seule fois (`rpbm_agent.SaleOrderArticleActions`) pour y ajouter l'ajout/retrait de
 ligne, derrière un garde-fou `addArticleToSaleOrder` puisque l'extension Owl est globale.
 

@@ -34,9 +34,7 @@ Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lectu
 
 ### `/getPieces` et `/getPieceAm` (lot D, build A)
 
-Version cible `17.0.261005.1`. Rédigé d'après le plan approuvé du 2026-10-05, relu contre l'état
-du code du même jour (en cours d'écriture : à relire après le dernier commit) ; aucune recette
-exécutée.
+Version `17.0.261005.1` : recette réussie le 2026-10-05 sur le build `ab31793`.
 
 - **Libellé de famille.** Chaque pièce de `/getPieces` reçoit `elementSitLibelle`, égal au
   `libelle` de son `XGlassElement` (déjà calculé dans `controllers/xglass.py`, mais perdu à
@@ -142,7 +140,7 @@ Fichier statique : un dict `LIBS` (~1440 entrées) recopiant les libellés d'int
 
 - **Portail** : `https://client.myvsf.fr`, authentification formulaire classique avec jeton CSRF caché (`<input name="_token">`) + session cookie.
 - `VSFAgent` n'a **pas de méthode `close()`** (contrairement à `XGLASS`).
-- `searchEurocodeArticlesClient()` : récupère d'abord la liste d'IDs d'articles + un jeton CSRF meta depuis la page HTML de résultats, puis interroge l'endpoint AJAX `/catalogue/articles-client` (JSON), et fusionne ce JSON avec les informations extraites directement des lignes `<tr class="product-line">` de la page HTML. Dans la première cellule, chaque lien `data-fslightbox` plein format est apparié à sa miniature pour produire `images[{thumbnailUrl, fullUrl}]` ; les signatures `sm` et `xlg` restent celles servies par VSF. Le matching reste manuel sur `code`.
+- `searchEurocodeArticlesClient()` : récupère d'abord la liste d'IDs d'articles + un jeton CSRF meta depuis la page HTML de résultats, puis interroge l'endpoint AJAX `/catalogue/articles-client` (JSON), et fusionne ce JSON avec les informations extraites directement des lignes `<tr class="product-line">` de la page HTML. Dans la première cellule, chaque lien `data-fslightbox` plein format est apparié à sa miniature pour produire `images[{thumbnailUrl, fullUrl}]` ; les signatures `sm` et `xlg` restent celles servies par VSF. L'`url` de fiche, lue dans la deuxième cellule, passe par `_absolute_url` dès cette extraction (`extractProductInfo`, build `17.0.261005.2`), comme `getArticleDetails` le faisait déjà à la sélection : le lien « Fiche technique » d'une ligne non sélectionnée a ainsi une URL VSF complète, que le `href` de la page soit relatif ou absolu. Le matching reste manuel sur `code`.
 - `getArticleDetails()` lit une fiche article authentifiée : caractéristiques libellé/valeur, dimensions converties en millimètres, images `p=xlg` réellement signées par VSF, et cartes du carrousel `#article-reference-complementaires-carousel`. Il conserve les paires d'images de la recherche ; sans elles, il ne lit que `#carousel-article-photos` quand ce conteneur existe, excluant `#carousel-modele-photos` (repli page entière pour l'ancien HTML et les fixtures). Il ne synthétise jamais une URL pleine taille depuis une miniature, car la signature dépend du format demandé.
 - `VSFArticle.__init__` calcule `prixVenteRPBM = prixVente * (1 - remiseRPBM)` à partir de `rpbm_agent.vsf_discount` (défaut de compatibilité `0.2`). `VSFArticle` n'expose aucun champ `id` — seul `code` sert de clé (voir implication côté frontend dans l'[état des lieux](../etat-des-lieux.md)).
 

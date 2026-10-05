@@ -59,9 +59,9 @@ même quand « Équivalence AM » est vide. « Équivalence AM » reste sous la 
 **Risque assumé (décision du 2026-10-05).** Le clic remplit toujours la base, quelle que soit
 la famille. Pour les familles complémentaires (cale, joint, nécessaire de collage,
 rétroviseur), la référence AM n'est pas forcément un eurocode de vitrage : la base déduite peut
-être peu pertinente pour la recherche VSF. Hypothèse, non vérifiée : à confirmer en observant
-les lignes réelles de ces familles à la recette ; le comportement sera reconsidéré si elles
-donnent une base trompeuse.
+être peu pertinente pour la recherche VSF. Hypothèse, non vérifiée (non observée à la recette
+du 2026-10-05 : les familles complémentaires testées ne renvoient aucune ligne). À confirmer sur
+des lignes réelles ; le comportement sera reconsidéré si elles donnent une base trompeuse.
 
 ### Section « Article VSF » sans pièce sélectionnée
 
@@ -81,6 +81,6 @@ automatique exige une pièce ou une pièce AM sélectionnée.
 - Après un clic AM sans pièce, sélectionner une pièce réinitialise les données dépendantes de la
   sélection précédente, base Eurocode comprise (comportement de `clearSelectedPiece()`, inchangé).
 
-Implémentation en cours (`17.0.261005.1`) ; recette live non réalisée.
+Lot D, build A (`17.0.261005.1`) : recette réussie le 2026-10-05 sur le build `ab31793`.
 
 Suivant : [5 — Recherche VSF par eurocode](05-recherche-vsf-eurocode.md).

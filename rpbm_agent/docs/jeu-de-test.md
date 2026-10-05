@@ -104,9 +104,9 @@ Résultats attendus :
 
 ### CRM-06 — Groupage et Autres AM par famille (lot D, build A)
 
-Scénario de recette du build `17.0.261005.1`. **Non exécuté** : les résultats attendus
-ci-dessous viennent du plan du 2026-10-05 et des qualifications du 2026-10-01 ; aucun n'est
-une observation sur le build cible. Protocole sans écriture : ne pas confirmer, créer de
+Scénario de recette du build `17.0.261005.1` : **recette réussie le 2026-10-05 sur le build
+`ab31793`**. Les résultats attendus ci-dessous viennent du plan du 2026-10-05 et des
+qualifications du 2026-10-01. Protocole sans écriture : ne pas confirmer, créer de
 produit, définir d'article principal ni ajouter de ligne ; fermer par **Annuler**. Relever par
 RPC `write_date` et les champs `rpbm_*` du dossier, de son opportunité et du véhicule lié avant
 et après : ils doivent rester inchangés (seule écriture tolérée : le verrou technique
@@ -158,11 +158,24 @@ famille (clés, drapeaux, nombre de pièces) pour tracer les calques et familles
 observés ; elles ne contiennent aucune donnée client.
 
 Contrôles hors réseau avant tout push, depuis la racine du dépôt :
-`node rpbm_agent/test_widget_vsf.mjs` ([script](../test_widget_vsf.mjs)),
-`python rpbm_agent/test_portal_auth.py` ([script](../test_portal_auth.py), qui contrôle aussi
-que chacun des deux XPath du devis cible un seul nœud), rendu Owl local des trois modes
-(focalisé, tout, restauré sans pièce) et `git diff --check`. La recette R13 à R17 plus bas reste valable pour le build A ; elle
-sera remplacée au build B (tableau VSF).
+
+- `node rpbm_agent/test_widget_vsf.mjs` ([script](../test_widget_vsf.mjs)) ;
+- `python rpbm_agent/test_portal_auth.py` ([script](../test_portal_auth.py)) : chacun des deux
+  XPath du devis cible un seul nœud ; depuis le build B, le template principal porte le littéral
+  `size="'fullscreen'"` (`test_dialog_principal_en_plein_ecran`, garde-fou R22) et l'URL de fiche
+  d'un résultat de recherche est absolue (assertion ajoutée à
+  `test_vsf_recherche_apparie_les_images_signees`) ;
+- `py_compile` des fichiers Python modifiés ;
+- rendu Owl local, avec Chromium et l'`owl.js` du code Odoo (scripts locaux, non versionnés) :
+  lien direct VSF (R15), vignettes et aperçu (R16, R17) et, au build B, `ArticleComponent` monté
+  dans un `<table><tbody>` : en-têtes dans l'ordre, chaque enfant de `tbody` est une ligne, la
+  sélection affiche le détail, la légende et les suggestions, un clic sur la ligne appelle
+  `onSelect` une fois alors que la vignette, le lien « Fiche technique », Ctrl/Cmd+clic et le clic
+  milieu ne l'appellent pas ; les trois modes de pièces ne sont pas couverts ici mais par CRM-06 ;
+- `git diff --check`.
+
+La recette « Tableau VSF en plein écran » plus bas remplace l'ancienne recette R13 à R17 ; elle
+vaut pour le build B (`17.0.261005.2`).
 
 ## Scénarios devis
 
@@ -221,7 +234,7 @@ Résultats attendus :
 
 ### SO-05 — Dialog devis après découplage de la section VSF (lot D, build A)
 
-Sur un devis lié à une opportunité (même protocole sans écriture que CRM-06, **non exécuté**) :
+Sur un devis lié à une opportunité (même protocole sans écriture que CRM-06 ; recette réussie le 2026-10-05 sur le build `ab31793`) :
 
 1. Sélectionner une pièce : les sections « 4. Main d'œuvre » et « 5. Article VSF » sont
    toutes deux présentes, dans cet ordre.
@@ -231,41 +244,92 @@ Sur un devis lié à une opportunité (même protocole sans écriture que CRM-06
    une base restaurée seule).
 3. Aucune action de devis (ajout, retrait) n'est exécutée.
 
-## Présentation VSF — recette sans écriture (R13 à R17)
+## Tableau VSF en plein écran (R21, R22, reprise de R15 à R17)
 
-Ouvrir un dossier de test ayant une base Eurocode mémorisée. Ne pas confirmer le dialogue,
-créer un produit, définir un article principal ni ajouter de ligne ; fermer par **Annuler**.
-Relever par RPC `write_date` et les champs `rpbm_*` avant et après sur le dossier, son
-opportunité et le véhicule lié : toutes ces valeurs doivent rester inchangées.
+Recette sans écriture du build `17.0.261005.2`. **Non exécutée** : les résultats attendus
+viennent du cahier des charges du 2026-10-05, aucun n'est une observation sur le build cible.
+Elle remplace la recette R13 à R17 (cartes sur une colonne) : le tableau remplace R13 et R14, et
+R15 à R17 sont repris aux étapes 8 à 10.
 
-1. Rechercher `6108A` puis `6574A` : une seule colonne de cartes, y compris à grande largeur.
-   Le titre est la désignation seule ; « Eurocode : … » est en chasse fixe, immédiatement
-   au-dessus de la référence constructeur. Comparer des codes de longueurs différentes.
-2. Sélectionner un article avec suggestions : celles-ci sont aussi sur une colonne et
-   reprennent la même présentation, avec leurs actions dans leur propre carte.
-3. Modifier la base sans lancer la recherche : le lien **Ouvrir dans un nouvel onglet**
-   suit la valeur saisie, également par Ctrl+clic ou clic central avant validation du champ.
-   Vérifier l'encodage avec une valeur synthétique contenant `+`, `&` et un espace, sans
-   envoyer cette valeur au portail. La saisie ne lance pas un RPC par caractère.
-4. Vider le champ, puis saisir uniquement des espaces : le lien est désactivé au clavier
-   comme à la souris. Renseigner une base valide : il redevient utilisable.
-5. Ouvrir une base valide dans le nouvel onglet : VSF affiche la recherche, après connexion
-   si nécessaire ; le contexte du widget reste disponible dans l'onglet d'origine.
-6. Rejouer CRM-03 et CRM-05 : base restaurée avec et sans pièce AM, aucune recherche
-   automatique sans pièce mémorisée, « Autres marques AM » chargé une seule fois par
-   véhicule et famille, puis base remplie au clic.
-7. Dès les résultats, ouvrir une vignette : clic simple = aperçu interne ; tout clic modifié
-   garde le comportement natif sans sélectionner la carte. Vérifier en particulier Ctrl/Cmd-clic
-   et clic central, qui ouvrent l'image VSF signée dans un nouvel onglet.
-   Dans l'aperçu, vérifier ←/→, le rebouclage après la dernière et avant la première image, et
-   l'absence des photos du modèle de véhicule.
+Lire d'abord la version du module par RPC (`17.0.261005.2`). Ouvrir un dossier de test ayant une
+base Eurocode mémorisée, d'abord sur l'opportunité puis sur un devis lié à une opportunité. Ne pas
+confirmer le dialogue, créer un produit, définir un article principal ni ajouter de ligne ;
+fermer par **Annuler**. Relever par RPC `write_date` et les champs `rpbm_*` avant et après sur le
+dossier, son opportunité et le véhicule lié : toutes ces valeurs doivent rester inchangées (seule
+écriture tolérée : le verrou technique `rpbm_agent.session_lock`, vide en fin de recette).
 
-Les références de dossiers et les preuves live restent dans le document de travail local.
-Ces critères ne constituent pas une recette réussie avant leur exécution sur le build cible : la
-recette live R16/R17 reste ouverte. Le contrôle hors réseau de la saisie, du lien, de l'aperçu
-et de la priorité de restauration se lance
-depuis la racine du dépôt : `node rpbm_agent/test_widget_vsf.mjs`
-([script](../test_widget_vsf.mjs)).
+1. **Plein écran (R22).** Ouvrir le dialogue.
+   - Attendu : `.modal-dialog` porte la classe `modal-fullscreen` (et non plus `modal-lg`) ; la
+     fenêtre prend toute la largeur de l'écran, avec des coins carrés.
+   - Observation sans verdict : relever la largeur de la fenêtre et l'aspect des sections 1 à 3
+     (véhicules, catégories, pièces) en pleine largeur ; les écrans du client sont estimés à
+     1333 px, non vérifiés.
+2. **Boutons visibles avec un long tableau.** Rechercher `6108A` (21 articles observés le
+   2026-10-02 ; sinon réduire la hauteur de la fenêtre), puis faire défiler jusqu'au bas du
+   tableau.
+   - Attendu : seul le corps du dialogue défile ; l'en-tête et le pied restent fixes, et
+     « Confirmer », « Confirmer et enregistrer » et « Annuler » restent dans la fenêtre à toutes
+     les positions de défilement.
+3. **Colonnes.**
+   - Attendu : un tableau `vsf_articles` avec sept en-têtes, dans cet ordre : Eurocode,
+     Désignation, Réf. constructeur, Stock, Prix, Coût, Photo ; une ligne par article et un groupe
+     (`tbody`) par article principal ; aucune carte dans la section VSF ; le lien « Fiche
+     technique » suit la désignation ; le stock est une quantité, ou « Indisponible ».
+4. **Eurocodes alignés (R14).** Rechercher `6108A` puis `6574A` et comparer des codes de longueurs
+   différentes.
+   - Attendu : la colonne Eurocode est en police à chasse fixe, sans retour à la ligne ; tous les
+     codes commencent à la même abscisse et chaque rang (marque, modèle, emplacement, couleur,
+     option) tombe dans la même colonne verticale d'une ligne à l'autre ; aucune séparation
+     ajoutée entre les rangs.
+5. **Une vignette par ligne.**
+   - Attendu : la colonne Photo n'affiche que la première vignette, même pour un article qui en a
+     plusieurs ; une ligne sans image garde une cellule vide, sans erreur JavaScript (ROB-05).
+6. **Sélection et détail.** Cliquer sur une ligne, hors vignette et hors lien.
+   - Attendu : la ligne est surlignée et une ligne de détail s'ouvre juste en dessous, avec toutes
+     les vignettes de l'article (sans les photos du modèle), ses caractéristiques techniques (ou
+     « Détails VSF indisponibles ») puis ses actions : « Définir comme article principal »,
+     produit Odoo (« Voir le produit » ou « Créer le produit ») et, sur un devis, « Ajouter au
+     devis » quand le produit existe. Ne cliquer sur aucun de ces boutons.
+   - Attendu : un second clic sur la ligne la désélectionne et referme son détail ; deux articles
+     peuvent rester sélectionnés ensemble ; un clic dans la ligne de détail (zone vide, texte,
+     vignette) ne désélectionne pas l'article.
+7. **Suggestions.** Sélectionner un article qui en a (par exemple `6571AGRCHIMVZ`).
+   - Attendu : sous sa ligne de détail, une ligne de légende « Articles suggérés par VSF » puis
+     une ligne par suggestion, dans le même groupe ; chaque suggestion se sélectionne de la même
+     façon (surlignage, ligne de détail avec ses propres actions) ; désélectionner l'article
+     principal retire la légende, les suggestions et leurs sélections.
+8. **Lien « Ouvrir dans un nouvel onglet » (reprise de R15).**
+   - Modifier la base sans lancer la recherche : le lien suit la valeur saisie, également par
+     Ctrl+clic ou clic central avant validation du champ. Vérifier l'encodage avec une valeur
+     synthétique contenant `+`, `&` et un espace, sans envoyer cette valeur au portail. La saisie
+     ne lance pas un RPC par caractère.
+   - Vider le champ, puis saisir uniquement des espaces : le lien est désactivé au clavier comme à
+     la souris. Renseigner une base valide : il redevient utilisable.
+   - Ouvrir une base valide dans le nouvel onglet : VSF affiche la recherche, après connexion si
+     nécessaire ; le contexte du widget reste disponible dans l'onglet d'origine.
+9. **Clics modifiés sans sélection (reprise de R16).** Sur une ligne non sélectionnée :
+   - Attendu : le lien « Fiche technique » a une URL VSF complète
+     (`https://client.myvsf.fr/catalogue/article/…`), jamais une URL du domaine Odoo ; clic simple,
+     Ctrl/Cmd+clic et clic milieu l'ouvrent dans un nouvel onglet, sans sélectionner la ligne ;
+   - Attendu : sur la vignette, Ctrl/Cmd+clic et clic milieu ouvrent l'image VSF signée dans un
+     nouvel onglet, sans aperçu interne ni sélection ; un clic simple ouvre l'aperçu interne et
+     laisse la sélection inchangée.
+10. **Aperçu (reprise de R17).** Ouvrir l'aperçu depuis la vignette de la colonne Photo, puis
+    depuis une vignette de la ligne de détail.
+    - Attendu : la même liste de photos de l'article, sans les photos du modèle de véhicule ; ←/→
+      font défiler en boucle (après la dernière, la première ; avant la première, la dernière) ;
+      avec une seule photo, l'aperçu reste stable ; il s'ouvre au-dessus du dialogue plein écran
+      et « Fermer » ne ferme que lui.
+11. **Devis.** Rejouer les étapes 1 à 3 et 6 sur un devis lié à une opportunité (SO-05).
+    - Attendu : « 4. Main d'œuvre X'Glass » (avec une pièce sélectionnée) puis « 5. Article VSF »,
+      même tableau, mêmes lignes de détail. « Retirer du devis » n'apparaît qu'après un ajout : il
+      relève de SO-03, hors protocole sans écriture.
+12. **Non-régression.** Rejouer CRM-03 et CRM-05 : base restaurée avec et sans pièce AM, aucune
+    recherche automatique sans pièce mémorisée, « Autres marques AM » chargé une seule fois par
+    véhicule et famille, puis base remplie au clic.
+
+Les références de dossiers et les preuves live restent dans le document de travail local. Ces
+critères ne constituent pas une recette réussie avant leur exécution sur le build cible.
 
 ## Scénarios de robustesse
 
@@ -275,7 +339,7 @@ depuis la racine du dépôt : `node rpbm_agent/test_widget_vsf.mjs`
 | ROB-02 | Session X'Glass expirée | Déclencher une recherche ou une sélection | Reconnexion proposée, contexte conservé, action rejouée au plus une fois. Après reconnexion, mêmes pièces AM qu'avant (GS600HH, pièce `G27006RA3E` : aucune « Équivalence AM », 13 « Autres marques AM » avec validité) |
 | ROB-03 | VIN Fleet déjà renseigné | Confirmer avec une valeur X'Glass différente | Le VIN Fleet valide n'est pas écrasé |
 | ROB-04 | VIN Fleet de forme `var = <VIN>;` | Confirmer avec une valeur X'Glass valide | Le VIN malformé est nettoyé et remplacé par le VIN valide |
-| ROB-05 | Article sans image ou stock | Sélectionner l'article | La carte reste utilisable, sans erreur JavaScript |
+| ROB-05 | Article sans image ou stock | Sélectionner l'article | La ligne reste utilisable, sans erreur JavaScript |
 | ROB-06 | Catégorie non couverte | Sélectionner un calque comme `PHARE` ou `ESSUIE-GLACE AV` | `Autre...` est suggéré, reste modifiable et le libellé X'Glass exact est conservé |
 
 ## Preuve à consigner

@@ -2,7 +2,7 @@
 
 ## Point d'entrée
 
-Le widget `rpbm_agent_widget` est une icône loupe (🔍) présente sur **Piste/Opportunité** (`crm.lead`) et **Ordre de Vente** (`sale.order`, si une opportunité est liée), à deux endroits qui ouvrent la même fenêtre : l'onglet « Véhicule (X'Glass) » ajouté par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`), et les sections Studio habituelles (« Informations Véhicule » de l'opportunité, groupe sous l'en-tête du devis), où le script `studio_views.py` l'ajoute avec les champs natifs (voir [configuration](../technique/configuration.md#intégration-dans-les-vues)). Un clic ouvre une fenêtre de dialogue qui pilote toute la recherche.
+Le widget `rpbm_agent_widget` est une icône loupe (🔍) présente sur **Piste/Opportunité** (`crm.lead`) et **Ordre de Vente** (`sale.order`, si une opportunité est liée), à deux endroits qui ouvrent la même fenêtre : l'onglet « Véhicule (X'Glass) » ajouté par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`), et les sections Studio habituelles (« Informations Véhicule » de l'opportunité, groupe sous l'en-tête du devis), où le script `studio_views.py` l'ajoute avec les champs natifs (voir [configuration](../technique/configuration.md#intégration-dans-les-vues)). Un clic ouvre une fenêtre de dialogue en plein écran qui pilote toute la recherche ; son en-tête et ses boutons (« Confirmer », « Confirmer et enregistrer », « Annuler ») restent visibles quand le contenu défile.
 
 > Le comportement dépend du modèle sur lequel le widget est placé : voir [Finalisation](#finalisation-selon-le-modèle) plus bas pour les différences entre Piste/Opportunité et Ordre de Vente.
 
@@ -40,6 +40,7 @@ Notes :
 - Les pièces de la catégorie sont présentées comme sur le portail : « Pièces principales » puis « Pièces complémentaires », chacune découpée en familles X'Glass, dans l'ordre du portail. Sous chaque famille, l'encart « Autres marques AM » est replié ; il se charge au dépliage, sans qu'une pièce soit sélectionnée. Un clic sur l'une de ses lignes renseigne l'eurocode et lance la recherche VSF, quelle que soit la famille (détail : [3](workflow/03-categorie-xglass.md) et [4](workflow/04-piece-piece-am.md)).
 - Si le champ "Catégorie X'Glass" est déjà renseigné sur l'enregistrement, la catégorie correspondante est présélectionnée automatiquement dès que la planche est chargée.
 - La recherche VSF se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique).
+- Les articles VSF forment un tableau (eurocode, désignation, référence constructeur, stock, prix, coût, photo). Un clic sur une ligne sélectionne l'article et ouvre sous elle son détail : toutes les vignettes, les caractéristiques et les actions (détail : [5](workflow/05-recherche-vsf-eurocode.md)).
 
 > ⚠️ L'ancien diagramme draw.io (source archivée dans [`_archive/Readme.drawio`](../_archive/Readme.drawio)) libellait par erreur cette étape "Recherche du véhicule sur VSF" — la recherche véhicule se fait bien sur **X'Glass** ; VSF n'intervient qu'à l'étape de recherche par eurocode. Les diagrammes Mermaid de ce dossier font foi.
 
@@ -64,11 +65,12 @@ Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardé
 
 ### Ordre de Vente (`sale.order`)
 
-En plus du flux véhicule/catégorie/eurocode ci-dessus (identique), chaque article VSF affiché propose des actions supplémentaires :
+En plus du flux véhicule/catégorie/eurocode ci-dessus (identique), la ligne de détail de chaque article VSF sélectionné propose des actions supplémentaires :
 
 ```mermaid
 flowchart TD
-    U[Articles VSF affichés] --> W2{L'article existe-t-il déjà en tant que produit dans Odoo ?}
+    U[Articles VSF affichés] --> S["Clic sur la ligne d'un article : sa ligne de détail s'ouvre"]
+    S --> W2{L'article existe-t-il déjà en tant que produit dans Odoo ?}
     W2 -->|Non| W3["Bouton 'Créer le produit' → crée le product.product + prix fournisseur VSF"]
     W2 -->|Oui| W4["Bouton 'Voir le produit' → ouvre la fiche article dans un nouvel onglet"]
     W3 --> W5["Bouton 'Ajouter au devis' → ajoute une ligne au devis"]

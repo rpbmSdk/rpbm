@@ -1,6 +1,6 @@
 # 9 — Création du produit (`product.product`)
 
-Après la sélection d'un article VSF, le widget le cherche dans Odoo dans cet ordre : référence interne (`default_code`), eurocode (`product.template.rpbm_eurocode`), puis nom exact insensible à la casse. Le résultat et le critère trouvé sont visibles sur chaque carte sélectionnée ; en l'absence de résultat, l'utilisateur peut créer le produit.
+Après la sélection d'un article VSF, le widget le cherche dans Odoo dans cet ordre : référence interne (`default_code`), eurocode (`product.template.rpbm_eurocode`), puis nom exact insensible à la casse. Le résultat et le critère trouvé sont visibles dans la ligne de détail de chaque article sélectionné ; en l'absence de résultat, l'utilisateur peut créer le produit.
 
 - **Route de recherche** : `POST /doesProductExists` (`main.py::doesProductExists`).
 - **Route de création** : `POST /createProduct` (`main.py::createProduct`). Elle renvoie le produit existant ou créé ; une création concurrente est sérialisée par code VSF, évitant les doublons de `default_code` et de `product.supplierinfo`.

@@ -38,8 +38,9 @@ libellé X'Glass de la famille.
   complémentaires relevées lors de l'exploration du 2026-10-05) : la famille principale
   (`elementSitId` 3464) porte quatre pièces OE (`RA0E`, `RA1E`, `RA3E`, `RA2E`) ; quatre
   familles complémentaires portent six pièces (cales inférieure et supérieure, joint, nécessaire
-  de collage, rétroviseur ×2). L'affichage attendu est donc 4 puis 6 cartes, soit 10, dans
-  l'ordre du portail, et cinq encarts. Cette présentation reste à confirmer à la recette.
+  de collage, rétroviseur ×2). L'affichage est donc 4 puis 6 cartes, soit 10, dans l'ordre du
+  portail, et cinq encarts : présentation confirmée à la recette du 2026-10-05 sur le build
+  `ab31793`.
 - **Familles déduites des pièces** : une famille sans pièce reçue n'est pas affichée. Une pièce dont
   le groupe est inconnu est rangée dans un groupe générique « Pièces ».
 - **Pièce sélectionnée** : seule sa famille reste affichée (avec le titre de son groupe) ; « Afficher les autres » rétablit
@@ -59,6 +60,6 @@ libellé X'Glass de la famille.
 Aucun champ Odoo n'est lu ni écrit pour ce regroupement : le groupe et la famille ne sont pas
 mémorisés (décision par défaut, à rouvrir si le client le demande).
 
-Implémentation en cours (`17.0.261005.1`) ; recette live non réalisée.
+Lot D, build A (`17.0.261005.1`) : recette réussie le 2026-10-05 sur le build `ab31793`.
 
 Suivant : [4 — Pièce et pièce après-marché](04-piece-piece-am.md).
