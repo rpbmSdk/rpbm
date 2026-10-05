@@ -24,7 +24,7 @@ flowchart LR
 
     subgraph Frontend["Odoo Web — OWL (assets_backend)"]
         Widget["AgentWidget<br/>(bouton loupe)"]
-        Dialog["AgentWidgetDialog<br/>+ variantes CrmLead / SaleOrder"]
+        Dialog["AgentWidgetDialog<br/>+ AgentWidgetDialogCrmLead / AgentWidgetDialogSaleOrder"]
         Components["VehiculeComponent, CalqueComponent,<br/>PieceComponent, PieceAMComponent,<br/>ArticleComponent"]
         Widget --> Dialog --> Components
     end
@@ -64,7 +64,7 @@ sequenceDiagram
     participant VSF as Portail VSF
     participant ORM as Odoo ORM
 
-    U->>FE: Clic sur le widget loupe
+    U->>FE: Clic sur le widget loupe (ou ouverture automatique après « Créer un devis »)
     FE->>BE: /rpbm_agent_auth
     BE->>XG: Authentification (formulaire + cookies)
     BE->>VSF: Authentification (formulaire + jeton CSRF)
@@ -115,6 +115,35 @@ sequenceDiagram
         U->>FE: Enregistrement du formulaire (bouton standard Odoo)
         FE->>ORM: write (sauvegarde effective en base)
     end
+```
+
+## Séquence « Créer un devis » (opportunité vers devis, lot E1)
+
+Le dialog de l'opportunité n'a ni recherche VSF ni tableau : il s'arrête à la base Eurocode. Le bouton « Créer un devis » écrit l'opportunité, ouvre un nouveau devis, et le dialog du devis s'ouvre seul (détail : [frontend](frontend.md#créer-un-devis-lot-e1)).
+
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant OPP as AgentWidgetDialogCrmLead (OWL)
+    participant FC as FormController (patch)
+    participant SO as AgentWidgetDialogSaleOrder (OWL)
+    participant BE as AgentController (Odoo)
+    participant ORM as Odoo ORM
+
+    Note over OPP: véhicule → catégorie → pièce → base Eurocode, sans recherche VSF
+    U->>OPP: Clic « Créer un devis » (state.writing : un seul écrivain)
+    OPP->>BE: /getOdooVehicule (+ /createVehicule, /enrichVehicule si besoin)
+    OPP->>OPP: record.update(data), dont rpbm_xglass_vehicle_id
+    OPP->>ORM: record.save() — opportunité enregistrée
+    OPP->>BE: /rpbm_agent_close
+    OPP->>OPP: ferme le dialog, pendingOpportunityId = id de l'opportunité
+    OPP->>ORM: doActionButton(action_sale_quotations_new)
+    ORM-->>FC: formulaire sale.order neuf, lié à l'opportunité
+    FC->>FC: onMounted : drapeau posé et devis nouveau de cette opportunité ?
+    FC->>SO: dialogService.add(AgentWidgetDialogSaleOrder)
+    SO->>BE: /rpbm_agent_auth, puis restauration (véhicule mémorisé, pièce, pièce AM, base)
+    SO->>BE: /searchBaseEurocode (si une pièce ou une pièce AM est retrouvée)
+    U->>SO: articles VSF, main-d'œuvre, Confirmer et enregistrer
 ```
 
 ## Points d'attention transverses

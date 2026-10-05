@@ -11,7 +11,7 @@ les mêmes noms que sur `crm.lead`, ce qui permet au widget d'utiliser une seule
 | `rpbm_vin`, `rpbm_fuel_type`, `rpbm_vehicle_detail_model`, `rpbm_first_registration_date` | non | détail du véhicule |
 | `rpbm_xglass_category`, `rpbm_part_type`, `rpbm_eurocode_base`, `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock`, `rpbm_constructor_reference` | non | pièce et article VSF principal |
 | `rpbm_intervention_location` | non | lieu d'intervention (préremplissage du transporteur) |
-| `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id` | non | restauration des sélections du widget |
+| `rpbm_xglass_vehicle_id`, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id` | non | restauration des sélections du widget : le devis ouvert par « Créer un devis » retrouve ainsi le véhicule X'Glass, la pièce et la pièce AM de l'opportunité |
 | `carrier_id` | natif `delivery` | mode de remise et route logistique |
 
 Les miroirs Studio historiques du devis (`x_studio_immatriculation_`, `x_studio_pice_concerne`,
@@ -51,5 +51,6 @@ opportunité liée).
 
 ## Lu/écrit par
 
-- Écriture : [7 — Confirmation sur Ordre de Vente](../../fonctionnel/workflow/07-confirmation-sale-order.md)
+- Création du devis depuis l'opportunité : [6 — « Créer un devis »](../../fonctionnel/workflow/06-confirmation-crm-lead.md#créer-un-devis-lot-e1)
+- Écriture et ouverture automatique du dialog : [7 — Confirmation sur Ordre de Vente](../../fonctionnel/workflow/07-confirmation-sale-order.md)
 - Création produit et lignes : [9 — Création du produit](../../fonctionnel/workflow/09-creation-produit.md), [sale-order-line.md](sale-order-line.md)

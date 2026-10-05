@@ -3,7 +3,7 @@
 - **Déclencheur** : clic utilisateur sur une pièce de la catégorie, ou clic sur une ligne d'un encart « Autres marques AM » (sans pièce sélectionnée, voir [plus bas](#autres-marques-am-par-famille-encart-xglass-autre-am-r11-et-r19)).
 - **Code** : `onSelectPiece()` → `getSelectedPieceAm()`/`getPieceAm()` (`agent_widget_dialog.js`).
 - **Route** : `POST /getPieceAm` (`main.py::getPieceAm`) → pièces après-marché correspondantes sur X'Glass.
-- **Déduction eurocode** : un clic sur une pièce après-marché (`onSelectPieceAM()`), carte « Équivalence AM » ou ligne « Autres marques AM » d'une famille quelconque, renseigne `state.baseEurocode` (état widget, pas encore un champ Odoo) avec les 5 premiers caractères de sa référence. Le changement de base relance la recherche VSF. Sans pièce après-marché, le champ reste à saisir à la main.
+- **Déduction eurocode** : un clic sur une pièce après-marché (`onSelectPieceAM()`), carte « Équivalence AM » ou ligne « Autres marques AM » d'une famille quelconque, renseigne `state.baseEurocode` (état widget, pas encore un champ Odoo) avec les 5 premiers caractères de sa référence. Le changement de base relance la recherche VSF sur le devis ; sur l'opportunité (lot E1), le dialog s'arrête à la base. Sans pièce après-marché, le champ reste à saisir à la main.
 - **Affichage d'une pièce après-marché** : libellé, fournisseur, référence, validité (« A partir de », « Jusqu'à » ou « De … à … », comme X'Glass) et description. La description reprend la remarque de X'Glass (ex. « 5Ptes ») devant la description, sauf si elle vaut « - ». Le prix n'est affiché que s'il est connu.
 
 Aucun champ Odoo lu ou écrit à cette étape — uniquement de l'état widget local, qui alimentera l'écriture à la confirmation ([6](06-confirmation-crm-lead.md)/[7](07-confirmation-sale-order.md)).
@@ -21,9 +21,9 @@ efface la base Eurocode ainsi que la recherche VSF.
 Une ligne « Autres marques AM » choisie **sans pièce sélectionnée** est mémorisée à la
 confirmation avec la base Eurocode ; les identifiants de pièce X'Glass et de pièce OE sont alors
 vides (lecture de `getRecordData()` dans le code du 2026-10-05). À la réouverture, la
-section « Article VSF » et les encarts de toutes les familles sont affichés sans cartes de
-pièces (contexte restauré), la base enregistrée reste affichée et aucune recherche
-automatique ne démarre.
+section VSF (« 5. Article VSF » sur le devis, « 4. Base Eurocode » sur l'opportunité) et les
+encarts de toutes les familles sont affichés sans cartes de pièces (contexte restauré), la base
+enregistrée reste affichée et aucune recherche automatique ne démarre.
 
 ## Autres marques AM par famille (encart X'Glass AUTRE AM, R11 et R19)
 
@@ -51,9 +51,9 @@ même quand « Équivalence AM » est vide. « Équivalence AM » reste sous la 
   bout de ligne seulement s'il est connu. Un séparateur sépare les lignes. Les cartes
   « Équivalence AM » restent des cartes sur deux colonnes.
 - **Clic sur une ligne, dans toute famille** : même effet qu'une carte « Équivalence AM »
-  (sélection, base Eurocode = 5 premiers caractères de la référence, recherche VSF), **avec ou
-  sans pièce sélectionnée**. Sans pièce, la section « Article VSF » apparaît dès ce clic
-  (voir ci-dessous). Vérifier qu'une seule base Eurocode ressort de la liste reste à la charge
+  (sélection, base Eurocode = 5 premiers caractères de la référence, recherche VSF sur le devis),
+  **avec ou sans pièce sélectionnée**. Sans pièce, la section VSF apparaît dès ce clic (voir
+  ci-dessous). Vérifier qu'une seule base Eurocode ressort de la liste reste à la charge
   de l'utilisateur.
 
 **Risque assumé (décision du 2026-10-05).** Le clic remplit toujours la base, quelle que soit
@@ -65,11 +65,14 @@ des lignes réelles ; le comportement sera reconsidéré si elles donnent une ba
 
 ### Section « Article VSF » sans pièce sélectionnée
 
-La section « Article VSF » (étape [5](05-recherche-vsf-eurocode.md)) est visible dès qu'une
-pièce, une pièce après-marché ou un contexte restauré existe. Cliquer sur une ligne « Autres
-marques AM » sans avoir choisi de pièce renseigne donc la base et lance la recherche VSF ;
-une base restaurée seule ne lance toujours **aucune** recherche (R12) : la recherche
-automatique exige une pièce ou une pièce AM sélectionnée.
+La section VSF est visible dès qu'une pièce, une pièce après-marché ou un contexte restauré
+existe. Sur le devis, c'est « 5. Article VSF » (étape [5](05-recherche-vsf-eurocode.md)) : cliquer
+sur une ligne « Autres marques AM » sans avoir choisi de pièce renseigne la base et lance la
+recherche VSF ; une base restaurée seule ne lance toujours **aucune** recherche (R12) : la
+recherche automatique exige une pièce ou une pièce AM sélectionnée. Sur l'opportunité (lot E1),
+la section se réduit à « 4. Base Eurocode » : le champ base et le lien « Ouvrir dans un nouvel
+onglet », sans tableau, sans bouton « Rechercher sur VSF » et sans recherche automatique ; le clic
+sur une ligne renseigne la base, rien de plus.
 
 - Sur un devis, la section « 4. Main d'œuvre » reste liée à la pièce sélectionnée : sans pièce,
   seule « 5. Article VSF » s'affiche, comme pour une base restaurée seule.
@@ -80,6 +83,10 @@ automatique exige une pièce ou une pièce AM sélectionnée.
   document de travail local (non suivi, lot D du 2026-10-05)).
 - Après un clic AM sans pièce, sélectionner une pièce réinitialise les données dépendantes de la
   sélection précédente, base Eurocode comprise (comportement de `clearSelectedPiece()`, inchangé).
+- Cas limite accepté (lot E1) : une opportunité sans pièce OE, avec seulement une ligne « Autres
+  marques AM » et une base, ouvre le devis (« Créer un devis », voir [6](06-confirmation-crm-lead.md))
+  sans recherche VSF automatique, faute de pièce ou de pièce AM sélectionnée (R12) ; un clic sur
+  « Rechercher sur VSF » la lance.
 
 Lot D, build A (`17.0.261005.1`) : recette réussie le 2026-10-05 sur le build `ab31793`.
 

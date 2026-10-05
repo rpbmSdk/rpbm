@@ -27,14 +27,17 @@ restent saisissables.
 | `rpbm_xglass_category` | char | widget (libellé exact du calque X'Glass) | — |
 | `rpbm_part_type` | selection `windshield` / `rear_window` / `side_window` / `other` | widget (suggestion depuis le calque, modifiable) | `x_studio_field_eENQz` (Pare-Brise / Lunette arrière / Glace Latérale / Autre...) — **pilote la cascade de prix Studio** |
 | `rpbm_eurocode_base` | char | widget (5 premiers caractères de la pièce après-marché, ou saisie) | `x_studio_field_ORIyy` |
-| `rpbm_eurocode` | char, indexé | widget, article VSF **principal** | `x_studio_field_NwRik` |
+| `rpbm_eurocode` | char, indexé | widget **du devis**, article VSF **principal** (miroir `related` écrivable) ; saisie manuelle possible sur l'opportunité ; plus écrit par le dialog de l'opportunité depuis le lot E1 | `x_studio_field_NwRik` |
 | `rpbm_vsf_designation` | char | idem | `x_studio_field_j8eh3` |
 | `rpbm_vsf_stock` | integer | idem | `x_studio_field_BKtpw` (char) |
 | `rpbm_constructor_reference` | char | idem, si VSF la fournit | `x_studio_field_MNzfJ` |
 | `rpbm_intervention_location` | selection `galleria` / `genipa` / `domicile` / `lavage_place_armes` / `lavage_marin` | saisie ; préremplit `sale.order.carrier_id` | `x_studio_lieu_intervention` |
 | `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id` | char, invisibles | widget (restauration des sélections à la réouverture) | — |
+| `rpbm_xglass_vehicle_id` | char, invisible | widget (identifiant du véhicule X'Glass sélectionné) ; à la réouverture, ce véhicule est repris s'il figure dans les résultats de l'immatriculation, sinon le premier | — (aucun équivalent Studio, donc aucune migration) |
 
 `x_studio_eurocode_joint` n'est pas consommé par le module.
+
+`rpbm_xglass_vehicle_id` est ajouté en `17.0.261005.3` : il existe après la mise à jour du module. Comme les trois identifiants de pièce, il figure dans un groupe invisible des vues du formulaire ([opportunité](#vue), [devis](sale-order.md#vue)) : un champ modifié par le widget doit être présent dans la vue, sinon l'enregistrement du formulaire échoue.
 
 ## Synchronisation avec les champs Studio
 
@@ -63,5 +66,5 @@ dans la section Studio et déplace les anciens champs doublés dans un onglet «
 
 ## Lu/écrit par
 
-- Lecture (restauration à l'ouverture) : [3 — Catégorie X'Glass](../../fonctionnel/workflow/03-categorie-xglass.md), [4 — Pièce](../../fonctionnel/workflow/04-piece-piece-am.md)
-- Écriture : [6 — Confirmation sur Piste/Opportunité](../../fonctionnel/workflow/06-confirmation-crm-lead.md)
+- Lecture (restauration à l'ouverture) : [2 — Sélection du véhicule](../../fonctionnel/workflow/02-selection-vehicule.md), [3 — Catégorie X'Glass](../../fonctionnel/workflow/03-categorie-xglass.md), [4 — Pièce](../../fonctionnel/workflow/04-piece-piece-am.md)
+- Écriture : [6 — Confirmation sur Piste/Opportunité](../../fonctionnel/workflow/06-confirmation-crm-lead.md) (« Confirmer », « Confirmer et enregistrer », « Créer un devis »)

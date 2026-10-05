@@ -4,7 +4,7 @@
 
 Le widget `rpbm_agent_widget` est une icône loupe (🔍) présente sur **Piste/Opportunité** (`crm.lead`) et **Ordre de Vente** (`sale.order`, si une opportunité est liée), à deux endroits qui ouvrent la même fenêtre : l'onglet « Véhicule (X'Glass) » ajouté par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`), et les sections Studio habituelles (« Informations Véhicule » de l'opportunité, groupe sous l'en-tête du devis), où le script `studio_views.py` l'ajoute avec les champs natifs (voir [configuration](../technique/configuration.md#intégration-dans-les-vues)). Un clic ouvre une fenêtre de dialogue en plein écran qui pilote toute la recherche ; son en-tête et ses boutons (« Confirmer », « Confirmer et enregistrer », « Annuler ») restent visibles quand le contenu défile.
 
-> Le comportement dépend du modèle sur lequel le widget est placé : voir [Finalisation](#finalisation-selon-le-modèle) plus bas pour les différences entre Piste/Opportunité et Ordre de Vente.
+> Le comportement dépend du modèle sur lequel le widget est placé : voir [Finalisation](#finalisation-selon-le-modèle) plus bas pour les différences entre Piste/Opportunité et Ordre de Vente. L'opportunité s'arrête à la base Eurocode et crée le devis (« Créer un devis ») ; le devis cherche les articles VSF.
 
 ## Recherche et sélection (commun aux deux modèles)
 
@@ -29,18 +29,21 @@ flowchart TD
     P --> Q{Des pièces après-marché sont trouvées pour cette pièce ?}
     Q -->|Oui| R["Eurocode déduit automatiquement (5 premiers caractères de la référence)"]
     Q -->|Non| S["Champ Eurocode laissé vide : saisie manuelle possible"]
-    R --> T[Recherche des articles sur VSF à partir de l'eurocode]
-    S -.->|saisie + clic Chercher| T
-    T --> U[Affichage des articles VSF disponibles]
+    R --> BE[Base Eurocode renseignée]
+    S -.->|saisie manuelle| BE
+    BE --> T{Fenêtre ouverte sur un devis ?}
+    T -->|Oui| T1[Recherche des articles sur VSF à partir de l'eurocode]
+    T1 --> U[Affichage des articles VSF disponibles]
+    T -->|"Non, opportunité"| T2["Aucune recherche VSF : la base est écrite à la confirmation"]
 ```
 
 Notes :
-- Le premier véhicule de la liste est **sélectionné automatiquement** dès que la recherche renvoie des résultats.
+- Le véhicule X'Glass mémorisé sur le dossier (`rpbm_xglass_vehicle_id`) est **sélectionné automatiquement** s'il figure dans les résultats ; sinon, c'est le premier véhicule de la liste, dès que la recherche renvoie des résultats.
 - Si le conducteur (`driver_id`) du véhicule déjà présent dans Odoo diffère du client de l'enregistrement en cours, une alerte s'affiche.
-- Les pièces de la catégorie sont présentées comme sur le portail : « Pièces principales » puis « Pièces complémentaires », chacune découpée en familles X'Glass, dans l'ordre du portail. Sous chaque famille, l'encart « Autres marques AM » est replié ; il se charge au dépliage, sans qu'une pièce soit sélectionnée. Un clic sur l'une de ses lignes renseigne l'eurocode et lance la recherche VSF, quelle que soit la famille (détail : [3](workflow/03-categorie-xglass.md) et [4](workflow/04-piece-piece-am.md)).
+- Les pièces de la catégorie sont présentées comme sur le portail : « Pièces principales » puis « Pièces complémentaires », chacune découpée en familles X'Glass, dans l'ordre du portail. Sous chaque famille, l'encart « Autres marques AM » est replié ; il se charge au dépliage, sans qu'une pièce soit sélectionnée. Un clic sur l'une de ses lignes renseigne l'eurocode (et lance la recherche VSF sur le devis), quelle que soit la famille (détail : [3](workflow/03-categorie-xglass.md) et [4](workflow/04-piece-piece-am.md)).
 - Si le champ "Catégorie X'Glass" est déjà renseigné sur l'enregistrement, la catégorie correspondante est présélectionnée automatiquement dès que la planche est chargée.
-- La recherche VSF se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique).
-- Les articles VSF forment un tableau (eurocode, désignation, référence constructeur, stock, prix, coût, photo). Un clic sur une ligne sélectionne l'article et ouvre sous elle son détail : toutes les vignettes, les caractéristiques et les actions (détail : [5](workflow/05-recherche-vsf-eurocode.md)).
+- Sur le devis, la recherche VSF se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique) ; l'opportunité n'a ni recherche VSF ni tableau.
+- Sur le devis, les articles VSF forment un tableau (eurocode, désignation, référence constructeur, stock, prix, coût, photo). Un clic sur une ligne sélectionne l'article et ouvre sous elle son détail : toutes les vignettes, les caractéristiques et les actions (détail : [5](workflow/05-recherche-vsf-eurocode.md)).
 
 > ⚠️ L'ancien diagramme draw.io (source archivée dans [`_archive/Readme.drawio`](../_archive/Readme.drawio)) libellait par erreur cette étape "Recherche du véhicule sur VSF" — la recherche véhicule se fait bien sur **X'Glass** ; VSF n'intervient qu'à l'étape de recherche par eurocode. Les diagrammes Mermaid de ce dossier font foi.
 
@@ -50,22 +53,25 @@ Notes :
 
 ```mermaid
 flowchart TD
-    U[Articles VSF affichés] --> V[Clic sur Confirmer]
+    U[Pièce choisie, base Eurocode renseignée] --> V[Clic sur Confirmer, Confirmer et enregistrer ou Créer un devis]
     V --> W{Le véhicule sélectionné existe-t-il déjà dans Odoo ?}
     W -->|Non| X[Création du véhicule dans fleet.vehicle]
     W -->|Oui| Y[Réutilisation du véhicule existant]
-    X --> Z[Écriture immatriculation + véhicule + catégorie + pièce concernée + eurocode sur la piste]
+    X --> Z[Écriture immatriculation + véhicule + véhicule X'Glass + catégorie + pièce concernée + base Eurocode sur la piste]
     Y --> Z
     Z --> AA[Fermeture de la fenêtre — la piste affiche les nouvelles données]
+    AA -.->|Créer un devis seulement| AB["Nouveau devis lié à l'opportunité, dont la fenêtre s'ouvre seule"]
 ```
 
-Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardés au clic sur "Enregistrer" — ou immédiatement via "Confirmer et enregistrer") : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et, lorsque les données Fleet sont déterministes, les champs historiques véhicule (marque, modèle, VIN, énergie, détail modèle et date MEC). Une source vide, ambiguë ou non autorisée avertit sans bloquer ; détail exact dans [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md).
+Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardés au clic sur "Enregistrer" — ou immédiatement via "Confirmer et enregistrer" et "Créer un devis") : immatriculation, véhicule lié, identifiant du véhicule X'Glass, catégorie X'Glass, Pièce concernée, Base Eurocode et, lorsque les données Fleet sont déterministes, les champs historiques véhicule (marque, modèle, VIN, énergie, détail modèle et date MEC). Une source vide, ambiguë ou non autorisée avertit sans bloquer ; détail exact dans [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md).
 
-> **Article principal.** L'Eurocode complet, la désignation VSF, le stock VSF et la référence constructeur ne sont écrits que si un article VSF a été désigné avec « Définir comme article principal » avant « Confirmer ». Sélectionner un article, ou l'ajouter au devis, ne suffit pas : sans article principal, ces champs restent inchangés, sans message.
+> **Article VSF.** La fenêtre de l'opportunité ne cherche plus d'article VSF : elle s'arrête à la base Eurocode. L'Eurocode complet, la désignation VSF, le stock VSF et la référence constructeur ne sont plus écrits depuis l'opportunité ; ils restent visibles et modifiables à la main dans le formulaire, et seul le devis les alimente (voir plus bas).
+
+**Créer un devis.** Le bouton, placé après « Confirmer et enregistrer », est affiché quand l'opportunité a un client et n'est pas une piste. Il écrit et enregistre le dossier, ferme la fenêtre, puis ouvre un **nouveau** devis non enregistré, lié à l'opportunité, comme le bouton natif « Nouveau devis » : chaque clic en ouvre un nouveau. La fenêtre du widget s'ouvre alors seule sur ce devis, avec le même véhicule, la même pièce et la même base (détail : [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md#créer-un-devis-lot-e1)).
 
 ### Ordre de Vente (`sale.order`)
 
-En plus du flux véhicule/catégorie/eurocode ci-dessus (identique), la ligne de détail de chaque article VSF sélectionné propose des actions supplémentaires :
+Le devis reprend le flux véhicule/catégorie/pièce ci-dessus (identique) puis cherche les articles VSF. Sa fenêtre s'ouvre par la loupe ou, après « Créer un devis », toute seule : elle restaure le véhicule, la pièce et la base de l'opportunité, lance la recherche VSF quand une pièce ou une pièce après-marché est retrouvée et propose la main-d'œuvre. La ligne de détail de chaque article VSF sélectionné propose des actions supplémentaires :
 
 ```mermaid
 flowchart TD
@@ -78,7 +84,9 @@ flowchart TD
     W5 --> W6[Clic sur Confirmer pour finaliser véhicule/catégorie/eurocode sur le devis]
 ```
 
-Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et miroirs historiques véhicule lorsque l'opportunité est liée. Le notebook du widget est masqué sur un devis sans opportunité liée. Le champ natif `carrier_id` (« Transporteur / mode de remise ») est visible sous le client ; il peut être prérempli depuis le lieu historique du CRM sur un nouveau devis et doit être renseigné avant la confirmation standard de la vente. L'ajout au devis (`addArticleToSaleOrder`) est **indépendant** du bouton « Confirmer » de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md) et [9 — Création du produit](workflow/09-creation-produit.md). L'ajout au devis ne renseigne pas l'Eurocode ni la désignation VSF du dossier : désigner l'article principal puis confirmer (voir l'encadré ci-dessus).
+Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et miroirs historiques véhicule lorsque l'opportunité est liée. Le notebook du widget est masqué sur un devis sans opportunité liée. Le champ natif `carrier_id` (« Transporteur / mode de remise ») est visible sous le client ; il peut être prérempli depuis le lieu historique du CRM sur un nouveau devis et doit être renseigné avant la confirmation standard de la vente. L'ajout au devis (`addArticleToSaleOrder`) est **indépendant** du bouton « Confirmer » de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md) et [9 — Création du produit](workflow/09-creation-produit.md). L'ajout au devis ne renseigne pas l'Eurocode ni la désignation VSF du dossier : désigner l'article principal puis confirmer.
+
+> **Article principal.** L'Eurocode complet, la désignation VSF, le stock VSF et la référence constructeur ne sont écrits que si un article VSF a été désigné avec « Définir comme article principal » avant « Confirmer ». Sélectionner un article, ou l'ajouter au devis, ne suffit pas : sans article principal, ces champs restent inchangés, sans message.
 
 **Prix de la ligne ajoutée.** La ligne reçoit un « Prix X'Glass » égal au prix de vente VSF diminué de la remise RPBM (paramètre `rpbm_agent.vsf_discount`, 20 % par défaut ; ce prix vient de VSF malgré son nom). L'automatisation Studio « Tarif x glass » en déduit le prix unitaire : Prix X'Glass × 1,5. Elle ne se déclenche que lorsque le Prix X'Glass change : un prix unitaire corrigé à la main est conservé. Une ligne saisie sans l'assistant garde le prix de la liste de prix.
 
@@ -136,7 +144,8 @@ Aucun champ Studio n'est à créer : le module déclare ses champs natifs `rpbm_
 
 ## Réouverture du dialogue et mémorisation des pièces
 
-La confirmation mémorise la catégorie X’Glass, la base Eurocode et les identifiants
+La confirmation mémorise le véhicule X’Glass sélectionné (son identifiant, parmi les véhicules
+qu'une même immatriculation peut renvoyer), la catégorie X’Glass, la base Eurocode et les identifiants
 de la pièce X’Glass, de la pièce OE et de la pièce après-marché. À la réouverture,
 le dialogue restaure ces choix et réduit les listes à la sélection existante.
 Les boutons « Afficher les autres » rendent les listes complètes disponibles pour

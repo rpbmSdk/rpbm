@@ -2,9 +2,9 @@
 
 ## Articles VSF et suggestions
 
-`AgentWidgetDialog` garde les sélections dans `selectedArticleCodes`, indexé par code VSF, et les produits Odoo dans `articleProducts`, également par code. Un article sélectionné possède donc son propre chargement, sa recherche/création produit et, sur un devis, son ajout ou retrait.
+`AgentWidgetDialog` garde les sélections dans `selectedArticleCodes`, indexé par code VSF, et les produits Odoo dans `articleProducts`, également par code. Un article sélectionné possède donc son propre chargement, sa recherche/création produit et, sur un devis, son ajout ou retrait. Depuis le lot E1, le tableau et la recherche VSF n'existent que dans le dialog du devis : celui de l'opportunité les retire (voir [Créer un devis](#créer-un-devis-lot-e1)).
 
-**Tableau (R21, lot D, build B `17.0.261005.2`).** Les résultats forment un `<table name="vsf_articles">` (`table table-sm table-hover align-middle`) qui remplace les cartes de R13 et R14. Il a sept colonnes : Eurocode, Désignation, Réf. constructeur, Stock, Prix, Coût et Photo ; Stock, Prix et Coût sont alignés à droite (`text-end`). Chaque article principal a son propre `<tbody>` (`t-foreach`), qui sépare les groupes de lignes. Le bouton « Rechercher sur VSF » porte `name="vsf_search"`, comme le tableau et la section `vsf_section` : ancres XPath pour les dialogs héritiers. `ArticleComponent` rend deux `<tr>` racines :
+**Tableau (R21, lot D, build B `17.0.261005.2`).** Les résultats forment un `<table name="vsf_articles">` (`table table-sm table-hover align-middle`) qui remplace les cartes de R13 et R14. Il a sept colonnes : Eurocode, Désignation, Réf. constructeur, Stock, Prix, Coût et Photo ; Stock, Prix et Coût sont alignés à droite (`text-end`). Chaque article principal a son propre `<tbody>` (`t-foreach`), qui sépare les groupes de lignes. Le bouton « Rechercher sur VSF » porte `name="vsf_search"`, comme le tableau et la section `vsf_section` : ancres XPath pour les dialogs héritiers (celui de l'opportunité retire `vsf_search` et `vsf_articles`). `ArticleComponent` rend deux `<tr>` racines :
 
 - **ligne principale** : la classe `table-primary` marque l'article sélectionné (le getter `style` est supprimé) et un clic appelle la prop obligatoire `onSelect`. Cellules : Eurocode (`article.code`, `font-monospace text-nowrap`) ; désignation (`article.name`) suivie du lien « Fiche technique » (`article.url`, `target="_blank"`, `rel="noopener"`, `t-on-click.stop` pour ne pas sélectionner la ligne) ; référence constructeur ; stock, ou « Indisponible » quand il est nul (`available` vaut `stock > 0`) ; prix et coût, vides si le prix est absent ; première vignette ;
 - **ligne de détail** : rendue seulement si l'article est sélectionné, sur toute la largeur du tableau (`colspan="7"`). Elle contient toutes les vignettes, les caractéristiques techniques, « Détails VSF indisponibles pour cet article » le cas échéant, puis le slot `actions` (voir [plus bas](#vignettes-et-actions-par-article)).
@@ -34,32 +34,32 @@ Le widget (`<widget name="rpbm_agent_widget" />`) est placé à deux endroits de
 
 Lot D, build B (`17.0.261005.2`). `agent_widget_dialog.xml` ouvre le dialog avec `<Dialog size="'fullscreen'" …>`, ce qui pose la classe Bootstrap `modal-fullscreen` sur `.modal-dialog` (`web/core/dialog/dialog.js` accepte `sm`, `md`, `lg`, `xl`, `fs` et `fullscreen`, avec `lg` par défaut). Les guillemets intérieurs sont obligatoires : avant ce build, le gabarit écrivait `size="xl"` sans eux, Owl évaluait `xl` comme une expression du contexte du composant (`undefined`) et le dialog retombait sur `lg`, soit 980 px (voir l'[état des lieux](../etat-des-lieux.md#6-uiux)). [`test_portal_auth.py`](../../test_portal_auth.py) (`test_dialog_principal_en_plein_ecran`) vérifie donc que le template principal porte le littéral `size="'fullscreen'"` (garde-fou R22).
 
-La taille ne change pas le défilement : dans Odoo 17, tout dialog a déjà un corps défilant avec en-tête et pied fixes (`web/static/src/scss/bootstrap_review.scss`, l. 61-79, active dès 576 px), si bien que « Confirmer », « Confirmer et enregistrer » et « Annuler » restent visibles avec un long tableau. Elle change les marges (lecture du code Odoo 17 local, à confirmer à la recette) :
+La taille ne change pas le défilement : dans Odoo 17, tout dialog a déjà un corps défilant avec en-tête et pied fixes (`web/static/src/scss/bootstrap_review.scss`, l. 61-79, active dès 576 px), si bien que « Confirmer », « Confirmer et enregistrer » et « Annuler » restent visibles avec un long tableau. Elle change les marges (lecture du code Odoo 17 local, confirmée par la mesure du 2026-10-05) :
 
 | Taille | Largeur | Hauteur | Coins |
 |---|---|---|---|
 | `fs` | pleine largeur moins 1,75 rem de chaque côté | suit le contenu, jusqu'à l'écran | arrondis |
 | `fullscreen` (retenue) | toute la largeur | toute la hauteur | carrés |
 
-Odoo conserve 1,75 rem de marge verticale dans les deux cas. `'fullscreen'` est le choix du 2026-10-05, à la place de `'fs'` d'abord noté ; une règle SCSS du module ne serait ajoutée que si la recette demandait un bord à bord vertical. `VsfImagePreviewDialog` garde `size="'xl'"`, déjà écrit correctement, et s'ouvre par-dessus. Aucune recette live n'a encore été exécutée sur ce build.
+Odoo conserve 1,75 rem de marge verticale dans les deux cas. `'fullscreen'` est le choix du 2026-10-05, à la place de `'fs'` d'abord noté. Recette live réussie le 2026-10-05 sur le build `6cbecd3` : `.modal-dialog` de 1680 × 927 dans une fenêtre de 1680 × 927, contenu de 1680 × 871 à 28 px du haut, soit des bandes de 28 px (1,75 rem) en haut et en bas. Aucune règle SCSS du module n'est ajoutée tant que le client ne demande pas un bord à bord vertical. `VsfImagePreviewDialog` garde `size="'xl'"`, déjà écrit correctement, et s'ouvre par-dessus.
 
 ## Arborescence des composants
 
 ```mermaid
 flowchart TD
-    AW["AgentWidget<br/>(bouton loupe, view_widgets)"] -->|"resModel == 'crm.lead'"| DCL[AgentWidgetDialogCrmLead]
-    AW -->|"resModel == 'sale.order'"| DSO[AgentWidgetDialogSaleOrder]
+    AW["AgentWidget<br/>(bouton loupe, view_widgets)"] -->|"resModel == 'crm.lead'"| DCL["AgentWidgetDialogCrmLead<br/>(sans VSF, bouton « Créer un devis »)"]
+    AW -->|"resModel == 'sale.order'"| DSO["AgentWidgetDialogSaleOrder<br/>(VSF, main-d'œuvre, lignes de devis)"]
     DCL --> Base[AgentWidgetDialog]
     DSO --> Base
     Base --> VC[VehiculeComponent]
     Base --> CC[CalqueComponent]
     Base --> PC[PieceComponent]
     PC --> PAC[PieceAMComponent]
-    Base --> AC["ArticleComponent<br/>(utilisé tel quel sur les deux modèles)"]
+    Base --> AC["ArticleComponent<br/>(rendu par le seul dialog du devis)"]
     Base --> VIP["VsfImagePreviewDialog<br/>(aperçu image VSF)"]
 ```
 
-Le widget n'est placé que sur `crm.lead` et `sale.order` (`DIALOG_BY_MODEL`, `agent_widget.js`), dans l'onglet du module comme dans les sections Studio ; il n'existe pas de dialog générique pour un autre modèle. La facture (`account.move`) n'affiche donc que les champs natifs repris du devis, sans bouton (voir [champs de la facture](champs/account-move.md)).
+Le widget n'est placé que sur `crm.lead` et `sale.order` (`DIALOG_BY_MODEL`, `agent_widget.js`), dans l'onglet du module comme dans les sections Studio ; il n'existe pas de dialog générique pour un autre modèle. `DIALOG_BY_MODEL` associe `crm.lead` à `AgentWidgetDialogCrmLead` et `sale.order` à `AgentWidgetDialogSaleOrder` ; avant le lot E1, l'opportunité instanciait directement la classe de base `AgentWidgetDialog`. La facture (`account.move`) n'affiche donc que les champs natifs repris du devis, sans bouton (voir [champs de la facture](champs/account-move.md)).
 
 ## Hiérarchie des classes
 
@@ -68,8 +68,14 @@ classDiagram
     class Component
     class asyncWidget
     class AgentWidgetDialog
-    class AgentWidgetDialogCrmLead
-    class AgentWidgetDialogSaleOrder
+    class AgentWidgetDialogCrmLead {
+        +onSearchBaseEurocode() neutralisé
+        +onCreateQuotation()
+    }
+    class AgentWidgetDialogSaleOrder {
+        +addArticleToSaleOrder()
+        +addSelectedLaborOperations()
+    }
     class VehiculeComponent
     class ArticleComponent
     class CalqueComponent
@@ -159,7 +165,10 @@ section VSF (`//section[@t-if='selectedPiece or hasRestoredPieceContext']`) : ch
 condition cassait l'héritage sans erreur visible. La section VSF porte maintenant
 `name="vsf_section"` et les deux XPath ciblent `//section[@name='vsf_section']` (le `h5` reste
 enfant direct de la section). La condition peut évoluer sans toucher au devis. Contrôle hors
-Odoo prévu : un seul nœud par XPath, avec `xml.etree.ElementTree` (`lxml` absent du `.venv`).
+Odoo : un seul nœud par XPath, avec `xml.etree.ElementTree` (`lxml` absent du `.venv`). Le dialog de
+l'opportunité (`rpbm_agent.CrmLeadDialog`, lot E1) s'appuie sur les mêmes ancres par quatre XPath
+(voir [Créer un devis](#créer-un-devis-lot-e1)) ; `test_xpath_des_dialogs_ciblent_un_seul_noeud`
+contrôle les deux gabarits héritiers.
 
 **Contrôles hors réseau.** `test_widget_vsf.mjs` couvre `pieceGroups` et `visiblePieceGroups` (tout, focalisé, restauré sans pièce, `elementKey`
 absent, aucune pièce), un seul `callPortal` par couple véhicule-famille après replier puis déplier,
@@ -167,11 +176,13 @@ l'état ouvert indépendant par famille, les listes distinctes de deux véhicule
 d'entrée en cache après erreur, la table vidée à la reconnexion, la recherche VSF lancée par une
 ligne AM sans pièce, et l'absence de recherche pour une base restaurée seule. Le harnais rejoue
 les effets Owl à la main. `test_portal_auth.py` couvre la tolérance de
-`findSelectionsPiecesAmView` (liste, `null`, corps non JSON) et le contrôle des deux XPath du
-devis (un seul nœud chacun, `xml.etree.ElementTree`, `lxml` étant absent du `.venv`). Les trois
+`findSelectionsPiecesAmView` (liste, `null`, corps non JSON) et le contrôle des XPath des dialogs
+héritiers (deux pour le devis, quatre pour l'opportunité depuis le lot E1 ; un seul nœud chacun,
+`xml.etree.ElementTree`, `lxml` étant absent du `.venv`). Les trois
 modes de pièces (tout, focalisé, restauré sans pièce) ont été vérifiés à la recette live du build A
 (2026-10-05). Le rendu Owl local (Chromium et Owl du code Odoo, scripts hors dépôt) couvre le lien
-direct VSF, les vignettes et l'aperçu, et le tableau VSF.
+direct VSF, les vignettes et l'aperçu, le tableau VSF et, depuis le lot E1, les dialogs de
+l'opportunité et du devis (l'héritage est appliqué par DOM avant le montage).
 
 ## Détails discriminants des pièces OE
 
@@ -222,8 +233,8 @@ stable. Les photos du modèle sont exclues côté backend. L'URL de fiche (`arti
 dès la recherche : `extractProductInfo` la passe par `_absolute_url` (voir
 [backend](backend.md#vsf-controllersvsfpy)), ce que vérifie une assertion de
 `test_vsf_recherche_apparie_les_images_signees` dans
-[`test_portal_auth.py`](../../test_portal_auth.py). La recette live du tableau (reprise de R15 à R17)
-reste à exécuter : voir le
+[`test_portal_auth.py`](../../test_portal_auth.py). Recette live du tableau (reprise de R15 à R17) réussie le
+2026-10-05 sur le build `6cbecd3` : voir le
 [jeu de test](../jeu-de-test.md#tableau-vsf-en-plein-écran-r21-r22-reprise-de-r15-à-r17).
 
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
@@ -237,6 +248,7 @@ classDiagram
         +partnerField
         +categorieXglassField
         +vehiculeField
+        +xglassVehicleIdField
         +immatriculationField
         +baseEurocodeField
         +pieceConcerneeField
@@ -277,16 +289,24 @@ flowchart TD
 
 Depuis le lot D (build A), le déclencheur de la recherche VSF est
 `(selectedPiece || selectedPieceAm) && baseEurocode` : une pièce après-marché choisie dans un
-encart « Autres marques AM » suffit, sans pièce OE sélectionnée.
+encart « Autres marques AM » suffit, sans pièce OE sélectionnée. Sur le dialog de l'opportunité
+(lot E1), `onSearchBaseEurocode()` est neutralisé : l'effet ne lance aucune recherche et la
+cascade s'arrête à la base Eurocode.
 
 Un `useEffect` séparé recalcule `state.canConfirm` à chaque changement de véhicule ou de
-catégorie. Les boutons « Confirmer » et « Confirmer et enregistrer » restent désactivés tant
-que ces deux sélections ne sont pas présentes.
+catégorie. Les boutons « Confirmer » et « Confirmer et enregistrer » (et « Créer un devis » sur
+l'opportunité) restent désactivés tant que ces deux sélections ne sont pas présentes, pendant une
+reconnexion et pendant une écriture (`state.writing`).
+
+Un autre effet, sur `vehicules`, sélectionne le véhicule X'Glass mémorisé (`_restoreVehiculeId`,
+lu dans `rpbm_xglass_vehicle_id`) s'il figure dans la liste, sinon le premier ; une liste vide
+donne `undefined`.
 
 À l'ouverture, `restoreSelectionFromRecord()` relit les identifiants persistés
-(`rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id`, base Eurocode) et la
-cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAllCalques` /
-`showAllPieces` pilotent l'affichage réduit à la sélection courante.
+(`rpbm_xglass_vehicle_id`, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id`, base
+Eurocode) et la cascade ci-dessus re-sélectionne le véhicule, la pièce et la pièce AM
+correspondants ; `showAllCalques` / `showAllPieces` pilotent l'affichage réduit à la sélection
+courante.
 
 ## Table des appels serveur
 
@@ -303,12 +323,13 @@ cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAll
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce (« Équivalence AM ») |
 | `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de l'encart « Autres marques AM » d'une famille (sans pièce requise) | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par véhicule + `elementSitId` |
-| `onSearchBaseEurocode()` | `AgentWidgetDialog` | `/searchBaseEurocode` | Articles VSF par eurocode |
+| `onSearchBaseEurocode()` | `AgentWidgetDialog` (neutralisé dans `AgentWidgetDialogCrmLead`) | `/searchBaseEurocode` | Articles VSF par eurocode (dialog du devis seulement) |
 | `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'un article sélectionné (+ suggestions pour un article principal) |
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour un article VSF donné |
 | `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cet article |
 | `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget |
 | `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce), provenance `rpbm_labor_operation_key` |
+| `onCreateQuotation()` | `AgentWidgetDialogCrmLead` | — (`action.doActionButton` → `action_sale_quotations_new`, aucune route du module) | Écrit l'opportunité, puis ouvre un nouveau devis lié (voir [Créer un devis](#créer-un-devis-lot-e1)) |
 
 L'encart d'actions d'un article VSF est le sous-template `rpbm_agent.ArticleActions`
 (`agent_widget_dialog.xml`), appelé pour les articles principaux et suggérés (slot `actions` de la
@@ -319,9 +340,13 @@ ligne, derrière un garde-fou `addArticleToSaleOrder` puisque l'extension Owl es
 ## Écriture finale
 
 `AgentWidgetDialog.onConfirm()` / `onConfirmAndSave()` délèguent à `confirmRecord(save)`, qui
-construit un objet `data` (via `getRecordData()`) et appelle
-**`this.props.record.update(data)`** — mise à jour en mémoire du `Record` Odoo standard —
-**avant** de fermer la session portail (`closeAgents()`, cf. correctif L1.0).
+appelle `writeRecord(save)` puis ferme le dialog si l'écriture a abouti. `writeRecord(save)` est
+l'écriture commune aux trois boutons d'écriture, « Créer un devis » compris : garde anti-doublon
+`state.writing`, construction d'un objet `data` (via `getRecordData()`, qui inclut
+`rpbm_xglass_vehicle_id`), **`this.props.record.update(data)`** — mise à jour en mémoire du
+`Record` Odoo standard —, `record.save()` seulement pour « Confirmer et enregistrer » ou « Créer un
+devis » (un formulaire invalide ou refusé lève une erreur : rien n'est fermé), **puis** fermeture
+de la session portail (`closeAgents()`, cf. correctif L1.0). Elle renvoie `true` si tout a abouti.
 Lorsque le véhicule existe déjà, `getRecordData()` appelle `/enrichVehicule` (VIN et date MEC
 Fleet manquants) ; les `warnings` sont affichés sans bloquer. Marque, modèle, VIN, énergie,
 détail et date de l'opportunité ne sont pas écrits par le widget : ils dérivent du véhicule lié
@@ -330,7 +355,96 @@ champs Studio historiques à l'enregistrement.
 L'écriture effective en base se fait ensuite via le mécanisme de sauvegarde standard du
 formulaire Odoo (bouton « Enregistrer »), ou directement avec « Confirmer et enregistrer ».
 Le module n'utilise pas de `orm.write` : tous ses échanges serveur passent par `rpc` vers les
-routes custom de `main.py`.
+routes custom de `main.py`, à l'exception de « Créer un devis », qui appelle la méthode native
+`action_sale_quotations_new` par `doActionButton`.
+
+## Créer un devis (lot E1)
+
+Lot E1 (`17.0.261005.3`) : le dialog de l'opportunité s'arrête à la pièce et à la base Eurocode,
+et crée le devis où l'on choisit les articles VSF. Aucune recette live n'a encore été exécutée.
+
+**Dialog de l'opportunité.** `AgentWidgetDialogCrmLead` (`agent_widget_dialog_crm_lead.js` et
+`.xml`) étend `AgentWidgetDialog` ; `agent_widget.js` y associe `crm.lead`. Son gabarit
+`rpbm_agent.CrmLeadDialog` hérite en mode `primary` de `rpbm_agent.AgentWidgetDialog` par quatre
+XPath :
+- le `<h5>` de la section VSF devient « 4. Base Eurocode » ;
+- le bouton `vsf_search` et le tableau `vsf_articles` sont retirés ; le champ base et « Ouvrir dans
+  un nouvel onglet » restent ;
+- le bouton « Créer un devis » s'ajoute après `onConfirmAndSave`.
+
+`onSearchBaseEurocode()` y est neutralisé. Sans article, `getRecordData()` n'écrit plus
+`rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` ni `rpbm_constructor_reference` : ils
+restent visibles et modifiables à la main dans le formulaire, et seul le dialog du devis les
+alimente (décision du 2026-10-05, voir [validations métier](../validations-metier.md)).
+
+**Bouton « Créer un devis ».**
+- Affiché si `record.partnerId and props.record.data.type !== 'lead'` : un client et pas une
+  piste, comme le bouton natif « Nouveau devis », masqué si `type == 'lead'`. La condition reste
+  vraie si le champ `type` manque à la vue. Le bouton natif est aussi masqué sur une opportunité
+  perdue (`probability == 0 and not active`), ce que le bouton du widget ne teste pas.
+- Désactivé comme « Confirmer » : `!state.canConfirm or isReconnecting or state.writing`.
+- Placé **après** « Confirmer et enregistrer » : le raccourci Ctrl+Entrée clique le premier bouton
+  visible du pied, même désactivé (`web/core/dialog/dialog.js`), et reste donc « Confirmer ». Ordre
+  du pied : « Reconnecter » quand il est nécessaire, « Confirmer », « Confirmer et enregistrer »,
+  « Créer un devis », « Annuler ».
+
+**Séquence de `onCreateQuotation()`.**
+1. `writeRecord(true)` écrit, enregistre et ferme les portails ; s'il renvoie `false` (formulaire
+   invalide, erreur serveur), rien d'autre n'a lieu et le dialog reste ouvert.
+2. `this.props.close()`.
+3. Le drapeau privé au fichier `pendingOpportunityId` reçoit `record.resId`.
+4. `action.doActionButton({ type: "object", name: "action_sale_quotations_new", resModel:
+   "crm.lead", resId, context: record.context })`, sans `runAsync` : Odoo affiche lui-même l'erreur,
+   comme pour le bouton natif ; l'opportunité est alors déjà enregistrée. Avec un client, la méthode renvoie l'action
+   `sale_crm.sale_action_quotations_new` (contexte `default_opportunity_id`, `default_partner_id`…) :
+   un **nouveau** devis, non enregistré, lié à l'opportunité ; chaque clic en ouvre un nouveau. Sans
+   client, Odoo passerait par l'assistant `crm.quotation.partner`, mais le bouton n'est alors pas
+   affiché.
+5. `finally` : le drapeau est vidé.
+
+**Ouverture du dialog du devis.** Le même fichier applique un `patch(FormController.prototype)`.
+Pour un `sale.order`, au `onMounted`, si `pendingOpportunityId` est posé, que l'enregistrement est
+nouveau (`root.isNew`) et que `root.data.opportunity_id[0] === pendingOpportunityId`, le drapeau est
+vidé et `dialogService.add(AgentWidgetDialogSaleOrder, { record: root })` ouvre le dialog. Il
+restaure alors le contexte comme à toute réouverture : véhicule mémorisé, pièce, pièce AM, base,
+recherche VSF automatique et « 4. Main d'œuvre ».
+- **Pourquoi un drapeau JavaScript.** `doActionButton` recopie dans le contexte de l'action suivante
+  toute clé qui ne correspond pas à `CTX_KEY_REGEX` (`default_*`, `search_default_*`, `show_*`,
+  `*_view_ref`, `group_by`, `active_id(s)`, `orderedBy` ; `web/webclient/actions/action_service.js`).
+  Une clé de contexte propre au module resterait dans le contexte du devis et se propagerait aux
+  actions suivantes. Le drapeau, en mémoire et à usage unique, ne fuit pas.
+- **Pourquoi le contrôle porte sur le montage.** Chaque changement d'action ferme tous les dialogs
+  (`dialog.closeAll()` dans `_updateUI`), et le `onMounted` du formulaire passe avant la résolution
+  de `doAction`. La promesse de `doActionButton` peut même ne jamais se résoudre si une autre action
+  la remplace (`KeepLast`) : on ne peut pas ouvrir le dialog après un `await`. Le contrôle exige donc
+  le drapeau **et** un devis nouveau de cette opportunité ; le `finally` n'est qu'un filet.
+- **Conséquences.** Le dialog ne s'ouvre ni avec « Nouveau devis » natif, ni par Ventes › Devis ›
+  Nouveau, ni au retour par le fil d'Ariane, ni après un rechargement de la page. Le service `action`
+  n'a pas de métadonnée `async` : `useService` ne le protège pas, il reste appelable après
+  `close()`, contrairement à `rpc` et `orm`.
+
+**Anti-doublon.** `state.writing`, partagé par « Confirmer », « Confirmer et enregistrer » et
+« Créer un devis », désactive les trois boutons ; `writeRecord()` ignore un appel tant qu'une
+écriture est en cours. Un double clic n'écrit donc qu'une fois et ne crée qu'un devis.
+
+**Véhicule X'Glass mémorisé.** `getRecordData()` écrit `rpbm_xglass_vehicle_id`
+(`String(selectedVehicule.id)`, ou une chaîne vide sans véhicule) ; le champ n'a pas d'équivalent Studio (voir
+[champs de l'opportunité](champs/crm-lead.md)). L'effet sur `vehicules` le relit à la réouverture
+(voir plus haut) : une immatriculation peut renvoyer plusieurs véhicules X'Glass, et le devis ouvert
+automatiquement doit retrouver celui de l'opportunité.
+
+**Contrôles hors réseau.** `test_widget_vsf.mjs` couvre la restauration du véhicule mémorisé
+(présent dans la liste, inconnu, liste vide), l'absence de recherche VSF côté opportunité,
+l'enchaînement et les paramètres de « Créer un devis », le drapeau à usage unique (aucun dialog pour
+un formulaire `crm.lead`, un devis sans opportunité, un devis qui n'est pas nouveau ou d'une autre
+opportunité), l'échec d'enregistrement, le rejet de l'action et l'anti-doublon.
+`tests/test_legacy_sync.py` vérifie que le miroir `rpbm_xglass_vehicle_id` du devis remonte à
+l'opportunité.
+
+**Cas limite accepté.** Une opportunité sans pièce OE, avec seulement une ligne « Autres marques
+AM » et une base, ouvre le devis sans recherche VSF automatique (règle R12 : la recherche
+automatique exige une pièce ou une pièce AM sélectionnée) ; il faut un clic sur « Rechercher sur
+VSF ».
 
 ## Reconnexion à chaud des portails
 
