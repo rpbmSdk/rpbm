@@ -5,9 +5,12 @@
         <xpath expr="//section[@name='vsf_section']/h5" position="replace"><h5>4. Base Eurocode</h5></xpath>
         <xpath expr="//button[@name='vsf_search']" position="replace"/>
         <xpath expr="//table[@name='vsf_articles']" position="replace"/>
-        <!-- Après « Confirmer et enregistrer » : Ctrl+Entrée clique le premier bouton visible du pied, qui reste « Confirmer ». -->
+        <!-- Après « Confirmer et enregistrer » : Ctrl+Entrée clique le premier bouton visible du pied, qui reste « Confirmer ».
+             Info-bulle sur l'enveloppe : un bouton désactivé ne reçoit pas le survol. -->
         <xpath expr="//button[@t-on-click='onConfirmAndSave']" position="after">
-            <button t-if="record.partnerId and props.record.data.type !== 'lead'" class="btn btn-primary" t-on-click="onCreateQuotation" t-att-disabled="!state.canConfirm or isReconnecting or state.writing">Créer un devis</button>
+            <span t-if="props.record.data.type !== 'lead'" t-att-title="record.partnerId ? undefined : 'Renseignez le client de l\'opportunité pour créer un devis.'">
+                <button class="btn btn-primary" t-on-click="onCreateQuotation" t-att-disabled="!record.partnerId or !state.canConfirm or isReconnecting or state.writing or isLoading">Créer un devis</button>
+            </span>
         </xpath>
     </t>
 </templates>

@@ -232,22 +232,34 @@ def _product_payload(product, matched_by=None):
 
 
 def _find_existing_product(env, product_code, eurocode, product_name):
-    """Recherche un produit dans l'ordre métier : référence, eurocode, nom."""
+    """Recherche un produit dans l'ordre métier : eurocode, référence interne, nom.
+
+    Un produit qui porte l'eurocode d'un autre article n'est jamais retenu : la
+    référence interne (quand l'eurocode est connu) et le nom ne rattachent qu'un
+    produit sans eurocode, et le nom seulement s'il n'en désigne qu'un.
+    """
     Product = env['product.product']
-    if product_code:
-        product = Product.search([('default_code', '=', product_code)], limit=1)
-        if product:
-            return product, 'reference_interne'
+    # `= False` ne couvre que NULL ; un eurocode vide compte aussi comme absent.
+    without_eurocode = [('product_tmpl_id.rpbm_eurocode', 'in', [False, ''])]
     if eurocode:
         product = Product.search(
             [('product_tmpl_id.rpbm_eurocode', '=', eurocode)], limit=1
         )
         if product:
             return product, 'eurocode'
-    if product_name:
-        product = Product.search([('name', '=ilike', product_name)], limit=1)
+    if product_code:
+        product = Product.search(
+            [('default_code', '=', product_code)] + (without_eurocode if eurocode else []),
+            limit=1,
+        )
         if product:
-            return product, 'nom'
+            return product, 'reference_interne'
+    if product_name:
+        products = Product.search(
+            [('name', '=ilike', product_name)] + without_eurocode, limit=2
+        )
+        if len(products) == 1:
+            return products, 'nom'
     return Product.browse(), None
 
 
@@ -623,8 +635,9 @@ class AgentController(Controller):
 
     @route('/doesProductExists', auth='user', type='json')
     def doesProductExists(self, articleVsfInfo=None, productCode=None):
-        """Cherche un produit VSF par référence interne, eurocode, puis nom.
+        """Cherche un produit VSF par eurocode, référence interne, puis nom.
 
+        Règles de rattachement : voir ``_find_existing_product``.
         ``productCode`` est conservé temporairement pour les anciens assets
         frontend ; le contrat courant envoie l'article VSF complet.
         """

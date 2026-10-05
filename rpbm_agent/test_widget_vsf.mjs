@@ -321,6 +321,80 @@ await assert.rejects(rejected.onCreateQuotation(), /Accès refusé/);
 mountForm("sale.order", newQuotation);
 assert.equal(openedDialogs.length, 1, "un rejet vide le drapeau");
 
+// Lot E1.1 : pièce et pièce AM mémorisées réécrites seulement si retrouvées, ou changées par l'utilisateur.
+const STORED_PIECES = { rpbm_xglass_piece_id: "11", rpbm_piece_oe_id: "21", rpbm_piece_am_id: "3365069" };
+const CLEARED_PIECES = { rpbm_xglass_piece_id: "", rpbm_piece_oe_id: "", rpbm_piece_am_id: "" };
+const pieceWrites = async (widget) => {
+    const data = await widget.getRecordData();
+    return Object.fromEntries(Object.keys(STORED_PIECES).filter(key => key in data).map(key => [key, data[key]]));
+};
+const oePiece = (id) => ({ id, pieceOe: { id: id + 10 } });
+const calques = [{ id: 2, libelle: "PARE-BRISE" }, { id: 3, libelle: "GLACE AR" }];
+const mountStored = (data = {}) => {
+    const widget = mount({ ...STORED_PIECES, ...data });
+    Object.assign(widget.state, { planche: { id: 1, calques }, selectedCalque: calques[0] });
+    return widget;
+};
+const keptFlags = (widget) => [widget._keepStoredPiece, widget._keepStoredPieceAm];
+
+// Confirmation avant le chargement des pièces, puis pièce introuvable : rien n'est écrit.
+const early = mountStored();
+runVehiculesEffect();
+assert.deepEqual(await pieceWrites(early), {}, "confirmation avant le chargement des pièces");
+early.callPortal = async () => [oePiece(12)];
+await early.getPieces();
+early.clearSelectedPiece(true);
+assert.deepEqual(await pieceWrites(early), {}, "pièce introuvable et effets automatiques : valeurs conservées");
+
+// Pièce retrouvée : écrite ; pièce AM absente des équivalences (« Autres marques AM ») : conservée.
+const found = mountStored();
+found.callPortal = async () => [oePiece(11), oePiece(12)];
+await found.getPieces();
+assert.deepEqual(await pieceWrites(found), { rpbm_xglass_piece_id: "11", rpbm_piece_oe_id: "21" });
+found.callPortal = async () => [{ pieceAm: { id: 3365070, reference: "6108AGNSMVZ" } }];
+await found.getPieceAm(found.selectedPiece);
+assert.deepEqual(await pieceWrites(found), { rpbm_xglass_piece_id: "11", rpbm_piece_oe_id: "21" });
+found.callPortal = async () => [{ pieceAm: { id: 3365069, reference: "6108AGNSMVZ1B" } }];
+await found.getPieceAm(found.selectedPiece);
+assert.equal((await pieceWrites(found)).rpbm_piece_am_id, "3365069", "pièce AM retrouvée : écrite");
+
+// Autre pièce choisie, puis désélectionnée.
+const chosen = mountStored();
+chosen.state.pieces = [oePiece(11), oePiece(12)];
+chosen.onSelectPiece(12);
+assert.deepEqual(await pieceWrites(chosen), { rpbm_xglass_piece_id: "12", rpbm_piece_oe_id: "22", rpbm_piece_am_id: "" });
+chosen.onSelectPiece(12);
+assert.deepEqual(await pieceWrites(chosen), CLEARED_PIECES, "désélection");
+
+// Catégorie : un clic sur celle affichée ne change rien, une autre vide la sélection.
+const calque = mountStored();
+calque.onClickCalque(2);
+assert.deepEqual(await pieceWrites(calque), {}, "même catégorie");
+calque.onClickCalque(3);
+assert.deepEqual(await pieceWrites(calque), CLEARED_PIECES);
+
+// Pièce AM choisie : seule la pièce AM est écrite.
+const amChosen = mountStored();
+amChosen.onSelectPieceAM({ pieceAm: { id: 3365070, reference: "6108AGNSMVZ" } });
+assert.deepEqual(await pieceWrites(amChosen), { rpbm_piece_am_id: "3365070" });
+
+// Véhicule : l'effet automatique et un clic sur le véhicule affiché ne libèrent rien, un autre véhicule si.
+const vehicle = mountStored();
+vehicle.state.vehicules = [{ id: 1 }, { id: 2 }];
+runVehiculesEffect();
+vehicle.onClickVehicule(1);
+assert.deepEqual(keptFlags(vehicle), [true, true]);
+vehicle.onClickVehicule(2);
+assert.equal(vehicle.selectedVehicule.id, 2);
+assert.deepEqual(keptFlags(vehicle), [false, false]);
+
+// Immatriculation : la recherche de l'ouverture ne libère rien, celle de l'utilisateur si.
+const search = mountStored({ rpbm_license_plate: "GS600HH" });
+await search.init();
+assert.deepEqual(keptFlags(search), [true, true]);
+await search.onSearchImmatriculation();
+assert.deepEqual(keptFlags(search), [false, false]);
+
 vm.runInNewContext(`${await load("ArticleComponent.js")}\nthis.ArticleComponent = ArticleComponent;`, context);
 
 const openedImages = [];

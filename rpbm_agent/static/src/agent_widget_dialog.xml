@@ -30,7 +30,7 @@
                     <div t-if="vehicules.length > 0" class="row mt-2 g-2">
                         <t t-foreach="vehicules" t-as="vehicule" t-key="vehicule.id">
                             <div class="col-12 col-md-6">
-                                <VehiculeComponent record="record" vehicule="vehicule" vehiculeMeta="vehicule.id === selectedVehiculeId ? vehiculeMeta : undefined" immatriculation="immatriculationValue" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onSelectVehicule(vehicule.id)"/>
+                                <VehiculeComponent record="record" vehicule="vehicule" vehiculeMeta="vehicule.id === selectedVehiculeId ? vehiculeMeta : undefined" immatriculation="immatriculationValue" selectedVehiculeId="selectedVehiculeId" t-on-click="()=>this.onClickVehicule(vehicule.id)"/>
                             </div>
                         </t>
                     </div>
@@ -165,8 +165,8 @@
                     <i t-if="isReconnecting" class="fa fa-spinner fa-spin me-1"/>
                     Reconnecter
                 </button>
-                <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!state.canConfirm or isReconnecting or state.writing">Confirmer</button>
-                <button class="btn btn-secondary" t-on-click="onConfirmAndSave" t-att-disabled="!state.canConfirm or isReconnecting or state.writing">Confirmer et enregistrer</button>
+                <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="!state.canConfirm or isReconnecting or state.writing or isLoading">Confirmer</button>
+                <button class="btn btn-secondary" t-on-click="onConfirmAndSave" t-att-disabled="!state.canConfirm or isReconnecting or state.writing or isLoading">Confirmer et enregistrer</button>
                 <button class="btn btn-outline-secondary" t-on-click="onDiscard" t-att-disabled="isReconnecting">Annuler</button>
             </t>
         </Dialog>

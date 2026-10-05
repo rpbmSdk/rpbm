@@ -384,13 +384,15 @@ export class AgentWidgetDialog extends asyncWidget {
         if (this.record.xglassVehicleIdField) {
             data[this.record.xglassVehicleIdField] = this.selectedVehicule ? String(this.selectedVehicule.id) : "";
         }
-        if (this.record.xglassPieceIdField) {
+        // Lot E1.1 : une pièce mémorisée ni retrouvée ni changée par l'utilisateur reste intacte,
+        // même si les pièces sont encore en chargement.
+        if (this.record.xglassPieceIdField && !this._keepStoredPiece) {
             data[this.record.xglassPieceIdField] = this.selectedPiece ? String(this.selectedPiece.id) : "";
         }
-        if (this.record.pieceOeIdField) {
+        if (this.record.pieceOeIdField && !this._keepStoredPiece) {
             data[this.record.pieceOeIdField] = this.selectedPiece?.pieceOe?.id ? String(this.selectedPiece.pieceOe.id) : "";
         }
-        if (this.record.pieceAmIdField) {
+        if (this.record.pieceAmIdField && !this._keepStoredPieceAm) {
             data[this.record.pieceAmIdField] = this.selectedPieceAm?.pieceAm?.id ? String(this.selectedPieceAm.pieceAm.id) : "";
         }
         const primaryArticle = this.getPrimaryArticle();
@@ -498,6 +500,7 @@ export class AgentWidgetDialog extends asyncWidget {
     async onSearchImmatriculation() {
         await this.runAsync(async () => {
             await this.searchImmatriculation();
+            this.releaseStoredPieces();
         });
     }
 
@@ -534,6 +537,14 @@ export class AgentWidgetDialog extends asyncWidget {
 
     onSelectVehicule(vehiculeId) {
         this.state.selectedVehicule = this.vehicules.find(vehicule => vehicule.id === vehiculeId);
+    }
+
+    /** Clic sur une carte ; l'effet sur `vehicules` appelle onSelectVehicule sans passer par ici. */
+    onClickVehicule(vehiculeId) {
+        if (vehiculeId !== this.selectedVehiculeId) {
+            this.releaseStoredPieces();
+        }
+        this.onSelectVehicule(vehiculeId);
     }
 
     /**
@@ -638,6 +649,9 @@ export class AgentWidgetDialog extends asyncWidget {
     }
 
     onClickCalque(calqueId) {
+        if (calqueId !== this.selectedCalqueId) {
+            this.releaseStoredPieces();
+        }
         this.state.selectedCalque = this.calques.find(calque => calque.id === calqueId);
         this.state.showAllCalques = false;
         this.state.showAllPieces = false;
@@ -734,11 +748,13 @@ export class AgentWidgetDialog extends asyncWidget {
             if (restoredPiece) {
                 this.state.selectedPiece = restoredPiece;
                 this.state.showAllPieces = false;
+                this._keepStoredPiece = false;
             }
         }
     }
 
     onSelectPiece(pieceId) {
+        this.releaseStoredPieces();
         if (this.selectedPiece?.id === pieceId) {
             this.clearSelectedPiece();
             this.state.showAllPieces = true;
@@ -787,6 +803,9 @@ export class AgentWidgetDialog extends asyncWidget {
         piece.PiecesAM = res;
         if (this._restorePieceAmId) {
             this.state.selectedPieceAm = res.find(meta => String(meta.pieceAm?.id) === this._restorePieceAmId);
+            if (this.selectedPieceAm) {
+                this._keepStoredPieceAm = false;
+            }
             // La base enregistrée prévaut sur celle de la pièce AM restaurée (décision R12
             // du 2026-10-02) ; à défaut (base vide, pièce resélectionnée), on la dérive.
             if (this.selectedPieceAm && !this.baseEurocode) {
@@ -803,6 +822,7 @@ export class AgentWidgetDialog extends asyncWidget {
     /** Clic sur une carte « Équivalence AM » ou une ligne « Autres marques AM ». */
     onSelectPieceAM(metaPieceAM) {
         this.state.selectedPieceAm = metaPieceAM;
+        this._keepStoredPieceAm = false;
         // Seul un choix explicite de l'utilisateur dérive la base de la pièce AM.
         this.setBaseEurocode(metaPieceAM.pieceAm.reference.substring(0, 5));
     }
@@ -875,9 +895,19 @@ export class AgentWidgetDialog extends asyncWidget {
         this._restorePending = Boolean(
             this._restorePieceId || this._restorePieceOeId || this._restorePieceAmId || this._restoreBaseEurocode
         );
+        // Lot E1.1 : getRecordData ne réécrit la pièce et la pièce AM mémorisées qu'une fois
+        // retrouvées par la restauration, ou remplacées ou retirées par l'utilisateur.
+        this._keepStoredPiece = Boolean(this._restorePieceId || this._restorePieceOeId);
+        this._keepStoredPieceAm = Boolean(this._restorePieceAmId);
         if (this._restoreBaseEurocode) {
             this.setBaseEurocode(this._restoreBaseEurocode);
         }
+    }
+
+    /** Action explicite de l'utilisateur : la sélection affichée remplace les pièces mémorisées. */
+    releaseStoredPieces() {
+        this._keepStoredPiece = false;
+        this._keepStoredPieceAm = false;
     }
 
     get articlesVsf() {
