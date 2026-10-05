@@ -17,10 +17,10 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 | Navigation catégories (calques) → pièces → pièces après-marché | Complet | Présélection auto si catégorie déjà connue |
 | Déduction automatique de l'eurocode | Complet | 5 premiers caractères de la référence de la 1ʳᵉ pièce AM |
 | Recherche VSF par eurocode | Complet | Sur le devis seulement (lot E1) |
-| Création article Odoo (`product.product` + prix fournisseur) | Complet | Uniquement sur Ordre de Vente |
+| Création article Odoo (`product.product` + prix fournisseur) | Complet | Uniquement sur Ordre de Vente ; rattachement par l'eurocode d'abord (lot E1.1) |
 | Ajout d'un article à la ligne de commande | Complet | Indépendant du bouton Confirm |
 | Écriture véhicule/catégorie/base Eurocode sur Piste/Opportunité | Complet | Depuis le lot E1, plus l'article VSF principal |
-| Création d'un devis depuis l'opportunité (« Créer un devis ») | Lot E1 (`17.0.261005.3`) | Nouveau devis lié, dont le dialog s'ouvre seul ; recette live à faire |
+| Création d'un devis depuis l'opportunité (« Créer un devis ») | Lots E1 (`17.0.261005.3`) et E1.1 (`17.0.261005.4`) | Nouveau devis lié, dont le dialog s'ouvre seul ; pièce mémorisée conservée ; recette live à faire |
 | Retour d'erreur visible par l'utilisateur | **Corrigé** | Notifications + erreurs typées, voir §6 |
 | Concurrence multi-utilisateur des sessions portails | **Corrigé** | Verrou de session, voir §3 |
 | Sécurité fine (droits d'accès) | **Décision assumée** | `auth='user'` uniquement, pas de `ir.model.access.csv` — choix explicite, voir [roadmap L3.1](roadmap.md#l3--hygiène) |
@@ -54,6 +54,7 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 - **Refactoring inachevé visible** (`onConfirm()`/`onWillStart()` des sous-classes n'appelant que `super`, code commenté) — **corrigé** (L3.4 puis 2026-09-20) : le hook `onWillStart` est branché dans la base `AgentWidgetDialog`, les sous-classes ne surchargent plus que les noms de champs, puis plus rien depuis les champs natifs. Depuis le lot E1, `AgentWidgetDialogCrmLead` (`agent_widget_dialog_crm_lead.js`) ne porte que le comportement propre à l'opportunité : pas de recherche VSF, bouton « Créer un devis ».
 - **Typos `canConfim`/`toogleLoading`/`OrderlLines`** — **corrigées ou retirées (2026-07-26)**.
 - **Fermeture par croix/Échap** — **corrigé (2026-07-26)** : `onWillUnmount()` libère désormais le verrou portail même quand `onDiscard()` n'est pas appelé. L'état frontend est ensuite détruit avec la dialog.
+- **Pièce mémorisée effacée par une confirmation prématurée, et bouton « Créer un devis » masqué sans client** — **corrigés (lot E1.1, 2026-10-05, recette live à faire)** : après l'essai de l'utilisateur sur E1, une opportunité enregistrée pendant le chargement des pièces avait perdu ses identifiants de pièce, car `getRecordData()` écrivait `""` pour toute sélection absente (pièce introuvable et ligne « Autres marques AM » mémorisée comprises). Les identifiants ne sont plus écrits que si la sélection a été retrouvée ou modifiée explicitement, et les boutons d'écriture sont grisés pendant un chargement ; « Créer un devis » est grisé, avec une info-bulle, sans client (voir [frontend](technique/frontend.md#pièce-mémorisée-et-boutons-désactivés-lot-e11)).
 
 ## 5. Cohérence métier
 
@@ -61,6 +62,7 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 - **Champs CRM historiques marqués `[Obsolète]`** plutôt que supprimés (`x_studio_field_KyCjB`, `x_studio_field_ZhaeY` — cf. [parcours utilisateur](fonctionnel/parcours-utilisateur.md)) : dette déjà identifiée et documentée par l'équipe elle-même, non résolue.
 - **Contrainte de session mono-utilisateur du portail X'Glass** — **corrigé** : désormais gérée explicitement par un verrou applicatif (cf. §3) plutôt que subie ; RPBM ne disposant que d'un seul identifiant partagé X'Glass/VSF (confirmé), la solution retenue sérialise les utilisateurs (message "occupé par X") plutôt que d'isoler par utilisateur, ce qui ne résoudrait pas la contrainte portail elle-même.
 - **Champs Studio non versionnés** — **remplacé (2026-09-21)** : le module déclare ses propres champs natifs `rpbm_*` et synchronise les champs Studio historiques tant qu'ils existent ; le `pre_init_hook` qui créait des champs Studio-like a été retiré (voir [configuration](technique/configuration.md#champs-natifs-et-champs-studio-historiques)).
+- **Rattachement d'un article VSF à un produit Odoo** — **corrigé (lot E1.1, 2026-10-05, recette live à faire)** : le nom exact suffisait à rattacher un article ; la suggestion `6108AXSR` « GEL CAPTEUR SILICONE » s'affichait sur le produit `6574AXSH`, gel d'un autre article, et « Créer le produit » l'aurait réutilisé. L'eurocode passe en premier ; la référence interne et le nom (unique) ne servent plus qu'aux produits sans eurocode (voir [9](fonctionnel/workflow/09-creation-produit.md)).
 
 ## 6. UI/UX
 

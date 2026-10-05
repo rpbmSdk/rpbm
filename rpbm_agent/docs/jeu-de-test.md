@@ -17,6 +17,8 @@ de test explicitement préparés.
 | Article VSF principal alternatif | `6571AGRCHIMVZ` | Observée | Création/synchronisation produit |
 | Suggestion VSF | `6571AGRCIMVZ` | Observée | Vérification des suggestions liées |
 | Suggestion accessoire | `PP-COLLE310` | Observée | Article suggéré disponible ou indisponible |
+| Suggestion VSF sans produit propre | `6108AXSR` « GEL CAPTEUR SILICONE » | Observée (2026-10-05) | Faux rattachement par le nom (SO-07) |
+| Produit Odoo de même nom, d'un autre article | code `6574AXSH` | Observée (2026-10-05) | Ne doit pas être rattaché à `6108AXSR` (SO-07) |
 | Plaque sans résultat | `ZZ-TEST-00` | Synthétique | Scénario de recherche vide ; nécessite un mock ou une donnée X'Glass dédiée |
 | Base sans résultat | `ZZZZZ` | Synthétique | Scénario VSF vide ; nécessite un mock ou une donnée VSF dédiée |
 
@@ -175,7 +177,16 @@ Contrôles hors réseau avant tout push, depuis la racine du dépôt :
   puis du dialog, action native, dialog du devis), double clic sans doublon, drapeau à usage
   unique, aucun dialog pour un formulaire `crm.lead`, un devis sans opportunité, un devis qui
   n'est pas nouveau ou qui relève d'une autre opportunité, enregistrement refusé ou action rejetée
-  sans fuite du drapeau ;
+  sans fuite du drapeau. Lot E1.1 : `getRecordData()` sur un dialog dont les trois identifiants de
+  pièce sont mémorisés :
+  - confirmation avant le chargement des pièces, pièce introuvable et effets automatiques : rien
+    n'est écrit ;
+  - pièce retrouvée : écrite ; pièce AM absente des équivalences (« Autres marques AM ») :
+    conservée ; pièce AM retrouvée : écrite ;
+  - autre pièce, désélection, autre catégorie, ligne AM (pièce AM seulement), autre véhicule et
+    recherche d'immatriculation de l'utilisateur : valeurs remplacées ou vidées ;
+  - effet sur `vehicules`, recherche automatique de l'ouverture (`init`), clic sur le véhicule ou
+    la catégorie déjà affichés : rien n'est libéré ;
 - `python rpbm_agent/test_portal_auth.py` ([script](../test_portal_auth.py)) : chaque XPath des
   dialogs héritiers (2 pour le devis, 4 pour l'opportunité) cible un seul nœud du dialog de base
   (`test_xpath_des_dialogs_ciblent_un_seul_noeud`) ; depuis le build B, le template principal porte le littéral
@@ -189,20 +200,27 @@ Contrôles hors réseau avant tout push, depuis la racine du dépôt :
   sélection affiche le détail, la légende et les suggestions, un clic sur la ligne appelle
   `onSelect` une fois alors que la vignette, le lien « Fiche technique », Ctrl/Cmd+clic et le clic
   milieu ne l'appellent pas ; au lot E1, les deux dialogs héritiers montés après application de
-  leurs XPath par DOM (opportunité sans tableau ni bouton de recherche, « Créer un devis » seulement avec
-  un client ; devis avec « 4. Main d'œuvre », « 5. Article VSF » et le tableau) ; les trois modes
-  de pièces ne sont pas couverts ici mais par CRM-06 ;
+  leurs XPath par DOM (opportunité sans tableau ni bouton de recherche, « Créer un devis » après
+  « Confirmer et enregistrer », absent sur une piste ; devis avec « 4. Main d'œuvre », « 5. Article
+  VSF » et le tableau) ; au lot E1.1, « Créer un devis » grisé sans client avec l'info-bulle sur son
+  enveloppe et actif avec un client, boutons d'écriture désactivés pendant un chargement (opportunité
+  et devis), clic sur une carte véhicule câblé sur `onClickVehicule` ; les trois modes de pièces ne
+  sont pas couverts ici mais par CRM-06 ;
 - `git diff --check`.
 
 Le miroir `rpbm_xglass_vehicle_id` du devis vers l'opportunité est couvert par
-`tests/test_legacy_sync.py`, qui s'exécute dans le lanceur Odoo (`--test-enable`).
+`tests/test_legacy_sync.py`, et le rattachement d'un article VSF à un produit (lot E1.1) par
+`tests/test_find_existing_product.py` (six tests, valeurs propres au test, voir
+[backend](technique/backend.md#rattachement-dun-article-vsf-à-un-produit-lot-e11)) ; ils demandent
+une base PostgreSQL et s'exécutent dans le lanceur Odoo (`--test-enable`) du build Odoo.sh, pas sur
+le poste de développement.
 
 La recette « Tableau VSF en plein écran » plus bas remplace l'ancienne recette R13 à R17 ; elle
 vaut pour le build B (`17.0.261005.2`).
 
 ### CRM-07 — Créer un devis (lot E1)
 
-Scénario de recette du build `17.0.261005.3`, **non exécuté**. Il **écrit** dans Odoo : le jouer
+Scénario de recette des lots E1 (`17.0.261005.3`) et E1.1 (`17.0.261005.4`), **non exécuté**. Il **écrit** dans Odoo : le jouer
 uniquement sur une opportunité de recette dédiée, avec un client de test, jamais sur un dossier
 réel. Le devis brouillon est annulé à la fin et chaque écriture est listée dans le rapport.
 
@@ -212,14 +230,18 @@ réel. Le devis brouillon est annulé à la fin et chaque écriture est listée 
      tableau ni bouton « Rechercher sur VSF », et **aucun** appel `/searchBaseEurocode` dans le
      journal réseau.
    - Attendu : « Créer un devis » visible après « Confirmer et enregistrer », actif une fois le
-     véhicule et la catégorie choisis.
+     véhicule et la catégorie choisis et les chargements terminés (les trois boutons d'écriture sont
+     grisés pendant un chargement).
    - Attendu : Ctrl+Entrée déclenche « Confirmer », pas « Créer un devis » (contrôle sans
      enregistrer : abandonner ensuite les modifications du formulaire).
-   - Attendu : le bouton est absent sur une opportunité sans client et sur une piste.
+   - Attendu : le bouton est absent sur une piste ; sur une opportunité sans client, il est grisé,
+     avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. » au survol du
+     bouton grisé (l'info-bulle est portée par son enveloppe : à vérifier à la souris).
 3. Parcourir `GS600HH` › `PARE-BRISE` › une pièce › une ligne « Autres marques AM », base `6108A` ;
    si possible, choisir le second véhicule d'une immatriculation qui en renvoie plusieurs. Faire un
    **double clic** sur « Créer un devis ».
-   - Attendu : une seule sauvegarde de l'opportunité, avec `rpbm_xglass_vehicle_id` renseigné ;
+   - Attendu : une seule sauvegarde de l'opportunité, avec `rpbm_xglass_vehicle_id` et les
+     identifiants de pièce (X'Glass, OE, AM) renseignés ;
      `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` et `rpbm_constructor_reference`
      inchangés.
    - Attendu : un seul devis, non enregistré, lié à l'opportunité.
@@ -235,6 +257,44 @@ réel. Le devis brouillon est annulé à la fin et chaque écriture est listée 
 Cas limite accepté : sur une opportunité sans pièce OE, avec seulement une ligne « Autres marques
 AM » et une base, le devis s'ouvre sans recherche VSF automatique (R12) ; il faut un clic sur
 « Rechercher sur VSF ».
+
+### CRM-08 — Pièce mémorisée conservée (lot E1.1)
+
+Scénario de recette du build `17.0.261005.4`, **non exécuté**. Il **écrit** dans Odoo : même règle
+que CRM-07 (opportunité de recette dédiée, client de test, écritures listées). Relever par RPC, avant
+et après chaque étape, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id`,
+`rpbm_eurocode_base` et `rpbm_xglass_vehicle_id` de l'opportunité.
+
+1. Partir d'une opportunité de recette avec véhicule, catégorie, pièce OE et pièce AM mémorisés
+   (issus de CRM-07).
+2. Rouvrir la fenêtre et observer le pied pendant le chargement.
+   - Attendu : « Confirmer », « Confirmer et enregistrer » et « Créer un devis » sont grisés tant
+     qu'un chargement est en cours, puis s'activent à l'arrivée des pièces. Un bref passage à l'état
+     actif entre deux chargements enchaînés n'est pas un échec : seules comptent les valeurs relevées
+     (étape 3).
+3. Rouvrir, puis « Confirmer et enregistrer » dès que les boutons sont actifs, sans toucher à la
+   sélection.
+   - Attendu : les valeurs relevées sont inchangées.
+4. Pièce introuvable : remplacer par RPC `rpbm_xglass_piece_id` et `rpbm_piece_oe_id` par un
+   identifiant que X'Glass ne renvoie pas (écriture à lister), rouvrir, puis « Confirmer et
+   enregistrer » sans toucher aux pièces.
+   - Attendu : la pièce n'est pas retrouvée, mais les identifiants mémorisés sont inchangés.
+5. Ligne « Autres marques AM » : mémoriser une pièce AM choisie dans « Autres marques AM » (CRM-05),
+   rouvrir, puis « Confirmer et enregistrer » sans toucher à la sélection.
+   - Attendu : `rpbm_piece_am_id` est inchangé, bien que la ligne ne soit pas re-sélectionnée à la
+     réouverture.
+6. Actions explicites : pour chacune, rouvrir la fenêtre, la faire, puis « Confirmer et
+   enregistrer » : cliquer sur une autre pièce ; cliquer de nouveau sur la pièce sélectionnée pour
+   la désélectionner ; cliquer sur une **autre** catégorie ; cliquer sur un **autre** véhicule (si
+   l'immatriculation en renvoie plusieurs) ; relancer « Rechercher » avec succès ; cliquer sur une
+   carte « Équivalence AM » ou une ligne « Autres marques AM ».
+   - Attendu : les identifiants écrits sont ceux de la sélection affichée après l'action, remplacés
+     par la nouvelle sélection ou vidés lorsqu'elle est retirée ou n'est plus retrouvée ; pour une
+     carte ou une ligne après-marché, seul `rpbm_piece_am_id` change.
+7. Actions sans effet : rouvrir la fenêtre, cliquer de nouveau sur le véhicule et sur la catégorie
+   déjà affichés (et sur « Voir » dans la carte du véhicule affiché), puis « Confirmer et
+   enregistrer ».
+   - Attendu : les identifiants mémorisés sont inchangés.
 
 ## Scénarios devis
 
@@ -273,7 +333,7 @@ Sur un devis avec opportunité, tester successivement :
 Résultats attendus :
 
 - le premier clic crée un seul produit et sa ligne fournisseur ;
-- le second clic retrouve le produit sans doublon ;
+- le second clic retrouve le produit sans doublon, par son eurocode (lot E1.1) ;
 - la suggestion dispose des mêmes actions que l'article principal ;
 - le retrait ne supprime qu'une ligne créée par le widget pendant la dialog.
 
@@ -319,6 +379,24 @@ Il crée des devis brouillons : les lister, puis les annuler.
 5. Recharger la page sur un devis enregistré : aucune ouverture.
 6. Un nouveau clic sur « Créer un devis » ouvre un nouveau devis ; les devis existants de
    l'opportunité ne sont ni réutilisés ni modifiés.
+
+### SO-07 — Rattachement d'un article VSF à un produit Odoo (lot E1.1)
+
+Scénario du build `17.0.261005.4`, **non exécuté**. Les étapes 1 et 2 sont sans écriture : ne pas
+cliquer « Créer le produit », « Ajouter au devis » ni « Définir comme article principal » ; relever
+`write_date` et les champs `rpbm_*` du devis, de son opportunité et du véhicule lié avant et après.
+
+1. Sur un devis lié à une opportunité, rechercher la base `6108A`, sélectionner un article dont la
+   fiche suggère `6108AXSR` « GEL CAPTEUR SILICONE », puis sélectionner cette suggestion (cas observé
+   le 2026-10-05).
+   - Attendu : « Article absent de la base Odoo », avec « Créer le produit », et **plus**
+     « Produit Odoo trouvé (nom) » vers le produit de code `6574AXSH`, qui porte le même nom mais
+     est le gel d'un autre article.
+2. Sélectionner un article dont le produit Odoo existe à son eurocode.
+   - Attendu : « Produit Odoo trouvé (eurocode) », avec « Voir le produit ».
+3. Avec écriture, sur le devis de recette de CRM-07 : « Créer le produit » pour `6108AXSR`.
+   - Attendu : un nouveau produit portant l'eurocode `6108AXSR` est créé, retrouvé ensuite par
+     « eurocode » ; le produit `6574AXSH` n'est ni réutilisé ni modifié. Lister l'écriture.
 
 ## Tableau VSF en plein écran (R21, R22, reprise de R15 à R17)
 

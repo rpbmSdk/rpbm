@@ -6,7 +6,7 @@ dans `models/product_template.py`.
 
 | Champ | Type | Rôle |
 |---|---|---|
-| `product.template.rpbm_eurocode` | char, indexé | Eurocode VSF complet ; clé de recherche du produit (avant le nom) et de la synchronisation VSF. Alimenté aussi par l'import du catalogue (`Jobs/Gestion Stock/import_odoo.py`). |
+| `product.template.rpbm_eurocode` | char, indexé | Eurocode VSF complet ; première clé de recherche du produit (la référence interne et le nom ne servent qu'aux produits sans eurocode, lot E1.1) et clé de la synchronisation VSF. Alimenté aussi par l'import du catalogue (`Jobs/Gestion Stock/import_odoo.py`). |
 | `product.template.rpbm_width_mm` | float | Largeur issue de la fiche VSF, en millimètres |
 | `product.template.rpbm_length_mm` | float | Longueur issue de la fiche VSF, en millimètres |
 | `product.product.rpbm_constructor_reference` | char | Référence constructeur de la pièce (`articleVsf.refConstructeur`) ; vide lorsque VSF retourne la sentinelle `"-"` |

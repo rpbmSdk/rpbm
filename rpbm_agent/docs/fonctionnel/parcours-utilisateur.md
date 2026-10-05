@@ -67,7 +67,7 @@ Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardé
 
 > **Article VSF.** La fenêtre de l'opportunité ne cherche plus d'article VSF : elle s'arrête à la base Eurocode. L'Eurocode complet, la désignation VSF, le stock VSF et la référence constructeur ne sont plus écrits depuis l'opportunité ; ils restent visibles et modifiables à la main dans le formulaire, et seul le devis les alimente (voir plus bas).
 
-**Créer un devis.** Le bouton, placé après « Confirmer et enregistrer », est affiché quand l'opportunité a un client et n'est pas une piste. Il écrit et enregistre le dossier, ferme la fenêtre, puis ouvre un **nouveau** devis non enregistré, lié à l'opportunité, comme le bouton natif « Nouveau devis » : chaque clic en ouvre un nouveau. La fenêtre du widget s'ouvre alors seule sur ce devis, avec le même véhicule, la même pièce et la même base (détail : [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md#créer-un-devis-lot-e1)).
+**Créer un devis.** Le bouton, placé après « Confirmer et enregistrer », est affiché sur une opportunité, pas sur une piste ; sans client, il est grisé, avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. ». Comme « Confirmer » et « Confirmer et enregistrer », il est aussi grisé pendant un chargement. Il écrit et enregistre le dossier, ferme la fenêtre, puis ouvre un **nouveau** devis non enregistré, lié à l'opportunité, comme le bouton natif « Nouveau devis » : chaque clic en ouvre un nouveau. La fenêtre du widget s'ouvre alors seule sur ce devis, avec le même véhicule, la même pièce et la même base (détail : [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md#créer-un-devis-lot-e1)).
 
 ### Ordre de Vente (`sale.order`)
 
@@ -147,7 +147,11 @@ Aucun champ Studio n'est à créer : le module déclare ses champs natifs `rpbm_
 La confirmation mémorise le véhicule X’Glass sélectionné (son identifiant, parmi les véhicules
 qu'une même immatriculation peut renvoyer), la catégorie X’Glass, la base Eurocode et les identifiants
 de la pièce X’Glass, de la pièce OE et de la pièce après-marché. À la réouverture,
-le dialogue restaure ces choix et réduit les listes à la sélection existante.
+le dialogue restaure ces choix et réduit les listes à la sélection existante. Une pièce mémorisée mais
+encore introuvable (chargement en cours, pièce absente de la liste) n'est pas effacée par une
+confirmation : seule une action explicite la remplace ou la retire (choisir une pièce ou la
+désélectionner, cliquer sur une autre catégorie ou un autre véhicule, relancer « Rechercher » avec
+succès ; voir [6](workflow/06-confirmation-crm-lead.md#pièce-mémorisée-lot-e11)).
 Les boutons « Afficher les autres » rendent les listes complètes disponibles pour
 une modification volontaire. Lorsque seule une base Eurocode a été enregistrée, sans pièce
 retrouvée, le dialogue montre les familles et leurs encarts « Autres marques AM » mais pas

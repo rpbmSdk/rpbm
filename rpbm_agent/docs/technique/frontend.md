@@ -182,7 +182,10 @@ héritiers (deux pour le devis, quatre pour l'opportunité depuis le lot E1 ; un
 modes de pièces (tout, focalisé, restauré sans pièce) ont été vérifiés à la recette live du build A
 (2026-10-05). Le rendu Owl local (Chromium et Owl du code Odoo, scripts hors dépôt) couvre le lien
 direct VSF, les vignettes et l'aperçu, le tableau VSF et, depuis le lot E1, les dialogs de
-l'opportunité et du devis (l'héritage est appliqué par DOM avant le montage).
+l'opportunité et du devis (l'héritage est appliqué par DOM avant le montage). Le lot E1.1 y ajoute
+l'état des boutons du pied (« Créer un devis » grisé sans client avec l'info-bulle sur son
+enveloppe, boutons d'écriture désactivés pendant un chargement) et le câblage du clic d'une carte
+véhicule sur `onClickVehicule` ; la carte y est factice, sans le lien « Voir ».
 
 ## Détails discriminants des pièces OE
 
@@ -296,7 +299,8 @@ cascade s'arrête à la base Eurocode.
 Un `useEffect` séparé recalcule `state.canConfirm` à chaque changement de véhicule ou de
 catégorie. Les boutons « Confirmer » et « Confirmer et enregistrer » (et « Créer un devis » sur
 l'opportunité) restent désactivés tant que ces deux sélections ne sont pas présentes, pendant une
-reconnexion et pendant une écriture (`state.writing`).
+reconnexion, pendant une écriture (`state.writing`) et, depuis le lot E1.1, pendant un chargement :
+`!state.canConfirm or isReconnecting or state.writing or isLoading`.
 
 Un autre effet, sur `vehicules`, sélectionne le véhicule X'Glass mémorisé (`_restoreVehiculeId`,
 lu dans `rpbm_xglass_vehicle_id`) s'il figure dans la liste, sinon le premier ; une liste vide
@@ -306,7 +310,8 @@ donne `undefined`.
 (`rpbm_xglass_vehicle_id`, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id`, base
 Eurocode) et la cascade ci-dessus re-sélectionne le véhicule, la pièce et la pièce AM
 correspondants ; `showAllCalques` / `showAllPieces` pilotent l'affichage réduit à la sélection
-courante.
+courante. Une pièce retrouvée est conservée ; une pièce introuvable n'est pas effacée à la
+confirmation (voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactivés-lot-e11)).
 
 ## Table des appels serveur
 
@@ -343,7 +348,9 @@ ligne, derrière un garde-fou `addArticleToSaleOrder` puisque l'extension Owl es
 appelle `writeRecord(save)` puis ferme le dialog si l'écriture a abouti. `writeRecord(save)` est
 l'écriture commune aux trois boutons d'écriture, « Créer un devis » compris : garde anti-doublon
 `state.writing`, construction d'un objet `data` (via `getRecordData()`, qui inclut
-`rpbm_xglass_vehicle_id`), **`this.props.record.update(data)`** — mise à jour en mémoire du
+`rpbm_xglass_vehicle_id` et n'inclut les identifiants de pièce que s'ils ont été retrouvés ou
+modifiés explicitement, voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactivés-lot-e11)),
+**`this.props.record.update(data)`** — mise à jour en mémoire du
 `Record` Odoo standard —, `record.save()` seulement pour « Confirmer et enregistrer » ou « Créer un
 devis » (un formulaire invalide ou refusé lève une erreur : rien n'est fermé), **puis** fermeture
 de la session portail (`closeAgents()`, cf. correctif L1.0). Elle renvoie `true` si tout a abouti.
@@ -361,7 +368,8 @@ routes custom de `main.py`, à l'exception de « Créer un devis », qui appelle
 ## Créer un devis (lot E1)
 
 Lot E1 (`17.0.261005.3`) : le dialog de l'opportunité s'arrête à la pièce et à la base Eurocode,
-et crée le devis où l'on choisit les articles VSF. Aucune recette live n'a encore été exécutée.
+et crée le devis où l'on choisit les articles VSF. Aucune recette live n'a encore été exécutée. Le lot
+correctif E1.1 (`17.0.261005.4`), décidé après l'essai de l'utilisateur, est décrit en fin de section.
 
 **Dialog de l'opportunité.** `AgentWidgetDialogCrmLead` (`agent_widget_dialog_crm_lead.js` et
 `.xml`) étend `AgentWidgetDialog` ; `agent_widget.js` y associe `crm.lead`. Son gabarit
@@ -378,11 +386,15 @@ restent visibles et modifiables à la main dans le formulaire, et seul le dialog
 alimente (décision du 2026-10-05, voir [validations métier](../validations-metier.md)).
 
 **Bouton « Créer un devis ».**
-- Affiché si `record.partnerId and props.record.data.type !== 'lead'` : un client et pas une
-  piste, comme le bouton natif « Nouveau devis », masqué si `type == 'lead'`. La condition reste
-  vraie si le champ `type` manque à la vue. Le bouton natif est aussi masqué sur une opportunité
-  perdue (`probability == 0 and not active`), ce que le bouton du widget ne teste pas.
-- Désactivé comme « Confirmer » : `!state.canConfirm or isReconnecting or state.writing`.
+- Affiché sur une opportunité, pas sur une piste (`props.record.data.type !== 'lead'`), comme le
+  bouton natif « Nouveau devis », masqué si `type == 'lead'`. La condition reste vraie si le champ
+  `type` manque à la vue. Le bouton natif est aussi masqué sur une opportunité perdue
+  (`probability == 0 and not active`), ce que le bouton du widget ne teste pas. Depuis le lot E1.1,
+  il n'est plus masqué sans client : il est grisé, avec une info-bulle (voir la fin de la section).
+- Désactivé comme « Confirmer » : `!state.canConfirm or isReconnecting or state.writing`. Depuis le
+  lot E1.1, il l'est aussi sans client et pendant un chargement
+  (`!record.partnerId or !state.canConfirm or isReconnecting or state.writing or isLoading`) ;
+  « Confirmer » et « Confirmer et enregistrer » reçoivent le même `or isLoading`.
 - Placé **après** « Confirmer et enregistrer » : le raccourci Ctrl+Entrée clique le premier bouton
   visible du pied, même désactivé (`web/core/dialog/dialog.js`), et reste donc « Confirmer ». Ordre
   du pied : « Reconnecter » quand il est nécessaire, « Confirmer », « Confirmer et enregistrer »,
@@ -437,14 +449,94 @@ automatiquement doit retrouver celui de l'opportunité.
 (présent dans la liste, inconnu, liste vide), l'absence de recherche VSF côté opportunité,
 l'enchaînement et les paramètres de « Créer un devis », le drapeau à usage unique (aucun dialog pour
 un formulaire `crm.lead`, un devis sans opportunité, un devis qui n'est pas nouveau ou d'une autre
-opportunité), l'échec d'enregistrement, le rejet de l'action et l'anti-doublon.
+opportunité), l'échec d'enregistrement, le rejet de l'action et l'anti-doublon. Son bloc du lot E1.1
+rejoue `getRecordData()` sur un dialog dont les trois identifiants de pièce sont mémorisés :
+- confirmation avant le chargement des pièces : aucun identifiant n'est écrit ; pièce introuvable et
+  effets automatiques : valeurs conservées ;
+- pièce retrouvée : écrite ; pièce AM absente des équivalences (« Autres marques AM ») : conservée ;
+  pièce AM retrouvée : écrite ;
+- autre pièce, désélection, autre catégorie, ligne AM (pièce AM seulement), autre véhicule et
+  recherche d'immatriculation de l'utilisateur : valeurs remplacées ou vidées ;
+- effet sur `vehicules` et recherche automatique de l'ouverture (`init`), clic sur le véhicule ou la
+  catégorie déjà affichés : rien n'est libéré.
+
 `tests/test_legacy_sync.py` vérifie que le miroir `rpbm_xglass_vehicle_id` du devis remonte à
-l'opportunité.
+l'opportunité ; `tests/test_find_existing_product.py` couvre le rattachement produit (voir
+[backend](backend.md#rattachement-dun-article-vsf-à-un-produit-lot-e11)).
 
 **Cas limite accepté.** Une opportunité sans pièce OE, avec seulement une ligne « Autres marques
 AM » et une base, ouvre le devis sans recherche VSF automatique (règle R12 : la recherche
 automatique exige une pièce ou une pièce AM sélectionnée) ; il faut un clic sur « Rechercher sur
 VSF ».
+
+### Pièce mémorisée et boutons désactivés (lot E1.1)
+
+Lot E1.1 (`17.0.261005.4`), décidé après l'essai de l'utilisateur sur E1. Une opportunité enregistrée
+par « Créer un devis » avait perdu ses identifiants de pièce (X'Glass, OE et AM) : le devis s'ouvrait
+donc en mode « base restaurée sans pièce », avec des familles et des encarts sans cartes. Causes dans E1 :
+- `getRecordData()` écrivait toujours la sélection affichée, soit `""` quand aucune pièce n'était
+  sélectionnée ;
+- les boutons d'écriture étaient actifs dès que le véhicule et la catégorie étaient choisis, pendant
+  que les pièces chargeaient encore ;
+- une pièce mémorisée mais introuvable était effacée de la même façon ;
+- une ligne « Autres marques AM » mémorisée n'est jamais retrouvée à la restauration, qui ne cherche
+  que parmi les équivalences de la pièce.
+
+**Règle.** Pour une pièce déjà mémorisée à l'ouverture, `rpbm_xglass_piece_id` et `rpbm_piece_oe_id`
+d'une part, `rpbm_piece_am_id` d'autre part ne sont réécrits que si la sélection a été **retrouvée à
+la restauration**, ou **remplacée ou retirée par une action explicite** de l'utilisateur. Sinon
+`getRecordData()` ne les inclut pas et la valeur mémorisée est conservée. Sans pièce mémorisée à
+l'ouverture, rien ne change : la sélection affichée est écrite, vide si rien n'est sélectionné.
+
+Deux drapeaux portent cet état. `restoreSelectionFromRecord()` les pose à l'ouverture :
+`_keepStoredPiece` pour les pièces X'Glass et OE, écrites ensemble, quand l'un de leurs identifiants
+est mémorisé ; `_keepStoredPieceAm` pour la pièce AM. Tant qu'un drapeau est à vrai, `getRecordData()`
+n'écrit pas les identifiants qu'il protège, même pendant un chargement. Il retombe à faux :
+- **à la restauration** : `_keepStoredPiece` quand `getPieces()` retrouve la pièce ;
+  `_keepStoredPieceAm` quand `getPieceAm()` retrouve la pièce AM parmi les équivalences de la pièce.
+  Une ligne « Autres marques AM » mémorisée n'est jamais retrouvée : elle reste protégée tant que
+  l'utilisateur n'agit pas ;
+- **à une action explicite** : `releaseStoredPieces()` remet les deux drapeaux à faux, et
+  `onSelectPieceAM()` ne remet à faux que `_keepStoredPieceAm`, directement :
+
+| Action de l'utilisateur | Gestionnaire | Drapeaux remis à faux |
+|---|---|---|
+| Clic sur une pièce, pour la sélectionner ou la désélectionner | `onSelectPiece()` | les deux, par `releaseStoredPieces()` |
+| Clic sur une **autre** catégorie que celle affichée | `onClickCalque()`, gardé par `calqueId !== selectedCalqueId` | les deux, par `releaseStoredPieces()` |
+| Clic sur un **autre** véhicule que celui affiché | `onClickVehicule()` (nouvelle méthode appelée par le gabarit, gardée par `vehiculeId !== selectedVehiculeId`), puis `onSelectVehicule()` | les deux, par `releaseStoredPieces()` |
+| Recherche d'immatriculation **réussie** (bouton « Rechercher ») | `onSearchImmatriculation()`, après `searchImmatriculation()` | les deux, par `releaseStoredPieces()` |
+| Clic sur une carte « Équivalence AM » ou une ligne « Autres marques AM » | `onSelectPieceAM()` | `_keepStoredPieceAm` seulement : la pièce X'Glass et la pièce OE restent protégées |
+
+Ne libèrent rien :
+- un nouveau clic sur le véhicule ou la catégorie déjà affichés (les gardes ci-dessus). Le lien
+  « Voir » de la carte véhicule n'a pas de gestionnaire propre : son clic remonte à la carte et suit
+  la même règle ;
+- une recherche d'immatriculation en erreur : `runAsync()` intercepte l'exception avant
+  `releaseStoredPieces()`. Un champ vide, qui vide la liste sans appel au portail, compte en revanche
+  comme une recherche réussie ;
+- la recherche automatique de l'ouverture (`init()` appelle `searchImmatriculation()` sans passer par
+  le bouton) et l'effet sur `vehicules`, qui appelle `onSelectVehicule()` sans passer par
+  `onClickVehicule()`.
+
+**Boutons.** « Confirmer », « Confirmer et enregistrer » et « Créer un devis » sont désactivés
+pendant un chargement (`isLoading`), en plus des conditions précédentes (véhicule et catégorie requis, reconnexion,
+écriture en cours) : le pied ne peut plus partir avant l'arrivée des pièces.
+
+**« Créer un devis » sans client.** Le bouton reste visible sur toute opportunité, pas sur une piste.
+Sans client, il est grisé, avec l'info-bulle « Renseignez le client de l'opportunité pour créer un
+devis. » : masqué, il n'expliquait rien et l'utilisateur ne le trouvait pas. Un `<span>` enveloppe
+le bouton et porte l'info-bulle, car un bouton désactivé ne reçoit pas le survol :
+
+```xml
+<span t-if="props.record.data.type !== 'lead'" t-att-title="record.partnerId ? undefined : 'Renseignez le client de l\'opportunité pour créer un devis.'">
+    <button class="btn btn-primary" t-on-click="onCreateQuotation" t-att-disabled="!record.partnerId or !state.canConfirm or isReconnecting or state.writing or isLoading">Créer un devis</button>
+</span>
+```
+
+Avec un client, `title` vaut `undefined` : l'attribut n'est pas posé. Le gabarit CRM garde ses quatre
+XPath ; seul le contenu inséré après `onConfirmAndSave` change.
+
+Aucune recette live n'a encore été exécutée sur ce lot ; elle portera sur E1 et E1.1 ensemble.
 
 ## Reconnexion à chaud des portails
 

@@ -9,18 +9,24 @@
 Aucun champ Odoo lu ou écrit à cette étape — uniquement de l'état widget local, qui alimentera l'écriture à la confirmation ([6](06-confirmation-crm-lead.md)/[7](07-confirmation-sale-order.md)).
 
 La confirmation mémorise `piece.id`, `piece.pieceOe.id` et l'identifiant de la
-pièce après-marché sélectionnée. À la réouverture, la pièce mémorisée est affichée
+pièce après-marché sélectionnée. Depuis le lot E1.1, pour une pièce déjà mémorisée à l'ouverture, ces identifiants ne sont réécrits
+que si la sélection a été retrouvée à la restauration, ou remplacée ou retirée par une action
+explicite (clic sur une pièce ou une pièce après-marché, sur une **autre** catégorie ou un **autre**
+véhicule, recherche d'immatriculation **réussie**) ; sinon la valeur mémorisée est conservée, y compris
+une pièce introuvable ou encore en cours de chargement. La liste des actions est en
+[6](06-confirmation-crm-lead.md#pièce-mémorisée-lot-e11). À la réouverture, la pièce mémorisée est affichée
 seule ; « Afficher les autres » réaffiche toutes les pièces. La base Eurocode enregistrée
 est restaurée telle quelle, y compris lorsqu'elle a été saisie à la main ; la pièce
 après-marché restaurée ne la remplace pas (R12, 2026-10-02). Une pièce choisie dans « Autres
 marques AM » est mémorisée de la même façon ; à la réouverture, elle n'est pas
 re-sélectionnée (la restauration ne cherche que dans « Équivalence AM »), mais la base
-enregistrée reste affichée. Un second clic sur la pièce sélectionnée annule la sélection et
+enregistrée reste affichée et son identifiant reste conservé tant qu'aucune action explicite ne
+remplace ou ne retire la sélection (lot E1.1). Un second clic sur la pièce sélectionnée annule la sélection et
 efface la base Eurocode ainsi que la recherche VSF.
 
 Une ligne « Autres marques AM » choisie **sans pièce sélectionnée** est mémorisée à la
-confirmation avec la base Eurocode ; les identifiants de pièce X'Glass et de pièce OE sont alors
-vides (lecture de `getRecordData()` dans le code du 2026-10-05). À la réouverture, la
+confirmation avec la base Eurocode ; les identifiants de pièce X'Glass et de pièce OE ne sont pas
+écrits : vides pour un dossier neuf, inchangés sinon (lot E1.1). À la réouverture, la
 section VSF (« 5. Article VSF » sur le devis, « 4. Base Eurocode » sur l'opportunité) et les
 encarts de toutes les familles sont affichés sans cartes de pièces (contexte restauré), la base
 enregistrée reste affichée et aucune recherche automatique ne démarre.

@@ -32,7 +32,7 @@ restent saisissables.
 | `rpbm_vsf_stock` | integer | idem | `x_studio_field_BKtpw` (char) |
 | `rpbm_constructor_reference` | char | idem, si VSF la fournit | `x_studio_field_MNzfJ` |
 | `rpbm_intervention_location` | selection `galleria` / `genipa` / `domicile` / `lavage_place_armes` / `lavage_marin` | saisie ; préremplit `sale.order.carrier_id` | `x_studio_lieu_intervention` |
-| `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id` | char, invisibles | widget (restauration des sélections à la réouverture) | — |
+| `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id` | char, invisibles | widget (restauration des sélections à la réouverture) ; réécrits seulement si la sélection est retrouvée à la restauration ou changée par une action explicite, sinon conservés (lot E1.1, voir [workflow 6](../../fonctionnel/workflow/06-confirmation-crm-lead.md#pièce-mémorisée-lot-e11)) | — |
 | `rpbm_xglass_vehicle_id` | char, invisible | widget (identifiant du véhicule X'Glass sélectionné) ; à la réouverture, ce véhicule est repris s'il figure dans les résultats de l'immatriculation, sinon le premier | — (aucun équivalent Studio, donc aucune migration) |
 
 `x_studio_eurocode_joint` n'est pas consommé par le module.

@@ -29,8 +29,26 @@ Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lectu
 | `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce (« Équivalence AM »), ou, sans `pieceId`, à une famille (encart « Autres marques AM »), via `XGLASS.findSelectionsPiecesAmView()`. Retourne toujours une liste (`null` ou absence = liste vide) ; corps non JSON = erreur utilisateur. Voir [lot D, build A](#getpieces-et-getpieceam-lot-d-build-a) | X'Glass |
 | `/searchBaseEurocode` | `baseEurocode: str` | Recherche les articles VSF correspondant à une base eurocode | VSF |
 | `/getVsfArticleDetails` | `articleVsfInfo: dict, enrichSuggestions=True` | Lit la fiche de l'article sélectionné : images pleine taille, dimensions, caractéristiques et suggestions VSF (fiches des suggestions lues aussi si `enrichSuggestions`, en parallèle : au plus `MAX_PARALLEL_SUGGESTIONS` = 4 requêtes simultanées, ordre du carrousel conservé) | VSF |
-| `/doesProductExists` | `articleVsfInfo: dict` | Recherche un produit par référence interne, eurocode, puis nom | `product.product`, `product.template` |
-| `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template | `product.product`, `product.template`, `product.supplierinfo` |
+| `/doesProductExists` | `articleVsfInfo: dict` | Recherche le produit d'un article VSF (`_find_existing_product`) : code VSF (`rpbm_eurocode`) d'abord, puis référence interne et nom exact unique pour les seuls produits sans eurocode ; jamais un produit qui porte l'eurocode d'un autre article | `product.product`, `product.template` |
+| `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant (même recherche) ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template | `product.product`, `product.template`, `product.supplierinfo` |
+
+### Rattachement d'un article VSF à un produit (lot E1.1)
+
+`_find_existing_product(env, product_code, eurocode, product_name)` (`main.py`) est la recherche commune de `/doesProductExists` et de `/createProduct`. `product_code` est la référence interne attendue (`_article_constructor_reference` : référence constructeur, ou code VSF si elle est absente), `eurocode` le code VSF de l'article et `product_name` son nom. Version `17.0.261005.4`, recette à faire.
+
+| Rang | Critère | Condition | Résultat retenu | `matched_by` |
+|---|---|---|---|---|
+| 1 | `product_tmpl_id.rpbm_eurocode` égal au code VSF | aucune | le premier (`limit=1`) | `eurocode` |
+| 2 | `default_code` égal à la référence interne attendue | produit sans eurocode, **seulement si l'eurocode de l'article est fourni** ; sinon aucune restriction | le premier (`limit=1`) | `reference_interne` |
+| 3 | `name` égal au nom de l'article (`=ilike`, insensible à la casse) | produit sans eurocode | seulement s'il y a exactement un produit (`limit=2`) | `nom` |
+
+« Sans eurocode » se traduit par `('product_tmpl_id.rpbm_eurocode', 'in', [False, ''])` : champ à `NULL` ou chaîne vide (`= False` ne couvre que `NULL`). Un produit qui porte un eurocode ne peut donc être retenu que par le rang 1 : celui d'un autre article est exclu des rangs 2 et 3. Deux produits sans eurocode de même nom ne donnent aucun rattachement.
+
+**Eurocode fourni ou non.** `/doesProductExists` et `/createProduct` tirent l'eurocode de `articleVsfInfo.code` (`/createProduct` refuse un article sans code). Un appel ancien de `/doesProductExists` avec `productCode` seul est converti en `{'code': productCode}` : l'eurocode est alors fourni et la restriction du rang 2 s'applique aussi. Elle ne tombe que sans eurocode (`articleVsfInfo` sans `code`, ou appel direct de la fonction) : la référence interne suffit alors.
+
+**Origine.** L'ancien ordre (référence interne, eurocode, nom) laissait le nom suffire : la suggestion VSF `6108AXSR` « GEL CAPTEUR SILICONE », sans produit propre, était rattachée au produit `6574AXSH`, seul produit de ce nom et gel d'un autre article. `/createProduct` applique la même recherche : sans produit trouvé, il crée le produit avec `rpbm_eurocode` égal au code VSF ([9](../fonctionnel/workflow/09-creation-produit.md)).
+
+**Contrôle.** `tests/test_find_existing_product.py` (`TransactionCase`, importé dans `tests/__init__.py`) compte six tests, avec des valeurs propres au test (`TEST6574AXSH`, `TEST6108AXSR`, « GEL CAPTEUR SILICONE (test E1.1) ») : le résultat ne dépend pas des produits de la base. Ils couvrent le nom d'un produit portant un autre eurocode (non retenu : le cas d'origine rejoué), l'eurocode avant la référence, la référence d'un produit sans eurocode (`NULL` ou chaîne vide), la référence d'un produit portant un autre eurocode (non retenue, mais retenue si l'eurocode n'est pas fourni), le nom unique d'un ancien produit et deux anciens produits de même nom (non retenus). Ils demandent une base PostgreSQL : ils tournent dans le lanceur Odoo (`--test-enable`) du build Odoo.sh, pas sur le poste de développement, qui n'en a pas.
 
 ### `/getPieces` et `/getPieceAm` (lot D, build A)
 

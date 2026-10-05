@@ -1,9 +1,17 @@
 # 9 — Création du produit (`product.product`)
 
-Après la sélection d'un article VSF, le widget le cherche dans Odoo dans cet ordre : référence interne (`default_code`), eurocode (`product.template.rpbm_eurocode`), puis nom exact insensible à la casse. Le résultat et le critère trouvé sont visibles dans la ligne de détail de chaque article sélectionné ; en l'absence de résultat, l'utilisateur peut créer le produit.
+Après la sélection d'un article VSF, le widget cherche le produit dans Odoo, dans cet ordre (lot E1.1, `17.0.261005.4`) :
 
-- **Route de recherche** : `POST /doesProductExists` (`main.py::doesProductExists`).
-- **Route de création** : `POST /createProduct` (`main.py::createProduct`). Elle renvoie le produit existant ou créé ; une création concurrente est sérialisée par code VSF, évitant les doublons de `default_code` et de `product.supplierinfo`.
+1. le **code VSF** : `product.template.rpbm_eurocode` égal au code de l'article ;
+2. la **référence interne** : `default_code` égal à la référence constructeur de l'article, ou à son code VSF si elle est absente, pour un produit **sans eurocode** seulement (le premier trouvé, si plusieurs produits sans eurocode portent cette référence) ;
+3. le **nom exact**, insensible à la casse, pour un **ancien produit sans eurocode** seulement, et seulement s'il est **unique**.
+
+Un produit qui porte l'eurocode d'un autre article n'est jamais retenu, quelle que soit sa référence ou son nom. Avant le lot E1.1, l'ordre était « référence interne, eurocode, nom » et le nom suffisait : la suggestion VSF `6108AXSR` « GEL CAPTEUR SILICONE » s'affichait « Produit Odoo trouvé (nom) » sur le produit de code `6574AXSH`, qui est le gel d'un autre article. « Ajouter au devis » aurait mis ce produit sur la ligne, et « Créer le produit » l'aurait réutilisé. Désormais cette suggestion apparaît « absente de la base Odoo » tant qu'aucun produit ne porte son eurocode, ni ne la rejoint par la référence ou le nom (rangs 2 et 3, réservés aux produits sans eurocode).
+
+Le résultat et le critère trouvé (« eurocode », « référence interne » ou « nom ») sont visibles dans la ligne de détail de chaque article sélectionné ; en l'absence de résultat, l'utilisateur peut créer le produit.
+
+- **Route de recherche** : `POST /doesProductExists` (`main.py::doesProductExists`), qui applique la recherche ci-dessus (`_find_existing_product`, voir [backend](../../technique/backend.md#rattachement-dun-article-vsf-à-un-produit-lot-e11)).
+- **Route de création** : `POST /createProduct` (`main.py::createProduct`). Elle renvoie le produit existant, trouvé par la même recherche donc jamais un produit d'un autre article, ou le produit créé ; une création concurrente est sérialisée par code VSF, évitant les doublons de `default_code` et de `product.supplierinfo`.
 
 | Champ écrit (`product.product`) | Source |
 |---|---|
