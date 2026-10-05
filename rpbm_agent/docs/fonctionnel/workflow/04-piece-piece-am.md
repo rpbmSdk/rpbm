@@ -1,9 +1,9 @@
 # 4 — Pièce et pièce après-marché (déduction eurocode)
 
-- **Déclencheur** : clic utilisateur sur une pièce de la catégorie.
+- **Déclencheur** : clic utilisateur sur une pièce de la catégorie, ou clic sur une ligne d'un encart « Autres marques AM » (sans pièce sélectionnée, voir [plus bas](#autres-marques-am-par-famille-encart-xglass-autre-am-r11-et-r19)).
 - **Code** : `onSelectPiece()` → `getSelectedPieceAm()`/`getPieceAm()` (`agent_widget_dialog.js`).
 - **Route** : `POST /getPieceAm` (`main.py::getPieceAm`) → pièces après-marché correspondantes sur X'Glass.
-- **Déduction eurocode** : un clic sur une pièce après-marché (`onSelectPieceAM()`), carte « Équivalence AM » ou ligne « Autres marques AM », renseigne `state.baseEurocode` (état widget, pas encore un champ Odoo) avec les 5 premiers caractères de sa référence. Le changement de base relance la recherche VSF. Sans pièce après-marché, le champ reste à saisir à la main.
+- **Déduction eurocode** : un clic sur une pièce après-marché (`onSelectPieceAM()`), carte « Équivalence AM » ou ligne « Autres marques AM » d'une famille quelconque, renseigne `state.baseEurocode` (état widget, pas encore un champ Odoo) avec les 5 premiers caractères de sa référence. Le changement de base relance la recherche VSF. Sans pièce après-marché, le champ reste à saisir à la main.
 - **Affichage d'une pièce après-marché** : libellé, fournisseur, référence, validité (« A partir de », « Jusqu'à » ou « De … à … », comme X'Glass) et description. La description reprend la remarque de X'Glass (ex. « 5Ptes ») devant la description, sauf si elle vaut « - ». Le prix n'est affiché que s'il est connu.
 
 Aucun champ Odoo lu ou écrit à cette étape — uniquement de l'état widget local, qui alimentera l'écriture à la confirmation ([6](06-confirmation-crm-lead.md)/[7](07-confirmation-sale-order.md)).
@@ -18,27 +18,69 @@ re-sélectionnée (la restauration ne cherche que dans « Équivalence AM »), m
 enregistrée reste affichée. Un second clic sur la pièce sélectionnée annule la sélection et
 efface la base Eurocode ainsi que la recherche VSF.
 
-## Autres marques AM (encart X'Glass « AUTRE AM », R11)
+Une ligne « Autres marques AM » choisie **sans pièce sélectionnée** est mémorisée à la
+confirmation avec la base Eurocode ; les identifiants de pièce X'Glass et de pièce OE sont alors
+vides (lecture de `getRecordData()` dans le code du 2026-10-05). À la réouverture, la
+section « Article VSF » et les encarts de toutes les familles sont affichés sans cartes de
+pièces (contexte restauré), la base enregistrée reste affichée et aucune recherche
+automatique ne démarre.
 
-Sous la pièce sélectionnée, l'encart « Autres marques AM » est toujours présent, replié par
-défaut. Il reprend l'encart « AUTRE AM » de X'Glass, rattaché à la famille de la pièce
+## Autres marques AM par famille (encart X'Glass AUTRE AM, R11 et R19)
+
+À la fin de **chaque famille** X'Glass affichée (voir [3 — groupes et familles](03-categorie-xglass.md#pièces-de-la-catégorie-groupes-et-familles-r20-lot-d-build-a)),
+l'encart « Autres marques AM » est toujours présent, replié par défaut, **même sans pièce
+sélectionnée** (lot D, build A, décision du 2026-10-05 ; avant, il n'apparaissait que sous la
+pièce sélectionnée). Il reprend l'encart « AUTRE AM » de X'Glass, rattaché à la famille
 (élément X'Glass, ex. PARE-BRISE) et non à la pièce : il donne des références après-marché
-même quand « Équivalence AM » est vide.
+même quand « Équivalence AM » est vide. « Équivalence AM » reste sous la pièce sélectionnée.
 
-- **Déclencheur** : dépliage de l'encart (`onToggleAutresAm()` → `loadAutresAm()`).
+- **Déclencheur** : dépliage de l'encart d'une famille (`onToggleAutresAm()` → `loadAutresAm()`).
+  Chaque famille a son propre état ouvert ou replié ; en ouvrir une ne déplie pas les autres.
 - **Route** : `POST /getPieceAm` sans `pieceId` : X'Glass est interrogé par `idElementSit`.
+  Aucun appel à l'ouverture du widget : une famille jamais dépliée ne coûte aucune requête.
 - **Cache** : la liste est gardée par véhicule et famille pendant la vie de la dialog. Replier,
-  déplier ou changer de pièce dans la même famille ne relance pas d'appel. En cas d'erreur, rien
-  n'est gardé : replier puis déplier relance l'appel. Une reconnexion aux portails vide le
-  cache.
+  déplier ou changer de pièce dans la même famille ne relance pas d'appel ; sélectionner ou
+  désélectionner une pièce ne change plus l'état ouvert d'un encart. En cas d'erreur, rien
+  n'est gardé (l'encart reste ouvert et vide, avec la notification d'erreur) : replier puis
+  déplier relance l'appel. Une reconnexion aux portails vide le
+  cache et replie les encarts ; ils se rechargent au prochain dépliage.
 - **Contenu** : toutes les lignes renvoyées par X'Glass, dans son ordre, doublons de fournisseurs
   compris. Une famille sans entrée affiche « Aucune autre référence après-marché. ».
 - **Présentation** : une ligne compacte par référence, comme X'Glass : fournisseur au-dessus de
   la référence à gauche ; libellé, « Validité : … » et « Description : … » à droite ; prix en
   bout de ligne seulement s'il est connu. Un séparateur sépare les lignes. Les cartes
   « Équivalence AM » restent des cartes sur deux colonnes.
-- **Clic sur une ligne** : même effet qu'une carte « Équivalence AM » (sélection, base Eurocode,
-  recherche VSF). Vérifier qu'une seule base Eurocode ressort de la liste reste à la charge de
-  l'utilisateur.
+- **Clic sur une ligne, dans toute famille** : même effet qu'une carte « Équivalence AM »
+  (sélection, base Eurocode = 5 premiers caractères de la référence, recherche VSF), **avec ou
+  sans pièce sélectionnée**. Sans pièce, la section « Article VSF » apparaît dès ce clic
+  (voir ci-dessous). Vérifier qu'une seule base Eurocode ressort de la liste reste à la charge
+  de l'utilisateur.
+
+**Risque assumé (décision du 2026-10-05).** Le clic remplit toujours la base, quelle que soit
+la famille. Pour les familles complémentaires (cale, joint, nécessaire de collage,
+rétroviseur), la référence AM n'est pas forcément un eurocode de vitrage : la base déduite peut
+être peu pertinente pour la recherche VSF. Hypothèse, non vérifiée : à confirmer en observant
+les lignes réelles de ces familles à la recette ; le comportement sera reconsidéré si elles
+donnent une base trompeuse.
+
+### Section « Article VSF » sans pièce sélectionnée
+
+La section « Article VSF » (étape [5](05-recherche-vsf-eurocode.md)) est visible dès qu'une
+pièce, une pièce après-marché ou un contexte restauré existe. Cliquer sur une ligne « Autres
+marques AM » sans avoir choisi de pièce renseigne donc la base et lance la recherche VSF ;
+une base restaurée seule ne lance toujours **aucune** recherche (R12) : la recherche
+automatique exige une pièce ou une pièce AM sélectionnée.
+
+- Sur un devis, la section « 4. Main d'œuvre » reste liée à la pièce sélectionnée : sans pièce,
+  seule « 5. Article VSF » s'affiche, comme pour une base restaurée seule.
+- Cas limite : lorsque « Afficher les autres » est actif, une ligne d'une autre famille que celle
+  de la pièce sélectionnée remplace la pièce après-marché et la base, la pièce OE restant
+  sélectionnée. À la confirmation, la pièce après-marché mémorisée peut donc venir d'une
+  autre famille que la pièce OE ; aucun contrôle n'est prévu (question ouverte, voir le
+  document de travail local (non suivi, lot D du 2026-10-05)).
+- Après un clic AM sans pièce, sélectionner une pièce réinitialise les données dépendantes de la
+  sélection précédente, base Eurocode comprise (comportement de `clearSelectedPiece()`, inchangé).
+
+Implémentation en cours (`17.0.261005.1`) ; recette live non réalisée.
 
 Suivant : [5 — Recherche VSF par eurocode](05-recherche-vsf-eurocode.md).

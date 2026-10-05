@@ -25,12 +25,53 @@ Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lectu
 | `/createVehicule` | `immatriculation, partner_id, vehicule_info, vehicule_meta` | Crée (ou retourne l'existant) marque/modèle si besoin, puis le `fleet.vehicle` (`rpbm_detail_model`, `rpbm_first_registration_date`, `vin_sn`) ; retourne `{id, name}`. L'énergie X'Glass est convertie vers une clé native `fleet.FUEL_TYPES` (`XGLASS_ENERGY_TO_FUEL_TYPE`, énergie inconnue = champ vide). L'image X'Glass est facultative et n'est tentée que si l'appelant détient encore le verrou portail. | `fleet.vehicle`, `fleet.vehicle.model.brand`, `fleet.vehicle.model`, X'Glass (image facultative) |
 | `/enrichVehicule` | `vehicle_id: int, vehicule_meta` | Complète uniquement `vin_sn` et `rpbm_first_registration_date` manquants d'un `fleet.vehicle` existant (un VIN de l'ancienne forme `var = …;` est remplacé) ; les droits insuffisants deviennent un avertissement | `fleet.vehicle` |
 | `/getPlanche` | `vehiculeId: int` | Re-sélectionne le véhicule côté portail et retourne la "planche" ; utilisé par le widget uniquement pour restaurer le contexte après reconnexion | X'Glass |
-| `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie ; chaque pièce porte `laborOperations` (opérations de main-d'œuvre T1/T2/T3 avec `productId` issu de `rpbm_agent.labor_product_t*`) | X'Glass, `ir.config_parameter` |
-| `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce, via `XGLASS.findSelectionsPiecesAmView()` | X'Glass |
+| `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie, principales puis complémentaires, dans l'ordre du portail ; chaque pièce porte son groupe (`elementKey`), sa famille (`elementSitId`, `elementSitLibelle`) et `laborOperations` (opérations de main-d'œuvre T1/T2/T3 avec `productId` issu de `rpbm_agent.labor_product_t*`). Voir [lot D, build A](#getpieces-et-getpieceam-lot-d-build-a) | X'Glass, `ir.config_parameter` |
+| `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce (« Équivalence AM »), ou, sans `pieceId`, à une famille (encart « Autres marques AM »), via `XGLASS.findSelectionsPiecesAmView()`. Retourne toujours une liste (`null` ou absence = liste vide) ; corps non JSON = erreur utilisateur. Voir [lot D, build A](#getpieces-et-getpieceam-lot-d-build-a) | X'Glass |
 | `/searchBaseEurocode` | `baseEurocode: str` | Recherche les articles VSF correspondant à une base eurocode | VSF |
 | `/getVsfArticleDetails` | `articleVsfInfo: dict, enrichSuggestions=True` | Lit la fiche de l'article sélectionné : images pleine taille, dimensions, caractéristiques et suggestions VSF (fiches des suggestions lues aussi si `enrichSuggestions`, en parallèle : au plus `MAX_PARALLEL_SUGGESTIONS` = 4 requêtes simultanées, ordre du carrousel conservé) | VSF |
 | `/doesProductExists` | `articleVsfInfo: dict` | Recherche un produit par référence interne, eurocode, puis nom | `product.product`, `product.template` |
 | `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template | `product.product`, `product.template`, `product.supplierinfo` |
+
+### `/getPieces` et `/getPieceAm` (lot D, build A)
+
+Version cible `17.0.261005.1`. Rédigé d'après le plan approuvé du 2026-10-05, relu contre l'état
+du code du même jour (en cours d'écriture : à relire après le dernier commit) ; aucune recette
+exécutée.
+
+- **Libellé de famille.** Chaque pièce de `/getPieces` reçoit `elementSitLibelle`, égal au
+  `libelle` de son `XGlassElement` (déjà calculé dans `controllers/xglass.py`, mais perdu à
+  l'aplatissement). Clé ajoutée : rien n'est retiré de la réponse, ni l'ordre
+  (`ELEMENTSIT_PRINCIPAUX` puis `ELEMENTSIT_COMPLEMENTAIRES`, ordre du portail). Le regroupement
+  lui-même se fait dans le frontend (voir [frontend](frontend.md#groupes-de-pièces-et-encarts-autre-am-par-famille-r19-r20)).
+- **Journalisation des familles.** Pour chaque élément reçu, `_logger.info` écrit : `elementKey`,
+  `elementSitId`, libellé, `affichageAm`, `containsPiecesAm`, `elementVitre` et nombre de pièces ;
+  il écrit aussi les clés de premier niveau de `elementSitMapData` que le widget ne traite pas
+  (le portail connaît d'autres groupes, par exemple hors calque ou recherche par référence : leur
+  présence dans les réponses réelles n'est pas vérifiée). Ces lignes vont au journal serveur
+  seulement : aucune écriture en base, aucun corps de réponse enregistré, et pour les clés
+  inconnues seulement leur nom et leur taille. Elles remplacent un vidage de la réponse complète,
+  jugé contraire au protocole de recette « sans écriture ». Une ligne par élément
+  (`getPieces <planche> <calque> : <groupe> elementSitId=… libellé=… affichageAm=… containsPiecesAm=…
+  elementVitre=… pièces=…`), plus une ligne pour les clés ignorées. Elles servent à décider plus tard si l'encart « Autres marques AM » doit être limité aux familles qui
+  l'annoncent.
+- **Pas de filtre sur les drapeaux.** Le serveur et le widget n'appliquent aucune règle
+  `affichageAm and containsPiecesAm` : l'encart est proposé pour toutes les familles (décision du
+  2026-10-02 « toujours présent, replié »). Observé en trace pour la famille principale du
+  pare-brise : les deux drapeaux sont vrais ; les familles complémentaires n'ont pas été tracées.
+- **`/getPieceAm` renvoie toujours une liste.** `XGLASS.findSelectionsPiecesAmView()`
+  (`controllers/xglass.py`) ne renvoie plus la réponse HTTP mais directement
+  `(r.json() or {}).get('selectionsPiecesAmView') or []` ; un corps non JSON (`ValueError`)
+  devient une `XGlassError` « Réponse X'Glass illisible (pièces AM) », que `main.py::getPieceAm`
+  convertit par `_raise_portal_error` en erreur utilisateur typée (`UserError`, ou
+  `AgentSessionExpiredError` si la session a expiré). Un seul appelant dans le dépôt
+  (`main.py`). Observé (recette R11, 2026-10-02) : sans contexte véhicule, X'Glass répond
+  `{"errorCode": "10", "selectionsPiecesAmView": null}` ; l'ancien code renvoyait alors `None`
+  au widget (encart `None` après reconnexion). Désormais la liste est vide.
+  Hypothèse de lecture, non observée : un corps `null` entier aurait levé une `AttributeError`.
+  Effet de bord à surveiller : une réponse dégradée devient une liste vide, que le widget met en
+  cache par véhicule et famille jusqu'à la fermeture de la dialog ou à la reconnexion
+  (« Aucune autre référence après-marché. » peut alors masquer le défaut ; la reconnexion à chaud
+  rejoue la recherche d'immatriculation pour l'éviter, voir [configuration](configuration.md#reconnexion-à-chaud)).
 
 ### Dérivation du véhicule et champs Studio
 

@@ -102,6 +102,68 @@ Résultats attendus :
   recherche VSF ;
 - une famille sans entrée affiche « Aucune autre référence après-marché. », sans erreur.
 
+### CRM-06 — Groupage et Autres AM par famille (lot D, build A)
+
+Scénario de recette du build `17.0.261005.1`. **Non exécuté** : les résultats attendus
+ci-dessous viennent du plan du 2026-10-05 et des qualifications du 2026-10-01 ; aucun n'est
+une observation sur le build cible. Protocole sans écriture : ne pas confirmer, créer de
+produit, définir d'article principal ni ajouter de ligne ; fermer par **Annuler**. Relever par
+RPC `write_date` et les champs `rpbm_*` du dossier, de son opportunité et du véhicule lié avant
+et après : ils doivent rester inchangés (seule écriture tolérée : le verrou technique
+`rpbm_agent.session_lock`, vide en fin de recette).
+
+Véhicule : Nissan X-Trail IV T33 (2022-09 →), plaque `GS600HH`, catégorie `PARE-BRISE`.
+Second véhicule pour l'étape 6 : un véhicule X'Glass partageant la même planche et la même
+famille principale (immatriculation dans le document de travail local).
+
+1. Rechercher `GS600HH`, sélectionner le véhicule puis la catégorie `PARE-BRISE`, **sans
+   sélectionner de pièce**.
+   - Attendu : un groupe « Pièces principales » (4 cartes, `RA0E`, `RA1E`, `RA3E`, `RA2E`) puis
+     un groupe « Pièces complémentaires » (cales inférieure et supérieure, joint, nécessaire de
+     collage, rétroviseur ×2), soit 10 cartes dans l'ordre du portail, regroupées par famille
+     avec un bandeau de famille.
+   - Attendu : 5 encarts « Autres marques AM » repliés (1 famille principale et 4 familles
+     complémentaires), **0 appel** `/getPieceAm` à l'ouverture.
+2. Déplier l'encart de la famille `PARE-BRISE`.
+   - Attendu : 1 appel `/getPieceAm` sans `pieceId`, 13 lignes (9 ARGIC puis 4 PILKINGTON,
+     comme X'Glass). Replier puis déplier : 0 nouvel appel. Les autres encarts restent repliés.
+3. Sans sélectionner de pièce, cliquer sur la première ligne.
+   - Attendu : ligne mise en évidence, base `6108A`, section « Article VSF » visible, une
+     seule recherche VSF lancée.
+4. Déplier chacune des quatre familles complémentaires et lire leurs lignes. **Observation sans
+   verdict** : noter le nombre d'appels, la présence éventuelle d'une réponse vide ou dégradée,
+   puis cliquer sur une ligne de chaque famille et noter la base obtenue. Le plan assume le
+   risque d'une base peu pertinente pour les cales, joints, collage et rétroviseurs ; ces
+   relevés décident s'il faut reconsidérer le clic « toujours remplir la base ».
+5. Sélectionner une pièce principale (par exemple `RA3E`).
+   - Attendu : seule la famille de la pièce reste affichée ; « Afficher les autres » rétablit
+     tous les groupes. L'état ouvert ou replié des encarts n'a pas changé. Relever la base après
+     sélection (le code actuel réinitialise les données dépendantes d'une pièce) ; une
+     sélection puis annulation de la pièce ne replie aucun encart.
+6. Dans le même dialogue, rechercher le second véhicule puis déplier la famille principale.
+   - Attendu (cas connu) : 13 lignes pour le premier véhicule, puis 3 lignes pour le second ;
+     1 appel par véhicule, aucune liste resservie d'un véhicule à l'autre ; retour au premier
+     véhicule : aucun nouvel appel.
+7. Provoquer une expiration de session comme dans ROB-02 avec un encart ouvert.
+   - Attendu : reconnexion silencieuse, **aucun encart ouvert et vide** ; au dépliage suivant,
+     un nouvel appel et les mêmes 13 lignes qu'avant la reconnexion.
+8. Ouvrir un dossier de test dont seule une base Eurocode est mémorisée, sans pièce (cas
+   connu : catégorie `PHARE`, base `7310A`).
+   - Attendu : les familles de la catégorie et leurs encarts sont affichés sans cartes de
+     pièces ; la base `7310A` reste affichée et **aucune recherche** ne se lance seule (R12) ;
+     « Rechercher sur VSF » la lance ; « Afficher les autres » affiche les cartes.
+
+Dernier contrôle hors protocole : lire dans les logs serveur Odoo.sh les lignes `INFO` par
+famille (clés, drapeaux, nombre de pièces) pour tracer les calques et familles non encore
+observés ; elles ne contiennent aucune donnée client.
+
+Contrôles hors réseau avant tout push, depuis la racine du dépôt :
+`node rpbm_agent/test_widget_vsf.mjs` ([script](../test_widget_vsf.mjs)),
+`python rpbm_agent/test_portal_auth.py` ([script](../test_portal_auth.py), qui contrôle aussi
+que chacun des deux XPath du devis cible un seul nœud), rendu Owl local des trois modes
+(focalisé, tout, restauré sans pièce) et `git diff --check`. La recette R13 à R17 plus bas reste valable pour le build A ; elle
+sera remplacée au build B (tableau VSF).
+
 ## Scénarios devis
 
 ### SO-01 — Devis avec opportunité
@@ -156,6 +218,18 @@ Résultats attendus :
 - une opération sans durée, identifiant ou taux reconnu reste indisponible ;
 - les lignes manuelles, le champ Studio agrégé et le produit « Pose à Domicile »
   restent inchangés.
+
+### SO-05 — Dialog devis après découplage de la section VSF (lot D, build A)
+
+Sur un devis lié à une opportunité (même protocole sans écriture que CRM-06, **non exécuté**) :
+
+1. Sélectionner une pièce : les sections « 4. Main d'œuvre » et « 5. Article VSF » sont
+   toutes deux présentes, dans cet ordre.
+2. Rouvrir sans pièce, déplier un encart « Autres marques AM » et cliquer sur une ligne :
+   « 5. Article VSF » apparaît, la recherche VSF se lance, « 4. Main d'œuvre » reste absente
+   (elle suit la pièce sélectionnée ; la numérotation saute de 3 à 5, constat déjà présent pour
+   une base restaurée seule).
+3. Aucune action de devis (ajout, retrait) n'est exécutée.
 
 ## Présentation VSF — recette sans écriture (R13 à R17)
 

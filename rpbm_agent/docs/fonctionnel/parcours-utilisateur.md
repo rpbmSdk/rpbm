@@ -23,8 +23,9 @@ flowchart TD
     I -->|Non| K["Bouton 'Créer' → crée le véhicule dans Odoo"]
     H --> M[Affichage automatique des catégories / calques X'Glass disponibles pour le véhicule]
     M --> N[Clic sur une catégorie]
-    N --> O[Affichage des pièces X'Glass de la catégorie]
+    N --> O["Affichage des pièces X'Glass de la catégorie, en groupes (principales, complémentaires) et familles"]
     O --> P[Clic sur une pièce]
+    O -.->|"Dépliage de « Autres marques AM » d'une famille, sans pièce sélectionnée, puis clic sur une ligne"| R
     P --> Q{Des pièces après-marché sont trouvées pour cette pièce ?}
     Q -->|Oui| R["Eurocode déduit automatiquement (5 premiers caractères de la référence)"]
     Q -->|Non| S["Champ Eurocode laissé vide : saisie manuelle possible"]
@@ -36,6 +37,7 @@ flowchart TD
 Notes :
 - Le premier véhicule de la liste est **sélectionné automatiquement** dès que la recherche renvoie des résultats.
 - Si le conducteur (`driver_id`) du véhicule déjà présent dans Odoo diffère du client de l'enregistrement en cours, une alerte s'affiche.
+- Les pièces de la catégorie sont présentées comme sur le portail : « Pièces principales » puis « Pièces complémentaires », chacune découpée en familles X'Glass, dans l'ordre du portail. Sous chaque famille, l'encart « Autres marques AM » est replié ; il se charge au dépliage, sans qu'une pièce soit sélectionnée. Un clic sur l'une de ses lignes renseigne l'eurocode et lance la recherche VSF, quelle que soit la famille (détail : [3](workflow/03-categorie-xglass.md) et [4](workflow/04-piece-piece-am.md)).
 - Si le champ "Catégorie X'Glass" est déjà renseigné sur l'enregistrement, la catégorie correspondante est présélectionnée automatiquement dès que la planche est chargée.
 - La recherche VSF se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique).
 
@@ -136,5 +138,7 @@ La confirmation mémorise la catégorie X’Glass, la base Eurocode et les ident
 de la pièce X’Glass, de la pièce OE et de la pièce après-marché. À la réouverture,
 le dialogue restaure ces choix et réduit les listes à la sélection existante.
 Les boutons « Afficher les autres » rendent les listes complètes disponibles pour
-une modification volontaire. Un second clic sur la pièce sélectionnée efface les
+une modification volontaire. Lorsque seule une base Eurocode a été enregistrée, sans pièce
+retrouvée, le dialogue montre les familles et leurs encarts « Autres marques AM » mais pas
+les cartes de pièces, et ne lance aucune recherche VSF automatique. Un second clic sur la pièce sélectionnée efface les
 sélections dépendantes, la base Eurocode et les résultats VSF.

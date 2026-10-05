@@ -78,15 +78,97 @@ classDiagram
 **propre à chaque composant** avant/après l'appel et affiche une notification Odoo en cas
 d'erreur.
 
+## Groupes de pièces et encarts AUTRE AM par famille (R19, R20)
+
+Lot D, build A (`17.0.261005.1`). Rédigé d'après le plan approuvé du 2026-10-05 puis relu contre l'état
+du code du 2026-10-05 (en cours d'écriture : à relire après le dernier commit). Aucune recette
+n'a été exécutée.
+
+**Données reçues.** `/getPieces` renvoie toujours une liste plate : éléments principaux puis
+complémentaires, pièces dans l'ordre du portail (jamais trié). Chaque pièce porte `elementKey`
+(groupe), `elementSitId` (famille), `element.withPiecesAm` et, nouveauté, `elementSitLibelle`
+(voir [backend](backend.md#getpieces-et-getpieceam-lot-d-build-a)).
+
+**`pieceGroups`.** Getter calculé sur `this.pieces`, **jamais sur `visiblePieces`** : celui-ci est
+vide quand le contexte est restauré sans pièce retrouvée (base Eurocode seule), cas où les
+familles et leurs encarts doivent pourtant rester visibles. Il regroupe par `elementKey` puis
+`elementSitId`, en conservant l'ordre reçu, et retourne
+`[{key, titre, familles: [{elementSitId, libelle, withPiecesAm, pieces}]}]`. Titres : « Pièces
+principales » et « Pièces complémentaires » (constante `PIECE_GROUP_TITLES`, libellés du portail
+dans `controllers/xglass_lbl.py`) ; une pièce sans `elementKey` connu tombe dans un groupe
+générique « Pièces ». Les groupes et familles étant déduits des pièces, aucun n'est vide.
+Le terme « Catégorie » n'est pas réutilisé pour les bandeaux de famille : il désigne le calque
+(section 2).
+
+`visiblePieceGroups` restreint ces groupes en mode focalisé à la seule famille qui contient la
+pièce sélectionnée (le titre de son groupe reste affiché), et `visibleFamillePieces(famille)`
+croise les pièces de la famille avec `visiblePieces` pour les cartes.
+
+**Template (`agent_widget_dialog.xml`, section 3).** Boucles imbriquées groupe puis famille :
+titre de groupe (`h6`), bandeau de famille (libellé X'Glass), grille `row g-2` de `PieceComponent`
+(inchangé, limitée aux pièces visibles de la famille), puis l'encart « Autres marques AM »
+replié en fin de famille, **hors** du wrapper de pièce et affiché même quand la famille n'a
+aucune carte visible. « Équivalence AM » reste sous la pièce sélectionnée.
+
+| Mode | `visiblePieces` | Rendu |
+|---|---|---|
+| Tout | toutes les pièces | tous les groupes et familles, cartes et encarts |
+| Focalisé (pièce sélectionnée, `showAllPieces` faux) | la pièce sélectionnée | seule la famille de la pièce, avec sa carte et son encart ; « Afficher les autres » rétablit tout |
+| Restauré sans pièce | vide | toutes les familles avec leurs encarts, sans cartes |
+
+**État des encarts.** `state.autresAmOpen` n'est plus un booléen unique mais une table
+`{[autresAmKey]: bool}`, avec `autresAmKey(famille)` = `<id véhicule>-<elementSitId>` (clé par
+véhicule et famille, introduite en `17.0.261002.3` : deux véhicules peuvent partager planche et
+famille). Les accesseurs prennent la famille : `autresAmFor(famille)` (cache ou `{loading}`),
+`isAutresAmOpen(famille)`, `onToggleAutresAm(famille)` et `loadAutresAm(famille)`. Le chargement
+garde la logique de `261002.3` : cache consulté d'abord, état `{loading}` pendant l'appel,
+entrée supprimée en cas d'erreur (replier puis déplier relance l'appel ; l'encart reste alors
+ouvert et vide, avec la notification d'erreur de `runAsync`), `callPortal('/getPieceAm', …)`
+sans `pieceId`, avec `famille.withPiecesAm` et `famille.elementSitId`. `clearSelectedPiece()` ne
+touche plus l'état ouvert : choisir ou annuler une pièce ne replie aucun encart. La
+reconnexion à chaud vide la table d'état ouvert en plus du cache : les encarts se replient et
+se rechargent au prochain dépliage.
+
+**Section VSF découplée de la pièce.** Le getter `showVsfSection` vaut
+`selectedPiece || selectedPieceAm || hasRestoredPieceContext` et remplace le
+`t-if="selectedPiece or hasRestoredPieceContext"` de la section 4. Le `useEffect` qui lance
+`onSearchBaseEurocode()` passe de `selectedPiece && baseEurocode` à
+`(selectedPiece || selectedPieceAm) && baseEurocode`, et ses dépendances de l'objet
+`selectedPiece` au booléen « une sélection existe » : une pièce AM restaurée après la pièce OE ne
+relance donc pas une recherche déjà en cours. Une base restaurée seule ne lance pas de recherche
+(R12) et le dédoublonnage sur `articlesVsf.length` est conservé. Conséquence : un clic sur une
+ligne AM sans pièce renseigne la base et lance la recherche.
+
+**Point d'extension du devis.** `agent_widget_dialog_sale_order.xml` insérait la section
+« Main d'œuvre » et renumérotait le `h5` par deux XPath écrits sur le `t-if` littéral de la
+section VSF (`//section[@t-if='selectedPiece or hasRestoredPieceContext']`) : changer cette
+condition cassait l'héritage sans erreur visible. La section VSF porte maintenant
+`name="vsf_section"` et les deux XPath ciblent `//section[@name='vsf_section']` (le `h5` reste
+enfant direct de la section). La condition peut évoluer sans toucher au devis. Contrôle hors
+Odoo prévu : un seul nœud par XPath, avec `xml.etree.ElementTree` (`lxml` absent du `.venv`).
+
+**Contrôles hors réseau** (écrits par le codeur dans l'arbre de travail le 2026-10-05, **non
+exécutés** par l'auteur de cette documentation : à rejouer avant le push). `test_widget_vsf.mjs`
+couvre `pieceGroups` et `visiblePieceGroups` (tout, focalisé, restauré sans pièce, `elementKey`
+absent, aucune pièce), un seul `callPortal` par couple véhicule-famille après replier puis déplier,
+l'état ouvert indépendant par famille, les listes distinctes de deux véhicules, l'absence
+d'entrée en cache après erreur, la table vidée à la reconnexion, la recherche VSF lancée par une
+ligne AM sans pièce, et l'absence de recherche pour une base restaurée seule. Le harnais rejoue
+les effets Owl à la main. `test_portal_auth.py` couvre la tolérance de
+`findSelectionsPiecesAmView` (liste, `null`, corps non JSON) et le contrôle des deux XPath du
+devis (un seul nœud chacun, `xml.etree.ElementTree`, `lxml` étant absent du `.venv`). Le rendu Owl
+local (Chromium et Owl du code Odoo) des trois modes reste à faire.
+
 ## Détails discriminants des pièces OE
 
-Les pièces après-marché ne sont affichées que sous la pièce OE active, dans un encadré portant
-explicitement son libellé. La pièce active occupe toute la largeur de la grille ; sous elle,
-l'encart repliable « Autres marques AM » reprend l'encart X'Glass « AUTRE AM » de sa famille
-(`loadAutresAm()`). Ses lignes utilisent le même `PieceAMComponent` que les cartes
+Les pièces « Équivalence AM » ne sont affichées que sous la pièce OE active, dans un encadré
+portant explicitement son libellé. La pièce active occupe toute la largeur de la grille. L'encart
+repliable « Autres marques AM » reprend l'encart X'Glass « AUTRE AM » et se trouve désormais à la
+fin de chaque famille (voir [ci-dessus](#groupes-de-pièces-et-encarts-autre-am-par-famille-r19-r20) ;
+`loadAutresAm()`). Ses lignes utilisent le même `PieceAMComponent` que les cartes
 « Équivalence AM » et le même `onSelectPieceAM()` ; la prop optionnelle `compact` choisit le
-gabarit en ligne (`list-group-item` dans une `list-group-flush`, environ 60 px par ligne en
-largeur `xl` au lieu d'environ 155 px par carte), avec les mêmes getters `fournisseur`,
+gabarit en ligne (`list-group-item` dans une `list-group-flush`, environ 60 px par ligne dans
+le dialog actuel de 980 px, voir l'[état des lieux](../etat-des-lieux.md#6-uiux), au lieu d'environ 155 px par carte), avec les mêmes getters `fournisseur`,
 `dateLibelle`, `description`, `hasPrix` et `style`. Cliquer de nouveau sur cette pièce la désélectionne et efface les
 données qui en dépendent (pièce après-marché, eurocode, résultats et article VSF).
 
@@ -169,6 +251,10 @@ flowchart TD
     EUC --> SB["onSearchBaseEurocode() → GET /searchBaseEurocode"]
 ```
 
+Depuis le lot D (build A), le déclencheur de la recherche VSF est
+`(selectedPiece || selectedPieceAm) && baseEurocode` : une pièce après-marché choisie dans un
+encart « Autres marques AM » suffit, sans pièce OE sélectionnée.
+
 Un `useEffect` séparé recalcule `state.canConfirm` à chaque changement de véhicule ou de
 catégorie. Les boutons « Confirmer » et « Confirmer et enregistrer » restent désactivés tant
 que ces deux sélections ne sont pas présentes.
@@ -192,7 +278,7 @@ cascade ci-dessus re-sélectionne la pièce/pièce AM correspondantes ; `showAll
 | `restorePortalContext()` | `AgentWidgetDialog` après reconnexion | `/searchImmatriculation` puis `/getPlanche` | Rejoue la dernière recherche aboutie puis la sélection du véhicule côté portail, sans toucher l'état Owl |
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce (« Équivalence AM ») |
-| `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de « Autres marques AM » | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par véhicule + `elementSitId` |
+| `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de l'encart « Autres marques AM » d'une famille (sans pièce requise) | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par véhicule + `elementSitId` |
 | `onSearchBaseEurocode()` | `AgentWidgetDialog` | `/searchBaseEurocode` | Articles VSF par eurocode |
 | `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'une carte sélectionnée (+ suggestions pour un article principal) |
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour une carte VSF donnée |
@@ -230,8 +316,8 @@ dernière recherche aboutie (`_searchedImmatriculation`), puis `/getPlanche`, po
 sélection serveur du véhicule courant. Elle rejoue enfin une seule fois l'appel interrompu.
 
 Sans la recherche, X'Glass refuse la sélection sans erreur (voir
-[configuration](configuration.md#reconnexion-à-chaud)). Hormis le cache « Autres marques AM »,
-vidé, cette restauration n'écrit pas dans l'état Owl : véhicule, catégorie, pièces, articles
+[configuration](configuration.md#reconnexion-à-chaud)). Hormis le cache et l'état ouvert des encarts
+« Autres marques AM », vidés, cette restauration n'écrit pas dans l'état Owl : véhicule, catégorie, pièces, articles
 et sélections affichés restent inchangés.
 
 Si la reconnexion ou le rejeu échoue à nouveau, `reconnectRequired` affiche le bouton
