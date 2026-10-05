@@ -377,7 +377,7 @@ class VSFAgent:
                         "fullUrl": full_url,
                     }
                 )
-        url = product_line_tds[1].find("a")["href"]
+        url = _absolute_url(product_line_tds[1].find("a")["href"])
         eurocode = product_line_tds[1].find('a').text.strip()
         refConstructeur = product_line_tds[2].text.strip()
         name = product_line_tds[3].text.strip()

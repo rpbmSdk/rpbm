@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.AgentWidgetDialog">
-        <Dialog size="xl" title="'Assistant véhicule et pièces'">
+        <Dialog size="'fullscreen'" title="'Assistant véhicule et pièces'">
             <t t-if="!agentsInitialized">
                 <div t-if="!authError" class="d-flex justify-content-center">
                     <i class="fa fa-spinner fa-spin fa-2x me-2"/>
@@ -116,40 +116,47 @@
                             <label for="baseEurocode" class="form-label">Base Eurocode</label>
                             <input class="o_input" id="baseEurocode" t-att-value="baseEurocodeInput" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-input="onInputBaseEurocode" t-on-change="onChangeBaseEurocode"/>
                         </div>
-                        <button class="btn btn-primary" t-on-click="onSearchBaseEurocode">Rechercher sur VSF</button>
+                        <button name="vsf_search" class="btn btn-primary" t-on-click="onSearchBaseEurocode">Rechercher sur VSF</button>
                         <a t-att-class="vsfSearchUrl ? 'btn btn-outline-primary' : 'btn btn-outline-primary disabled'" t-att-href="vsfSearchUrl" target="_blank" rel="noopener" t-att-aria-disabled="vsfSearchUrl ? 'false' : 'true'" t-att-tabindex="vsfSearchUrl ? undefined : -1">Ouvrir dans un nouvel onglet</a>
                     </div>
-                    <div t-if="articlesVsf.length > 0" class="row g-2 mt-2">
-                        <t t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
-                            <div class="col-12">
-                                <ArticleComponent record="record" article="articleVsf" selected="isArticleSelected(articleVsf.code)" onOpenImage.bind="openImagePreview" t-on-click="()=>this.onClickArticleVsf(articleVsf.code)">
-                                    <t t-set-slot="actions">
-                                        <t t-if="isArticleSelected(articleVsf.code)">
-                                            <t t-set="actionArticle" t-value="articleVsf"/>
-                                            <t t-call="rpbm_agent.ArticleActions"/>
-                                        </t>
+                    <!-- Un tbody par article principal. Sélection par la prop onSelect : un t-on-click
+                         sur le composant écouterait aussi sa ligne de détail. -->
+                    <table t-if="articlesVsf.length" name="vsf_articles" class="table table-sm table-hover align-middle mt-2">
+                        <thead>
+                            <tr>
+                                <th>Eurocode</th>
+                                <th>Désignation</th>
+                                <th>Réf. constructeur</th>
+                                <th class="text-end">Stock</th>
+                                <th class="text-end">Prix</th>
+                                <th class="text-end">Coût</th>
+                                <th>Photo</th>
+                            </tr>
+                        </thead>
+                        <tbody t-foreach="articlesVsf" t-as="articleVsf" t-key="articleVsf.code">
+                            <ArticleComponent record="record" article="articleVsf" selected="isArticleSelected(articleVsf.code)" onOpenImage.bind="openImagePreview" onSelect="() => this.onClickArticleVsf(articleVsf.code)">
+                                <t t-set-slot="actions">
+                                    <t t-if="isArticleSelected(articleVsf.code)">
+                                        <t t-set="actionArticle" t-value="articleVsf"/>
+                                        <t t-call="rpbm_agent.ArticleActions"/>
                                     </t>
-                                </ArticleComponent>
-                                <div t-if="isArticleSelected(articleVsf.code) and articleVsf.suggestedArticles and articleVsf.suggestedArticles.length" class="border rounded mt-2 p-3">
-                                    <h6 class="mb-3">Articles suggérés par VSF</h6>
-                                    <div class="row g-2">
-                                        <t t-foreach="articleVsf.suggestedArticles" t-as="suggestion" t-key="suggestion.code">
-                                            <div class="col-12">
-                                                <ArticleComponent record="record" article="suggestion" selected="isArticleSelected(suggestion.code)" onOpenImage.bind="openImagePreview" t-on-click="()=>this.onClickSuggestedArticle(suggestion.code, articleVsf.code)">
-                                                    <t t-set-slot="actions">
-                                                        <t t-if="isArticleSelected(suggestion.code)">
-                                                            <t t-set="actionArticle" t-value="suggestion"/>
-                                                            <t t-call="rpbm_agent.ArticleActions"/>
-                                                        </t>
-                                                    </t>
-                                                </ArticleComponent>
-                                            </div>
+                                </t>
+                            </ArticleComponent>
+                            <t t-if="isArticleSelected(articleVsf.code) and articleVsf.suggestedArticles and articleVsf.suggestedArticles.length">
+                                <tr><td colspan="7" class="ps-4 small fw-bold">Articles suggérés par VSF</td></tr>
+                                <t t-foreach="articleVsf.suggestedArticles" t-as="suggestion" t-key="suggestion.code">
+                                    <ArticleComponent record="record" article="suggestion" selected="isArticleSelected(suggestion.code)" onOpenImage.bind="openImagePreview" onSelect="() => this.onClickSuggestedArticle(suggestion.code, articleVsf.code)">
+                                        <t t-set-slot="actions">
+                                            <t t-if="isArticleSelected(suggestion.code)">
+                                                <t t-set="actionArticle" t-value="suggestion"/>
+                                                <t t-call="rpbm_agent.ArticleActions"/>
+                                            </t>
                                         </t>
-                                    </div>
-                                </div>
-                            </div>
-                        </t>
-                    </div>
+                                    </ArticleComponent>
+                                </t>
+                            </t>
+                        </tbody>
+                    </table>
                 </section>
                 </div>
             </t>
@@ -165,7 +172,7 @@
         </Dialog>
     </t>
 
-    <!-- Encart d'actions d'une carte VSF sélectionnée (principale ou suggérée).
+    <!-- Encart d'actions d'un article VSF sélectionné (principal ou suggéré), dans sa ligne de détail.
          Attend `actionArticle` dans le scope de l'appelant. La dialog devis
          l'étend (agent_widget_dialog_sale_order.xml). -->
     <t t-name="rpbm_agent.ArticleActions">

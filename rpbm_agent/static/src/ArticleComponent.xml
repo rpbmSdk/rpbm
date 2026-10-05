@@ -1,36 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <!-- Deux lignes racines, à placer dans un tbody : l'article, puis son détail s'il est sélectionné. -->
     <t t-name="rpbm_agent.ArticleComponent">
-        <div class="card flex-grow-1" t-att-class="props.selected ? 'border-primary shadow-sm' : 'h-100'">
-            <div class="card-body" t-att-style="style">
-                <h5 class="card-title">
-                    <t t-esc="props.article.name"/>
-                </h5>
-                <h6 t-if="props.article.code" class="font-monospace">
-                    Eurocode : <t t-esc="props.article.code"/>
-                </h6>
-                <h6 t-if="props.article.refConstructeur">
-                    Référence constructeur: <t t-esc="props.article.refConstructeur"/>
-                </h6>
-                <h6 t-if="props.article.prixVente !== undefined and props.article.prixVente !== null">
-                    Prix: 
-                    <t t-esc="props.article.prixVente"/>
- 
-    €
-                    <br/>
-    Coût: <t t-esc="props.article.prixVenteRPBM"/>
- €
-                </h6>
-                <p t-if="props.article.available !== undefined" class="mb-2">
-                    <t t-if="props.article.available">En stock: <t t-esc="props.article.stock"/></t>
-                    <t t-else="">Indisponible</t>
-                </p>
+        <tr role="button" t-att-class="props.selected ? 'table-primary' : ''" t-on-click="props.onSelect">
+            <td class="font-monospace text-nowrap"><t t-esc="props.article.code"/></td>
+            <td>
+                <t t-esc="props.article.name"/>
+                <a t-if="props.article.url" t-att-href="props.article.url" target="_blank" rel="noopener" class="ms-2 small" t-on-click.stop="">Fiche technique</a>
+            </td>
+            <td><t t-esc="props.article.refConstructeur"/></td>
+            <td class="text-end">
+                <t t-if="props.article.available === false">Indisponible</t>
+                <t t-else="" t-esc="props.article.stock"/>
+            </td>
+            <t t-set="hasPrice" t-value="props.article.prixVente !== undefined and props.article.prixVente !== null"/>
+            <td class="text-end text-nowrap"><t t-if="hasPrice"><t t-esc="props.article.prixVente"/> €</t></td>
+            <td class="text-end text-nowrap"><t t-if="hasPrice"><t t-esc="props.article.prixVenteRPBM"/> €</t></td>
+            <td>
+                <t t-if="props.article.images and props.article.images.length" t-call="rpbm_agent.ArticleThumbnail">
+                    <t t-set="image" t-value="props.article.images[0]"/>
+                    <t t-set="thumbnailSize" t-value="'width: 64px; height: 48px;'"/>
+                </t>
+            </td>
+        </tr>
+        <tr t-if="props.selected">
+            <td colspan="7">
                 <div t-if="props.article.images and props.article.images.length" class="d-flex flex-wrap align-items-start gap-2 mb-2">
                     <t t-foreach="props.article.images" t-as="image" t-key="image.thumbnailUrl">
-                        <a t-if="image.fullUrl" t-att-href="image.fullUrl" target="_blank" rel="noopener" class="d-inline-block" title="Agrandir l'image de l'article" t-on-click="(event) => this.openImage(event, image.fullUrl)" t-on-auxclick="stopImagePropagation">
-                            <img t-att-src="image.thumbnailUrl" class="img-thumbnail" style="width: 96px; height: 72px; object-fit: contain; cursor: zoom-in;" alt="Image article VSF"/>
-                        </a>
-                        <img t-else="" t-att-src="image.thumbnailUrl" class="img-thumbnail" style="width: 96px; height: 72px; object-fit: contain;" alt="Image article VSF"/>
+                        <t t-call="rpbm_agent.ArticleThumbnail">
+                            <t t-set="thumbnailSize" t-value="'width: 96px; height: 72px;'"/>
+                        </t>
                     </t>
                 </div>
                 <dl t-if="props.article.technicalDetails and props.article.technicalDetails.length" class="row mb-0 small">
@@ -39,10 +38,18 @@
                         <dd class="col-7 mb-1"><t t-esc="detail.value"/></dd>
                     </t>
                 </dl>
-                <a t-if="props.article.url" t-att-href="props.article.url" target="_blank" class="btn btn-outline-primary btn-sm mt-2" t-on-click.stop="">Fiche technique</a>
                 <p t-if="props.article.detailsUnavailable" class="text-warning small mt-2 mb-0">Détails VSF indisponibles pour cet article.</p>
                 <t t-slot="actions"/>
-        </div>
-    </div>
-</t>
+            </td>
+        </tr>
+    </t>
+
+    <!-- Vignette VSF : un clic simple ouvre l'aperçu ; Ctrl+clic et clic milieu
+         gardent l'ouverture native dans un nouvel onglet (R16). -->
+    <t t-name="rpbm_agent.ArticleThumbnail">
+        <a t-if="image.fullUrl" t-att-href="image.fullUrl" target="_blank" rel="noopener" class="d-inline-block" title="Agrandir l'image de l'article" t-on-click="(event) => this.openImage(event, image.fullUrl)" t-on-auxclick="stopImagePropagation">
+            <img t-att-src="image.thumbnailUrl" class="img-thumbnail" t-attf-style="{{thumbnailSize}} object-fit: contain; cursor: zoom-in;" alt="Image article VSF"/>
+        </a>
+        <img t-else="" t-att-src="image.thumbnailUrl" class="img-thumbnail" t-attf-style="{{thumbnailSize}} object-fit: contain;" alt="Image article VSF"/>
+    </t>
 </templates>

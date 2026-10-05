@@ -8,13 +8,10 @@ export class ArticleComponent extends asyncWidget {
         article: { type: Object },
         selected: { type: Boolean, optional: true },
         onOpenImage: { type: Function, optional: true },
+        onSelect: { type: Function },
         slots: { type: Object, optional: true },
     }
     static template = "rpbm_agent.ArticleComponent";
-
-    get style() {
-        return this.props.selected ? "background-color: azure !important;" : "";
-    }
 
     /**
      * @returns {ArticleVsf}

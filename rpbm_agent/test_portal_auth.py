@@ -147,6 +147,14 @@ def test_xpath_du_devis_ciblent_un_seul_noeud():
         assert len(parent.findall("." + expr)) == 1, expr
 
 
+def test_dialog_principal_en_plein_ecran():
+    static = Path(__file__).resolve().parent / "static" / "src"
+    parent = ET.parse(static / "agent_widget_dialog.xml").getroot().find(
+        "t[@t-name='rpbm_agent.AgentWidgetDialog']")
+    # R22 : sans guillemets intérieurs, Owl lit une variable et le Dialog retombe sur "lg".
+    assert [dialog.get("size") for dialog in parent.iter("Dialog")] == ["'fullscreen'"]
+
+
 def test_xglass_extrait_les_metadonnees_javascript_sans_syntaxe():
     agent = xglass.XGLASS()
     agent.selectedVehiculePage = xglass.bs.BeautifulSoup(
@@ -271,6 +279,8 @@ def test_vsf_recherche_apparie_les_images_signees():
             )
 
     article = FakeSearchAgent().searchEurocodeArticlesClient("6108A")[0]
+    # Lien « Fiche technique » d'une ligne non sélectionnée : jamais relatif au domaine Odoo.
+    assert article.url == "https://client.myvsf.fr/catalogue/article/6108A"
     assert article.images == [
         {
             "thumbnailUrl": "https://client.myvsf.fr/photos/6108A.jpg?p=sm&s=signature-sm",
