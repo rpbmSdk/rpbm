@@ -7,6 +7,7 @@ Les portails sont simulés d'après le comportement réel observé via
 """
 
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -104,6 +105,46 @@ def test_xglass_releve_la_page_de_login_avant_les_pieces():
         pass
     else:
         raise AssertionError("XGlassAuthError attendue pour les pièces expirées")
+
+
+def test_xglass_pieces_am_null_ou_illisible():
+    agent = xglass.XGLASS()
+    famille = SimpleNamespace(withPiecesAm=True, elementSitId=3464)
+
+    def repond(text, json):
+        agent.post = lambda *args, **kwargs: SimpleNamespace(url=xglass.XGLASS_MAIN_URL, text=text, json=json)
+
+    entries = [{"pieceAm": {"id": 3365069}}]
+    repond("{}", lambda: {"selectionsPiecesAmView": entries})
+    assert agent.findSelectionsPiecesAmView(famille) == entries
+    # Famille sans contexte véhicule (trace du 2026-10-02), puis corps `null`.
+    repond("{}", lambda: {"errorCode": "10", "selectionsPiecesAmView": None})
+    assert agent.findSelectionsPiecesAmView(famille) == []
+    repond("null", lambda: None)
+    assert agent.findSelectionsPiecesAmView(famille) == []
+
+    def illisible():
+        raise ValueError("Expecting value")
+
+    repond("<html>Erreur</html>", illisible)
+    try:
+        agent.findSelectionsPiecesAmView(famille)
+    except xglass.XGlassError:
+        pass
+    else:
+        raise AssertionError("XGlassError attendue pour une réponse AM non JSON")
+
+
+def test_xpath_du_devis_ciblent_un_seul_noeud():
+    static = Path(__file__).resolve().parent / "static" / "src"
+    parent = ET.parse(static / "agent_widget_dialog.xml").getroot().find(
+        "t[@t-name='rpbm_agent.AgentWidgetDialog']")
+    devis = ET.parse(static / "agent_widget_dialog_sale_order.xml").getroot().find(
+        "t[@t-name='rpbm_agent.SaleOrderDialog']")
+    exprs = [spec.get("expr") for spec in devis.iter("xpath")]
+    assert len(exprs) == 2, exprs
+    for expr in exprs:
+        assert len(parent.findall("." + expr)) == 1, expr
 
 
 def test_xglass_extrait_les_metadonnees_javascript_sans_syntaxe():

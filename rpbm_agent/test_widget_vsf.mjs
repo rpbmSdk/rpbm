@@ -2,12 +2,23 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
-const source = (await readFile(new URL("./static/src/agent_widget_dialog.js", import.meta.url), "utf8"))
+const load = async (name) => (await readFile(new URL(`./static/src/${name}`, import.meta.url), "utf8"))
     .replace(/^import[\s\S]*?;\n/gm, "")
-    .replace("export class AgentWidgetDialog", "class AgentWidgetDialog");
+    .replace(/^export /gm, "");
 const emptyComponent = class {};
+// Crochets Owl simulés : setup() réel (utils.js compris), effets rejoués à la main.
+const effects = [];
+const rpcCalls = [];
 const context = {
-    asyncWidget: emptyComponent,
+    Component: class { setup() {} },
+    standardWidgetProps: {},
+    useState: (state) => state,
+    useService: (name) => name === "rpc"
+        ? async (route, params) => { rpcCalls.push({ route, params }); return []; }
+        : { add() {} },
+    useEffect: (fn, deps) => effects.push({ fn, deps }),
+    onWillStart() {},
+    onWillUnmount() {},
     Dialog: emptyComponent,
     VehiculeComponent: emptyComponent,
     CalqueComponent: emptyComponent,
@@ -16,7 +27,10 @@ const context = {
     ArticleComponent: emptyComponent,
     VsfImagePreviewDialog: emptyComponent,
 };
-vm.runInNewContext(`${source}\nthis.AgentWidgetDialog = AgentWidgetDialog;`, context);
+vm.runInNewContext(
+    `${await load("utils.js")}\n${await load("agent_widget_dialog.js")}\nthis.AgentWidgetDialog = AgentWidgetDialog;`,
+    context,
+);
 
 const dialog = Object.create(context.AgentWidgetDialog.prototype);
 dialog.state = { baseEurocode: "6108A", baseEurocodeInput: "6108A" };
@@ -48,10 +62,150 @@ dialog.onSelectPieceAM({ pieceAm: { reference: "6574AGABCHM" } });
 assert.equal(dialog.baseEurocode, "6574A");
 assert.equal(dialog.vsfSearchUrl, "https://client.myvsf.fr/catalogue/vitrage?search=6574A");
 
-const articleSource = (await readFile(new URL("./static/src/ArticleComponent.js", import.meta.url), "utf8"))
-    .replace(/^import[\s\S]*?;\n/gm, "")
-    .replace("export class ArticleComponent", "class ArticleComponent");
-vm.runInNewContext(`${articleSource}\nthis.ArticleComponent = ArticleComponent;`, context);
+// Lot D, build A : groupes X'Glass, « Autres marques AM » par famille, VSF sans pièce OE.
+// Les objets créés dans le contexte vm n'ont pas les prototypes de ce module : comparer en JSON.
+const plain = (value) => JSON.parse(JSON.stringify(value));
+const xglassPiece = (id, elementKey, elementSitId, elementSitLibelle) => ({
+    id, elementKey, elementSitId, elementSitLibelle, "element.withPiecesAm": true, pieceOe: { id },
+});
+const outline = (groups) => plain(groups).map(({ titre, familles }) => [
+    titre, familles.map(({ elementSitId, libelle, pieces }) => [elementSitId, libelle, pieces.map(({ id }) => id)]),
+]);
+
+const grouped = Object.create(context.AgentWidgetDialog.prototype);
+grouped.state = {
+    showAllPieces: false,
+    pieces: [
+        xglassPiece(1, "ELEMENTSIT_PRINCIPAUX", 3464, "PARE-BRISE"),
+        xglassPiece(2, "ELEMENTSIT_PRINCIPAUX", 3464, "PARE-BRISE"),
+        xglassPiece(3, "ELEMENTSIT_COMPLEMENTAIRES", 6930, "CALE"),
+        xglassPiece(4, "ELEMENTSIT_COMPLEMENTAIRES", 2958, "JT"),
+        xglassPiece(5, "ELEMENTSIT_COMPLEMENTAIRES", 6930, "CALE"),
+    ],
+};
+const allGroups = [
+    ["Pièces principales", [[3464, "PARE-BRISE", [1, 2]]]],
+    ["Pièces complémentaires", [[6930, "CALE", [3, 5]], [2958, "JT", [4]]]],
+];
+assert.deepEqual(outline(grouped.pieceGroups), allGroups);
+assert.deepEqual(outline(grouped.visiblePieceGroups), allGroups);
+
+// Mode focalisé : la seule famille de la pièce sélectionnée, avec sa seule carte.
+grouped.state.selectedPiece = grouped.state.pieces[3];
+assert.deepEqual(outline(grouped.visiblePieceGroups), [["Pièces complémentaires", [[2958, "JT", [4]]]]]);
+assert.deepEqual(plain(grouped.visibleFamillePieces(grouped.pieceGroups[1].familles[1])).map(({ id }) => id), [4]);
+grouped.showOtherPieces();
+assert.deepEqual(outline(grouped.visiblePieceGroups), allGroups);
+
+// Contexte restauré sans pièce (SO7750) : toutes les familles, aucune carte, section VSF visible.
+Object.assign(grouped.state, { showAllPieces: false, selectedPiece: undefined, selectedPieceAm: undefined });
+Object.assign(grouped, { _restorePending: true, _restoreBaseEurocode: "7310A" });
+assert.deepEqual(outline(grouped.visiblePieceGroups), allGroups);
+assert.equal(grouped.pieceGroups.every(({ familles }) => familles.every(f => !grouped.visibleFamillePieces(f).length)), true);
+assert.equal(grouped.showVsfSection, true);
+
+// Groupes absents et elementKey manquant.
+grouped.state.pieces = [xglassPiece(6, "ELEMENTSIT_COMPLEMENTAIRES", 4212, "RETROVISEUR")];
+assert.deepEqual(outline(grouped.pieceGroups), [["Pièces complémentaires", [[4212, "RETROVISEUR", [6]]]]]);
+grouped.state.pieces = [{ id: 7, elementSitId: 99, pieceOe: { id: 7 } }];
+assert.deepEqual(outline(grouped.pieceGroups), [["Pièces", [[99, "", [7]]]]]);
+grouped.state.pieces = [];
+assert.deepEqual(outline(grouped.pieceGroups), []);
+
+// Encarts « Autres marques AM » : un appel par véhicule et famille, dépliage indépendant.
+const portalCalls = [];
+const am = Object.create(context.AgentWidgetDialog.prototype);
+am.state = { autresAm: {}, autresAmOpen: {}, selectedVehicule: { id: 471612 } };
+am.runAsync = fn => fn();
+am.callPortal = async (route, params) => {
+    portalCalls.push([route, params]);
+    return [{ pieceAm: { id: 3365069, reference: "6108AGNSMVZ1B" } }];
+};
+const pareBrise = { elementSitId: 3464, withPiecesAm: true };
+const cale = { elementSitId: 6930, withPiecesAm: false };
+assert.equal(am.isAutresAmOpen(pareBrise), false);
+await am.onToggleAutresAm(pareBrise);
+assert.equal(am.isAutresAmOpen(pareBrise), true);
+assert.equal(am.isAutresAmOpen(cale), false);
+assert.equal(am.autresAmFor(pareBrise).entries.length, 1);
+assert.equal(am.autresAmFor(cale), undefined);
+await am.onToggleAutresAm(pareBrise);
+assert.equal(am.isAutresAmOpen(pareBrise), false);
+await am.onToggleAutresAm(pareBrise);
+assert.deepEqual(plain(portalCalls), [["/getPieceAm", { element_withPiecesAm: true, elementSitId: 3464 }]]);
+am.clearSelectedPiece();
+assert.equal(am.isAutresAmOpen(pareBrise), true, "désélectionner une pièce ne replie plus les encarts");
+
+// Régression 261002.2 : même planche et famille pour GS600HH et GJ495CP, listes distinctes.
+am.state.selectedVehicule = { id: 471613 };
+assert.equal(am.autresAmFor(pareBrise), undefined);
+assert.equal(am.isAutresAmOpen(pareBrise), false);
+await am.onToggleAutresAm(pareBrise);
+assert.equal(portalCalls.length, 2);
+
+am.callPortal = async () => { throw new Error("X'Glass indisponible"); };
+await assert.rejects(am.loadAutresAm(cale), /indisponible/);
+assert.equal(am.autresAmFor(cale), undefined, "une erreur ne laisse pas d'entrée en cache");
+
+am.auth_agents = async () => {};
+am.restorePortalContext = async () => {};
+await am.reconnectAgents();
+assert.deepEqual(plain(am.state.autresAm), {});
+assert.deepEqual(plain(am.state.autresAmOpen), {});
+
+// Recherche VSF automatique : setup() réel, effet VSF rejoué comme Owl (deps comparées par ===).
+const mount = (data) => {
+    effects.length = 0;
+    rpcCalls.length = 0;
+    const widget = new context.AgentWidgetDialog();
+    widget.props = { record: { data }, close() {} };
+    widget.setup();
+    widget.state.agentsInitialized = true;
+    return widget;
+};
+const runVsfEffect = () => {
+    const effect = effects.at(-1);
+    const deps = effect.deps();
+    if (!effect.previous || deps.some((dep, index) => dep !== effect.previous[index])) {
+        effect.previous = deps;
+        effect.fn(...deps);
+    }
+};
+const vsfSearches = async () => {
+    await new Promise(resolve => setImmediate(resolve));
+    return plain(rpcCalls.filter(({ route }) => route === "/searchBaseEurocode").map(({ params }) => params));
+};
+
+// R12 : une base restaurée seule s'affiche sans lancer de recherche.
+const restored = mount({ rpbm_eurocode_base: "7310A" });
+runVsfEffect();
+assert.equal(restored.baseEurocode, "7310A");
+assert.equal(restored.showVsfSection, true);
+assert.deepEqual(await vsfSearches(), []);
+
+// Ligne « Autres marques AM » sans pièce OE : base posée, section VSF visible, une recherche.
+const noPiece = mount({});
+runVsfEffect();
+assert.equal(noPiece.showVsfSection, false);
+noPiece.onSelectPieceAM({ pieceAm: { id: 3365069, reference: "6108AGNSMVZ1B" } });
+runVsfEffect();
+assert.equal(noPiece.baseEurocode, "6108A");
+assert.equal(noPiece.showVsfSection, true);
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "6108A" }]);
+noPiece.onSelectPieceAM({ pieceAm: { id: 3365070, reference: "6108AGNSMVZ" } });
+runVsfEffect();
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "6108A" }], "même base : pas de nouvelle recherche");
+
+// Restauration pièce OE puis pièce AM : la seconde sélection ne relance pas la recherche en cours.
+const both = mount({ rpbm_eurocode_base: "6108A", rpbm_xglass_piece_id: "1", rpbm_piece_am_id: "3365069" });
+runVsfEffect();
+both.state.selectedPiece = { id: 1 };
+runVsfEffect();
+both.state.selectedPieceAm = { pieceAm: { id: 3365069, reference: "6108AGNSMVZ1B" } };
+runVsfEffect();
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "6108A" }]);
+
+vm.runInNewContext(`${await load("ArticleComponent.js")}\nthis.ArticleComponent = ArticleComponent;`, context);
 
 const openedImages = [];
 const article = Object.create(context.ArticleComponent.prototype);

@@ -555,14 +555,30 @@ class AgentController(Controller):
         }
         pieces = []
         labor_products = _labor_products(request.env)
+        # Drapeaux et clés tracés sans prix ni corps de réponse : ils décideront plus tard quelles
+        # familles montrent l'encart « Autres marques AM » (aujourd'hui toutes, repliées).
+        unknown_keys = {
+            key: len(value) if isinstance(value, (list, dict)) else type(value).__name__
+            for key, value in raw.items() if key not in rawData
+        }
+        if unknown_keys:
+            _logger.info("getPieces %s %s : clés elementSitMapData ignorées %s", plancheId, calqueId, unknown_keys)
 
         for elementKey,Elements in rawData.items():
             for Element in Elements:
+                _logger.info(
+                    "getPieces %s %s : %s elementSitId=%s libellé=%s affichageAm=%s containsPiecesAm=%s "
+                    "elementVitre=%s pièces=%s",
+                    plancheId, calqueId, elementKey, Element.elementSitId, Element.libelle,
+                    getattr(Element, 'affichageAm', None), getattr(Element, 'containsPiecesAm', None),
+                    getattr(Element, 'elementVitre', None), len(Element.pieces),
+                )
                 for XGLasspiece in Element.pieces:
                     piece = XGLasspiece.__dict__
                     piece['elementKey'] = elementKey
                     piece['element.withPiecesAm'] = Element.withPiecesAm
                     piece['elementSitId'] = Element.elementSitId
+                    piece['elementSitLibelle'] = Element.libelle
                     piece['laborOperations'] = [
                         _labor_operation_payload(piece['id'], temps, labor_products)
                         for temps in piece.get('tempsList', [])
@@ -574,13 +590,13 @@ class AgentController(Controller):
     @_touch_agent_lock
     def getPieceAm(self,element_withPiecesAm, pieceId:int=None, elementSitId:int=None):
         _logger.info(f"getPieceAm {element_withPiecesAm} {pieceId} {elementSitId}")
-        # Réutilise XGLASS.findSelectionsPiecesAmView() : la réponse JSON brute
-        # est renvoyée telle quelle, c'est la forme déjà consommée par le widget.
+        # Réutilise XGLASS.findSelectionsPiecesAmView() : la liste `selectionsPiecesAmView` est
+        # renvoyée telle quelle (forme consommée par le widget) ; une réponse illisible y devient
+        # une XGlassError, donc une erreur utilisateur typée ci-dessous.
         element = SimpleNamespace(withPiecesAm=element_withPiecesAm, elementSitId=elementSitId)
         piece = SimpleNamespace(id=pieceId) if pieceId else None
         try:
-            r = xglassAgent.findSelectionsPiecesAmView(element, piece)
-            return r.json().get('selectionsPiecesAmView', [])
+            return xglassAgent.findSelectionsPiecesAmView(element, piece)
         except XGlassError as error:
             _raise_portal_error(
                 error,

@@ -25,6 +25,12 @@ import { VsfImagePreviewDialog } from "./VsfImagePreviewDialog";
  * @typedef {import('./PieceAMComponent').MetaPieceAM}
  */
 
+// Libellés X'Glass `pieceElementFilter.tit.filtre.*` (controllers/xglass_lbl.py).
+const PIECE_GROUP_TITLES = {
+    ELEMENTSIT_PRINCIPAUX: "Pièces principales",
+    ELEMENTSIT_COMPLEMENTAIRES: "Pièces complémentaires",
+};
+
 export class AgentWidgetDialog extends asyncWidget {
     static components = {
         Dialog,
@@ -64,9 +70,9 @@ export class AgentWidgetDialog extends asyncWidget {
             selectedPiece: undefined,
             piecesAm: [],
             selectedPieceAm: undefined,
-            // Encart « AUTRE AM » (R11) : listes par planche + famille X'Glass.
+            // Encarts « AUTRE AM » (R11) : liste et dépliage par véhicule + famille X'Glass.
             autresAm: {},
-            autresAmOpen: false,
+            autresAmOpen: {},
             baseEurocode: undefined,
             baseEurocodeInput: undefined,
             articlesVsf: [],
@@ -178,11 +184,14 @@ export class AgentWidgetDialog extends asyncWidget {
             }
         }, () => [this.selectedPiece])
 
+        // Une ligne « Autres marques AM » choisie sans pièce OE lance aussi la recherche ; une base
+        // restaurée seule, non (R12). Dépendre de la présence d'une sélection, pas de l'objet :
+        // la pièce AM restaurée après la pièce OE relancerait une recherche déjà en cours.
         useEffect(() => {
-            if (this.agentsInitialized && this.selectedPiece && this.baseEurocode) {
+            if (this.agentsInitialized && (this.selectedPiece || this.selectedPieceAm) && this.baseEurocode) {
                 this.onSearchBaseEurocode();
             }
-        }, () => [this.baseEurocode, this.selectedPiece, this.agentsInitialized])
+        }, () => [this.baseEurocode, Boolean(this.selectedPiece || this.selectedPieceAm), this.agentsInitialized])
 
     }
 
@@ -261,8 +270,10 @@ export class AgentWidgetDialog extends asyncWidget {
             try {
                 await this.auth_agents();
                 await this.restorePortalContext();
-                // Aucune liste « AUTRE AM » obtenue avant ou pendant la reconnexion ne survit.
+                // Aucune liste « AUTRE AM » obtenue avant ou pendant la reconnexion ne survit ;
+                // les encarts se replient pour ne pas rester ouverts sur une liste absente.
                 this.state.autresAm = {};
+                this.state.autresAmOpen = {};
             } catch (error) {
                 this.state.reconnectRequired = true;
                 throw error;
@@ -628,11 +639,61 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.selectedPiece && !this.state.showAllPieces ? [this.selectedPiece] : this.pieces;
     }
 
+    /**
+     * Pièces groupées comme sur X'Glass : principales puis complémentaires, et dans chaque groupe
+     * par famille (elementSitId), dans l'ordre reçu du portail. Calculé sur toutes les pièces :
+     * visiblePieces est vide dans un contexte restauré sans pièce, où les familles restent utiles.
+     */
+    get pieceGroups() {
+        const groups = new Map();
+        for (const piece of this.pieces) {
+            const key = piece.elementKey || "";
+            if (!groups.has(key)) {
+                groups.set(key, { key, titre: PIECE_GROUP_TITLES[key] || "Pièces", familles: new Map() });
+            }
+            const familles = groups.get(key).familles;
+            if (!familles.has(piece.elementSitId)) {
+                familles.set(piece.elementSitId, {
+                    elementSitId: piece.elementSitId,
+                    libelle: piece.elementSitLibelle || "",
+                    withPiecesAm: piece["element.withPiecesAm"],
+                    pieces: [],
+                });
+            }
+            familles.get(piece.elementSitId).pieces.push(piece);
+        }
+        return [...groups.values()].map(group => ({ ...group, familles: [...group.familles.values()] }));
+    }
+
+    /** En mode focalisé, seule la famille de la pièce sélectionnée reste affichée. */
+    get visiblePieceGroups() {
+        const pieceId = this.state.showAllPieces ? 0 : this.selectedPieceId;
+        if (!pieceId) {
+            return this.pieceGroups;
+        }
+        return this.pieceGroups
+            .map(group => ({
+                ...group,
+                familles: group.familles.filter(famille => famille.pieces.some(piece => piece.id === pieceId)),
+            }))
+            .filter(group => group.familles.length);
+    }
+
+    visibleFamillePieces(famille) {
+        const visibleIds = new Set(this.visiblePieces.map(piece => piece.id));
+        return famille.pieces.filter(piece => visibleIds.has(piece.id));
+    }
+
     get hasRestoredPieceContext() {
         return Boolean(
             this._restorePending
             && (this._restorePieceId || this._restorePieceOeId || this._restorePieceAmId || this._restoreBaseEurocode)
         );
+    }
+
+    /** Une ligne « Autres marques AM » suffit à ouvrir la recherche VSF, même sans pièce OE. */
+    get showVsfSection() {
+        return Boolean(this.selectedPiece || this.selectedPieceAm || this.hasRestoredPieceContext);
     }
 
     get showAllPieces() {
@@ -679,7 +740,6 @@ export class AgentWidgetDialog extends asyncWidget {
     clearSelectedPiece(preserveRestoredBase = false) {
         this.state.selectedPiece = undefined;
         this.state.selectedPieceAm = undefined;
-        this.state.autresAmOpen = false;
         if (!preserveRestoredBase) {
             this.setBaseEurocode(undefined);
         }
@@ -735,39 +795,41 @@ export class AgentWidgetDialog extends asyncWidget {
      * La liste « AUTRE AM » est celle de la famille X'Glass pour le véhicule : planche et
      * famille sont partagées entre véhicules (26881-3464 pour GS600HH et GJ495CP, recette R11).
      */
-    autresAmKey(piece) {
-        return `${this.selectedVehicule?.id}-${piece.elementSitId}`;
+    autresAmKey(famille) {
+        return `${this.selectedVehicule?.id}-${famille.elementSitId}`;
     }
 
-    get autresAm() {
-        return this.selectedPiece ? this.state.autresAm[this.autresAmKey(this.selectedPiece)] : undefined;
+    autresAmFor(famille) {
+        return this.state.autresAm[this.autresAmKey(famille)];
     }
 
-    get autresAmOpen() {
-        return this.state.autresAmOpen;
+    isAutresAmOpen(famille) {
+        return Boolean(this.state.autresAmOpen[this.autresAmKey(famille)]);
     }
 
-    async onToggleAutresAm() {
-        this.state.autresAmOpen = !this.state.autresAmOpen;
-        if (this.state.autresAmOpen && this.selectedPiece) {
-            await this.runAsync(() => this.loadAutresAm(this.selectedPiece), "Chargement des autres marques AM...");
+    async onToggleAutresAm(famille) {
+        const key = this.autresAmKey(famille);
+        const open = !this.state.autresAmOpen[key];
+        this.state.autresAmOpen = { ...this.state.autresAmOpen, [key]: open };
+        if (open) {
+            await this.runAsync(() => this.loadAutresAm(famille), "Chargement des autres marques AM...");
         }
     }
 
     /**
      * Sans pieceId, /getPieceAm interroge X'Glass au niveau famille (idElementSit) :
-     * c'est l'encart « AUTRE AM » du portail. Un seul appel par famille.
+     * c'est l'encart « AUTRE AM » du portail. Un seul appel par véhicule et famille.
      */
-    async loadAutresAm(piece) {
-        const key = this.autresAmKey(piece);
+    async loadAutresAm(famille) {
+        const key = this.autresAmKey(famille);
         if (this.state.autresAm[key]) {
             return;
         }
         this.state.autresAm = { ...this.state.autresAm, [key]: { loading: true } };
         try {
             const entries = await this.callPortal("/getPieceAm", {
-                element_withPiecesAm: piece['element.withPiecesAm'],
-                elementSitId: piece.elementSitId,
+                element_withPiecesAm: famille.withPiecesAm,
+                elementSitId: famille.elementSitId,
             });
             this.state.autresAm = { ...this.state.autresAm, [key]: { entries: entries || [] } };
         } catch (error) {

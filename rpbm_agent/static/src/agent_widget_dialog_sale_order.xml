@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.SaleOrderDialog" t-inherit="rpbm_agent.AgentWidgetDialog" t-inherit-mode="primary">
-        <xpath expr="//section[@t-if='selectedPiece or hasRestoredPieceContext']" position="before">
+        <xpath expr="//section[@name='vsf_section']" position="before">
             <section t-if="selectedPiece" class="mb-4">
                 <h5>4. Main d'œuvre X'Glass</h5>
                 <p class="form-text">Sélectionnez les opérations à ajouter au devis. Le tarif est celui du service Odoo associé.</p>
@@ -23,7 +23,7 @@
                 <span t-else="" class="text-muted">Aucune opération de main-d'œuvre n'est fournie pour cette pièce.</span>
             </section>
         </xpath>
-        <xpath expr="//section[@t-if='selectedPiece or hasRestoredPieceContext']/h5" position="replace">
+        <xpath expr="//section[@name='vsf_section']/h5" position="replace">
             <h5>5. Article VSF</h5>
         </xpath>
     </t>

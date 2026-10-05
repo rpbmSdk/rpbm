@@ -431,5 +431,10 @@ class XGLASS:
             data=data,
         )
         self.ensure_logged(r)
-        return r
+        # Sans contexte véhicule, X'Glass répond `{"errorCode": "10", "selectionsPiecesAmView": null}`
+        # (trace du 2026-10-02) ; un corps `null` ou non JSON ne doit pas finir en AttributeError.
+        try:
+            return (r.json() or {}).get('selectionsPiecesAmView') or []
+        except ValueError as e:
+            raise XGlassError(f"Réponse X'Glass illisible (pièces AM) : {e}") from e
     
