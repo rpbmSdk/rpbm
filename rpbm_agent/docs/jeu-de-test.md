@@ -290,7 +290,7 @@ relevé que « Retirer du devis » manquait après « Ajouter au devis » (R28, 
      `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` et `rpbm_constructor_reference`
      inchangés.
    - Attendu : un seul devis, non enregistré, lié à l'opportunité.
-   - Attendu (lot E2, non rejoué ; au lot E1 : restauration immédiate, voir l'en-tête) : la fenêtre
+   - Attendu (lot E2, **vérifié le 2026-10-06** : voir SO-10 ; au lot E1 : restauration immédiate, voir l'en-tête) : la fenêtre
      du devis s'ouvre seule **sans authentification X'Glass** ni seconde connexion : encart « Dossier »
      (véhicule, catégorie, pièce concernée, libellé de la pièce, article principal) et recherche
      `6108A` immédiate. « Charger X'Glass » restaure alors le véhicule mémorisé, la pièce, la pièce AM,
@@ -591,7 +591,14 @@ au portail VSF impossible. Vérifiez les identifiants configurés. », sans reco
 
 ### SO-10 — VSF d'abord, X'Glass à la demande (lot E2)
 
-Scénario du build `17.0.261006.2`, **recette à faire**. Étapes 1 à 5 : sans écriture enregistrée (même protocole que SO-08, formulaire abandonné à la fin) ; étape 6 : avec écriture, sur l'opportunité de recette de CRM-07.
+Scénario du build `17.0.261006.2`. Étapes 1 à 5 : sans écriture enregistrée (même protocole que SO-08, formulaire abandonné à la fin) ; étape 6 : avec écriture, sur l'opportunité de recette de CRM-07.
+
+**Recette réussie le 2026-10-06**, en `17.0.261006.2` (commits `afa51df` code et `a562fa7` docs), sur un devis de recette puis sur l'opportunité de recette de CRM-07.
+- **Étapes 1 à 5, sans écriture enregistrée** (35 s) : ouverture sans `/rpbm_agent_auth` et avec un seul `/searchBaseEurocode` ; tableau et encart « Dossier » corrects (véhicule, catégorie, pièce concernée, article principal, bouton « Charger X'Glass »), ni « 1. Véhicule » ni main-d'œuvre, « Confirmer » actif ; sélection de `6574AGACIMVZ` définie comme article principal ; « Charger X'Glass » : un seul `/rpbm_agent_auth`, chaîne X'Glass sans nouvelle recherche VSF, encart remplacé par « 1. Véhicule », « 2. Catégorie », « 3. Pièce », « 4. Main d'œuvre X'Glass » et « 5. Article VSF », tableau, ligne sélectionnée et statut « Article principal » conservés, pièce concernée à la valeur enregistrée ; « Annuler » : un `/rpbm_agent_close`, formulaire abandonné ; réouverture puis fermeture sans X'Glass : aucun `/rpbm_agent_close` nouveau ; ni erreur de console ni `web_save`.
+- **Étape 6, avec écriture** (34 s, CRM-07 et SO-06 comprises) : le dialog de l'opportunité est inchangé (authentification X'Glass, restauration, « 4. Base Eurocode », aucune recherche VSF) ; « Créer un devis » donne une seule sauvegarde de l'opportunité et un seul `call_button`, et le dialog du devis s'ouvre aussitôt **sans seconde authentification**, avec dans l'encart la catégorie, la base et le libellé de pièce écrit par « Créer un devis » ; côté devis ne partent que `/searchBaseEurocode`, `/getVsfArticleDetails` et `/doesProductExists` ; `6108AGACHM` défini comme article principal puis « Confirmer » sans X'Glass : aucun appel véhicule (`/getOdooVehicule`, `/createVehicule`) ni X'Glass, le formulaire du devis reçoit l'Eurocode `6108AGACHM` et garde la base et le véhicule. Sur l'instance de recette, le champ « catégorie » du formulaire du devis est masqué par une vue Studio ; il est pourtant chargé, puisque l'encart l'affiche. Le devis neuf est abandonné sans être enregistré.
+- **Relevés en lecture seule avant et après** : seule écriture, l'opportunité de recette (`write_date`, et `rpbm_xglass_piece_label` passé de vide à « PARE-BRISE — réf. G27006RA3E ») ; aucun devis, ligne, produit ni véhicule créé ; verrou vide à la fin.
+- **Non-régression** : la recette du tableau VSF en plein écran, adaptée à E2 (30 s, 10 critères, aucun `/rpbm_agent_auth` ni `/rpbm_agent_close`), et celle du lot correctif (SO-08 et SO-09, 22 s, 3 critères) sont réussies.
+- **Non jouées** : l'étape 7 (facultative) ; l'échec d'authentification affiché dans l'encart, la fermeture pendant « Charger X'Glass », la création concurrente par deux vendeurs et la reprise d'un verrou expiré par un autre utilisateur sont couverts hors réseau ou non rejouables à la demande.
 
 Dossier : un devis brouillon lié à une opportunité qui a une base mémorisée (`6574A`), un véhicule, une catégorie et une pièce mémorisés, sans ligne. Relever par RPC, avant et après : `rpbm_agent.session_lock`, `rpbm_xglass_vehicle_id`, `write_date` et les lignes du devis.
 
@@ -621,7 +628,7 @@ Non rejouable à la demande : des identifiants VSF refusés donnent « Connexion
 
 Recette sans écriture du tableau VSF en plein écran (build `17.0.261005.2`) : **recette réussie le
 2026-10-05 sur le build `6cbecd3`**, sans écriture métier. Rejouée sur un devis, sans écriture, le
-2026-10-06 sur le build `44b86e0` (`17.0.261006.1`), comme non-régression du lot correctif : réussie.
+2026-10-06 sur le build `44b86e0` (`17.0.261006.1`), comme non-régression du lot correctif : réussie ; rejouée de même sur le build du lot E2 (`17.0.261006.2`), adaptée à l'ouverture sans X'Glass : réussie.
 Les vérifications qui restaient à faire à la main (clic milieu sur « Ouvrir dans un nouvel onglet » et
 sur une vignette, étapes 8 et 9 ; clic simple sur « Fiche technique », étape 9 ; affichage de la
 recherche VSF après connexion, étape 8) ont été faites par l'utilisateur le 2026-10-06 : vérifiées à

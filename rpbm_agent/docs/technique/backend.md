@@ -179,7 +179,7 @@ Exemple de payload `VSFArticle` :
 
 ### VSF, session à la demande (lot E2)
 
-Lot E2 « VSF d'abord, X'Glass à la demande » (`17.0.261006.2`, recette à faire, [SO-10](../jeu-de-test.md#so-10--vsf-dabord-xglass-à-la-demande-lot-e2)). Sur un devis, la recherche VSF ne dépend plus de l'authentification X'Glass ni de son verrou : `/rpbm_agent_auth` ne connecte plus que X'Glass, et le serveur ouvre la session VSF au premier appel.
+Lot E2 « VSF d'abord, X'Glass à la demande » (`17.0.261006.2`, commits `afa51df` code et `a562fa7` docs, recette live réussie le 2026-10-06, [SO-10](../jeu-de-test.md#so-10--vsf-dabord-xglass-à-la-demande-lot-e2)). Sur un devis, la recherche VSF ne dépend plus de l'authentification X'Glass ni de son verrou : `/rpbm_agent_auth` ne connecte plus que X'Glass, et le serveur ouvre la session VSF au premier appel.
 
 **Pourquoi c'est possible.** Trace T1 (2026-10-06, deux connexions sur le compte partagé) : A se connecte et cherche `6108A` (21 lignes) ; B se connecte avec le même compte ; A cherche de nouveau, puis B cherche ; B se déconnecte (`POST /deconnexion`) ; A cherche encore. **Chaque recherche aboutit** : VSF accepte plusieurs sessions simultanées sur un même compte, et la déconnexion d'une session n'invalide pas les autres. Nos connexions ne déconnectent donc pas les vendeurs connectés à VSF dans leur navigateur. Cela lève le préalable 1 d'E2 et écarte l'hypothèse « compte utilisé ailleurs » de R23 (voir [état de session partagée](#état-de-session-partagée)).
 

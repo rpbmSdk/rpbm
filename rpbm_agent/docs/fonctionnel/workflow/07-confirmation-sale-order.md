@@ -41,7 +41,7 @@ liée, le widget est masqué.
 
 ## Devis sans X'Glass (lot E2)
 
-Lot E2 « VSF d'abord, X'Glass à la demande » (`17.0.261006.2`, recette à faire, [SO-10](../../jeu-de-test.md#so-10--vsf-dabord-xglass-à-la-demande-lot-e2)). Le véhicule et la pièce se choisissent déjà sur l'opportunité (lot E1) ; sur le devis, il reste surtout à choisir les articles VSF. La fenêtre du devis s'affiche donc tout de suite, **sans connexion à X'Glass** (l'ancien chemin demandait 15 à 22 s avant le tableau) :
+Lot E2 « VSF d'abord, X'Glass à la demande » (`17.0.261006.2`, commits `afa51df` code et `a562fa7` docs, recette live réussie le 2026-10-06, [SO-10](../../jeu-de-test.md#so-10--vsf-dabord-xglass-à-la-demande-lot-e2)). Le véhicule et la pièce se choisissent déjà sur l'opportunité (lot E1) ; sur le devis, il reste surtout à choisir les articles VSF. La fenêtre du devis s'affiche donc tout de suite, **sans connexion à X'Glass** (l'ancien chemin demandait 15 à 22 s avant le tableau) :
 
 - un encart **« Dossier »**, en lecture seule, reprend les champs de l'opportunité : véhicule, catégorie, pièce concernée, pièce X'Glass (libellé mémorisé, « — » pour un dossier confirmé avant le lot) et article principal ;
 - la recherche VSF part aussitôt sur la base enregistrée, même s'il n'y a qu'une base ou une ligne « Autres marques AM » ;
