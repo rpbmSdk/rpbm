@@ -43,4 +43,16 @@ Sur un devis lié à une opportunité, le bouton « Ajouter au devis » ajoute u
 
 Les dimensions sans unité du bloc VSF « Dimensions » sont interprétées en millimètres ; les unités explicites restent converties vers cette même unité.
 
+## Retirer du devis (R28)
+
+Une fois la ligne ajoutée par « Ajouter au devis », le bouton devient « Retirer du devis » : il supprime cette ligne, et elle seule, du devis ouvert (modification du formulaire, enregistrée avec lui). Le widget retrouve la ligne par son **produit** parmi les lignes du devis ; il garde, pour la durée de la fenêtre, le produit des seuls articles qu'il a ajoutés.
+
+| Situation | Ce que le vendeur voit |
+|---|---|
+| Produit absent du devis | « Ajouter au devis » |
+| Ligne ajoutée par le widget pendant cette fenêtre | « Retirer du devis » |
+| Produit déjà présent à l'ouverture de la fenêtre (ligne manuelle, ou ajoutée par une fenêtre précédente) | « Article déjà présent dans le devis. », sans ajout ni retrait : la ligne se supprime dans la liste native du devis |
+
+Lot correctif `17.0.261006.1` (recette live réussie le 2026-10-06). Avant lui, le widget cherchait la ligne par l'objet mémorisé à l'ajout, que le formulaire ne conserve pas toujours : après « Ajouter au devis », « Retirer du devis » manquait et l'article affichait à tort « Article déjà présent dans le devis. ». La ligne ajoutée était pourtant correcte (quantité et prix). Les lignes de main-d'œuvre gardent leur propre retrait, par clé de provenance ([7](07-confirmation-sale-order.md)). Détail technique : [frontend](../../technique/frontend.md#ligne-de-devis-ajoutée-par-le-widget-r28) ; recette : [SO-08](../../jeu-de-test.md#so-08--retirer-du-devis-lot-correctif-du-2026-10-06-r28).
+
 Détail du champ : [technique/champs/product-product.md](../../technique/champs/product-product.md).

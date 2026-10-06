@@ -142,7 +142,7 @@ la mise à jour pour éviter un affichage en double.
 `vsf.py`/`xglass.py` exposent chacun une paire d'exceptions typées (`VSFError`/`VSFAuthError`, `XGlassError`/`XGlassAuthError`) plutôt que d'avaler silencieusement les échecs ou de lever des `Exception` nues :
 - Toutes les requêtes portail passent par des wrappers `get()`/`post()` avec timeout (20 s) et conversion des erreurs réseau (`requests.exceptions.RequestException`) en `VSFError`/`XGlassError`.
 - `auth()` vérifie réellement le succès de la connexion (URL finale après redirections) au lieu de retourner une réponse jamais inspectée, et lève `XGlassAuthError`/`VSFAuthError` en cas d'échec — voir [Authentification des portails](#authentification-des-portails) pour le détail des deux mécanismes.
-- Les recherches (`searchImmatriculation`, `searchBaseEurocode`, `getPieceAm`) distinguent "recherche légitimement sans résultat" (`[]`, comportement inchangé) d'une vraie erreur portail, qui remonte en `odoo.exceptions.UserError` — visible nativement par l'utilisateur via l'infrastructure JSON-RPC standard d'Odoo.
+- Les recherches (`searchImmatriculation`, `searchBaseEurocode`, `getPieceAm`) distinguent "recherche légitimement sans résultat" (`[]`, comportement inchangé) d'une vraie erreur portail, qui remonte en `odoo.exceptions.UserError` — visible nativement par l'utilisateur via l'infrastructure JSON-RPC standard d'Odoo. Pour VSF, la page « aucun résultat » est reconnue comme une recherche sans résultat depuis le lot `17.0.261006.1` ([backend](backend.md#recherche-sans-résultat-r24)) ; auparavant elle remontait en « portail VSF inaccessible ».
 - Côté widget, `runAsync()` (`utils.js`) affiche désormais une notification (service Odoo `notification`, type `danger`) en plus du `console.error` existant.
 
 ## Authentification des portails
@@ -159,6 +159,7 @@ Comportements vérifiés contre les portails réels (transcriptions HTTP obtenue
 **VSF** (Laravel)
 - Succès = redirection vers l'accueil ; échec = retour sur `/identification`. Le test porte donc sur l'URL finale.
 - Ne pas tester la présence d'un champ `_token` : les pages authentifiées en contiennent un aussi (formulaire de déconnexion), ce qui faisait échouer une connexion pourtant réussie.
+- Une recherche sans résultat n'est ni une erreur ni une session expirée : `GET /catalogue/vitrage?search=<valeur>` répond 200, authentifié, avec la page « Aucun résultat ne correspond à votre recherche. » et sans `#articles-list-container` (trace du 2026-10-06 : `9999Z`, `61-08A`, `A+B &C D` ; `6108a` donne les mêmes 21 articles que `6108A`, VSF ignore la casse). Une session expirée se reconnaît à l'URL de connexion, jamais à l'absence de liste ; voir [backend](backend.md#recherche-sans-résultat-r24).
 
 ## Débogage des portails
 

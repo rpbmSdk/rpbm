@@ -27,14 +27,14 @@ Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lectu
 | `/getPlanche` | `vehiculeId: int` | Re-sélectionne le véhicule côté portail et retourne la "planche" ; utilisé par le widget uniquement pour restaurer le contexte après reconnexion | X'Glass |
 | `/getPieces` | `plancheId: int, calqueId: int` | Récupère et aplatit les pièces X'Glass d'une catégorie, principales puis complémentaires, dans l'ordre du portail ; chaque pièce porte son groupe (`elementKey`), sa famille (`elementSitId`, `elementSitLibelle`) et `laborOperations` (opérations de main-d'œuvre T1/T2/T3 avec `productId` issu de `rpbm_agent.labor_product_t*`). Voir [lot D, build A](#getpieces-et-getpieceam-lot-d-build-a) | X'Glass, `ir.config_parameter` |
 | `/getPieceAm` | `element_withPiecesAm, pieceId=None, elementSitId=None` | Récupère les pièces après-marché associées à une pièce (« Équivalence AM »), ou, sans `pieceId`, à une famille (encart « Autres marques AM »), via `XGLASS.findSelectionsPiecesAmView()`. Retourne toujours une liste (`null` ou absence = liste vide) ; corps non JSON = erreur utilisateur. Voir [lot D, build A](#getpieces-et-getpieceam-lot-d-build-a) | X'Glass |
-| `/searchBaseEurocode` | `baseEurocode: str` | Recherche les articles VSF correspondant à une base eurocode | VSF |
+| `/searchBaseEurocode` | `baseEurocode: str` | Recherche les articles VSF correspondant à une base eurocode. Une base sans résultat renvoie une liste vide, pas une erreur (lot correctif `17.0.261006.1`, voir [Recherche sans résultat](#recherche-sans-résultat-r24)) | VSF |
 | `/getVsfArticleDetails` | `articleVsfInfo: dict, enrichSuggestions=True` | Lit la fiche de l'article sélectionné : images pleine taille, dimensions, caractéristiques et suggestions VSF (fiches des suggestions lues aussi si `enrichSuggestions`, en parallèle : au plus `MAX_PARALLEL_SUGGESTIONS` = 4 requêtes simultanées, ordre du carrousel conservé) | VSF |
 | `/doesProductExists` | `articleVsfInfo: dict` | Recherche le produit d'un article VSF (`_find_existing_product`) : code VSF (`rpbm_eurocode`) d'abord, puis référence interne et nom exact unique pour les seuls produits sans eurocode ; jamais un produit qui porte l'eurocode d'un autre article | `product.product`, `product.template` |
 | `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant (même recherche) ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template | `product.product`, `product.template`, `product.supplierinfo` |
 
 ### Rattachement d'un article VSF à un produit (lot E1.1)
 
-`_find_existing_product(env, product_code, eurocode, product_name)` (`main.py`) est la recherche commune de `/doesProductExists` et de `/createProduct`. `product_code` est la référence interne attendue (`_article_constructor_reference` : référence constructeur, ou code VSF si elle est absente), `eurocode` le code VSF de l'article et `product_name` son nom. Version `17.0.261005.4`, recette à faire.
+`_find_existing_product(env, product_code, eurocode, product_name)` (`main.py`) est la recherche commune de `/doesProductExists` et de `/createProduct`. `product_code` est la référence interne attendue (`_article_constructor_reference` : référence constructeur, ou code VSF si elle est absente), `eurocode` le code VSF de l'article et `product_name` son nom. Version `17.0.261005.4`, recette live réussie le 2026-10-05 : à l'étape 1 de SO-07, `6108AXSR` affiche « Article absent de la base Odoo » et le produit `6574AXSH` n'est plus proposé (VSF ne suggérant plus `6108AXSR`, le contrôle a porté sur sa ligne principale). Le test Odoo ci-dessous n'a pas été exécuté.
 
 | Rang | Critère | Condition | Résultat retenu | `matched_by` |
 |---|---|---|---|---|
@@ -48,7 +48,7 @@ Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lectu
 
 **Origine.** L'ancien ordre (référence interne, eurocode, nom) laissait le nom suffire : la suggestion VSF `6108AXSR` « GEL CAPTEUR SILICONE », sans produit propre, était rattachée au produit `6574AXSH`, seul produit de ce nom et gel d'un autre article. `/createProduct` applique la même recherche : sans produit trouvé, il crée le produit avec `rpbm_eurocode` égal au code VSF ([9](../fonctionnel/workflow/09-creation-produit.md)).
 
-**Contrôle.** `tests/test_find_existing_product.py` (`TransactionCase`, importé dans `tests/__init__.py`) compte six tests, avec des valeurs propres au test (`TEST6574AXSH`, `TEST6108AXSR`, « GEL CAPTEUR SILICONE (test E1.1) ») : le résultat ne dépend pas des produits de la base. Ils couvrent le nom d'un produit portant un autre eurocode (non retenu : le cas d'origine rejoué), l'eurocode avant la référence, la référence d'un produit sans eurocode (`NULL` ou chaîne vide), la référence d'un produit portant un autre eurocode (non retenue, mais retenue si l'eurocode n'est pas fourni), le nom unique d'un ancien produit et deux anciens produits de même nom (non retenus). Ils demandent une base PostgreSQL : ils tournent dans le lanceur Odoo (`--test-enable`) du build Odoo.sh, pas sur le poste de développement, qui n'en a pas.
+**Contrôle.** `tests/test_find_existing_product.py` (`TransactionCase`, importé dans `tests/__init__.py`) compte six tests, avec des valeurs propres au test (`TEST6574AXSH`, `TEST6108AXSR`, « GEL CAPTEUR SILICONE (test E1.1) ») : le résultat ne dépend pas des produits de la base. Ils couvrent le nom d'un produit portant un autre eurocode (non retenu : le cas d'origine rejoué), l'eurocode avant la référence, la référence d'un produit sans eurocode (`NULL` ou chaîne vide), la référence d'un produit portant un autre eurocode (non retenue, mais retenue si l'eurocode n'est pas fourni), le nom unique d'un ancien produit et deux anciens produits de même nom (non retenus). Ils demandent une base PostgreSQL et le lanceur Odoo avec `--test-enable`. Le poste de développement n'a pas PostgreSQL et le build de staging met le module à jour sans `--test-enable` : ces tests **n'ont pas été exécutés** au 2026-10-06. Pour les jouer : un build Odoo.sh de développement, qui joue les tests, ou un Odoo 17 local avec PostgreSQL ; le choix est à faire (point ouvert).
 
 ### `/getPieces` et `/getPieceAm` (lot D, build A)
 
@@ -158,7 +158,7 @@ Fichier statique : un dict `LIBS` (~1440 entrées) recopiant les libellés d'int
 
 - **Portail** : `https://client.myvsf.fr`, authentification formulaire classique avec jeton CSRF caché (`<input name="_token">`) + session cookie.
 - `VSFAgent` n'a **pas de méthode `close()`** (contrairement à `XGLASS`).
-- `searchEurocodeArticlesClient()` : récupère d'abord la liste d'IDs d'articles + un jeton CSRF meta depuis la page HTML de résultats, puis interroge l'endpoint AJAX `/catalogue/articles-client` (JSON), et fusionne ce JSON avec les informations extraites directement des lignes `<tr class="product-line">` de la page HTML. Dans la première cellule, chaque lien `data-fslightbox` plein format est apparié à sa miniature pour produire `images[{thumbnailUrl, fullUrl}]` ; les signatures `sm` et `xlg` restent celles servies par VSF. L'`url` de fiche, lue dans la deuxième cellule, passe par `_absolute_url` dès cette extraction (`extractProductInfo`, build `17.0.261005.2`), comme `getArticleDetails` le faisait déjà à la sélection : le lien « Fiche technique » d'une ligne non sélectionnée a ainsi une URL VSF complète, que le `href` de la page soit relatif ou absolu. Le matching reste manuel sur `code`.
+- `searchEurocodeArticlesClient()` : récupère d'abord la liste d'IDs d'articles + un jeton CSRF meta depuis la page HTML de résultats, puis interroge l'endpoint AJAX `/catalogue/articles-client` (JSON), et fusionne ce JSON avec les informations extraites directement des lignes `<tr class="product-line">` de la page HTML. Dans la première cellule, chaque lien `data-fslightbox` plein format est apparié à sa miniature pour produire `images[{thumbnailUrl, fullUrl}]` ; les signatures `sm` et `xlg` restent celles servies par VSF. L'`url` de fiche, lue dans la deuxième cellule, passe par `_absolute_url` dès cette extraction (`extractProductInfo`, build `17.0.261005.2`), comme `getArticleDetails` le faisait déjà à la sélection : le lien « Fiche technique » d'une ligne non sélectionnée a ainsi une URL VSF complète, que le `href` de la page soit relatif ou absolu. Le matching reste manuel sur `code`. Sans liste d'articles, une page « aucun résultat » de VSF renvoie `[]` sans requête `articles-client` (voir [Recherche sans résultat](#recherche-sans-résultat-r24)).
 - `getArticleDetails()` lit une fiche article authentifiée : caractéristiques libellé/valeur, dimensions converties en millimètres, images `p=xlg` réellement signées par VSF, et cartes du carrousel `#article-reference-complementaires-carousel`. Il conserve les paires d'images de la recherche ; sans elles, il ne lit que `#carousel-article-photos` quand ce conteneur existe, excluant `#carousel-modele-photos` (repli page entière pour l'ancien HTML et les fixtures). Il ne synthétise jamais une URL pleine taille depuis une miniature, car la signature dépend du format demandé.
 - `VSFArticle.__init__` calcule `prixVenteRPBM = prixVente * (1 - remiseRPBM)` à partir de `rpbm_agent.vsf_discount` (défaut de compatibilité `0.2`). `VSFArticle` n'expose aucun champ `id` — seul `code` sert de clé (voir implication côté frontend dans l'[état des lieux](../etat-des-lieux.md)).
 
@@ -176,6 +176,30 @@ Exemple de payload `VSFArticle` :
   "url": "https://client.myvsf.fr/catalogue/article/EA01RGPR5RQ"
 }
 ```
+
+### Recherche sans résultat (R24)
+
+Lot correctif `17.0.261006.1` (commit `44b86e0`), recette live réussie le 2026-10-06 sans écriture : `9999Z` affiche « Aucun article VSF pour « 9999Z ». », sans notification d'erreur ([SO-09](../jeu-de-test.md#so-09--base-sans-résultat-lot-correctif-du-2026-10-06-r24), étape 1 ; les autres étapes, facultatives, n'ont pas été jouées).
+
+**Trace réelle** (2026-10-06, une connexion VSF) de `GET /catalogue/vitrage?search=<valeur>` :
+
+| Valeur | HTTP | Liste d'articles | Résultat |
+|---|---|---|---|
+| `6108A` | 200 | présente | 21 articles |
+| `6108a` | 200 | présente | 21 articles (VSF ignore la casse) |
+| `9999Z` | 200 | absente | page « Aucun résultat ne correspond à votre recherche. » |
+| `A+B &C D` | 200 | absente | même page |
+| `61-08A` | 200 | absente | même page |
+
+VSF répond donc à une base sans article par une page 200 authentifiée, normale, **sans** `#articles-list-container` : ce n'est ni une panne ni une session expirée.
+
+- **Avant le lot.** `searchEurocodeArticlesClient()` levait `VSFError` (« Conteneur articles introuvable sur la page de résultats VSF (session expirée ?) ») dès que la liste manquait, et `/searchBaseEurocode` convertissait toute `VSFError` en « Recherche impossible : le portail VSF est inaccessible. » : toute base sans résultat, même au bon format, passait pour une panne (recette R13 à R17, 2026-10-05).
+- **Désormais.** Sans `#articles-list-container`, la méthode renvoie `[]` si le `#catalog-container` de la page contient l'image `/img/no-result.png` ou le texte « Aucun résultat ne correspond à votre recherche » ; elle ne fait alors aucune requête `articles-client`. La route renvoie `[]` au widget, qui affiche « Aucun article VSF pour « *base* ». » ([frontend](frontend.md#recherche-sans-résultat-r24)).
+- **Page inattendue.** Sans liste d'articles ni marqueur « aucun résultat », la méthode lève `VSFError("Page de résultats VSF inattendue, ni liste d'articles ni message « aucun résultat ».")` : le message ne parle plus de session. `main.py` est inchangé, **voulu** (décision du 2026-10-06) : la route convertit toujours une `VSFError` en « Recherche impossible : le portail VSF est inaccessible. », parce qu'une page VSF de structure inattendue reste, pour l'utilisateur, un incident du portail ; le message exact n'est que dans le journal serveur.
+- **Session expirée.** Elle n'est pas confondue avec « aucun résultat » : elle se détecte avant tout parsing, par l'URL de connexion (`ensure_logged()` lève `VSFAuthError`, donc `AgentSessionExpiredError` côté widget).
+- **Rejeu.** Après une `AgentSessionExpiredError`, le widget se reconnecte et rejoue la requête une seule fois (`callPortal`) : une saisie peut donc produire deux requêtes `/searchBaseEurocode`, sans double déclenchement. Ce rejeu est voulu ; avant le lot, c'est lui qui échouait avec le message trompeur.
+- **Casse.** VSF ignore la casse (`6108a` donne les mêmes 21 articles que `6108A`) ; le widget ne la normalise pas.
+- **Contrôle.** `test_portal_auth.py` : `test_vsf_recherche_sans_resultat_sans_post` (image, texte ou les deux : `[]` et aucun POST) et `test_vsf_recherche_page_inattendue` (une page sans liste ni message, ou avec un conteneur de catalogue sans marqueur, lève une `VSFError` qui ne parle pas de session).
 
 ## État de session partagée
 

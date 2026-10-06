@@ -24,6 +24,20 @@ Les résultats s'affichent dans un tableau, une ligne par article, dans le dialo
 Le code VSF est l'eurocode complet : ses caractères tombent dans les mêmes colonnes d'une ligne à
 l'autre, sans séparation ajoutée entre les rangs.
 
+**Recherche sans résultat.** Quand VSF ne trouve aucun article pour la base (base inexistante ou mal
+formée, par exemple `9999Z` ou `61-08A`), la section n'affiche pas de tableau mais « Aucun article VSF
+pour « *base* ». », sans notification d'erreur : une base sans résultat n'est pas une panne. Le
+message cite la base qui vient d'être cherchée ; il disparaît dès qu'une nouvelle recherche part ou
+que la pièce est désélectionnée. Relancer « Rechercher sur VSF » sur la même base sans résultat refait
+une recherche. « Recherche impossible : le portail VSF est inaccessible. » reste le message d'une
+vraie panne du portail, ou d'une page de résultats que le widget ne comprend pas (le détail figure
+alors dans le journal serveur). Une valeur saisie dans le champ part au portail dès sa validation, y
+compris par la simple perte de focus de la fenêtre ; si la session VSF a expiré entre-temps, le widget
+se reconnecte et rejoue la recherche une fois, sans double déclenchement. Sur l'opportunité, qui ne
+cherche plus sur VSF, il n'y a ni recherche ni message. Lot correctif `17.0.261006.1` (R24), recette live réussie le 2026-10-06 : détail
+technique dans le [backend](../../technique/backend.md#recherche-sans-résultat-r24), recette dans
+[SO-09](../../jeu-de-test.md#so-09--base-sans-résultat-lot-correctif-du-2026-10-06-r24).
+
 Un clic sur une ligne sélectionne ou désélectionne l'article ; la ligne sélectionnée est
 surlignée. Une ligne de détail s'ouvre alors juste en dessous, avec toutes les vignettes de
 l'article, ses caractéristiques techniques (ou « Détails VSF indisponibles » si sa fiche n'a pas
@@ -46,7 +60,7 @@ font défiler en boucle les seules photos de l'article dans l'aperçu, quelle qu
 ouverte ; les photos du modèle sont exclues. Recette live du tableau, qui reprend R15 à R17, réussie
 le 2026-10-05 sur le build `6cbecd3` : voir le [jeu de test](../../jeu-de-test.md#tableau-vsf-en-plein-écran-r21-r22-reprise-de-r15-à-r17).
 
-Chaque article sélectionné garde ses propres actions de produit Odoo, dans sa ligne de détail. Sur un devis, l'ajout et le retrait sont indépendants par article ; le retrait ne concerne que la ligne de devis ajoutée par le widget pendant la dialog courante.
+Chaque article sélectionné garde ses propres actions de produit Odoo, dans sa ligne de détail. Sur un devis, l'ajout et le retrait sont indépendants par article ; le retrait ne concerne que la ligne de devis ajoutée par le widget pendant la dialog courante. « Retirer du devis » remplace « Ajouter au devis » dès que la ligne est ajoutée ; un produit déjà présent à l'ouverture de la fenêtre affiche « Article déjà présent dans le devis. », sans retrait (R28, lot correctif `17.0.261006.1`, recette live réussie le 2026-10-06 : voir [9](09-creation-produit.md#retirer-du-devis-r28)).
 
 Sur le devis, la base Eurocode restaurée depuis l'enregistrement relance la recherche VSF à la
 réouverture, dès que la pièce mémorisée est retrouvée. Sinon, la base reste affichée et la

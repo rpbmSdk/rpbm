@@ -11,7 +11,7 @@
 
 `onSelect` remplace le `t-on-click` posé sur le composant : Owl attache un tel gestionnaire à l'élément parent et le déclenche pour toutes les racines du composant, ligne de détail comprise, dont un clic désélectionnerait l'article. `AgentWidgetDialog` passe `onClickArticleVsf(articleCode)` aux résultats et `onClickSuggestedArticle(articleCode, parentArticleCode)` aux suggestions (tous deux délèguent à `toggleVsfArticle()`) : résultats et suggestions partagent le même gabarit.
 
-La sélection d'un article principal charge sa fiche et hydrate ses suggestions à un seul niveau. Les suggestions ne rejoignent jamais `articlesVsf` : elles suivent leur principal dans son `<tbody>`, après sa ligne de détail, sous une ligne de légende « Articles suggérés par VSF », et se sélectionnent comme lui. Désélectionner le principal retire les sélections de ce groupe. `AgentWidgetDialogSaleOrder` mémorise uniquement les lignes de devis qu'il a ajoutées pendant la dialog et appelle `order_line.delete(line)` pour les retirer sans toucher aux lignes préexistantes.
+La sélection d'un article principal charge sa fiche et hydrate ses suggestions à un seul niveau. Les suggestions ne rejoignent jamais `articlesVsf` : elles suivent leur principal dans son `<tbody>`, après sa ligne de détail, sous une ligne de légende « Articles suggérés par VSF », et se sélectionnent comme lui. Désélectionner le principal retire les sélections de ce groupe. `AgentWidgetDialogSaleOrder` mémorise le produit des seules lignes de devis qu'il a ajoutées pendant la dialog, les retrouve par ce produit parmi les lignes du devis et appelle `order_line.delete(line)` pour les retirer sans toucher aux lignes préexistantes (voir [Ligne de devis ajoutée par le widget](#ligne-de-devis-ajoutée-par-le-widget-r28)).
 
 Le lien « Ouvrir dans un nouvel onglet » vise
 `https://client.myvsf.fr/catalogue/vitrage?search=<base encodée>` (`target="_blank"`,
@@ -29,6 +29,33 @@ synchronise ces deux valeurs pour les changements programmatiques.
 | `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | Ajout/retrait sûr d'une ligne créée par le widget |
 
 Le widget (`<widget name="rpbm_agent_widget" />`) est placé à deux endroits de chaque formulaire, ce qui donne volontairement deux boutons : l'onglet « Véhicule (X'Glass) » des **vues XML versionnées** du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`), qui héritent de la vue formulaire de base, et les sections Studio utilisées par les équipes (« Informations Véhicule » de l'opportunité, groupe sous l'en-tête du devis), où le script `studio_views.py` l'ajoute (voir [`Jobs/rpbm_agent_stock`](../../../Jobs/rpbm_agent_stock/README.md) et [configuration](configuration.md#intégration-dans-les-vues)). Les deux boutons ouvrent la même dialog.
+
+### Recherche sans résultat (R24)
+
+Lot correctif `17.0.261006.1` (commit `44b86e0`), recette live réussie le 2026-10-06 sans écriture ([SO-09](../jeu-de-test.md#so-09--base-sans-résultat-lot-correctif-du-2026-10-06-r24), étape 1 : `9999Z`, sans tableau, sans notification d'erreur ni erreur de console). Quand VSF ne trouve aucun article pour la base, le serveur renvoie une liste vide, sans erreur (voir [backend](backend.md#recherche-sans-résultat-r24)), et la section VSF du devis affiche « Aucun article VSF pour « *base* ». » à la place du tableau, sans notification d'erreur.
+
+- **État.** `state.vsfNoResultFor` retient la base de la dernière recherche aboutie sans article. `searchBaseEurocode()` le remet à `undefined` juste avant chaque appel au portail : le message disparaît dès le départ d'une nouvelle recherche, et une erreur ne laisse pas l'ancien message. Après succès, il vaut la base cherchée si la liste est vide (`res.length ? undefined : baseEurocode`). Il est aussi remis à `undefined` sur une base vide (clic sur « Rechercher sur VSF » avec le champ vide) et par `clearSelectedPiece()`.
+- **Gabarit.** Un paragraphe `name="vsf_no_result"` (`text-muted`) suit le tableau dans `agent_widget_dialog.xml`, avec `t-if="!articlesVsf.length and state.vsfNoResultFor"`. C'est un `t-if` et non un `t-elif`, car l'opportunité retire le tableau par XPath. L'opportunité n'est pas concernée : elle ne cherche plus sur VSF depuis le lot E1, donc `vsfNoResultFor` n'y est jamais posé.
+- **Relance.** Cliquer de nouveau sur « Rechercher sur VSF » sur une base sans résultat refait une recherche : une même base n'est écartée que si ses résultats sont déjà affichés (règle du 2026-09-20).
+- **Rejeu après reconnexion.** `callPortal()` rejoue la requête une seule fois après une `AgentSessionExpiredError` ; le rejeu d'une base sans résultat aboutit désormais à ce message, plus à la notification d'erreur. Le « double envoi » relevé à la recette du 2026-10-05 n'est pas un double déclenchement et n'est pas à corriger.
+- **Contrôle.** Bloc R24 de `test_widget_vsf.mjs` : une recherche sans article retient la base cherchée ; un résultat, une erreur et `clearSelectedPiece()` l'effacent.
+
+### Ligne de devis ajoutée par le widget (R28)
+
+Lot correctif `17.0.261006.1` (commit `44b86e0`), recette live réussie le 2026-10-06 sans écriture ([SO-08](../jeu-de-test.md#so-08--retirer-du-devis-lot-correctif-du-2026-10-06-r28), étapes 1 à 3 et 6 : « Ajouter au devis » donne « Retirer du devis », jamais « Article déjà présent dans le devis. », et « Retirer du devis » ramène « Ajouter au devis »). `AgentWidgetDialogSaleOrder` garde, par code d'article, le **produit** des lignes qu'il a ajoutées pendant la fenêtre (`_widgetProductIdsByArticleCode`, rempli après `newLine.update(...)` dans `addArticleToSaleOrder()` et vidé par `removeArticleFromSaleOrder()`). `getWidgetOrderLine(articleCode)` renvoie la ligne de `order_line.records` dont `data.product_id?.[0]` vaut ce produit.
+
+| Situation | Dans la ligne de détail de l'article |
+|---|---|
+| Produit absent du devis | « Ajouter au devis » |
+| Ligne ajoutée par le widget pendant cette fenêtre | « Retirer du devis » |
+| Produit déjà présent à l'ouverture, ou ajouté par une fenêtre précédente | « Article déjà présent dans le devis. », ni ajout ni retrait |
+
+- **Défaut corrigé.** `getWidgetOrderLine()` cherchait la ligne par identité d'objet (`records.includes(line)`). Or l'objet renvoyé par `addNewRecord` n'est pas toujours celui conservé dans `records` : « Retirer du devis » manquait après « Ajouter au devis », et l'article montrait « Article déjà présent dans le devis. ». La fonction date du 2026-07-29 : le défaut est antérieur au lot E. C'est celui de la main-d'œuvre, constaté à la recette du 2026-09-20 et corrigé par clé.
+- **Effet limité à l'affichage.** La mise à jour faite sur l'objet renvoyé par `addNewRecord` atteint bien la ligne du devis : une ligne ajoutée à la recette d'E1, puis enregistrée, portait sa quantité de 1, son `rpbm_xglass_price` et le `price_unit` qui en découle (relevé en base). Seule la comparaison d'objets échouait : aucune ligne n'était fausse, c'est le bouton qui manquait.
+- **Règle inchangée.** On ne retire que ce que le widget a ajouté pendant la fenêtre ouverte : la table est propre à l'instance de la fenêtre, vide à l'ouverture. Après « Annuler » puis réouverture sans enregistrer le formulaire, la ligne ajoutée devient une ligne préexistante : « Article déjà présent dans le devis. », à supprimer dans la liste native du devis.
+- **Main-d'œuvre.** Inchangée : `_laborLine(operation)` cherche par `rpbm_labor_operation_key`, y compris pour une ligne ajoutée lors d'une session précédente. Le code mort `_widgetLaborLinesByKey` et `_restoreLaborLines()`, dont la table n'était jamais relue, est supprimé.
+- **Quantité et prix.** Ils ne s'observent pas sans enregistrer le formulaire ; la preuve vient de la ligne de la recette d'E1 (voir ci-dessus).
+- **Contrôle.** Bloc R28 de `test_widget_vsf.mjs` : l'objet renvoyé par `addNewRecord` est remplacé dans `records` après l'ajout ; « Retirer du devis » s'affiche quand même, le retrait supprime la ligne de `records`, et un produit présent à l'ouverture reste « déjà présent », sans ajout possible.
 
 ## Dialog en plein écran (R22)
 
@@ -328,11 +355,11 @@ confirmation (voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactiv
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce (« Équivalence AM ») |
 | `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de l'encart « Autres marques AM » d'une famille (sans pièce requise) | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par véhicule + `elementSitId` |
-| `onSearchBaseEurocode()` | `AgentWidgetDialog` (neutralisé dans `AgentWidgetDialogCrmLead`) | `/searchBaseEurocode` | Articles VSF par eurocode (dialog du devis seulement) |
+| `onSearchBaseEurocode()` | `AgentWidgetDialog` (neutralisé dans `AgentWidgetDialogCrmLead`) | `/searchBaseEurocode` | Articles VSF par eurocode (dialog du devis seulement) ; une liste vide donne « Aucun article VSF pour « *base* ». » ([R24](#recherche-sans-résultat-r24)) |
 | `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'un article sélectionné (+ suggestions pour un article principal) |
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour un article VSF donné |
 | `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cet article |
-| `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget |
+| `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget, retrouvée par son produit ([R28](#ligne-de-devis-ajoutée-par-le-widget-r28)) |
 | `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce), provenance `rpbm_labor_operation_key` |
 | `onCreateQuotation()` | `AgentWidgetDialogCrmLead` | — (`action.doActionButton` → `action_sale_quotations_new`, aucune route du module) | Écrit l'opportunité, puis ouvre un nouveau devis lié (voir [Créer un devis](#créer-un-devis-lot-e1)) |
 
@@ -368,8 +395,10 @@ routes custom de `main.py`, à l'exception de « Créer un devis », qui appelle
 ## Créer un devis (lot E1)
 
 Lot E1 (`17.0.261005.3`) : le dialog de l'opportunité s'arrête à la pièce et à la base Eurocode,
-et crée le devis où l'on choisit les articles VSF. Aucune recette live n'a encore été exécutée. Le lot
-correctif E1.1 (`17.0.261005.4`), décidé après l'essai de l'utilisateur, est décrit en fin de section.
+et crée le devis où l'on choisit les articles VSF. Recette live réussie le 2026-10-05, en
+`17.0.261005.4`, pour E1 et E1.1 ensemble (voir le [jeu de test](../jeu-de-test.md#crm-07--créer-un-devis-lot-e1)).
+Le lot correctif E1.1 (`17.0.261005.4`), décidé après l'essai de l'utilisateur, est décrit en fin de
+section.
 
 **Dialog de l'opportunité.** `AgentWidgetDialogCrmLead` (`agent_widget_dialog_crm_lead.js` et
 `.xml`) étend `AgentWidgetDialog` ; `agent_widget.js` y associe `crm.lead`. Son gabarit
@@ -536,7 +565,27 @@ le bouton et porte l'info-bulle, car un bouton désactivé ne reçoit pas le sur
 Avec un client, `title` vaut `undefined` : l'attribut n'est pas posé. Le gabarit CRM garde ses quatre
 XPath ; seul le contenu inséré après `onConfirmAndSave` change.
 
-Aucune recette live n'a encore été exécutée sur ce lot ; elle portera sur E1 et E1.1 ensemble.
+**Recette et limites connues.** Recette live réussie le 2026-10-05, en `17.0.261005.4`, pour E1 et
+E1.1 ensemble : boutons d'écriture grisés pendant tous les chargements, confirmation sans rien
+toucher qui ne réécrit ni la pièce ni la pièce AM, « Créer un devis » grisé avec l'info-bulle sans
+client, et ligne « Autres marques AM » mémorisée qui reste mémorisée à la confirmation (la sauvegarde
+ne contient pas `rpbm_piece_am_id`). Deux limites du code, relevées à sa lecture, n'ont **pas été
+vérifiées** en live :
+- **Ligne « Autres marques AM » choisie pendant la restauration de la pièce AM.** `getPieceAm()`
+  réassigne `selectedPieceAm` avec le résultat de sa recherche parmi les équivalences (la pièce
+  mémorisée, ou `undefined`). Une ligne choisie entre-temps est donc remplacée (comportement antérieur
+  à E1.1) ; comme `onSelectPieceAM()` a déjà remis `_keepStoredPieceAm` à faux, la pièce AM peut être
+  écrite vide à la confirmation. La fenêtre est étroite : le clic doit tomber pendant le chargement ;
+- **Largeur de téléphone.** Le `<span>` qui enveloppe « Créer un devis » devient l'élément du pied à
+  la place du bouton : sur un écran étroit, le bouton dans son enveloppe pourrait être rétréci ou mal
+  aligné.
+
+Une troisième limite, `isLoading` qui peut brièvement repasser à faux entre deux chargements
+enchaînés (booléen unique que chaque `runAsync` met à vrai puis à faux), a été observée à la
+recette : un passage à l'état actif de 55 ms entre deux chargements enchaînés, sans conséquence (un
+clic réel sur « Confirmer » pendant un chargement est resté sans effet). Les drapeaux
+`_keepStoredPiece` et `_keepStoredPieceAm` restent la vraie protection des valeurs mémorisées, la
+désactivation des boutons n'étant qu'un filet.
 
 ## Reconnexion à chaud des portails
 

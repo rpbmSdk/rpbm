@@ -19,8 +19,9 @@ de test explicitement préparés.
 | Suggestion accessoire | `PP-COLLE310` | Observée | Article suggéré disponible ou indisponible |
 | Suggestion VSF sans produit propre | `6108AXSR` « GEL CAPTEUR SILICONE » | Observée (2026-10-05) | Faux rattachement par le nom (SO-07) |
 | Produit Odoo de même nom, d'un autre article | code `6574AXSH` | Observée (2026-10-05) | Ne doit pas être rattaché à `6108AXSR` (SO-07) |
+| Article VSF dont le produit Odoo existe déjà | `6574AGACIMVZ` (base `6574A`) | Observée (2026-10-06) | « Ajouter au devis » puis « Retirer du devis » (SO-08) |
 | Plaque sans résultat | `ZZ-TEST-00` | Synthétique | Scénario de recherche vide ; nécessite un mock ou une donnée X'Glass dédiée |
-| Base sans résultat | `ZZZZZ` | Synthétique | Scénario VSF vide ; nécessite un mock ou une donnée VSF dédiée |
+| Base sans résultat | `9999Z` | Observée (2026-10-06) | VSF répond 200, sans liste d'articles, par la page « Aucun résultat ne correspond à votre recherche. » ; même réponse pour `61-08A` et `A+B &C D` (trace). Aucun mock nécessaire (SO-09) |
 
 Les valeurs observées ne garantissent pas que les portails externes les
 retourneront encore dans le futur. Avant une recette live, contrôler la réponse
@@ -187,12 +188,21 @@ Contrôles hors réseau avant tout push, depuis la racine du dépôt :
     recherche d'immatriculation de l'utilisateur : valeurs remplacées ou vidées ;
   - effet sur `vehicules`, recherche automatique de l'ouverture (`init`), clic sur le véhicule ou
     la catégorie déjà affichés : rien n'est libéré ;
+- le même script, lot correctif `17.0.261006.1` : R24, `vsfNoResultFor` retient la base d'une
+  recherche aboutie sans article et s'efface par un résultat, par une erreur ou par
+  `clearSelectedPiece()` ; R28, la ligne ajoutée est retrouvée par son produit même quand `records`
+  contient un autre objet (« Retirer du devis », puis retrait de la bonne ligne), et un produit déjà
+  présent à l'ouverture reste « déjà présent », sans ajout possible ;
 - `python rpbm_agent/test_portal_auth.py` ([script](../test_portal_auth.py)) : chaque XPath des
   dialogs héritiers (2 pour le devis, 4 pour l'opportunité) cible un seul nœud du dialog de base
   (`test_xpath_des_dialogs_ciblent_un_seul_noeud`) ; depuis le build B, le template principal porte le littéral
   `size="'fullscreen'"` (`test_dialog_principal_en_plein_ecran`, garde-fou R22) et l'URL de fiche
   d'un résultat de recherche est absolue (assertion ajoutée à
-  `test_vsf_recherche_apparie_les_images_signees`) ;
+  `test_vsf_recherche_apparie_les_images_signees`) ; au lot correctif `17.0.261006.1`, la page VSF
+  « aucun résultat » (image `no-result.png`, texte, ou les deux) renvoie `[]` sans requête POST
+  (`test_vsf_recherche_sans_resultat_sans_post`), et une page sans liste d'articles ni message
+  « aucun résultat » lève une `VSFError` qui ne parle pas de session
+  (`test_vsf_recherche_page_inattendue`) ;
 - `py_compile` des fichiers Python modifiés ;
 - rendu Owl local, avec Chromium et l'`owl.js` du code Odoo (scripts locaux, non versionnés) :
   lien direct VSF (R15), vignettes et aperçu (R16, R17) et, au build B, `ArticleComponent` monté
@@ -212,17 +222,33 @@ Le miroir `rpbm_xglass_vehicle_id` du devis vers l'opportunité est couvert par
 `tests/test_legacy_sync.py`, et le rattachement d'un article VSF à un produit (lot E1.1) par
 `tests/test_find_existing_product.py` (six tests, valeurs propres au test, voir
 [backend](technique/backend.md#rattachement-dun-article-vsf-à-un-produit-lot-e11)) ; ils demandent
-une base PostgreSQL et s'exécutent dans le lanceur Odoo (`--test-enable`) du build Odoo.sh, pas sur
-le poste de développement.
+une base PostgreSQL et le lanceur Odoo avec `--test-enable`. Le poste de développement n'a pas
+PostgreSQL et le build de staging met le module à jour sans `--test-enable` : ces tests n'ont
+**pas été exécutés** au 2026-10-06 (la recette live du 2026-10-05 ne couvre que le cas d'origine,
+par SO-07, étape 1). Pour les jouer : un build Odoo.sh de développement, qui joue les tests, ou un
+Odoo 17 local avec PostgreSQL ; le choix est à faire (point ouvert).
 
 La recette « Tableau VSF en plein écran » plus bas remplace l'ancienne recette R13 à R17 ; elle
 vaut pour le build B (`17.0.261005.2`).
 
 ### CRM-07 — Créer un devis (lot E1)
 
-Scénario de recette des lots E1 (`17.0.261005.3`) et E1.1 (`17.0.261005.4`), **non exécuté**. Il **écrit** dans Odoo : le jouer
-uniquement sur une opportunité de recette dédiée, avec un client de test, jamais sur un dossier
-réel. Le devis brouillon est annulé à la fin et chaque écriture est listée dans le rapport.
+Scénario de recette des lots E1 (`17.0.261005.3`) et E1.1 (`17.0.261005.4`). Il **écrit** dans
+Odoo : le jouer uniquement sur une opportunité de recette dédiée, avec un client de test, jamais sur
+un dossier réel. Le devis brouillon est annulé à la fin et chaque écriture est listée dans le rapport.
+
+**Recette réussie le 2026-10-05**, en `17.0.261005.4`, pour E1 et E1.1 ensemble. Points vérifiés,
+notamment : à l'étape 2, la section arrêtée à « 4. Base Eurocode » sans aucune recherche VSF, le
+raccourci Ctrl+Entrée toujours sur « Confirmer » et, sur une opportunité sans client, « Créer un
+devis » grisé avec l'info-bulle ; à l'étape 3, la ligne « Autres marques AM » choisie (13 lignes, un
+seul `/getPieceAm` sans `pieceId`, première ligne ARGIC `6108AGACMU`, base `6108A`), un seul
+enregistrement et un seul appel à l'action native après un double clic, puis la fenêtre du devis
+ouverte seule, avec le véhicule, la pièce et la base `6108A` restaurés, la recherche VSF automatique
+(21 articles) et « 4. Main d'œuvre » ; aux étapes 4 et 5, un devis enregistré avec ses deux lignes,
+puis annulé. Le contrôle du second véhicule (étape 3) est **impossible** avec `GS600HH`, qui ne
+renvoie qu'un seul véhicule X'Glass : il faut une plaque qui en renvoie plusieurs. La recette a aussi
+relevé que « Retirer du devis » manquait après « Ajouter au devis » (R28, corrigé au lot
+`17.0.261006.1` : voir SO-08).
 
 1. Relever `write_date` et les champs `rpbm_*` de l'opportunité de test.
 2. Ouvrir la fenêtre du widget sur l'opportunité.
@@ -238,8 +264,8 @@ réel. Le devis brouillon est annulé à la fin et chaque écriture est listée 
      avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. » au survol du
      bouton grisé (l'info-bulle est portée par son enveloppe : à vérifier à la souris).
 3. Parcourir `GS600HH` › `PARE-BRISE` › une pièce › une ligne « Autres marques AM », base `6108A` ;
-   si possible, choisir le second véhicule d'une immatriculation qui en renvoie plusieurs. Faire un
-   **double clic** sur « Créer un devis ».
+   avec une plaque qui renvoie plusieurs véhicules X'Glass (`GS600HH` n'en renvoie qu'un), choisir le
+   second. Faire un **double clic** sur « Créer un devis ».
    - Attendu : une seule sauvegarde de l'opportunité, avec `rpbm_xglass_vehicle_id` et les
      identifiants de pièce (X'Glass, OE, AM) renseignés ;
      `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` et `rpbm_constructor_reference`
@@ -252,7 +278,10 @@ réel. Le devis brouillon est annulé à la fin et chaque écriture est listée 
    - Attendu : le devis brouillon est enregistré ; les champs de l'opportunité sont cohérents avec
      le devis (miroirs `related`).
 5. Annuler le devis de test, puis lister toutes les écritures : opportunité, devis, lignes,
-   produit, véhicule et verrou technique `rpbm_agent.session_lock`.
+   produit, véhicule et verrou technique `rpbm_agent.session_lock`. Y ajouter les effets de bord
+   natifs de l'enregistrement : les messages de suivi et, quand l'enregistrement du devis réécrit
+   les champs miroirs, les enregistrements `x_audit` qu'une automatisation Studio crée (environ 75
+   par enregistrement de devis, R29, non qualifié).
 
 Cas limite accepté : sur une opportunité sans pièce OE, avec seulement une ligne « Autres marques
 AM » et une base, le devis s'ouvre sans recherche VSF automatique (R12) ; il faut un clic sur
@@ -260,10 +289,22 @@ AM » et une base, le devis s'ouvre sans recherche VSF automatique (R12) ; il fa
 
 ### CRM-08 — Pièce mémorisée conservée (lot E1.1)
 
-Scénario de recette du build `17.0.261005.4`, **non exécuté**. Il **écrit** dans Odoo : même règle
-que CRM-07 (opportunité de recette dédiée, client de test, écritures listées). Relever par RPC, avant
-et après chaque étape, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id`,
-`rpbm_eurocode_base` et `rpbm_xglass_vehicle_id` de l'opportunité.
+Scénario de recette du build `17.0.261005.4`. Il **écrit** dans Odoo : même règle que CRM-07
+(opportunité de recette dédiée, client de test, écritures listées). Relever par RPC, avant et après
+chaque étape, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id`, `rpbm_eurocode_base`
+et `rpbm_xglass_vehicle_id` de l'opportunité.
+
+**Recette réussie le 2026-10-05**, avec CRM-07. Points vérifiés :
+- étape 2 : les boutons d'écriture sont grisés pendant tous les chargements, avec un passage à l'état
+  actif de 55 ms entre deux chargements enchaînés (accepté, voir l'attendu) ; un clic réel sur
+  « Confirmer » pendant un chargement est sans effet ;
+- étape 3 : la confirmation sans rien toucher ne réécrit ni la pièce ni la pièce AM ;
+- étape 5 : la ligne « Autres marques AM » mémorisée ne revient pas sélectionnée à la réouverture
+  mais reste mémorisée : la sauvegarde ne contient pas `rpbm_piece_am_id` et seul `write_date` change ;
+- étape 7 : un nouveau clic sur le véhicule et sur la catégorie déjà affichés ne déclenche aucun
+  appel réseau, et la pièce AM reste mémorisée (le lien « Voir » n'a pas été essayé).
+
+Étapes 4 et 6 non jouées. Deux points restent **non vérifiés** (voir en fin de scénario).
 
 1. Partir d'une opportunité de recette avec véhicule, catégorie, pièce OE et pièce AM mémorisés
    (issus de CRM-07).
@@ -295,6 +336,19 @@ et après chaque étape, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece
    déjà affichés (et sur « Voir » dans la carte du véhicule affiché), puis « Confirmer et
    enregistrer ».
    - Attendu : les identifiants mémorisés sont inchangés.
+
+**Non vérifié à la recette du 2026-10-05** (limites connues du code, à observer à la prochaine
+occasion, sans verdict) :
+
+- **Ligne « Autres marques AM » choisie pendant la restauration de la pièce AM.** Cliquer une ligne
+  « Autres marques AM » pendant que la pièce AM mémorisée se charge : `getPieceAm()` réassigne la
+  sélection avec le résultat de sa recherche parmi les équivalences (la pièce mémorisée, ou rien), si
+  bien que la ligne choisie peut être remplacée et `rpbm_piece_am_id` écrit vide à la confirmation
+  (comportement antérieur à E1.1). La fenêtre est étroite : le clic doit tomber pendant le
+  chargement. Relever `rpbm_piece_am_id` après « Confirmer et enregistrer ».
+- **Largeur de téléphone.** Ouvrir l'opportunité à 375 px : « Créer un devis » est enveloppé dans un
+  `<span>` qui porte l'info-bulle. Relever s'il reste entier, visible et utilisable dans le pied de
+  la fenêtre.
 
 ## Scénarios devis
 
@@ -335,7 +389,7 @@ Résultats attendus :
 - le premier clic crée un seul produit et sa ligne fournisseur ;
 - le second clic retrouve le produit sans doublon, par son eurocode (lot E1.1) ;
 - la suggestion dispose des mêmes actions que l'article principal ;
-- le retrait ne supprime qu'une ligne créée par le widget pendant la dialog.
+- le retrait ne supprime qu'une ligne créée par le widget pendant la dialog (voir SO-08).
 
 ### SO-04 — Opérations de main-d'œuvre X'Glass
 
@@ -366,8 +420,14 @@ Sur un devis lié à une opportunité (même protocole sans écriture que CRM-06
 
 ### SO-06 — Ouverture automatique du dialog sur le devis (lot E1)
 
-Scénario du build `17.0.261005.3`, **non exécuté**, à jouer sur l'opportunité de recette de CRM-07.
-Il crée des devis brouillons : les lister, puis les annuler.
+Scénario du build `17.0.261005.3`, à jouer sur l'opportunité de recette de CRM-07. Il crée des
+devis brouillons : les lister, puis les annuler.
+
+**Recette réussie le 2026-10-05**, en `17.0.261005.4` : étapes 1 à 5. La fenêtre s'ouvre seule, et ne
+se rouvre ni après l'enregistrement du devis ni après « Annuler » (la loupe la rouvre), ni par le fil
+d'Ariane, ni par « Nouveau devis » natif, ni par Ventes › Devis › Nouveau, ni au rechargement du
+devis (aucun dialog ni requête `/rpbm_agent_*`). Étape 6 non jouée, volontairement : elle aurait créé
+un second devis.
 
 1. Ouverture : après « Créer un devis » (CRM-07), la fenêtre du widget s'ouvre seule sur le
    nouveau devis, une seule fois. La fermer (**Annuler**) : elle ne se rouvre pas d'elle-même ;
@@ -382,13 +442,20 @@ Il crée des devis brouillons : les lister, puis les annuler.
 
 ### SO-07 — Rattachement d'un article VSF à un produit Odoo (lot E1.1)
 
-Scénario du build `17.0.261005.4`, **non exécuté**. Les étapes 1 et 2 sont sans écriture : ne pas
-cliquer « Créer le produit », « Ajouter au devis » ni « Définir comme article principal » ; relever
+Scénario du build `17.0.261005.4`. Les étapes 1 et 2 sont sans écriture : ne pas cliquer
+« Créer le produit », « Ajouter au devis » ni « Définir comme article principal » ; relever
 `write_date` et les champs `rpbm_*` du devis, de son opportunité et du véhicule lié avant et après.
+
+**Recette réussie le 2026-10-05, avec une réserve** : étapes 1 et 2. VSF ne proposant plus `6108AXSR`
+en suggestion, le contrôle de l'étape 1 a porté sur sa ligne principale : `/doesProductExists` répond
+`false`, la ligne affiche « Article absent de la base Odoo » avec « Créer le produit » (non cliqué) et
+le produit `6574AXSH` n'est plus proposé. À l'étape 2, `6108AGACHM` et `6108AGABCHM` affichent
+« Produit Odoo trouvé (eurocode) ». Étape 3, avec écriture, non jouée.
 
 1. Sur un devis lié à une opportunité, rechercher la base `6108A`, sélectionner un article dont la
    fiche suggère `6108AXSR` « GEL CAPTEUR SILICONE », puis sélectionner cette suggestion (cas observé
-   le 2026-10-05).
+   le 2026-10-05). Si VSF ne la suggère plus (constaté à la recette du 2026-10-05), sélectionner la
+   ligne principale `6108AXSR` : mêmes attendus.
    - Attendu : « Article absent de la base Odoo », avec « Créer le produit », et **plus**
      « Produit Odoo trouvé (nom) » vers le produit de code `6574AXSH`, qui porte le même nom mais
      est le gel d'un autre article.
@@ -398,14 +465,110 @@ cliquer « Créer le produit », « Ajouter au devis » ni « Définir comme art
    - Attendu : un nouveau produit portant l'eurocode `6108AXSR` est créé, retrouvé ensuite par
      « eurocode » ; le produit `6574AXSH` n'est ni réutilisé ni modifié. Lister l'écriture.
 
+### SO-08 — Retirer du devis (lot correctif du 2026-10-06, R28)
+
+Scénario du build `17.0.261006.1`. Il n'enregistre rien : « Ajouter au devis » et « Retirer du
+devis » ne modifient que le formulaire ouvert, dont on abandonne les modifications à la fin
+(« Ignorer les modifications »). Relever par RPC `write_date` et les lignes du devis avant et après :
+elles doivent rester inchangées (seule écriture tolérée : le verrou technique
+`rpbm_agent.session_lock`, vide en fin de recette).
+
+**Recette réussie le 2026-10-06**, en `17.0.261006.1` (commit `44b86e0`), sans aucune écriture : étapes
+1 à 3 et 6. Après « Ajouter au devis », les actions affichent « Retirer du devis », jamais « Article
+déjà présent dans le devis. » ; après « Retirer du devis », « Ajouter au devis » revient, sans
+« Retirer du devis » ni « Article déjà présent ». Les relevés en lecture seule avant et après ne
+montrent rien de créé ni de modifié sur le devis, son opportunité et le véhicule lié, et le verrou est
+vide. Étapes 4 et 5 non exécutées (facultatives). Deux points ne s'observent pas dans ce protocole :
+la quantité et le prix de la ligne ajoutée (sans enregistrer ; la preuve vient d'une ligne de la
+recette d'E1, enregistrée, qui porte la quantité 1 et un prix unitaire égal au prix X'Glass × 1,5) et
+le maintien des autres lignes (le devis de la recette n'en avait aucune).
+
+Dossier : un devis brouillon lié à une opportunité, sans aucune ligne du produit testé, dont la base
+mémorisée est `6574A`. Article : `6574AGACIMVZ`, dont le produit Odoo existe déjà (rien à créer).
+
+Défaut d'origine (recette d'E1, 2026-10-05) : après « Ajouter au devis », la ligne était bien ajoutée,
+avec sa quantité et son prix, mais « Retirer du devis » ne s'affichait pas et l'article montrait
+« Article déjà présent dans le devis. ».
+
+1. Ouvrir la fenêtre, chercher la base `6574A` (automatique si une pièce est retrouvée, sinon par
+   « Rechercher sur VSF »), puis sélectionner la ligne `6574AGACIMVZ`.
+   - Attendu : « Voir le produit » (le produit existe) et « Ajouter au devis » ; ni « Retirer du
+     devis », ni « Article déjà présent dans le devis. ».
+2. Cliquer sur « Ajouter au devis ».
+   - Attendu : **« Retirer du devis » remplace « Ajouter au devis »** ; « Article déjà présent dans le
+     devis. » n'apparaît pas. Une ligne de ce produit est ajoutée au formulaire du devis ; sa quantité
+     (1) et son prix ne s'observent pas sans enregistrer.
+3. Cliquer sur « Retirer du devis ».
+   - Attendu : la ligne ajoutée disparaît, et elle seule : les autres lignes du devis (manuelles,
+     main-d'œuvre, autres articles) restent en place ; « Ajouter au devis » revient. Ajouter puis
+     retirer une seconde fois : la bonne ligne à chaque fois, sans ligne résiduelle.
+4. Si un second article de la liste a lui aussi un produit Odoo : ajouter les deux articles, puis en
+   retirer un.
+   - Attendu : la ligne de l'autre article reste, avec « Retirer du devis ».
+5. Règle inchangée : on ne retire que ce que le widget a ajouté pendant la fenêtre ouverte. Ajouter
+   de nouveau l'article, fermer par **Annuler** sans enregistrer le formulaire, rouvrir la fenêtre sur
+   le même devis (la ligne est encore dans le formulaire), puis sélectionner l'article.
+   - Attendu : « Article déjà présent dans le devis. », sans « Retirer du devis » ; la ligne se
+     supprime dans la liste native du devis.
+6. Abandonner les modifications du formulaire (« Ignorer les modifications »), puis relever
+   `write_date` et les lignes du devis.
+   - Attendu : identiques au relevé de départ.
+
+La main-d'œuvre n'est pas concernée : son « Retirer » repose sur la clé de provenance de la ligne
+(SO-04).
+
+### SO-09 — Base sans résultat (lot correctif du 2026-10-06, R24)
+
+Scénario du build `17.0.261006.1`, sans écriture enregistrée (même protocole que SO-08). Il **envoie
+volontairement** des valeurs au portail VSF : une valeur saisie dans le champ « Base Eurocode » du
+devis part au portail dès la validation du champ, y compris par la simple perte de focus de la
+fenêtre.
+
+**Recette réussie le 2026-10-06**, en `17.0.261006.1` (commit `44b86e0`), sans aucune écriture :
+étape 1 jouée avec `9999Z`, qui affiche « Aucun article VSF pour « 9999Z ». », sans tableau, sans
+notification d'erreur et sans erreur de console. Étapes 2 à 5 non exécutées (facultatives).
+
+Défaut d'origine (recette R13 à R17, 2026-10-05) : toute base sans résultat, même au bon format,
+affichait « Recherche impossible : le portail VSF est inaccessible. ». VSF répondait pourtant par une
+page normale, « Aucun résultat ne correspond à votre recherche. ».
+
+1. Dans la section VSF du devis, saisir `9999Z` (bon format, aucune base de ce nom) puis valider le
+   champ (Tab ou clic ailleurs). Avec une pièce ou une pièce après-marché sélectionnée, la recherche
+   part seule ; sinon, cliquer sur « Rechercher sur VSF ».
+   - Attendu : aucun tableau, et la section affiche « Aucun article VSF pour « 9999Z ». » ;
+     **aucune notification d'erreur** (ni « portail VSF inaccessible », ni autre) ; une seule requête
+     `/searchBaseEurocode`, qui répond par une liste vide.
+2. Même contrôle avec `61-08A` (mal formée) puis `A+B &C D` (caractères à encoder).
+   - Attendu : même résultat ; le message cite la valeur saisie.
+3. Cliquer sur « Rechercher sur VSF » sans changer la valeur.
+   - Attendu : une nouvelle recherche part, car aucun résultat n'est affiché (règle du 2026-09-20 :
+     une même base n'est écartée que si ses résultats sont déjà affichés), et le même message revient.
+4. Saisir une base à résultats (`6574A`).
+   - Attendu : le message disparaît dès le départ de la recherche et le tableau se remplit.
+5. Sur l'opportunité (lot E1), saisir `9999Z` puis valider.
+   - Attendu : aucune requête VSF et aucun message : l'opportunité ne cherche plus sur VSF.
+
+Si la session VSF expire pendant la recherche (R23), le widget se reconnecte et rejoue la requête une
+seule fois : deux requêtes `/searchBaseEurocode` pour une saisie, avec le même résultat, ne sont pas
+un double déclenchement. Avant le lot correctif, c'est ce rejeu qui échouait avec le message
+trompeur.
+
+Hors protocole, car non rejouable à la demande en live : « Recherche impossible : le portail VSF est
+inaccessible. » reste affiché pour une vraie panne (réseau, réponse HTTP inattendue) et pour une page
+de résultats inattendue, ni liste d'articles ni message « aucun résultat » : le message exact de
+l'erreur figure alors dans le journal serveur. Une session expirée garde sa reconnexion
+automatique. La page « aucun résultat » et la page inattendue sont couvertes hors réseau par
+`test_portal_auth.py`.
+
 ## Tableau VSF en plein écran (R21, R22, reprise de R15 à R17)
 
 Recette sans écriture du tableau VSF en plein écran (build `17.0.261005.2`) : **recette réussie le
-2026-10-05 sur le build `6cbecd3`**, sans écriture métier. Elle remplace la recette R13 à R17
-(cartes sur une colonne) : le tableau remplace R13 et R14, et R15 à R17 sont repris aux étapes 8 à
-10. Depuis le lot E1 (`17.0.261005.3`), le tableau n'existe plus sur l'opportunité : pour la
-rejouer, les étapes 2 à 11 se font sur un devis lié à une opportunité ; seules l'étape 1 (plein
-écran) et l'étape 12 (non-régression) concernent aussi l'opportunité.
+2026-10-05 sur le build `6cbecd3`**, sans écriture métier. Rejouée sur un devis, sans écriture, le
+2026-10-06 sur le build `44b86e0` (`17.0.261006.1`), comme non-régression du lot correctif : réussie.
+Elle remplace la recette R13 à R17 (cartes sur une colonne) : le tableau remplace R13 et R14, et R15
+à R17 sont repris aux étapes 8 à 10. Depuis le lot E1 (`17.0.261005.3`), le tableau n'existe plus sur
+l'opportunité : pour la rejouer, les étapes 2 à 11 se font sur un devis lié à une opportunité ; seules
+l'étape 1 (plein écran) et l'étape 12 (non-régression) concernent aussi l'opportunité.
 
 Lire d'abord la version du module par RPC. Ouvrir un dossier de test ayant une base Eurocode
 mémorisée : un devis lié à une opportunité, sauf mention contraire. Ne pas confirmer le dialogue, créer un produit, définir un article principal ni ajouter de ligne ;
@@ -457,10 +620,13 @@ dossier, son opportunité et le véhicule lié : toutes ces valeurs doivent rest
    - Remplacer la base par une valeur réelle (par exemple `6574A`) sans quitter le champ : le
      lien suit la valeur saisie, également par Ctrl+clic ou clic central avant validation du
      champ. La saisie ne lance pas un RPC par caractère.
-   - Ne pas saisir de valeur synthétique (`+`, `&`, espace) dans le champ du devis : la perte de
-     focus, même celle de la fenêtre, valide le champ et l'envoie au portail, qui répond par un
-     message trompeur (« portail VSF inaccessible »). L'encodage est couvert hors réseau
-     (`test_widget_vsf.mjs`).
+   - Une valeur synthétique (`+`, `&`, espace) saisie dans le champ du devis part au portail dès la
+     validation du champ (`change`), y compris par la simple perte de focus de la fenêtre. VSF
+     répond « aucun résultat » (page 200 sans liste, trace du 2026-10-06) et, depuis le lot correctif
+     `17.0.261006.1`, le widget affiche « Aucun article VSF pour « *base* ». » (recette réussie le
+     2026-10-06, SO-09) ; avant ce lot, il affichait le message trompeur « portail VSF inaccessible »
+     (R24). N'en saisir donc que volontairement : c'est le critère « base sans résultat » de SO-09. L'encodage du lien est couvert
+     hors réseau (`test_widget_vsf.mjs`).
    - Vider le champ : le lien est désactivé au clavier comme à la souris (le cas des espaces seuls
      n'est pas rejoué en direct, pour la même raison). Renseigner une base valide : il redevient
      utilisable.
@@ -482,7 +648,7 @@ dossier, son opportunité et le véhicule lié : toutes ces valeurs doivent rest
 11. **Devis et opportunité (lot E1).**
     - Sur le devis (SO-05) : « 4. Main d'œuvre X'Glass » (avec une pièce sélectionnée) puis « 5.
       Article VSF », avec le tableau et ses lignes de détail. « Retirer du devis » n'apparaît
-      qu'après un ajout : il relève de SO-03, hors protocole sans écriture.
+      qu'après un ajout : il relève de SO-08 et de SO-03, hors de ce protocole.
     - Sur l'opportunité : « 4. Base Eurocode » sans tableau ni bouton « Rechercher sur VSF » ; le
       lien « Ouvrir dans un nouvel onglet » reste.
 12. **Non-régression.** Rejouer CRM-03 et CRM-05 : base restaurée avec et sans pièce AM, aucune

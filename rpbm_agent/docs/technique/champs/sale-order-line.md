@@ -16,7 +16,10 @@ clé de provenance). Champs déclarés dans `models/sale_order.py`.
 `addArticleToSaleOrder()` (`agent_widget_dialog_sale_order.js`) crée la ligne avec
 `default_product_id` = produit trouvé/créé, `product_uom_qty = 1` et `rpbm_xglass_price`. Les
 `onchange` Odoo calculent le reste (taxes, description) ; le mixin recopie le prix vers
-`x_studio_prix_x_glass`, ce qui déclenche l'automatisation.
+`x_studio_prix_x_glass`, ce qui déclenche l'automatisation. La ligne ne porte pas de clé de
+provenance : `removeArticleFromSaleOrder()` la retrouve par son produit parmi les lignes du devis,
+pour les seuls articles ajoutés pendant la dialog courante (R28, lot correctif `17.0.261006.1`, voir
+[frontend](../frontend.md#ligne-de-devis-ajoutée-par-le-widget-r28)).
 
 ## Lignes de main-d'œuvre X'Glass
 

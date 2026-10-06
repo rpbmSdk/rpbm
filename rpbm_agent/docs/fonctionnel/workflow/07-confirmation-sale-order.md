@@ -20,7 +20,7 @@ l'utilisateur est prioritaire.
 | `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock`, `rpbm_constructor_reference` | article VSF désigné **principal** (« Définir comme article principal ») | si un article principal est désigné ; depuis le lot E1, seul le dialog du devis les écrit |
 
 - **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
-- L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape ; seule une ligne créée par le widget dans la dialog courante peut être retirée — voir [9 — Création du produit](09-creation-produit.md).
+- L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape ; seule une ligne créée par le widget dans la dialog courante peut être retirée, par « Retirer du devis », qui remplace « Ajouter au devis » une fois la ligne ajoutée (un produit déjà présent à l'ouverture affiche « Article déjà présent dans le devis. », sans retrait) — voir [9 — Création du produit](09-creation-produit.md#retirer-du-devis-r28).
 
 Les opérations de main-d'œuvre X'Glass cochées sont ajoutées indépendamment de
 la confirmation. Chaque opération reconnue (T1, T2 ou T3) crée une ligne de

@@ -34,6 +34,7 @@ flowchart TD
     BE --> T{Fenêtre ouverte sur un devis ?}
     T -->|Oui| T1[Recherche des articles sur VSF à partir de l'eurocode]
     T1 --> U[Affichage des articles VSF disponibles]
+    T1 -.->|"Aucun résultat"| U0["Message « Aucun article VSF pour la base », sans erreur"]
     T -->|"Non, opportunité"| T2["Aucune recherche VSF : la base est écrite à la confirmation"]
 ```
 
@@ -43,6 +44,7 @@ Notes :
 - Les pièces de la catégorie sont présentées comme sur le portail : « Pièces principales » puis « Pièces complémentaires », chacune découpée en familles X'Glass, dans l'ordre du portail. Sous chaque famille, l'encart « Autres marques AM » est replié ; il se charge au dépliage, sans qu'une pièce soit sélectionnée. Un clic sur l'une de ses lignes renseigne l'eurocode (et lance la recherche VSF sur le devis), quelle que soit la famille (détail : [3](workflow/03-categorie-xglass.md) et [4](workflow/04-piece-piece-am.md)).
 - Si le champ "Catégorie X'Glass" est déjà renseigné sur l'enregistrement, la catégorie correspondante est présélectionnée automatiquement dès que la planche est chargée.
 - Sur le devis, la recherche VSF se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique) ; l'opportunité n'a ni recherche VSF ni tableau.
+- Sur le devis, une base sans résultat (inexistante ou mal formée) n'est pas une erreur : la section affiche « Aucun article VSF pour « *base* ». », sans notification (lot correctif `17.0.261006.1`, détail : [5](workflow/05-recherche-vsf-eurocode.md)).
 - Sur le devis, les articles VSF forment un tableau (eurocode, désignation, référence constructeur, stock, prix, coût, photo). Un clic sur une ligne sélectionne l'article et ouvre sous elle son détail : toutes les vignettes, les caractéristiques et les actions (détail : [5](workflow/05-recherche-vsf-eurocode.md)).
 
 > ⚠️ L'ancien diagramme draw.io (source archivée dans [`_archive/Readme.drawio`](../_archive/Readme.drawio)) libellait par erreur cette étape "Recherche du véhicule sur VSF" — la recherche véhicule se fait bien sur **X'Glass** ; VSF n'intervient qu'à l'étape de recherche par eurocode. Les diagrammes Mermaid de ce dossier font foi.
@@ -82,9 +84,10 @@ flowchart TD
     W3 --> W5["Bouton 'Ajouter au devis' → ajoute une ligne au devis"]
     W4 --> W5
     W5 --> W6[Clic sur Confirmer pour finaliser véhicule/catégorie/eurocode sur le devis]
+    W5 -.-> W5R["Bouton 'Retirer du devis' → retire la ligne ajoutée par le widget"]
 ```
 
-Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et miroirs historiques véhicule lorsque l'opportunité est liée. Le notebook du widget est masqué sur un devis sans opportunité liée. Le champ natif `carrier_id` (« Transporteur / mode de remise ») est visible sous le client ; il peut être prérempli depuis le lieu historique du CRM sur un nouveau devis et doit être renseigné avant la confirmation standard de la vente. L'ajout au devis (`addArticleToSaleOrder`) est **indépendant** du bouton « Confirmer » de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md) et [9 — Création du produit](workflow/09-creation-produit.md). L'ajout au devis ne renseigne pas l'Eurocode ni la désignation VSF du dossier : désigner l'article principal puis confirmer.
+Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule lié, catégorie X'Glass, Pièce concernée, Base Eurocode et miroirs historiques véhicule lorsque l'opportunité est liée. Le notebook du widget est masqué sur un devis sans opportunité liée. Le champ natif `carrier_id` (« Transporteur / mode de remise ») est visible sous le client ; il peut être prérempli depuis le lieu historique du CRM sur un nouveau devis et doit être renseigné avant la confirmation standard de la vente. L'ajout au devis (`addArticleToSaleOrder`) est **indépendant** du bouton « Confirmer » de la fenêtre — on peut ajouter plusieurs articles avant de confirmer ; détail dans [7 — Confirmation sur Ordre de Vente](workflow/07-confirmation-sale-order.md) et [9 — Création du produit](workflow/09-creation-produit.md). L'ajout au devis ne renseigne pas l'Eurocode ni la désignation VSF du dossier : désigner l'article principal puis confirmer. Une fois la ligne ajoutée, « Retirer du devis » remplace « Ajouter au devis » et la supprime ; un produit déjà présent à l'ouverture de la fenêtre affiche « Article déjà présent dans le devis. », sans retrait (voir [9](workflow/09-creation-produit.md#retirer-du-devis-r28)).
 
 > **Article principal.** L'Eurocode complet, la désignation VSF, le stock VSF et la référence constructeur ne sont écrits que si un article VSF a été désigné avec « Définir comme article principal » avant « Confirmer ». Sélectionner un article, ou l'ajouter au devis, ne suffit pas : sans article principal, ces champs restent inchangés, sans message.
 
