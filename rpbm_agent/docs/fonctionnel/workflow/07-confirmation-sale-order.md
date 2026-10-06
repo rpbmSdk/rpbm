@@ -12,12 +12,14 @@ LAVAGE et les correspondances absentes restent manuelles. Le choix explicite de
 l'utilisateur est prioritaire.
 
 - **Déclencheur** : clic sur « Confirmer » (ou « Confirmer et enregistrer ») dans la fenêtre du widget, ouverte depuis une fiche `sale.order` (loupe) ou automatiquement après « Créer un devis » (voir [plus bas](#ouverture-automatique-du-dialog-après-création-du-devis)).
-- **Code** : même `confirmRecord()` → `writeRecord()` → `getRecordData()` que pour `crm.lead` ; les champs `rpbm_*` portent les mêmes noms sur les deux modèles. La classe `AgentWidgetDialogSaleOrder` (`agent_widget_dialog_sale_order.js`) ajoute la recherche VSF, les lignes d'article et la main-d'œuvre.
+- **Code** : même `confirmRecord()` → `writeRecord()` → `getRecordData()` que pour `crm.lead` ; les champs `rpbm_*` portent les mêmes noms sur les deux modèles. La classe `AgentWidgetDialogSaleOrder` (`agent_widget_dialog_sale_order.js`) ajoute la recherche VSF, les lignes d'article et la main-d'œuvre. Depuis le lot E2, elle s'ouvre **sans authentification X'Glass** : voir [Devis sans X'Glass](#devis-sans-xglass-lot-e2).
 
 | Champ écrit | Valeur source | Condition |
 |---|---|---|
 | mêmes champs natifs `rpbm_*` que sur l'opportunité ([6](06-confirmation-crm-lead.md)), `rpbm_xglass_vehicle_id` compris | mêmes sources | miroirs `related` écrivables : la valeur est portée par l'opportunité liée |
 | `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock`, `rpbm_constructor_reference` | article VSF désigné **principal** (« Définir comme article principal ») | si un article principal est désigné ; depuis le lot E1, seul le dialog du devis les écrit |
+| `rpbm_eurocode_base` | `state.baseEurocode` | toujours (vide efface), avec ou sans X'Glass |
+| `rpbm_xglass_piece_label` | libellé de la pièce choisie ([6](06-confirmation-crm-lead.md)) | seulement quand X'Glass est chargé, avec véhicule et catégorie choisis, sous la condition des identifiants de pièce |
 
 - **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
 - L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape ; seule une ligne créée par le widget dans la dialog courante peut être retirée, par « Retirer du devis », qui remplace « Ajouter au devis » une fois la ligne ajoutée (un produit déjà présent à l'ouverture affiche « Article déjà présent dans le devis. », sans retrait) — voir [9 — Création du produit](09-creation-produit.md#retirer-du-devis-r28).
@@ -37,10 +39,25 @@ les champs dérivés du véhicule et les champs Studio historiques sont aliment�
 l'enregistrement, comme sur l'opportunité. Le kilométrage n'est jamais modifié. Sans opportunité
 liée, le widget est masqué.
 
+## Devis sans X'Glass (lot E2)
+
+Lot E2 « VSF d'abord, X'Glass à la demande » (`17.0.261006.2`, recette à faire, [SO-10](../../jeu-de-test.md#so-10--vsf-dabord-xglass-à-la-demande-lot-e2)). Le véhicule et la pièce se choisissent déjà sur l'opportunité (lot E1) ; sur le devis, il reste surtout à choisir les articles VSF. La fenêtre du devis s'affiche donc tout de suite, **sans connexion à X'Glass** (l'ancien chemin demandait 15 à 22 s avant le tableau) :
+
+- un encart **« Dossier »**, en lecture seule, reprend les champs de l'opportunité : véhicule, catégorie, pièce concernée, pièce X'Glass (libellé mémorisé, « — » pour un dossier confirmé avant le lot) et article principal ;
+- la recherche VSF part aussitôt sur la base enregistrée, même s'il n'y a qu'une base ou une ligne « Autres marques AM » ;
+- **« Confirmer »** est actif dès l'ouverture. Sans X'Glass, il n'écrit que la base Eurocode et l'article principal : le véhicule, la catégorie et les identifiants de pièce mémorisés ne sont jamais effacés, et aucun véhicule n'est créé ni enrichi ;
+- **« Charger X'Glass »** lance la chaîne X'Glass actuelle : authentification (avec le verrou), restauration du véhicule mémorisé, de la catégorie, de la pièce et de la pièce après-marché, puis main-d'œuvre (« 4. Main d'œuvre X'Glass ») et changement de pièce. L'encart disparaît, la section « 1. Véhicule » apparaît ; **le tableau VSF, la sélection et l'article principal sont conservés**, sans nouvelle recherche tant que la base ne change pas. Un seul chargement à la fois : le bouton est désactivé pendant le chargement. Il sert aussi à réessayer après un échec, dont le message s'affiche dans l'encart. La pièce concernée enregistrée n'est pas écrasée par la suggestion du calque, et la base, le tableau, la sélection et l'article principal survivent même si le dossier n'avait ni base ni pièce enregistrées ; seul un choix explicite d'une autre catégorie les vide, comme avant ;
+- une fois X'Glass chargé avec véhicule et catégorie choisis, « Confirmer » écrit comme avant tout le dossier, libellé de la pièce compris ;
+- « Annuler » sans « Charger X'Glass » ne ferme aucune session X'Glass (il n'y en a pas) : aucun appel `/rpbm_agent_close`.
+
+**Verrou.** Il ne protège plus que X'Glass (« Annuler » ne déconnecte d'ailleurs pas la session X'Glass d'un autre vendeur qui aurait repris un verrou expiré) : plusieurs vendeurs peuvent chercher sur VSF en même temps, et l'ouverture d'un devis ne prend pas le verrou ([VD-05](../../validations-metier.md#historique-des-décisions)). Un vendeur qui clique sur « Charger X'Glass » pendant qu'un autre utilise X'Glass reçoit le message « actuellement utilisé par … ». Si l'on ferme la fenêtre pendant « Charger X'Glass », la fenêtre détruite libère elle-même le verrou et ferme la session X'Glass dès que l'authentification répond : le verrou ne reste pas pris.
+
+Détail technique : [frontend](../../technique/frontend.md#vsf-dabord-xglass-à-la-demande-lot-e2) et [backend](../../technique/backend.md#vsf-session-à-la-demande-lot-e2).
+
 ## Ouverture automatique du dialog après création du devis
 
-Un devis créé par « Créer un devis » depuis l'opportunité ([6](06-confirmation-crm-lead.md#créer-un-devis-lot-e1)) ouvre seul la fenêtre du widget : il n'y a pas de clic sur la loupe. Elle restaure le contexte de l'opportunité comme à toute réouverture : le véhicule X'Glass mémorisé (`rpbm_xglass_vehicle_id`) s'il figure dans les résultats de l'immatriculation, sinon le premier, puis la catégorie, la pièce, la pièce après-marché et la base Eurocode. La recherche VSF se lance seule quand une pièce ou une pièce après-marché est retrouvée, et la main-d'œuvre est proposée (« 4. Main d'œuvre », « 5. Article VSF »). Les portails sont reconnectés à cette occasion, la fenêtre de l'opportunité les ayant fermés.
+Un devis créé par « Créer un devis » depuis l'opportunité ([6](06-confirmation-crm-lead.md#créer-un-devis-lot-e1)) ouvre seul la fenêtre du widget : il n'y a pas de clic sur la loupe. Au lot E1, elle restaurait aussitôt le contexte de l'opportunité. Depuis le lot E2, elle s'ouvre en mode VSF seul (voir [ci-dessus](#devis-sans-xglass-lot-e2)) : encart « Dossier » et recherche VSF immédiate sur la base enregistrée. Le véhicule X'Glass mémorisé (`rpbm_xglass_vehicle_id`) s'il figure dans les résultats de l'immatriculation, sinon le premier, puis la catégorie, la pièce, la pièce après-marché et la main-d'œuvre (« 4. Main d'œuvre », « 5. Article VSF ») reviennent par « Charger X'Glass ». L'opportunité ayant fermé ses portails et libéré le verrou, la chaîne ne rencontre pas d'obstacle.
 
-L'ouverture n'a lieu qu'une fois, pour ce devis nouveau. Elle n'a pas lieu avec « Nouveau devis » natif, Ventes › Devis › Nouveau, le retour par le fil d'Ariane ou le rechargement de la page ; la loupe reste le moyen d'ouvrir la fenêtre dans ces cas. Le cas d'une opportunité sans pièce OE, avec seulement une ligne « Autres marques AM », est décrit en [4](04-piece-piece-am.md).
+L'ouverture n'a lieu qu'une fois, pour ce devis nouveau. Elle n'a pas lieu avec « Nouveau devis » natif, Ventes › Devis › Nouveau, le retour par le fil d'Ariane ou le rechargement de la page ; la loupe reste le moyen d'ouvrir la fenêtre dans ces cas. Le cas limite du lot E1, une opportunité sans pièce OE avec seulement une ligne « Autres marques AM » et une base, qui ouvrait le devis sans recherche VSF automatique, est levé : la recherche part dès qu'il y a une base ([4](04-piece-piece-am.md)).
 
 Détail de chaque champ : [technique/champs/sale-order.md](../../technique/champs/sale-order.md).

@@ -29,7 +29,9 @@ confirmation avec la base Eurocode ; les identifiants de pièce X'Glass et de pi
 écrits : vides pour un dossier neuf, inchangés sinon (lot E1.1). À la réouverture, la
 section VSF (« 5. Article VSF » sur le devis, « 4. Base Eurocode » sur l'opportunité) et les
 encarts de toutes les familles sont affichés sans cartes de pièces (contexte restauré), la base
-enregistrée reste affichée et aucune recherche automatique ne démarre.
+enregistrée reste affichée et aucune recherche automatique ne démarre. Sur le devis, depuis le lot E2,
+la recherche VSF part dès l'ouverture sur la base enregistrée, sans X'Glass ; les encarts de familles
+n'apparaissent qu'après « Charger X'Glass ».
 
 ## Autres marques AM par famille (encart X'Glass AUTRE AM, R11 et R19)
 
@@ -74,8 +76,10 @@ des lignes réelles ; le comportement sera reconsidéré si elles donnent une ba
 La section VSF est visible dès qu'une pièce, une pièce après-marché ou un contexte restauré
 existe. Sur le devis, c'est « 5. Article VSF » (étape [5](05-recherche-vsf-eurocode.md)) : cliquer
 sur une ligne « Autres marques AM » sans avoir choisi de pièce renseigne la base et lance la
-recherche VSF ; une base restaurée seule ne lance toujours **aucune** recherche (R12) : la
-recherche automatique exige une pièce ou une pièce AM sélectionnée. Sur l'opportunité (lot E1),
+recherche VSF. Au lot D, une base restaurée seule ne lançait **aucune** recherche (R12 : la
+recherche automatique exigeait une pièce ou une pièce AM sélectionnée) ; **depuis le lot E2, sur le
+devis, la recherche part dès qu'il y a une base**, y compris au montage et sans X'Glass (voir
+[7](07-confirmation-sale-order.md#devis-sans-xglass-lot-e2)). Sur l'opportunité (lot E1),
 la section se réduit à « 4. Base Eurocode » : le champ base et le lien « Ouvrir dans un nouvel
 onglet », sans tableau, sans bouton « Rechercher sur VSF » et sans recherche automatique ; le clic
 sur une ligne renseigne la base, rien de plus.
@@ -89,10 +93,10 @@ sur une ligne renseigne la base, rien de plus.
   document de travail local (non suivi, lot D du 2026-10-05)).
 - Après un clic AM sans pièce, sélectionner une pièce réinitialise les données dépendantes de la
   sélection précédente, base Eurocode comprise (comportement de `clearSelectedPiece()`, inchangé).
-- Cas limite accepté (lot E1) : une opportunité sans pièce OE, avec seulement une ligne « Autres
-  marques AM » et une base, ouvre le devis (« Créer un devis », voir [6](06-confirmation-crm-lead.md))
-  sans recherche VSF automatique, faute de pièce ou de pièce AM sélectionnée (R12) ; un clic sur
-  « Rechercher sur VSF » la lance.
+- Cas limite du lot E1, **levé par le lot E2** : une opportunité sans pièce OE, avec seulement une
+  ligne « Autres marques AM » et une base, ouvrait le devis (« Créer un devis », voir
+  [6](06-confirmation-crm-lead.md)) sans recherche VSF automatique, faute de pièce ou de pièce AM
+  sélectionnée (R12) ; la recherche part maintenant à l'ouverture.
 
 Lot D, build A (`17.0.261005.1`) : recette réussie le 2026-10-05 sur le build `ab31793`.
 

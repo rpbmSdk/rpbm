@@ -159,11 +159,12 @@ Comportements vérifiés contre les portails réels (transcriptions HTTP obtenue
 **VSF** (Laravel)
 - Succès = redirection vers l'accueil ; échec = retour sur `/identification`. Le test porte donc sur l'URL finale.
 - Ne pas tester la présence d'un champ `_token` : les pages authentifiées en contiennent un aussi (formulaire de déconnexion), ce qui faisait échouer une connexion pourtant réussie.
+- **Plusieurs sessions simultanées sur un même compte** (trace T1, 2026-10-06, deux connexions) : A se connecte et cherche `6108A` (21 lignes), B se connecte avec le même compte, A cherche toujours, B cherche, B se déconnecte (`POST /deconnexion` avec `_token`), A cherche toujours. Contrairement à X'Glass, VSF accepte donc plusieurs sessions, et nos connexions ne déconnectent pas les vendeurs connectés à VSF dans leur navigateur. C'est ce qui permet de ne plus poser de verrou sur VSF (lot E2) ; voir [backend](backend.md#vsf-session-à-la-demande-lot-e2).
 - Une recherche sans résultat n'est ni une erreur ni une session expirée : `GET /catalogue/vitrage?search=<valeur>` répond 200, authentifié, avec la page « Aucun résultat ne correspond à votre recherche. » et sans `#articles-list-container` (trace du 2026-10-06 : `9999Z`, `61-08A`, `A+B &C D` ; `6108a` donne les mêmes 21 articles que `6108A`, VSF ignore la casse). Une session expirée se reconnaît à l'URL de connexion, jamais à l'absence de liste ; voir [backend](backend.md#recherche-sans-résultat-r24).
 
 ## Débogage des portails
 
-- `controllers/portal_trace.py` — traçage HTTP branché sur les sessions `requests` des deux agents : une ligne de log par requête (méthode, URL, statut, redirection, cookies posés, durée, taille), mots de passe et jetons masqués. Inactif par défaut ; activé sur une instance via `rpbm_agent.trace` (+ `rpbm_agent.trace_dir` pour écrire le corps des réponses), relu à chaque `/rpbm_agent_auth`.
+- `controllers/portal_trace.py` — traçage HTTP branché sur les sessions `requests` des deux agents : une ligne de log par requête (méthode, URL, statut, redirection, cookies posés, durée, taille), mots de passe et jetons masqués. Inactif par défaut ; activé sur une instance via `rpbm_agent.trace` (+ `rpbm_agent.trace_dir` pour écrire le corps des réponses), relu à chaque `/rpbm_agent_auth` et, depuis le lot E2, à la connexion VSF à la demande (`_configure_trace`, seulement quand l'agent VSF n'est pas encore connecté : l'appel remet à zéro la numérotation des requêtes tracées).
 - [`debug_portals.py`](../../debug_portals.py) (racine du module) — rejoue authentification et scraping **hors Odoo**, avec les identifiants de `.env` :
   ```
   python debug_portals.py                          # auth des deux portails
@@ -176,16 +177,23 @@ Comportements vérifiés contre les portails réels (transcriptions HTTP obtenue
 
 ## Concurrence — verrou de session
 
-Le portail X'Glass n'autorise qu'**une seule session active par identifiant**, et RPBM ne dispose que d'un seul identifiant partagé X'Glass et d'un seul VSF (pas de pool de comptes) — deux utilisateurs Odoo ne peuvent donc jamais utiliser le widget en même temps sans que l'un invalide la session de l'autre côté portail, et ce pour toute la durée d'une interaction (pas seulement l'instant du login).
+Le portail X'Glass n'autorise qu'**une seule session active par identifiant**, et RPBM ne dispose que d'un seul identifiant X'Glass (pas de pool de comptes) — deux utilisateurs Odoo ne peuvent donc jamais utiliser X'Glass en même temps sans que l'un invalide la session de l'autre côté portail, et ce pour toute la durée d'une interaction (pas seulement l'instant du login).
 
-Solution retenue : un verrou applicatif réutilisant `ir.config_parameter` (`rpbm_agent.session_lock`, JSON `{uid, touched_at}`), avec compare-and-set atomique via `SELECT ... FOR UPDATE` (`main.py::_lock_row`) — pas de nouveau modèle/`ir.model.access.csv` pour un verrou global unique. `/rpbm_agent_auth` acquiert le verrou (rejette avec `UserError` "actuellement utilisé par X" si déjà tenu par un autre utilisateur et non expiré) ; `/rpbm_agent_close` le libère ; les routes de navigation et de recherche portail le rafraîchissent (décorateur `@_touch_agent_lock`). `/createVehicule` reste volontairement hors de ce décorateur : l'enregistrement Odoo peut être créé après une fermeture de session, seule son image X'Glass facultative est alors ignorée. Expiration glissante de 15 minutes en filet de sécurité (session abandonnée sans passer par Confirmer/Annuler — crash navigateur, perte réseau).
+**Le verrou ne protège que X'Glass** (lot E2, décision du 2026-10-06, [VD-05](../validations-metier.md#historique-des-décisions)). VSF accepte plusieurs sessions simultanées sur le même compte (trace T1, voir [Authentification des portails](#authentification-des-portails)) : ses routes (`/searchBaseEurocode`, `/getVsfArticleDetails`, `/createProduct`) n'acquièrent ni ne prolongent le verrou, si bien que plusieurs vendeurs peuvent chercher sur VSF en même temps, et qu'un devis s'ouvre sans prendre le verrou.
 
-Alternative non retenue (business, pas technique) : un pool de plusieurs identifiants X'Glass/VSF permettrait une vraie concurrence sans file d'attente, mais dépend d'une démarche contractuelle auprès des portails — non disponible actuellement.
+Solution retenue : un verrou applicatif réutilisant `ir.config_parameter` (`rpbm_agent.session_lock`, JSON `{uid, touched_at}`), avec compare-and-set atomique via `SELECT ... FOR UPDATE` (`main.py::_lock_row`) — pas de nouveau modèle/`ir.model.access.csv` pour un verrou global unique. `/rpbm_agent_auth` acquiert le verrou (rejette avec `UserError` "actuellement utilisé par X" si déjà tenu par un autre utilisateur et non expiré) ; `/rpbm_agent_close` le libère ; les routes de navigation et de recherche X'Glass le rafraîchissent (décorateur `@_touch_agent_lock`), les routes VSF non. `/createVehicule` reste volontairement hors de ce décorateur : l'enregistrement Odoo peut être créé après une fermeture de session, seule son image X'Glass facultative est alors ignorée. Expiration glissante de 15 minutes en filet de sécurité (session abandonnée sans passer par Confirmer/Annuler — crash navigateur, perte réseau).
+
+Conséquences du lot E2, connues et acceptées : le travail VSF seul ne prolonge plus le verrou, si bien que l'appel X'Glass qui suit un long travail VSF se reconnecte de façon transparente (reconnexion à chaud) et que `/createVehicule` peut créer le véhicule sans image (`has_active_agent_lock`) . Fermer le dialog pendant « Charger X'Glass » ne laisse pas le verrou pris : le dialog détruit envoie `/rpbm_agent_close` à la réponse de `/rpbm_agent_auth`, y compris pour une reconnexion sur le devis.
+
+Alternative non retenue (business, pas technique) : un pool de plusieurs identifiants X'Glass permettrait une vraie concurrence sans file d'attente, mais dépend d'une démarche contractuelle auprès du portail — non disponible actuellement. Pour VSF, le besoin a disparu avec la trace T1.
 
 ## Reconnexion à chaud
 
-L'expiration du verrou ou d'une session authentifiée est remontée au widget sous le type
-JSON-RPC `AgentSessionExpiredError`. Le widget peut alors appeler à nouveau
+L'expiration du verrou ou d'une session X'Glass authentifiée est remontée au widget sous le type
+JSON-RPC `AgentSessionExpiredError` (depuis le lot E2, une expiration VSF n'en fait plus partie : le
+serveur se reconnecte à VSF et rejoue une fois, voir [backend](backend.md#vsf-session-à-la-demande-lot-e2)).
+Un arrêt du processus Odoo (environ 2 minutes sans requête, ou mise à jour du build) fait perdre
+les sessions portail : la requête suivante provoque cette expiration pour X'Glass. Le widget peut alors appeler à nouveau
 `/rpbm_agent_auth` : le verrou est repris par le même utilisateur, les agents sont recréés,
 puis la dernière recherche par immatriculation aboutie et la sélection du véhicule sont
 rejouées côté X'Glass (`/searchImmatriculation` puis `/getPlanche`). Une erreur réseau, une

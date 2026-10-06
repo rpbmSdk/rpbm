@@ -10,7 +10,11 @@ Le widget `rpbm_agent_widget` est une icône loupe (🔍) présente sur **Piste/
 
 ```mermaid
 flowchart TD
-    A([Ouverture du widget]) --> B[Connexion aux portails X'Glass et VSF]
+    A([Ouverture du widget]) --> A1{Fenêtre ouverte sur un devis ?}
+    A1 -->|"Oui (lot E2)"| A2["Encart « Dossier » en lecture seule + recherche VSF immédiate sur la base enregistrée, sans X'Glass"]
+    A2 --> A3["Bouton « Charger X'Glass » (à la demande)"]
+    A3 --> B
+    A1 -->|"Non, opportunité"| B[Connexion à X'Glass]
     B --> C{Immatriculation déjà renseignée sur l'enregistrement ?}
     C -->|Oui| D[Récupération automatique de la valeur]
     C -->|Non| E[Saisie manuelle + clic Search]
@@ -43,7 +47,7 @@ Notes :
 - Si le conducteur (`driver_id`) du véhicule déjà présent dans Odoo diffère du client de l'enregistrement en cours, une alerte s'affiche.
 - Les pièces de la catégorie sont présentées comme sur le portail : « Pièces principales » puis « Pièces complémentaires », chacune découpée en familles X'Glass, dans l'ordre du portail. Sous chaque famille, l'encart « Autres marques AM » est replié ; il se charge au dépliage, sans qu'une pièce soit sélectionnée. Un clic sur l'une de ses lignes renseigne l'eurocode (et lance la recherche VSF sur le devis), quelle que soit la famille (détail : [3](workflow/03-categorie-xglass.md) et [4](workflow/04-piece-piece-am.md)).
 - Si le champ "Catégorie X'Glass" est déjà renseigné sur l'enregistrement, la catégorie correspondante est présélectionnée automatiquement dès que la planche est chargée.
-- Sur le devis, la recherche VSF se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique) ; l'opportunité n'a ni recherche VSF ni tableau.
+- Sur le devis, la recherche VSF part **dès l'ouverture** sur la base enregistrée, sans attendre X'Glass, puis se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique) ; l'opportunité n'a ni recherche VSF ni tableau. « Charger X'Glass » lance ensuite la chaîne ci-dessus (véhicule, catégorie, pièce, main-d'œuvre) sans vider le tableau ni la sélection (détail : [7](workflow/07-confirmation-sale-order.md#devis-sans-xglass-lot-e2)).
 - Sur le devis, une base sans résultat (inexistante ou mal formée) n'est pas une erreur : la section affiche « Aucun article VSF pour « *base* ». », sans notification (lot correctif `17.0.261006.1`, détail : [5](workflow/05-recherche-vsf-eurocode.md)).
 - Sur le devis, les articles VSF forment un tableau (eurocode, désignation, référence constructeur, stock, prix, coût, photo). Un clic sur une ligne sélectionne l'article et ouvre sous elle son détail : toutes les vignettes, les caractéristiques et les actions (détail : [5](workflow/05-recherche-vsf-eurocode.md)).
 
@@ -69,11 +73,11 @@ Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardé
 
 > **Article VSF.** La fenêtre de l'opportunité ne cherche plus d'article VSF : elle s'arrête à la base Eurocode. L'Eurocode complet, la désignation VSF, le stock VSF et la référence constructeur ne sont plus écrits depuis l'opportunité ; ils restent visibles et modifiables à la main dans le formulaire, et seul le devis les alimente (voir plus bas).
 
-**Créer un devis.** Le bouton, placé après « Confirmer et enregistrer », est affiché sur une opportunité, pas sur une piste ; sans client, il est grisé, avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. ». Comme « Confirmer » et « Confirmer et enregistrer », il est aussi grisé pendant un chargement. Il écrit et enregistre le dossier, ferme la fenêtre, puis ouvre un **nouveau** devis non enregistré, lié à l'opportunité, comme le bouton natif « Nouveau devis » : chaque clic en ouvre un nouveau. La fenêtre du widget s'ouvre alors seule sur ce devis, avec le même véhicule, la même pièce et la même base (détail : [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md#créer-un-devis-lot-e1)).
+**Créer un devis.** Le bouton, placé après « Confirmer et enregistrer », est affiché sur une opportunité, pas sur une piste ; sans client, il est grisé, avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. ». Comme « Confirmer » et « Confirmer et enregistrer », il est aussi grisé pendant un chargement. Il écrit et enregistre le dossier, ferme la fenêtre, puis ouvre un **nouveau** devis non enregistré, lié à l'opportunité, comme le bouton natif « Nouveau devis » : chaque clic en ouvre un nouveau. La fenêtre du widget s'ouvre alors seule sur ce devis, sans connexion à X'Glass : recherche VSF immédiate sur la même base, et encart « Dossier » avec le même véhicule, la même catégorie et la même pièce ; « Charger X'Glass » restaure la chaîne complète (détail : [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md#créer-un-devis-lot-e1)). Le libellé de la pièce choisie est écrit dans l'opportunité à cette occasion.
 
 ### Ordre de Vente (`sale.order`)
 
-Le devis reprend le flux véhicule/catégorie/pièce ci-dessus (identique) puis cherche les articles VSF. Sa fenêtre s'ouvre par la loupe ou, après « Créer un devis », toute seule : elle restaure le véhicule, la pièce et la base de l'opportunité, lance la recherche VSF quand une pièce ou une pièce après-marché est retrouvée et propose la main-d'œuvre. La ligne de détail de chaque article VSF sélectionné propose des actions supplémentaires :
+Depuis le lot E2, le devis commence par les articles VSF : sa fenêtre s'ouvre par la loupe ou, après « Créer un devis », toute seule, **sans connexion à X'Glass**, sur l'encart « Dossier » (véhicule, catégorie, pièce concernée, pièce X'Glass, article principal, en lecture seule) et la recherche VSF de la base de l'opportunité. Le flux véhicule/catégorie/pièce ci-dessus (identique) et la main-d'œuvre n'apparaissent qu'après « Charger X'Glass », qui restaure le véhicule, la pièce et la base de l'opportunité sans vider le tableau VSF. « Confirmer » est actif dès l'ouverture : sans X'Glass, il n'écrit que la base et l'article principal. Plusieurs vendeurs peuvent chercher sur VSF en même temps ; seul X'Glass reste réservé à un vendeur à la fois. La ligne de détail de chaque article VSF sélectionné propose des actions supplémentaires :
 
 ```mermaid
 flowchart TD
@@ -83,7 +87,7 @@ flowchart TD
     W2 -->|Oui| W4["Bouton 'Voir le produit' → ouvre la fiche article dans un nouvel onglet"]
     W3 --> W5["Bouton 'Ajouter au devis' → ajoute une ligne au devis"]
     W4 --> W5
-    W5 --> W6[Clic sur Confirmer pour finaliser véhicule/catégorie/eurocode sur le devis]
+    W5 --> W6[Clic sur Confirmer pour finaliser base Eurocode et article principal (et véhicule/catégorie si X'Glass est chargé)]
     W5 -.-> W5R["Bouton 'Retirer du devis' → retire la ligne ajoutée par le widget"]
 ```
 
@@ -149,8 +153,10 @@ Aucun champ Studio n'est à créer : le module déclare ses champs natifs `rpbm_
 
 La confirmation mémorise le véhicule X’Glass sélectionné (son identifiant, parmi les véhicules
 qu'une même immatriculation peut renvoyer), la catégorie X’Glass, la base Eurocode et les identifiants
-de la pièce X’Glass, de la pièce OE et de la pièce après-marché. À la réouverture,
-le dialogue restaure ces choix et réduit les listes à la sélection existante. Une pièce mémorisée mais
+de la pièce X’Glass, de la pièce OE et de la pièce après-marché, ainsi que le libellé de la pièce
+choisie (lot E2). À la réouverture, le dialogue de l'opportunité restaure ces choix et réduit les
+listes à la sélection existante ; celui du devis les affiche d'abord dans l'encart « Dossier » et ne
+les restaure qu'après « Charger X'Glass ». Une pièce mémorisée mais
 encore introuvable (chargement en cours, pièce absente de la liste) n'est pas effacée par une
 confirmation : seule une action explicite la remplace ou la retire (choisir une pièce ou la
 désélectionner, cliquer sur une autre catégorie ou un autre véhicule, relancer « Rechercher » avec
@@ -158,5 +164,6 @@ succès ; voir [6](workflow/06-confirmation-crm-lead.md#pièce-mémorisée-lot-e
 Les boutons « Afficher les autres » rendent les listes complètes disponibles pour
 une modification volontaire. Lorsque seule une base Eurocode a été enregistrée, sans pièce
 retrouvée, le dialogue montre les familles et leurs encarts « Autres marques AM » mais pas
-les cartes de pièces, et ne lance aucune recherche VSF automatique. Un second clic sur la pièce sélectionnée efface les
+les cartes de pièces ; sur le devis, la recherche VSF part malgré tout à l'ouverture (lot E2), alors
+qu'elle ne partait pas au lot D. Un second clic sur la pièce sélectionnée efface les
 sélections dépendantes, la base Eurocode et les résultats VSF.

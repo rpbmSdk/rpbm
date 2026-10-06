@@ -117,7 +117,11 @@ Scénario de recette du build `17.0.261005.1` : **recette réussie le 2026-10-05
 `ab31793`**. Les résultats attendus ci-dessous viennent du plan du 2026-10-05 et des
 qualifications du 2026-10-01. Depuis le lot E1 (`17.0.261005.3`), l'opportunité n'a plus de
 recherche VSF ni de tableau : les étapes 3 et 8 sont adaptées ci-dessous (mention « E1 », non
-rejouée) et la recherche VSF se rejoue sur le devis (SO-05). Protocole sans écriture : ne pas confirmer, créer de
+rejouée) et la recherche VSF se rejoue sur le devis (SO-05). Depuis le lot E2 (`17.0.261006.2`), le
+devis s'ouvre sans X'Glass : pour rejouer les étapes X'Glass de ce scénario sur un devis, cliquer
+d'abord sur « Charger X'Glass » (voir SO-10), et la recherche VSF y part dès l'ouverture, ce qui
+change l'attendu de l'étape 8 sur le devis (aucune recherche seule au lot D ; recherche immédiate
+depuis le lot E2). Protocole sans écriture : ne pas confirmer, créer de
 produit, définir d'article principal ni ajouter de ligne ; fermer par **Annuler**. Relever par
 RPC `write_date` et les champs `rpbm_*` du dossier, de son opportunité et du véhicule lié avant
 et après : ils doivent rester inchangés (seule écriture tolérée : le verrou technique
@@ -193,6 +197,17 @@ Contrôles hors réseau avant tout push, depuis la racine du dépôt :
   `clearSelectedPiece()` ; R28, la ligne ajoutée est retrouvée par son produit même quand `records`
   contient un autre objet (« Retirer du devis », puis retrait de la bonne ligne), et un produit déjà
   présent à l'ouverture reste « déjà présent », sans ajout possible ;
+- le même script, lot E2 (`17.0.261006.2`) : devis avec une base, une recherche `/searchBaseEurocode`
+  sans authentification ni `/rpbm_agent_close` ; `getRecordData()` sans X'Glass (base et quatre champs
+  d'article seulement) et avec véhicule et catégorie (écriture complète, libellé de pièce compris) ;
+  `clearSelectedPiece(true)` qui garde tableau et sélection ; le passage de `agentsInitialized` à vrai
+  qui ne relance pas la recherche ; la pièce concernée enregistrée qui survit à la restauration ; une
+  réponse de recherche périmée ignorée ; l'opportunité inchangée (le harnais force `agentsInitialized`
+  à vrai : ces tests le remettent à faux) ; bloc « Revue E2 » : devis avec catégorie mais sans base ni
+  pièce qui garde base, tableau et article principal à travers « Charger X'Glass » et la vraie chaîne,
+  libellé d'une pièce « Autres marques AM » mémorisée seule conservé, base sans résultat que les effets
+  ne relancent pas et que le bouton relance, deux « Charger X'Glass » rapprochés pour une seule
+  authentification, dialog fermé pendant « Charger X'Glass » (un seul `/rpbm_agent_close`, aucun autre appel ni état modifié) ;
 - `python rpbm_agent/test_portal_auth.py` ([script](../test_portal_auth.py)) : chaque XPath des
   dialogs héritiers (2 pour le devis, 4 pour l'opportunité) cible un seul nœud du dialog de base
   (`test_xpath_des_dialogs_ciblent_un_seul_noeud`) ; depuis le build B, le template principal porte le littéral
@@ -202,7 +217,10 @@ Contrôles hors réseau avant tout push, depuis la racine du dépôt :
   « aucun résultat » (image `no-result.png`, texte, ou les deux) renvoie `[]` sans requête POST
   (`test_vsf_recherche_sans_resultat_sans_post`), et une page sans liste d'articles ni message
   « aucun résultat » lève une `VSFError` qui ne parle pas de session
-  (`test_vsf_recherche_page_inattendue`) ;
+  (`test_vsf_recherche_page_inattendue`) ; au lot E2, la session VSF à la demande : une seule
+  connexion pour deux appels, une expiration suivie d'une reconnexion puis d'un succès, un second
+  `VSFAuthError` propagé, une connexion refusée qui laisse `logged_in` faux, deux threads de la même
+  génération pour une seule reconnexion ;
 - `py_compile` des fichiers Python modifiés ;
 - rendu Owl local, avec Chromium et l'`owl.js` du code Odoo (scripts locaux, non versionnés) :
   lien direct VSF (R15), vignettes et aperçu (R16, R17) et, au build B, `ArticleComponent` monté
@@ -266,15 +284,19 @@ relevé que « Retirer du devis » manquait après « Ajouter au devis » (R28, 
 3. Parcourir `GS600HH` › `PARE-BRISE` › une pièce › une ligne « Autres marques AM », base `6108A` ;
    avec une plaque qui renvoie plusieurs véhicules X'Glass (`GS600HH` n'en renvoie qu'un), choisir le
    second. Faire un **double clic** sur « Créer un devis ».
-   - Attendu : une seule sauvegarde de l'opportunité, avec `rpbm_xglass_vehicle_id` et les
-     identifiants de pièce (X'Glass, OE, AM) renseignés ;
+   - Attendu : une seule sauvegarde de l'opportunité, avec `rpbm_xglass_vehicle_id`, les
+     identifiants de pièce (X'Glass, OE, AM) et le libellé de la pièce (`rpbm_xglass_piece_label`,
+     lot E2) renseignés ;
      `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` et `rpbm_constructor_reference`
      inchangés.
    - Attendu : un seul devis, non enregistré, lié à l'opportunité.
-   - Attendu : la fenêtre du devis s'ouvre seule avec la même restauration : véhicule mémorisé,
-     pièce, recherche `6108A` automatique, « 4. Main d'œuvre » puis « 5. Article VSF ».
-4. Sur le devis, ajouter un article (créer le produit si besoin : écriture à lister) et une
-   opération de main-d'œuvre, puis « Confirmer et enregistrer ».
+   - Attendu (lot E2, non rejoué ; au lot E1 : restauration immédiate, voir l'en-tête) : la fenêtre
+     du devis s'ouvre seule **sans authentification X'Glass** ni seconde connexion : encart « Dossier »
+     (véhicule, catégorie, pièce concernée, libellé de la pièce, article principal) et recherche
+     `6108A` immédiate. « Charger X'Glass » restaure alors le véhicule mémorisé, la pièce, la pièce AM,
+     puis « 4. Main d'œuvre » et « 5. Article VSF », sans vider le tableau.
+4. Sur le devis, ajouter un article (créer le produit si besoin : écriture à lister) et, après
+   « Charger X'Glass », une opération de main-d'œuvre, puis « Confirmer et enregistrer ».
    - Attendu : le devis brouillon est enregistré ; les champs de l'opportunité sont cohérents avec
      le devis (miroirs `related`).
 5. Annuler le devis de test, puis lister toutes les écritures : opportunité, devis, lignes,
@@ -356,8 +378,8 @@ occasion, sans verdict) :
 
 Créer un devis lié à une opportunité de test issue de CRM-01. Ouvrir la
 fenêtre par la loupe du devis (le chemin « Créer un devis » relève de CRM-07 et
-SO-06), rejouer la recherche `DS808DZ`, sélectionner `PARE-BRISE`, puis
-l'article `6539RGSH5RD`.
+SO-06), cliquer sur « Charger X'Glass » (le devis s'ouvre sans X'Glass depuis le lot E2), rejouer la
+recherche `DS808DZ`, sélectionner `PARE-BRISE`, puis l'article `6539RGSH5RD`.
 
 Résultats attendus :
 
@@ -393,8 +415,9 @@ Résultats attendus :
 
 ### SO-04 — Opérations de main-d'œuvre X'Glass
 
-Sur un devis de test avec opportunité, sélectionner une pièce qui renvoie des
-opérations T1, T2 ou T3, cocher plusieurs opérations puis les ajouter.
+Sur un devis de test avec opportunité, cliquer sur « Charger X'Glass » (la main-d'œuvre
+n'apparaît qu'après, lot E2), sélectionner une pièce qui renvoie des opérations T1, T2 ou T3, cocher
+plusieurs opérations puis les ajouter.
 
 Résultats attendus :
 
@@ -408,14 +431,14 @@ Résultats attendus :
 
 ### SO-05 — Dialog devis après découplage de la section VSF (lot D, build A)
 
-Sur un devis lié à une opportunité (même protocole sans écriture que CRM-06 ; recette réussie le 2026-10-05 sur le build `ab31793`) :
+Sur un devis lié à une opportunité (même protocole sans écriture que CRM-06 ; recette réussie le 2026-10-05 sur le build `ab31793`). Depuis le lot E2, le devis s'ouvre sans X'Glass : cliquer d'abord sur « Charger X'Glass » ; les étapes ci-dessous valent ensuite (adaptation non rejouée) :
 
 1. Sélectionner une pièce : les sections « 4. Main d'œuvre » et « 5. Article VSF » sont
    toutes deux présentes, dans cet ordre.
 2. Rouvrir sans pièce, déplier un encart « Autres marques AM » et cliquer sur une ligne :
-   « 5. Article VSF » apparaît, la recherche VSF se lance, « 4. Main d'œuvre » reste absente
-   (elle suit la pièce sélectionnée ; la numérotation saute de 3 à 5, constat déjà présent pour
-   une base restaurée seule).
+   « 5. Article VSF » est présente (dès l'ouverture depuis le lot E2), la base est remplie et la
+   recherche VSF se relance, « 4. Main d'œuvre » reste absente (elle suit la pièce sélectionnée ;
+   la numérotation saute de 3 à 5, constat déjà présent pour une base restaurée seule).
 3. Aucune action de devis (ajout, retrait) n'est exécutée.
 
 ### SO-06 — Ouverture automatique du dialog sur le devis (lot E1)
@@ -430,7 +453,8 @@ devis (aucun dialog ni requête `/rpbm_agent_*`). Étape 6 non jouée, volontair
 un second devis.
 
 1. Ouverture : après « Créer un devis » (CRM-07), la fenêtre du widget s'ouvre seule sur le
-   nouveau devis, une seule fois. La fermer (**Annuler**) : elle ne se rouvre pas d'elle-même ;
+   nouveau devis, une seule fois (sans X'Glass depuis le lot E2 : encart « Dossier » et recherche
+   VSF, voir SO-10). La fermer (**Annuler**) : elle ne se rouvre pas d'elle-même ;
    la loupe la rouvre.
 2. Aller-retour : revenir à l'opportunité par le fil d'Ariane, puis rouvrir le devis : la fenêtre
    ne s'ouvre pas.
@@ -470,8 +494,9 @@ le produit `6574AXSH` n'est plus proposé. À l'étape 2, `6108AGACHM` et `6108A
 Scénario du build `17.0.261006.1`. Il n'enregistre rien : « Ajouter au devis » et « Retirer du
 devis » ne modifient que le formulaire ouvert, dont on abandonne les modifications à la fin
 (« Ignorer les modifications »). Relever par RPC `write_date` et les lignes du devis avant et après :
-elles doivent rester inchangées (seule écriture tolérée : le verrou technique
-`rpbm_agent.session_lock`, vide en fin de recette).
+elles doivent rester inchangées. Depuis le lot E2, le devis s'ouvre sans X'Glass et ne prend donc pas
+le verrou technique `rpbm_agent.session_lock` (relevé inchangé) ; avant, la seule écriture tolérée
+était ce verrou, vide en fin de recette.
 
 **Recette réussie le 2026-10-06**, en `17.0.261006.1` (commit `44b86e0`), sans aucune écriture : étapes
 1 à 3 et 6. Après « Ajouter au devis », les actions affichent « Retirer du devis », jamais « Article
@@ -490,7 +515,8 @@ Défaut d'origine (recette d'E1, 2026-10-05) : après « Ajouter au devis », la
 avec sa quantité et son prix, mais « Retirer du devis » ne s'affichait pas et l'article montrait
 « Article déjà présent dans le devis. ».
 
-1. Ouvrir la fenêtre, chercher la base `6574A` (automatique si une pièce est retrouvée, sinon par
+1. Ouvrir la fenêtre, chercher la base `6574A` (la recherche part seule à l'ouverture depuis le lot
+   E2, sans X'Glass ; au build `17.0.261006.1`, seulement si une pièce était retrouvée, sinon par
    « Rechercher sur VSF »), puis sélectionner la ligne `6574AGACIMVZ`.
    - Attendu : « Voir le produit » (le produit existe) et « Ajouter au devis » ; ni « Retirer du
      devis », ni « Article déjà présent dans le devis. ».
@@ -533,8 +559,9 @@ affichait « Recherche impossible : le portail VSF est inaccessible. ». VSF ré
 page normale, « Aucun résultat ne correspond à votre recherche. ».
 
 1. Dans la section VSF du devis, saisir `9999Z` (bon format, aucune base de ce nom) puis valider le
-   champ (Tab ou clic ailleurs). Avec une pièce ou une pièce après-marché sélectionnée, la recherche
-   part seule ; sinon, cliquer sur « Rechercher sur VSF ».
+   champ (Tab ou clic ailleurs). Depuis le lot E2, la recherche part seule à la validation, sans
+   X'Glass ; au build `17.0.261006.1`, seulement avec une pièce ou une pièce après-marché sélectionnée,
+   sinon par « Rechercher sur VSF ».
    - Attendu : aucun tableau, et la section affiche « Aucun article VSF pour « 9999Z ». » ;
      **aucune notification d'erreur** (ni « portail VSF inaccessible », ni autre) ; une seule requête
      `/searchBaseEurocode`, qui répond par une liste vide.
@@ -548,17 +575,47 @@ page normale, « Aucun résultat ne correspond à votre recherche. ».
 5. Sur l'opportunité (lot E1), saisir `9999Z` puis valider.
    - Attendu : aucune requête VSF et aucun message : l'opportunité ne cherche plus sur VSF.
 
-Si la session VSF expire pendant la recherche (R23), le widget se reconnecte et rejoue la requête une
-seule fois : deux requêtes `/searchBaseEurocode` pour une saisie, avec le même résultat, ne sont pas
-un double déclenchement. Avant le lot correctif, c'est ce rejeu qui échouait avec le message
-trompeur.
+Si la session VSF expire pendant la recherche (R23), la reconnexion et le rejeu ont lieu côté serveur
+depuis le lot E2 : le navigateur ne voit qu'une requête `/searchBaseEurocode`. Au build
+`17.0.261006.1`, le widget se reconnectait et rejouait la requête une seule fois : deux requêtes pour
+une saisie, avec le même résultat, n'étaient pas un double déclenchement ; c'est ce rejeu qui échouait
+avec le message trompeur avant le lot correctif.
 
 Hors protocole, car non rejouable à la demande en live : « Recherche impossible : le portail VSF est
 inaccessible. » reste affiché pour une vraie panne (réseau, réponse HTTP inattendue) et pour une page
 de résultats inattendue, ni liste d'articles ni message « aucun résultat » : le message exact de
-l'erreur figure alors dans le journal serveur. Une session expirée garde sa reconnexion
-automatique. La page « aucun résultat » et la page inattendue sont couvertes hors réseau par
+l'erreur figure alors dans le journal serveur. Une session VSF expirée se reconnecte seule dans le
+serveur (une fois) ; si cette reconnexion échoue (identifiants refusés), l'utilisateur voit « Connexion
+au portail VSF impossible. Vérifiez les identifiants configurés. », sans reconnexion X'Glass. La page « aucun résultat » et la page inattendue sont couvertes hors réseau par
 `test_portal_auth.py`.
+
+### SO-10 — VSF d'abord, X'Glass à la demande (lot E2)
+
+Scénario du build `17.0.261006.2`, **recette à faire**. Étapes 1 à 5 : sans écriture enregistrée (même protocole que SO-08, formulaire abandonné à la fin) ; étape 6 : avec écriture, sur l'opportunité de recette de CRM-07.
+
+Dossier : un devis brouillon lié à une opportunité qui a une base mémorisée (`6574A`), un véhicule, une catégorie et une pièce mémorisés, sans ligne. Relever par RPC, avant et après : `rpbm_agent.session_lock`, `rpbm_xglass_vehicle_id`, `write_date` et les lignes du devis.
+
+1. **Ouverture.** Ouvrir la fenêtre par la loupe, journal réseau ouvert.
+   - Attendu : **aucun** `/rpbm_agent_auth` ; un `/searchBaseEurocode` sur `6574A`, et le tableau s'affiche, sans attendre X'Glass ; l'encart « Dossier » en lecture seule (véhicule, catégorie, pièce concernée, pièce X'Glass, article principal ; « — » pour une valeur absente) ; **ni** « 1. Véhicule », ni sections 2 et 3, ni « 4. Main d'œuvre » ; « Confirmer » actif ; le verrou inchangé.
+2. **Sélection.** Sélectionner `6574AGACIMVZ` et le définir comme article principal (sans « Créer le produit » ni « Ajouter au devis »).
+   - Attendu : sélection, détail et actions comme dans la recette du tableau VSF.
+3. **« Charger X'Glass ».** Cliquer sur le bouton.
+   - Attendu : un `/rpbm_agent_auth`, puis la chaîne X'Glass (véhicule mémorisé, planche, catégorie, pièces), **sans nouvelle recherche VSF** ; l'encart disparaît ; « 1. Véhicule », les sections 2 et 3 et « 4. Main d'œuvre X'Glass » apparaissent ; **le tableau, la sélection et l'article principal sont conservés** ; la pièce concernée affiche la valeur enregistrée, non remplacée par la suggestion du calque. Un double clic sur le bouton ne fait qu'une authentification (il est désactivé pendant le chargement).
+4. **Fermeture avec X'Glass.** « Annuler ».
+   - Attendu : un `/rpbm_agent_close`, verrou libéré ; abandonner les modifications du formulaire (« Ignorer les modifications ») : formulaire propre.
+5. **Fermeture sans X'Glass.** Rouvrir la fenêtre, puis la fermer aussitôt par « Annuler ».
+   - Attendu : **aucun** `/rpbm_agent_close` ; verrou inchangé.
+6. **Avec écriture.** Sur l'opportunité de recette de CRM-07, « Créer un devis ».
+   - Attendu : la fenêtre du devis s'ouvre aussitôt, sans seconde authentification, avec le libellé de la pièce dans l'encart ; « Confirmer » sans « Charger X'Glass » n'écrit que la base et l'article principal (relever : `rpbm_xglass_vehicle_id`, identifiants de pièce, véhicule et catégorie inchangés) ; abandonner le devis, sans l'enregistrer ; lister toutes les écritures (opportunité, verrou).
+7. **Facultatives.**
+   - Devis sans base ni pièce enregistrées (dossier avec seulement une catégorie, ou presque vide) : saisir une base, choisir un article principal, puis « Charger X'Glass » : la base, le tableau, la sélection et l'article principal survivent à la restauration automatique de la catégorie ; en revanche, cliquer ensuite sur une **autre** catégorie vide la base et le tableau, comme avant.
+   - Fermeture pendant « Charger X'Glass » : cliquer sur le bouton puis fermer aussitôt par « Annuler ». Attendu : quand la réponse de `/rpbm_agent_auth` arrive, un `/rpbm_agent_close` part (verrou libéré, session X'Glass fermée), sans autre appel (fenêtre de temps étroite, à jouer sur un réseau lent).
+   - Base sans résultat (`9999Z`) puis « Charger X'Glass » : aucune seconde recherche, le message reste ; « Rechercher sur VSF » la relance (R24).
+   - Deux vendeurs en même temps : les deux ouvrent un devis et voient leur tableau VSF, sans message de verrou. Si le premier a chargé X'Glass, « Charger X'Glass » du second affiche « actuellement utilisé par … » dans l'encart, et son tableau reste ; le bouton sert alors de « Réessayer ».
+   - Après un arrêt du processus (environ 2 minutes sans requête), la première recherche VSF se reconnecte seule : aucune erreur visible, une seule requête côté navigateur.
+   - Dans les journaux, compter les connexions VSF et les reconnexions, pour les confronter aux traces T1 et T2 ([backend](technique/backend.md#état-de-session-partagée)).
+
+Non rejouable à la demande : des identifiants VSF refusés donnent « Connexion au portail VSF impossible. Vérifiez les identifiants configurés. » sans reconnexion X'Glass (couvert hors réseau) ; « Annuler » d'un vendeur dont le verrou a expiré (15 minutes de travail VSF seul) ne déconnecte pas la session X'Glass d'un autre vendeur qui a repris le verrou ; deux vendeurs qui créent le même article en même temps ne produisent pas de doublon de produit (recherche d'existence par un curseur neuf après le verrou par code).
 
 ## Tableau VSF en plein écran (R21, R22, reprise de R15 à R17)
 
@@ -578,7 +635,9 @@ Lire d'abord la version du module par RPC. Ouvrir un dossier de test ayant une b
 mémorisée : un devis lié à une opportunité, sauf mention contraire. Ne pas confirmer le dialogue, créer un produit, définir un article principal ni ajouter de ligne ;
 fermer par **Annuler**. Relever par RPC `write_date` et les champs `rpbm_*` avant et après sur le
 dossier, son opportunité et le véhicule lié : toutes ces valeurs doivent rester inchangées (seule
-écriture tolérée : le verrou technique `rpbm_agent.session_lock`, vide en fin de recette).
+écriture tolérée : le verrou technique `rpbm_agent.session_lock`, vide en fin de recette ; depuis le
+lot E2, un devis ouvert sans « Charger X'Glass » ne le prend pas). Depuis le lot E2, le tableau s'affiche
+à l'ouverture du devis : « Charger X'Glass » n'est nécessaire que pour les étapes 11 (main-d'œuvre) et 12.
 
 1. **Plein écran (R22).** Ouvrir le dialogue, sur le devis puis sur l'opportunité.
    - Attendu : `.modal-dialog` porte la classe `modal-fullscreen` (et non plus `modal-lg`) ; la
@@ -650,14 +709,16 @@ dossier, son opportunité et le véhicule lié : toutes ces valeurs doivent rest
       avec une seule photo, l'aperçu reste stable ; il s'ouvre au-dessus du dialogue plein écran
       et « Fermer » ne ferme que lui.
 11. **Devis et opportunité (lot E1).**
-    - Sur le devis (SO-05) : « 4. Main d'œuvre X'Glass » (avec une pièce sélectionnée) puis « 5.
-      Article VSF », avec le tableau et ses lignes de détail. « Retirer du devis » n'apparaît
+    - Sur le devis (SO-05) : après « Charger X'Glass » (lot E2), « 4. Main d'œuvre X'Glass » (avec
+      une pièce sélectionnée) puis « 5. Article VSF », avec le tableau et ses lignes de détail ; avant
+      « Charger X'Glass », seuls l'encart « Dossier » et « 5. Article VSF » sont affichés. « Retirer du devis » n'apparaît
       qu'après un ajout : il relève de SO-08 et de SO-03, hors de ce protocole.
     - Sur l'opportunité : « 4. Base Eurocode » sans tableau ni bouton « Rechercher sur VSF » ; le
       lien « Ouvrir dans un nouvel onglet » reste.
 12. **Non-régression.** Rejouer CRM-03 et CRM-05 : base restaurée avec et sans pièce AM, aucune
-    recherche automatique sans pièce mémorisée, « Autres marques AM » chargé une seule fois par
-    véhicule et famille, puis base remplie au clic.
+    recherche automatique sur l'opportunité (sur le devis, la recherche part dès l'ouverture depuis le
+    lot E2, avec ou sans pièce mémorisée), « Autres marques AM » chargé une seule fois par véhicule et
+    famille, puis base remplie au clic ; sur le devis, après « Charger X'Glass ».
 
 Les références de dossiers et les preuves live restent dans le document de travail local.
 

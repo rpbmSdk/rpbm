@@ -55,6 +55,8 @@ la source de vérité de l'exécution en production.
 
 ## Séquence complète (cas Ordre de Vente)
 
+Depuis le lot E2 (`17.0.261006.2`), le devis s'ouvre sur la recherche VSF, sans authentification X'Glass : la chaîne X'Glass ne démarre qu'à la demande (« Charger X'Glass »). L'opportunité commence toujours par la chaîne X'Glass, sans recherche VSF (lot E1).
+
 ```mermaid
 sequenceDiagram
     actor U as Utilisateur
@@ -65,9 +67,12 @@ sequenceDiagram
     participant ORM as Odoo ORM
 
     U->>FE: Clic sur le widget loupe (ou ouverture automatique après « Créer un devis »)
-    FE->>BE: /rpbm_agent_auth
+    FE->>BE: /searchBaseEurocode (base enregistrée, encart « Dossier », sans X'Glass)
+    BE->>VSF: connexion à la demande (formulaire + jeton CSRF), une session par processus
+    BE-->>FE: liste d'articles VSF
+    U->>FE: Clic « Charger X'Glass » (le tableau et la sélection VSF restent)
+    FE->>BE: /rpbm_agent_auth (verrou + X'Glass seulement)
     BE->>XG: Authentification (formulaire + cookies)
-    BE->>VSF: Authentification (formulaire + jeton CSRF)
     FE->>BE: /searchImmatriculation
     BE->>XG: POST /ajax/searchImmat.html
     XG-->>BE: JSON véhicules
@@ -91,8 +96,8 @@ sequenceDiagram
     BE->>XG: POST /ajax/findSelectionsPiecesAmView.html
     XG-->>BE: JSON pièces après-marché
     BE-->>FE: pièces AM (contiennent l'eurocode)
-    FE->>BE: /searchBaseEurocode
-    BE->>VSF: GET /catalogue/vitrage + POST /catalogue/articles-client
+    FE->>BE: /searchBaseEurocode (si la base change)
+    BE->>VSF: GET /catalogue/vitrage + POST /catalogue/articles-client (sans verrou, session VSF reconnectée au besoin)
     VSF-->>BE: HTML + JSON articles
     BE-->>FE: liste d'articles VSF
     U->>FE: Clic "Créer" sur un article (sale.order)
@@ -100,6 +105,7 @@ sequenceDiagram
     BE->>ORM: create product.product + product.supplierinfo
     U->>FE: Clic "Confirmer" (ou "Confirmer et enregistrer")
     Note over FE: confirmRecord() — écrire AVANT de fermer la session
+    Note over FE: sans X'Glass chargé (véhicule et catégorie absents) : seuls la base et l'article principal sont écrits
     FE->>BE: /getOdooVehicule (+ /createVehicule si absent)
     BE->>ORM: recherche/création fleet.vehicle
     FE->>BE: /enrichVehicule si le véhicule existait déjà
@@ -109,7 +115,7 @@ sequenceDiagram
     opt "Confirmer et enregistrer"
         FE->>ORM: record.save() — sauvegarde effective en base
     end
-    FE->>BE: /rpbm_agent_close
+    FE->>BE: /rpbm_agent_close (seulement si X'Glass a été chargé)
     BE->>XG: GET /logout.html
     opt "Confirmer" seul
         U->>FE: Enregistrement du formulaire (bouton standard Odoo)
@@ -119,7 +125,7 @@ sequenceDiagram
 
 ## Séquence « Créer un devis » (opportunité vers devis, lot E1)
 
-Le dialog de l'opportunité n'a ni recherche VSF ni tableau : il s'arrête à la base Eurocode. Le bouton « Créer un devis » écrit l'opportunité, ouvre un nouveau devis, et le dialog du devis s'ouvre seul (détail : [frontend](frontend.md#créer-un-devis-lot-e1)).
+Le dialog de l'opportunité n'a ni recherche VSF ni tableau : il s'arrête à la base Eurocode. Le bouton « Créer un devis » écrit l'opportunité, ouvre un nouveau devis, et le dialog du devis s'ouvre seul, sur la recherche VSF et sans X'Glass depuis le lot E2 (détail : [frontend](frontend.md#créer-un-devis-lot-e1) et [lot E2](frontend.md#vsf-dabord-xglass-à-la-demande-lot-e2)).
 
 ```mermaid
 sequenceDiagram
@@ -141,9 +147,12 @@ sequenceDiagram
     ORM-->>FC: formulaire sale.order neuf, lié à l'opportunité
     FC->>FC: onMounted : drapeau posé et devis nouveau de cette opportunité ?
     FC->>SO: dialogService.add(AgentWidgetDialogSaleOrder)
-    SO->>BE: /rpbm_agent_auth, puis restauration (véhicule mémorisé, pièce, pièce AM, base)
-    SO->>BE: /searchBaseEurocode (si une pièce ou une pièce AM est retrouvée)
-    U->>SO: articles VSF, main-d'œuvre, Confirmer et enregistrer
+    SO->>BE: /searchBaseEurocode (base mémorisée), sans /rpbm_agent_auth
+    BE-->>SO: tableau VSF, encart « Dossier » en lecture seule
+    opt « Charger X'Glass »
+        SO->>BE: /rpbm_agent_auth, puis restauration (véhicule mémorisé, pièce, pièce AM, main-d'œuvre)
+    end
+    U->>SO: articles VSF, Confirmer et enregistrer
 ```
 
 ## Points d'attention transverses
@@ -153,4 +162,4 @@ sequenceDiagram
 - **Mode logistique** : `sale.order.carrier_id` est la source canonique du lieu/mode de remise. Une vue versionnée le rend visible après les réorganisations Studio ; sa valeur peut être préremplie depuis `crm.lead.x_studio_lieu_intervention` uniquement sur les nouveaux devis. La confirmation de la vente refuse un transporteur vide pour éviter le routage implicite.
 - **Aucune sécurité applicative dédiée** : les routes sont ouvertes à tout utilisateur connecté (`auth='user'`), sans groupe ni `ir.model.access.csv` propre au module.
 - **Contrôle d'accès** : `/enrichVehicule` n'utilise pas `sudo` et transforme un refus d'écriture Fleet en avertissement non bloquant ; la synchronisation Studio s'exécute avec les droits de l'utilisateur qui écrit.
-- **État de session partagé** : `vsfAgent`/`xglassAgent` sont des instances Python **au niveau module** (pas par utilisateur Odoo, pas par requête) — voir [backend](backend.md#état-de-session-partagée) et l'[état des lieux](../etat-des-lieux.md) pour l'implication en usage concurrent.
+- **État de session partagé** : `vsfAgent`/`xglassAgent` sont des instances Python **au niveau module** (pas par utilisateur Odoo, pas par requête), partagées par les threads d'un même processus et perdues quand il s'arrête. Le verrou ne protège plus que X'Glass ; VSF se connecte à la demande, sans verrou (lot E2) — voir [backend](backend.md#état-de-session-partagée) et l'[état des lieux](../etat-des-lieux.md) pour l'implication en usage concurrent.

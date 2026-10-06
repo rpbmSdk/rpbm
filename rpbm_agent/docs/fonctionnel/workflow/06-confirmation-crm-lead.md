@@ -12,6 +12,7 @@
 | `rpbm_part_type` | suggestion depuis le calque, visible et modifiable (`windshield`, `rear_window`, `side_window`, `other`) | si une catégorie est sélectionnée |
 | `rpbm_eurocode_base` | `state.baseEurocode` | toujours (vide efface) |
 | `rpbm_xglass_piece_id` / `rpbm_piece_oe_id` / `rpbm_piece_am_id` | identifiants X'Glass/OE/après-marché | pour une pièce mémorisée à l'ouverture, **seulement si** la sélection a été retrouvée à la restauration, ou remplacée ou retirée par une action explicite (lot E1.1, voir [Pièce mémorisée](#pièce-mémorisée-lot-e11)) ; sinon la valeur mémorisée est conservée |
+| `rpbm_xglass_piece_label` | libellé de la pièce choisie (lot E2) : libellé et référence de la pièce OE, ou à défaut référence et fournisseur de la pièce après-marché, sinon vide | sous la même condition que les identifiants de pièce, avec une nuance : une pièce « Autres marques AM » mémorisée seule, non retrouvée, garde aussi son libellé ; l'opportunité le renseigne donc dès « Créer un devis », et le devis l'affiche dans l'encart « Dossier » sans X'Glass |
 
 - **Article VSF principal** : depuis le lot E1, le dialog de l'opportunité ne cherche plus d'article VSF et n'écrit plus `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` ni `rpbm_constructor_reference`. Ces champs restent visibles et modifiables à la main dans le formulaire ; seul le dialog du devis les désigne (« Définir comme article principal », voir [7](07-confirmation-sale-order.md)).
 - **Persistance** : mise à jour en mémoire (`this.props.record.update(data)`) ; écriture effective en base au clic sur « Enregistrer » (bouton « Confirmer »), ou immédiate via `record.save()` (boutons « Confirmer et enregistrer » et « Créer un devis »).
@@ -20,7 +21,7 @@
 
 ## Pièce mémorisée (lot E1.1)
 
-Pour une pièce déjà mémorisée à l'ouverture, les identifiants de pièce (X'Glass, OE et après-marché) ne sont réécrits que si la sélection a été **retrouvée à la restauration**, ou **remplacée ou retirée par une action explicite** de l'utilisateur. Sinon la valeur mémorisée est conservée. Confirmer pendant que les pièces chargent encore, ou avec une pièce introuvable, ne les efface donc plus ; les boutons d'écriture sont d'ailleurs grisés pendant un chargement.
+Pour une pièce déjà mémorisée à l'ouverture, les identifiants de pièce (X'Glass, OE et après-marché) ne sont réécrits que si la sélection a été **retrouvée à la restauration**, ou **remplacée ou retirée par une action explicite** de l'utilisateur. Sinon la valeur mémorisée est conservée, libellé de la pièce compris (`rpbm_xglass_piece_label`, lot E2). Confirmer pendant que les pièces chargent encore, ou avec une pièce introuvable, ne les efface donc plus ; les boutons d'écriture sont d'ailleurs grisés pendant un chargement.
 
 Actions explicites :
 - un clic sur une pièce, pour la sélectionner ou la désélectionner ;
@@ -41,7 +42,7 @@ Un clic :
 1. écrit les champs du dialog dans l'opportunité et l'enregistre, comme « Confirmer et enregistrer » ; si l'enregistrement échoue (champ requis manquant, erreur serveur), rien d'autre ne se passe et la fenêtre reste ouverte pour réessayer ;
 2. ferme les portails et la fenêtre ;
 3. lance l'action native « Nouveau devis » (`action_sale_quotations_new`) : un **nouveau** devis, non enregistré, lié à l'opportunité, comme avec le bouton natif. Chaque clic en ouvre un nouveau ; les devis existants de l'opportunité ne sont ni réutilisés ni modifiés. Si l'action échoue (droits, par exemple), Odoo affiche l'erreur comme pour le bouton natif et l'opportunité reste enregistrée ;
-4. la fenêtre du widget s'ouvre alors seule sur ce devis (voir [7](07-confirmation-sale-order.md#ouverture-automatique-du-dialog-après-création-du-devis)).
+4. la fenêtre du widget s'ouvre alors seule sur ce devis, sans authentification X'Glass depuis le lot E2 : recherche VSF immédiate et encart « Dossier » (voir [7](07-confirmation-sale-order.md#ouverture-automatique-du-dialog-après-création-du-devis)).
 
 Un double clic n'écrit et n'ouvre qu'une fois : l'état « écriture en cours » est partagé par les trois boutons. Détail technique : [frontend](../../technique/frontend.md#créer-un-devis-lot-e1).
 

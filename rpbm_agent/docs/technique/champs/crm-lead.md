@@ -34,10 +34,13 @@ restent saisissables.
 | `rpbm_intervention_location` | selection `galleria` / `genipa` / `domicile` / `lavage_place_armes` / `lavage_marin` | saisie ; préremplit `sale.order.carrier_id` | `x_studio_lieu_intervention` |
 | `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id` | char, invisibles | widget (restauration des sélections à la réouverture) ; réécrits seulement si la sélection est retrouvée à la restauration ou changée par une action explicite, sinon conservés (lot E1.1, voir [workflow 6](../../fonctionnel/workflow/06-confirmation-crm-lead.md#pièce-mémorisée-lot-e11)) | — |
 | `rpbm_xglass_vehicle_id` | char, invisible | widget (identifiant du véhicule X'Glass sélectionné) ; à la réouverture, ce véhicule est repris s'il figure dans les résultats de l'immatriculation, sinon le premier | — (aucun équivalent Studio, donc aucune migration) |
+| `rpbm_xglass_piece_label` | char, invisible (« Pièce X'Glass sélectionnée ») | widget (lot E2, `17.0.261006.2`) : libellé de la pièce choisie, écrit avec les identifiants de pièce et sous la même règle de conservation ; lu par l'encart « Dossier » du devis, qui s'ouvre sans X'Glass | — (aucun équivalent Studio, donc aucune migration) |
 
 `x_studio_eurocode_joint` n'est pas consommé par le module.
 
-`rpbm_xglass_vehicle_id` est ajouté en `17.0.261005.3` : il existe après la mise à jour du module. Comme les trois identifiants de pièce, il figure dans un groupe invisible des vues du formulaire ([opportunité](#vue), [devis](sale-order.md#vue)) : un champ modifié par le widget doit être présent dans la vue, sinon l'enregistrement du formulaire échoue.
+`rpbm_xglass_vehicle_id` est ajouté en `17.0.261005.3` et `rpbm_xglass_piece_label` en `17.0.261006.2` : ils existent après la mise à jour du module. Comme les trois identifiants de pièce, ils figurent dans un groupe invisible des vues du formulaire ([opportunité](#vue), [devis](sale-order.md#vue)) : un champ modifié par le widget doit être présent dans la vue, sinon l'enregistrement du formulaire échoue.
+
+**Libellé de la pièce (lot E2).** Quand le widget écrit la pièce (véhicule et catégorie choisis, voir [workflow 6](../../fonctionnel/workflow/06-confirmation-crm-lead.md)), il écrit aussi le libellé, sous une condition voisine de celle des identifiants de pièce (`!_keepStoredPiece && (selectedPiece || !_keepStoredPieceAm)`) : libellé et référence de la pièce OE (« *libellé* — réf. *référence* »), ou à défaut, pour une pièce après-marché seule, sa référence et son fournisseur (« AM *référence* (*fournisseur*) »), sinon vide. Une pièce mémorisée non retrouvée ou non modifiée garde donc son libellé, comme ses identifiants, y compris une pièce « Autres marques AM » mémorisée seule, qui n'est jamais retrouvée à la restauration. L'opportunité le renseigne dès « Créer un devis » ; les dossiers confirmés avant `17.0.261006.2` n'en ont pas, et l'encart affiche « — ».
 
 ## Synchronisation avec les champs Studio
 

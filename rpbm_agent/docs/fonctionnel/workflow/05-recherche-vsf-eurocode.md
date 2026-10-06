@@ -1,8 +1,8 @@
 # 5 — Recherche VSF par eurocode
 
-- **Déclencheur** : sur le dialog du devis, automatique dès que `state.baseEurocode` change (déduit à l'étape précédente, ou saisi/corrigé manuellement par l'utilisateur).
-- **Code** : `onSearchBaseEurocode()` (`agent_widget_dialog.js`).
-- **Route** : `POST /searchBaseEurocode` (`main.py::searchBaseEurocode`) → `vsfAgent.searchEurocodeArticlesClient(baseEurocode)`, retourne la liste des `VSFArticle` correspondants.
+- **Déclencheur** : sur le dialog du devis, automatique **à l'ouverture** dès qu'une base Eurocode est enregistrée, puis dès que `state.baseEurocode` change (déduit à l'étape précédente, ou saisi/corrigé manuellement par l'utilisateur). Depuis le lot E2, la recherche n'attend ni l'authentification X'Glass ni une pièce sélectionnée.
+- **Code** : `onSearchBaseEurocode()` (`agent_widget_dialog.js`), condition `shouldSearchVsf()`.
+- **Route** : `POST /searchBaseEurocode` (`main.py::searchBaseEurocode`) → `vsfAgent.searchEurocodeArticlesClient(baseEurocode)`, retourne la liste des `VSFArticle` correspondants. Sans verrou de session : la session VSF est ouverte à la demande par le serveur, qui se reconnecte seul si elle expire ; la route est réservée aux utilisateurs internes ([backend](../../technique/backend.md#vsf-session-à-la-demande-lot-e2)).
 
 Cette étape n'existe que sur le devis (lot E1) : le dialog de l'opportunité s'arrête à la base Eurocode, qui reste saisissable, et la recherche s'y fait après « Créer un devis » ([6](06-confirmation-crm-lead.md), [7](07-confirmation-sale-order.md)).
 
@@ -64,9 +64,6 @@ connexion ont été vérifiés à la main par l'utilisateur le 2026-10-06, sans 
 
 Chaque article sélectionné garde ses propres actions de produit Odoo, dans sa ligne de détail. Sur un devis, l'ajout et le retrait sont indépendants par article ; le retrait ne concerne que la ligne de devis ajoutée par le widget pendant la dialog courante. « Retirer du devis » remplace « Ajouter au devis » dès que la ligne est ajoutée ; un produit déjà présent à l'ouverture de la fenêtre affiche « Article déjà présent dans le devis. », sans retrait (R28, lot correctif `17.0.261006.1`, recette live réussie le 2026-10-06 : voir [9](09-creation-produit.md#retirer-du-devis-r28)).
 
-Sur le devis, la base Eurocode restaurée depuis l'enregistrement relance la recherche VSF à la
-réouverture, dès que la pièce mémorisée est retrouvée. Sinon, la base reste affichée et la
-recherche se lance par « Rechercher sur VSF ». Elle est écrite dans le formulaire lors de la confirmation ; son
-effacement suit la désélection de la pièce principale.
+Sur le devis, la base Eurocode enregistrée lance la recherche VSF à l'ouverture, **sans attendre X'Glass** : le dialog s'affiche tout de suite, avec l'encart « Dossier » en lecture seule (véhicule, catégorie, pièce concernée, pièce X'Glass, article principal) et le tableau. Le bouton « Charger X'Glass » lance ensuite la chaîne X'Glass (véhicule, catégorie, pièce, main-d'œuvre) **sans vider le tableau ni la sélection** ; les modifications de la base relancent la recherche comme avant. Ces règles remplacent celles du lot E1 (recherche seulement quand la pièce mémorisée était retrouvée, sinon « Rechercher sur VSF » ; règle R12), qui valent toujours pour l'opportunité, laquelle ne cherche pas sur VSF. Détail : [frontend](../../technique/frontend.md#vsf-dabord-xglass-à-la-demande-lot-e2) et [SO-10](../../jeu-de-test.md#so-10--vsf-dabord-xglass-à-la-demande-lot-e2). La base est écrite dans le formulaire lors de la confirmation, avec ou sans X'Glass ; son effacement suit la désélection de la pièce principale.
 
 Suivant, selon le modèle porteur : [6 — Confirmation sur Piste/Opportunité](06-confirmation-crm-lead.md) ou [7 — Confirmation sur Ordre de Vente](07-confirmation-sale-order.md).

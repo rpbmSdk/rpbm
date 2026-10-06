@@ -1,6 +1,6 @@
 # 1 — Recherche véhicule par immatriculation
 
-- **Déclencheur** : ouverture du widget (immatriculation déjà présente sur l'enregistrement) ou saisie manuelle + clic "Search".
+- **Déclencheur** : ouverture du widget (immatriculation déjà présente sur l'enregistrement) ou saisie manuelle + clic "Search". Sur le devis, depuis le lot E2, l'ouverture ne se connecte pas à X'Glass : cette étape et les suivantes (2 à 4) ne partent qu'après « Charger X'Glass » ([7](07-confirmation-sale-order.md#devis-sans-xglass-lot-e2)).
 - **Code** : `AgentWidgetDialog.onSearchImmatriculation()` (`agent_widget_dialog.js`).
 - **Route** : `POST /searchImmatriculation` (`main.py::searchImmatriculation`) → `xglassAgent.searchVehiculeImmat(immatriculation)`.
 

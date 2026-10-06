@@ -36,8 +36,8 @@ Lot correctif `17.0.261006.1` (commit `44b86e0`), recette live réussie le 2026-
 
 - **État.** `state.vsfNoResultFor` retient la base de la dernière recherche aboutie sans article. `searchBaseEurocode()` le remet à `undefined` juste avant chaque appel au portail : le message disparaît dès le départ d'une nouvelle recherche, et une erreur ne laisse pas l'ancien message. Après succès, il vaut la base cherchée si la liste est vide (`res.length ? undefined : baseEurocode`). Il est aussi remis à `undefined` sur une base vide (clic sur « Rechercher sur VSF » avec le champ vide) et par `clearSelectedPiece()`.
 - **Gabarit.** Un paragraphe `name="vsf_no_result"` (`text-muted`) suit le tableau dans `agent_widget_dialog.xml`, avec `t-if="!articlesVsf.length and state.vsfNoResultFor"`. C'est un `t-if` et non un `t-elif`, car l'opportunité retire le tableau par XPath. L'opportunité n'est pas concernée : elle ne cherche plus sur VSF depuis le lot E1, donc `vsfNoResultFor` n'y est jamais posé.
-- **Relance.** Cliquer de nouveau sur « Rechercher sur VSF » sur une base sans résultat refait une recherche : une même base n'est écartée que si ses résultats sont déjà affichés (règle du 2026-09-20).
-- **Rejeu après reconnexion.** `callPortal()` rejoue la requête une seule fois après une `AgentSessionExpiredError` ; le rejeu d'une base sans résultat aboutit désormais à ce message, plus à la notification d'erreur. Le « double envoi » relevé à la recette du 2026-10-05 n'est pas un double déclenchement et n'est pas à corriger.
+- **Relance.** Cliquer de nouveau sur « Rechercher sur VSF » sur une base sans résultat refait une recherche (le bouton passe `force`, règle R24). Depuis le lot E2, les effets, eux, ne relancent pas une base déjà cherchée sans résultat (court-circuit sur `vsfNoResultFor`), ce qui évite une seconde recherche au passage de `agentsInitialized` à vrai.
+- **Rejeu après reconnexion.** Au lot `17.0.261006.1`, `callPortal()` rejouait la requête une seule fois après une `AgentSessionExpiredError` ; le rejeu d'une base sans résultat aboutit à ce message, plus à la notification d'erreur. Le « double envoi » relevé à la recette du 2026-10-05 n'est pas un double déclenchement et n'est pas à corriger. Depuis le lot E2, le rejeu d'une session VSF expirée a lieu dans le serveur : le navigateur ne voit qu'une requête `/searchBaseEurocode`.
 - **Contrôle.** Bloc R24 de `test_widget_vsf.mjs` : une recherche sans article retient la base cherchée ; un résultat, une erreur et `clearSelectedPiece()` l'effacent.
 
 ### Ligne de devis ajoutée par le widget (R28)
@@ -100,6 +100,8 @@ classDiagram
         +onCreateQuotation()
     }
     class AgentWidgetDialogSaleOrder {
+        +shouldSearchVsf() sans X'Glass
+        +recordSummary encart Dossier
         +addArticleToSaleOrder()
         +addSelectedLaborOperations()
     }
@@ -323,13 +325,17 @@ Depuis le lot D (build A), le déclencheur de la recherche VSF est
 `(selectedPiece || selectedPieceAm) && baseEurocode` : une pièce après-marché choisie dans un
 encart « Autres marques AM » suffit, sans pièce OE sélectionnée. Sur le dialog de l'opportunité
 (lot E1), `onSearchBaseEurocode()` est neutralisé : l'effet ne lance aucune recherche et la
-cascade s'arrête à la base Eurocode.
+cascade s'arrête à la base Eurocode. Depuis le lot E2, la condition est la méthode
+`shouldSearchVsf()` : inchangée dans la base, `Boolean(baseEurocode)` sur le devis, qui cherche donc
+sur VSF sans attendre X'Glass (voir [VSF d'abord, X'Glass à la demande](#vsf-dabord-xglass-à-la-demande-lot-e2)).
 
 Un `useEffect` séparé recalcule `state.canConfirm` à chaque changement de véhicule ou de
 catégorie. Les boutons « Confirmer » et « Confirmer et enregistrer » (et « Créer un devis » sur
 l'opportunité) restent désactivés tant que ces deux sélections ne sont pas présentes, pendant une
 reconnexion, pendant une écriture (`state.writing`) et, depuis le lot E1.1, pendant un chargement :
-`!state.canConfirm or isReconnecting or state.writing or isLoading`.
+`!state.canConfirm or isReconnecting or state.writing or isLoading`. Sur le devis, `canConfirm()` vaut
+vrai depuis le lot E2 : « Confirmer » est actif sans X'Glass (il n'écrit alors que la base et l'article
+principal).
 
 Un autre effet, sur `vehicules`, sélectionne le véhicule X'Glass mémorisé (`_restoreVehiculeId`,
 lu dans `rpbm_xglass_vehicle_id`) s'il figure dans la liste, sinon le premier ; une liste vide
@@ -338,16 +344,16 @@ donne `undefined`.
 À l'ouverture, `restoreSelectionFromRecord()` relit les identifiants persistés
 (`rpbm_xglass_vehicle_id`, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id`, base
 Eurocode) et la cascade ci-dessus re-sélectionne le véhicule, la pièce et la pièce AM
-correspondants ; `showAllCalques` / `showAllPieces` pilotent l'affichage réduit à la sélection
-courante. Une pièce retrouvée est conservée ; une pièce introuvable n'est pas effacée à la
+correspondants (sur le devis, après « Charger X'Glass » depuis le lot E2) ; `showAllCalques` /
+`showAllPieces` pilotent l'affichage réduit à la sélection courante. Une pièce retrouvée est conservée ; une pièce introuvable n'est pas effacée à la
 confirmation (voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactivés-lot-e11)).
 
 ## Table des appels serveur
 
 | Méthode JS | Composant | Route | Usage |
 |---|---|---|---|
-| `auth_agents()` | `AgentWidgetDialog` | `/rpbm_agent_auth` | Connexion X'Glass + VSF |
-| `closeAgents()` | `AgentWidgetDialog` | `/rpbm_agent_close` | Fermeture session X'Glass |
+| `auth_agents()` | `AgentWidgetDialog` | `/rpbm_agent_auth` | Connexion X'Glass et prise du verrou (plus de connexion VSF depuis le lot E2) ; sur le devis, lancée par « Charger X'Glass » (`startAgents()`) |
+| `closeAgents()` | `AgentWidgetDialog` | `/rpbm_agent_close` | Fermeture session X'Glass ; sans effet tant que X'Glass n'est pas chargé |
 | `searchImmatriculation()` | `AgentWidgetDialog` | `/searchImmatriculation` | Recherche véhicule(s) par plaque |
 | `getOdooVehicule()` | `AgentWidgetDialog` **et** `VehiculeComponent` | `/getOdooVehicule` | Véhicule Odoo existant (`{id, name, driver_id}`), appelé par carte puis à la confirmation |
 | `createOdooVehicule()` / `onClickCreateVehicule()` | `AgentWidgetDialog` et `VehiculeComponent` | `/createVehicule` | Création du véhicule ; retourne `{id, name}` |
@@ -377,8 +383,9 @@ ligne, derrière un garde-fou `addArticleToSaleOrder` puisque l'extension Owl es
 appelle `writeRecord(save)` puis ferme le dialog si l'écriture a abouti. `writeRecord(save)` est
 l'écriture commune aux trois boutons d'écriture, « Créer un devis » compris : garde anti-doublon
 `state.writing`, construction d'un objet `data` (via `getRecordData()`, qui inclut
-`rpbm_xglass_vehicle_id` et n'inclut les identifiants de pièce que s'ils ont été retrouvés ou
-modifiés explicitement, voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactivés-lot-e11)),
+`rpbm_xglass_vehicle_id` et n'inclut les identifiants de pièce, ni leur libellé, que s'ils ont été
+retrouvés ou modifiés explicitement, voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactivés-lot-e11) ;
+sur un devis sans X'Glass, `getVsfRecordData()` seul, voir [lot E2](#vsf-dabord-xglass-à-la-demande-lot-e2)),
 **`this.props.record.update(data)`** — mise à jour en mémoire du
 `Record` Odoo standard —, `record.save()` seulement pour « Confirmer et enregistrer » ou « Créer un
 devis » (un formulaire invalide ou refusé lève une erreur : rien n'est fermé), **puis** fermeture
@@ -448,9 +455,12 @@ alimente (décision du 2026-10-05, voir [validations métier](../validations-met
 **Ouverture du dialog du devis.** Le même fichier applique un `patch(FormController.prototype)`.
 Pour un `sale.order`, au `onMounted`, si `pendingOpportunityId` est posé, que l'enregistrement est
 nouveau (`root.isNew`) et que `root.data.opportunity_id[0] === pendingOpportunityId`, le drapeau est
-vidé et `dialogService.add(AgentWidgetDialogSaleOrder, { record: root })` ouvre le dialog. Il
-restaure alors le contexte comme à toute réouverture : véhicule mémorisé, pièce, pièce AM, base,
-recherche VSF automatique et « 4. Main d'œuvre ».
+vidé et `dialogService.add(AgentWidgetDialogSaleOrder, { record: root })` ouvre le dialog. Au lot E1,
+il restaurait alors le contexte comme à toute réouverture. Depuis le lot E2, il s'ouvre **sans
+authentification X'Glass** : encart « Dossier » et recherche VSF immédiate sur la base mémorisée ;
+le véhicule mémorisé, la pièce, la pièce AM et « 4. Main d'œuvre » reviennent par « Charger X'Glass »
+(voir [lot E2](#vsf-dabord-xglass-à-la-demande-lot-e2)). L'opportunité ayant libéré le verrou en se fermant,
+rien ne s'oppose à ce chargement.
 - **Pourquoi un drapeau JavaScript.** `doActionButton` recopie dans le contexte de l'action suivante
   toute clé qui ne correspond pas à `CTX_KEY_REGEX` (`default_*`, `search_default_*`, `show_*`,
   `*_view_ref`, `group_by`, `active_id(s)`, `orderedBy` ; `web/webclient/actions/action_service.js`).
@@ -496,10 +506,10 @@ l'opportunité ; `tests/test_find_existing_product.py` couvre le rattachement pr
 [backend](backend.md#rattachement-dun-article-vsf-à-un-produit-lot-e11) ; non exécuté, abandonné sur
 décision de l'utilisateur, 2026-10-06).
 
-**Cas limite accepté.** Une opportunité sans pièce OE, avec seulement une ligne « Autres marques
-AM » et une base, ouvre le devis sans recherche VSF automatique (règle R12 : la recherche
-automatique exige une pièce ou une pièce AM sélectionnée) ; il faut un clic sur « Rechercher sur
-VSF ».
+**Cas limite du lot E1, levé par le lot E2.** Une opportunité sans pièce OE, avec seulement une ligne
+« Autres marques AM » et une base, ouvrait le devis sans recherche VSF automatique (règle R12 : la
+recherche automatique exigeait une pièce ou une pièce AM sélectionnée). Sur le devis, la recherche part
+désormais dès qu'il y a une base.
 
 ### Pièce mémorisée et boutons désactivés (lot E1.1)
 
@@ -590,10 +600,59 @@ clic réel sur « Confirmer » pendant un chargement est resté sans effet). Les
 `_keepStoredPiece` et `_keepStoredPieceAm` restent la vraie protection des valeurs mémorisées, la
 désactivation des boutons n'étant qu'un filet.
 
+## VSF d'abord, X'Glass à la demande (lot E2)
+
+Lot E2 (`17.0.261006.2`), recette à faire ([SO-10](../jeu-de-test.md#so-10--vsf-dabord-xglass-à-la-demande-lot-e2)). Sur un devis, le dialog s'affiche tout de suite, sans authentification X'Glass. Mesures du 2026-10-06 de l'ancien chemin, qui précédait tout affichage : authentification 3,3 à 3,7 s, chaîne X'Glass 5 à 9 s, recherche VSF 6 à 10 s, soit 15 à 22 s avant le tableau. Or l'opportunité choisit déjà le véhicule et la pièce (lot E1) : sur le devis, il reste surtout à choisir les articles VSF. L'opportunité garde son comportement ; seule différence, son authentification ne connecte plus VSF ([backend](backend.md#vsf-session-à-la-demande-lot-e2)).
+
+**Ce que voit le vendeur sur le devis.**
+- Le dialog s'ouvre sans porte de chargement, sur l'encart « Dossier » en lecture seule et la section VSF. La recherche VSF part aussitôt sur la base enregistrée, même s'il n'y a qu'une base ou une ligne « Autres marques AM » (le cas limite du lot E1 et la règle R12 sont levés sur le devis).
+- Le bouton « Charger X'Glass » lance la chaîne X'Glass actuelle (verrou, restauration du véhicule, de la catégorie et des pièces, main-d'œuvre, changement de pièce) **sans vider le tableau VSF, la sélection ni l'article principal**, même sur un devis dont la base et la pièce ne sont pas enregistrées. L'encart disparaît, la section 1 apparaît, puis les sections 2 et 3 et « 4. Main d'œuvre X'Glass » quand la chaîne les atteint. Un seul chargement à la fois : le bouton est désactivé pendant le chargement.
+- « Confirmer » est actif dès l'ouverture. Sans X'Glass, il n'écrit que la base et l'article principal.
+
+**Surcharges de `AgentWidgetDialogSaleOrder`.**
+
+| Membre | Sur le devis | Dans la base (opportunité) |
+|---|---|---|
+| `onWillStart()` | ne fait rien : aucune authentification à l'ouverture | lance `startAgents()` |
+| `startAgents()` | « Charger X'Glass » : pose `_restorePending = true`, puis la chaîne de la base, avec une garde de réentrée (`_startAgentsPromise`) et l'état `state.xglassLoading` | authentification puis `init()` |
+| `showAgentGate` | faux : pas de porte de chargement | `!agentsInitialized` |
+| `showVsfSection` | vrai | pièce, pièce AM ou contexte restauré |
+| `shouldSearchVsf()` | `Boolean(baseEurocode)` : au montage, puis à chaque modification de la base, X'Glass chargé ou non | `agentsInitialized` et (pièce ou pièce AM) et base |
+| `canConfirm()` | vrai | véhicule et catégorie sélectionnés |
+| `getRecordData()` | `selectedVehicule && selectedCalque ? super.getRecordData() : getVsfRecordData()` | écriture complète |
+
+Avec cette garde, les identifiants X'Glass mémorisés ne sont jamais effacés par une confirmation faite sans X'Glass.
+
+**Gabarit de base.** La porte de chargement devient `t-if="showAgentGate"` (getter, `!agentsInitialized` dans la base) et la section 1 reçoit `t-if="agentsInitialized"` ; les sections 2 et 3 dépendent déjà de `planche` et de `selectedCalque`, donc n'apparaissent qu'après la chaîne. Le comportement de l'opportunité ne change pas.
+
+**Effet de la recherche VSF.** La condition de l'effet est extraite dans `shouldSearchVsf()`, qui garde la condition du lot D dans la base. Les dépendances de l'effet sont les mêmes et aucun effet n'est ajouté, ce qui préserve l'indice `effects.at(-1)` des tests de `test_widget_vsf.mjs`. Il doit rester déclaré **après** l'effet du calque, qui vide la sélection de pièce au montage : un commentaire le rappelle, et la recherche de l'ouverture du devis part après lui.
+
+**`clearSelectedPiece(preserveRestoredBase)`.** Quand la base est conservée, la méthode ne vide plus que la pièce et la pièce AM sélectionnées : ni la base, ni les résultats VSF, ni la sélection VSF (article principal compris), ni `_lastSearchedBaseEurocode`. Son seul appelant avec `true` est l'effet du calque, qui lui passe `_restorePending` : sur le devis, `startAgents()` pose ce drapeau, si bien que la catégorie restaurée automatiquement par la chaîne X'Glass ne vide rien, même sur un dossier sans base ni pièce enregistrées (sans lui, « Charger X'Glass » viderait le tableau et la sélection). Un choix **explicite** d'une autre catégorie (`onClickCalque`) remet `_restorePending` à faux : il vide toujours la base et le tableau, comme avant.
+
+**`searchBaseEurocode({ force })`.** Après l'`await`, une réponse dont la base n'est plus `_lastSearchedBaseEurocode` est ignorée : cela compte quand l'utilisateur modifie la base pendant la recherche d'ouverture. Un échec périmé ne remet pas `_lastSearchedBaseEurocode` à zéro, et une recherche en échec reste relançable. Les effets ne relancent pas une base déjà cherchée **sans résultat** (court-circuit sur `vsfNoResultFor`) ; le bouton « Rechercher sur VSF » passe `force` et relance toujours, ce qui garde la règle R24 (voir [Recherche sans résultat](#recherche-sans-résultat-r24)).
+
+**Écriture.** `getRecordData()` est coupée en deux. `getVsfRecordData()` renvoie la base Eurocode et, si un article principal est désigné, les quatre champs de l'article (`rpbm_eurocode`, désignation, stock, référence constructeur) ; `getRecordData()` y ajoute le reste (véhicule, catégorie, pièce concernée, identifiants de pièce). Le nouveau champ `rpbm_xglass_piece_label` ([champs de l'opportunité](champs/crm-lead.md)) est écrit avec les identifiants de pièce, sous la condition `!_keepStoredPiece && (selectedPiece || !_keepStoredPieceAm)` : une pièce « Autres marques AM » mémorisée seule, non retrouvée, garde donc son libellé comme son identifiant (getter `xglassPieceLabel` : « libellé — réf. référence » pour une pièce OE, « AM référence (fournisseur) » pour une pièce après-marché ; `utils.js` reçoit `xglassPieceLabelField`). L'opportunité le renseigne dès « Créer un devis ».
+
+**Initialisation de la pièce concernée.** Dans `setup()`, `state.pieceConcernee` part de la valeur enregistrée (`record.pieceConcernee`, getter qui existait sans être lu) : la chaîne X'Glass ne l'écrase plus par la suggestion du calque, y compris pour un dossier sans pièce enregistrée (`_restorePending`, voir ci-dessus).
+
+**Encart « Dossier ».** `<section name="xglass_summary" t-if="!agentsInitialized">`, inséré dans le XPath `before` déjà présent de `agent_widget_dialog_sale_order.xml` (le nombre de XPath du devis reste 2). Le getter `recordSummary` lit `props.record.data` et liste : le véhicule (nom Fleet, qui porte la plaque ; à défaut la plaque seule), la catégorie, la pièce concernée (libellé de `PART_TYPES`), la pièce X'Glass (libellé mémorisé) et l'article principal (eurocode et désignation). Une valeur absente s'affiche « — ». Le bouton « Charger X'Glass » (`t-on-click="startAgents"`) est désactivé quand `isLoading or state.xglassLoading` (`isLoading`, partagé avec les autres chargements, peut retomber pendant l'authentification : la garde de réentrée `_startAgentsPromise` et `state.xglassLoading` empêchent une double authentification) et sert aussi de « Réessayer » ; pendant le chargement, un spinner et le `loadingMessage` ; après un échec, une alerte `authError`. La section VSF garde son titre « 5. Article VSF ».
+
+**Fermeture.** `closeAgents()` ne fait rien tant que X'Glass n'est pas chargé : « Annuler » ou la croix, sans « Charger X'Glass », n'appellent pas `/rpbm_agent_close`. **Fermeture pendant « Charger X'Glass ».** Sur le devis, `auth_agents()` appelle `/rpbm_agent_auth` par le service `rpc` non protégé (celui de `useService` ne résout plus après la destruction du dialog) : si le dialog a été détruit entre-temps, il envoie `/rpbm_agent_close`, ce qui libère le verrou et ferme la session X'Glass, puis s'arrête sans toucher à l'état : le verrou n'est donc pas laissé pris jusqu'à 15 minutes. Cela vaut aussi pour une reconnexion sur le devis (`reconnectAgents()` passe par `auth_agents()`).
+
+**Cas limites (lecture du code, non vérifiés en live).**
+- Le passage de `agentsInitialized` à vrai relance l'effet de recherche, mais une même base déjà cherchée n'est pas cherchée de nouveau, avec ou sans résultat : le tableau, la sélection et le message « Aucun article VSF pour … » restent. Seul le bouton « Rechercher sur VSF » relance une base sans résultat (règle R24).
+- Le véhicule, la catégorie et la pièce de l'encart viennent de l'enregistrement ; un dossier confirmé avant `17.0.261006.2` n'a pas de libellé de pièce, l'encart affiche « — ».
+- Un devis sans opportunité n'affiche pas le widget (inchangé).
+- Sans X'Glass, le véhicule n'est ni créé ni enrichi : aucun appel `/getOdooVehicule`, `/createVehicule` ni `/enrichVehicule`.
+
+**Contrôles hors réseau.** `test_portal_auth.py` (agent VSF : une seule connexion pour deux appels, une expiration suivie d'une reconnexion puis d'un succès, un second échec propagé, une connexion refusée qui laisse `logged_in` faux, deux threads de la même génération pour une seule reconnexion) et `test_widget_vsf.mjs` (devis avec une base : une recherche, aucune authentification, aucun `/rpbm_agent_close` ; `getRecordData` sans X'Glass : base et quatre champs d'article seulement ; avec véhicule et catégorie : écriture complète, libellé compris ; `clearSelectedPiece(true)` garde tableau et sélection ; le passage de `agentsInitialized` à vrai ne relance pas la recherche ; la pièce concernée enregistrée survit à la restauration ; une réponse périmée est ignorée ; les tests de l'opportunité restent verts), dans les blocs « Lot E2 » et « Revue E2 ». Ce dernier couvre : un devis avec une catégorie mais ni base ni pièce, où la base saisie, le tableau et l'article principal survivent à « Charger X'Glass » et à la vraie chaîne (véhicule, planche, calque) ; le libellé d'une pièce « Autres marques AM » mémorisée seule, conservé sur l'opportunité et sur le devis ; une base sans résultat que les effets ne relancent pas et que le bouton relance ; deux « Charger X'Glass » rapprochés qui ne font qu'une authentification. un dialog fermé pendant « Charger X'Glass », où le verrou pris entre-temps est rendu par un seul `/rpbm_agent_close`, sans autre appel ni état modifié après la destruction. Le harnais force `agentsInitialized` à vrai dans `mount()` ; ces tests le remettent à faux.
+
 ## Reconnexion à chaud des portails
 
 Les appels dépendants de X'Glass ou VSF passent par `callPortal()`. Lorsqu'une erreur
-JSON-RPC `AgentSessionExpiredError` remonte, la dialog réauthentifie une fois les deux agents.
+JSON-RPC `AgentSessionExpiredError` remonte, la dialog réauthentifie une fois les agents (X'Glass
+seul depuis le lot E2 : une expiration VSF est traitée dans le serveur, qui se reconnecte et rejoue une
+fois ; elle ne remonte plus en `AgentSessionExpiredError`).
 Elle rejoue ensuite silencieusement `/searchImmatriculation`, avec l'immatriculation de la
 dernière recherche aboutie (`_searchedImmatriculation`), puis `/getPlanche`, pour restaurer la
 sélection serveur du véhicule courant. Elle rejoue enfin une seule fois l'appel interrompu.
