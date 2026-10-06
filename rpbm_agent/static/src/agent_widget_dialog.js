@@ -188,11 +188,12 @@ export class AgentWidgetDialog extends asyncWidget {
             }
         }, () => [this.selectedPiece])
 
-        // Une ligne « Autres marques AM » choisie sans pièce OE lance aussi la recherche ; une base
-        // restaurée seule, non (R12). Dépendre de la présence d'une sélection, pas de l'objet :
+        // Condition : shouldSearchVsf(). Dépendre de la présence d'une sélection, pas de l'objet :
         // la pièce AM restaurée après la pièce OE relancerait une recherche déjà en cours.
+        // Reste déclaré après l'effet du calque, qui vide la sélection de pièce au montage :
+        // la recherche de l'ouverture du devis part après lui (lot E2).
         useEffect(() => {
-            if (this.agentsInitialized && (this.selectedPiece || this.selectedPieceAm) && this.baseEurocode) {
+            if (this.shouldSearchVsf()) {
                 this.onSearchBaseEurocode();
             }
         }, () => [this.baseEurocode, Boolean(this.selectedPiece || this.selectedPieceAm), this.agentsInitialized])
@@ -201,6 +202,19 @@ export class AgentWidgetDialog extends asyncWidget {
 
     get agentsInitialized() {
         return this.state.agentsInitialized;
+    }
+
+    /** Porte d'authentification de l'ouverture ; le devis s'ouvre sans elle (lot E2). */
+    get showAgentGate() {
+        return !this.agentsInitialized;
+    }
+
+    /**
+     * Une ligne « Autres marques AM » choisie sans pièce OE lance aussi la recherche ; une base
+     * restaurée seule, non (R12).
+     */
+    shouldSearchVsf() {
+        return Boolean(this.agentsInitialized && (this.selectedPiece || this.selectedPieceAm) && this.baseEurocode);
     }
 
     get isReconnecting() {
@@ -380,9 +394,6 @@ export class AgentWidgetDialog extends asyncWidget {
             data[this.record.pieceConcerneeField] = this.pieceConcernee;
         }
 
-        if (this.record.baseEurocodeField) {
-            data[this.record.baseEurocodeField] = this.baseEurocode || "";
-        }
         if (this.record.xglassVehicleIdField) {
             data[this.record.xglassVehicleIdField] = this.selectedVehicule ? String(this.selectedVehicule.id) : "";
         }
@@ -394,8 +405,21 @@ export class AgentWidgetDialog extends asyncWidget {
         if (this.record.pieceOeIdField && !this._keepStoredPiece) {
             data[this.record.pieceOeIdField] = this.selectedPiece?.pieceOe?.id ? String(this.selectedPiece.pieceOe.id) : "";
         }
+        // Une pièce « Autres marques AM » mémorisée et non retrouvée garde aussi son libellé.
+        if (this.record.xglassPieceLabelField && !this._keepStoredPiece && (this.selectedPiece || !this._keepStoredPieceAm)) {
+            data[this.record.xglassPieceLabelField] = this.xglassPieceLabel;
+        }
         if (this.record.pieceAmIdField && !this._keepStoredPieceAm) {
             data[this.record.pieceAmIdField] = this.selectedPieceAm?.pieceAm?.id ? String(this.selectedPieceAm.pieceAm.id) : "";
+        }
+        return Object.assign(data, this.getVsfRecordData());
+    }
+
+    /** Base Eurocode et article VSF principal : seules écritures du devis sans X'Glass (lot E2). */
+    getVsfRecordData() {
+        const data = {};
+        if (this.record.baseEurocodeField) {
+            data[this.record.baseEurocodeField] = this.baseEurocode || "";
         }
         const primaryArticle = this.getPrimaryArticle();
         if (primaryArticle) {
@@ -774,9 +798,12 @@ export class AgentWidgetDialog extends asyncWidget {
     clearSelectedPiece(preserveRestoredBase = false) {
         this.state.selectedPiece = undefined;
         this.state.selectedPieceAm = undefined;
-        if (!preserveRestoredBase) {
-            this.setBaseEurocode(undefined);
+        // Restauration (effet du calque) : base, résultats et sélection VSF restent, pour que
+        // « Charger X'Glass » ne vide pas le tableau du devis (lot E2).
+        if (preserveRestoredBase) {
+            return;
         }
+        this.setBaseEurocode(undefined);
         this.state.articlesVsf = [];
         this.state.vsfNoResultFor = undefined;
         this.resetVsfSelection();
@@ -789,6 +816,20 @@ export class AgentWidgetDialog extends asyncWidget {
 
     get selectedPieceId() {
         return this.selectedPiece ? this.selectedPiece.id : 0;
+    }
+
+    /** Libellé mémorisé avec la pièce (lot E2) : pièce OE, à défaut pièce après-marché. */
+    get xglassPieceLabel() {
+        const pieceOe = this.selectedPiece?.pieceOe;
+        if (pieceOe) {
+            return `${pieceOe.libelle} — réf. ${pieceOe.referenceClean || pieceOe.reference}`;
+        }
+        const pieceAm = this.selectedPieceAm?.pieceAm;
+        if (pieceAm) {
+            const fournisseur = pieceAm.fournisseur?.libelle;
+            return fournisseur ? `AM ${pieceAm.reference} (${fournisseur})` : `AM ${pieceAm.reference}`;
+        }
+        return "";
     }
 
     async getSelectedPieceAm() {
@@ -917,7 +958,7 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.state.articlesVsf;
     }
 
-    async searchBaseEurocode() {
+    async searchBaseEurocode({ force = false } = {}) {
         const baseEurocode = (this.baseEurocode || "").trim();
         if (!baseEurocode) {
             this.state.articlesVsf = [];
@@ -931,23 +972,34 @@ export class AgentWidgetDialog extends asyncWidget {
         if (baseEurocode === this._lastSearchedBaseEurocode && this.state.articlesVsf.length) {
             return;
         }
+        // Base déjà cherchée sans résultat : les effets ne la relancent pas, le bouton si (R24, lot E2).
+        if (!force && baseEurocode === this.state.vsfNoResultFor) {
+            return;
+        }
         this._lastSearchedBaseEurocode = baseEurocode;
         this.state.vsfNoResultFor = undefined;
         try {
             const res = await this.callPortal("/searchBaseEurocode", {
                 baseEurocode,
             });
+            // Base modifiée pendant la recherche (celle de l'ouverture, par exemple) : réponse périmée.
+            if (baseEurocode !== this._lastSearchedBaseEurocode) {
+                return;
+            }
             this.state.articlesVsf = res;
             this.state.vsfNoResultFor = res.length ? undefined : baseEurocode;
             this.resetVsfSelection();
         } catch (error) {
-            this._lastSearchedBaseEurocode = undefined;
+            // Un échec périmé ne doit pas faire ignorer la réponse de la recherche en cours.
+            if (baseEurocode === this._lastSearchedBaseEurocode) {
+                this._lastSearchedBaseEurocode = undefined;
+            }
             throw error;
         }
     }
 
-    onSearchBaseEurocode() {
-        this.runAsync(() => this.searchBaseEurocode(), "Recherche des articles VSF en cours...");
+    onSearchBaseEurocode(force = false) {
+        this.runAsync(() => this.searchBaseEurocode({ force }), "Recherche des articles VSF en cours...");
     }
 
     resetVsfSelection() {

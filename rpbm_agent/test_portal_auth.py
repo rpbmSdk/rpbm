@@ -214,6 +214,112 @@ def test_vsf_echec_si_retour_sur_la_page_de_connexion():
         raise AssertionError("VSFAuthError attendue")
 
 
+def _vsf_session_agent(refused_logins=0):
+    """Agent dont les connexions sont comptées ; les `refused_logins` premières sont refusées."""
+    agent = vsf.VSFAgent()
+    agent.logins = []
+
+    def auth(login, password):
+        agent.logins.append(login)
+        if len(agent.logins) <= refused_logins:
+            raise vsf.VSFAuthError("Échec de connexion à VSF : identifiants refusés ou page inattendue.")
+
+    agent.auth = auth
+    return agent
+
+
+def _expire_first(results):
+    """`fn` de with_session : session expirée au premier appel, puis `results`."""
+    calls = []
+
+    def fn(agent):
+        calls.append(len(agent.logins))
+        if len(calls) == 1:
+            raise vsf.VSFAuthError("Session VSF expirée ou invalide.")
+        return results
+
+    return fn, calls
+
+
+def test_vsf_connexion_a_la_demande_une_seule_fois():
+    agent = _vsf_session_agent()
+    assert agent.logged_in is False
+    assert agent.with_session("u", "p", lambda a: "recherche") == "recherche"
+    assert agent.with_session("u", "p", lambda a: "fiche") == "fiche"
+    assert agent.logins == ["u"] and agent.logged_in
+
+
+def test_vsf_session_expiree_reconnexion_puis_succes():
+    agent = _vsf_session_agent()
+    fn, calls = _expire_first(["6108AGABCHM"])
+    assert agent.with_session("u", "p", fn) == ["6108AGABCHM"]
+    assert calls == [1, 2], "rejoué une seule fois, après la reconnexion"
+
+
+def test_vsf_second_echec_de_session_remonte():
+    agent = _vsf_session_agent()
+
+    def expired(_agent):
+        raise vsf.VSFAuthError("Session VSF expirée ou invalide.")
+
+    try:
+        agent.with_session("u", "p", expired)
+    except vsf.VSFAuthError:
+        pass
+    else:
+        raise AssertionError("VSFAuthError attendue")
+    assert len(agent.logins) == 2, agent.logins
+
+
+def test_vsf_connexion_refusee_laisse_deconnecte():
+    agent = _vsf_session_agent(refused_logins=1)
+    try:
+        agent.with_session("u", "mauvais", lambda a: "jamais")
+    except vsf.VSFAuthError:
+        pass
+    else:
+        raise AssertionError("VSFAuthError attendue")
+    assert agent.logged_in is False
+    assert agent.with_session("u", "p", lambda a: "ok") == "ok"
+    assert len(agent.logins) == 2 and agent.logged_in
+
+
+def test_vsf_deux_threads_de_la_meme_generation_une_seule_reconnexion():
+    import threading
+    import time
+
+    agent = _vsf_session_agent()
+    generation = agent._login("u", "p")
+    in_login, release = threading.Event(), threading.Event()
+    auth = agent.auth
+
+    def slow_auth(login, password):
+        auth(login, password)
+        in_login.set()
+        release.wait(5)
+
+    agent.auth = slow_auth
+    results, errors = [], []
+
+    def relogin():
+        try:
+            results.append(agent._login("u", "p", expired=generation))
+        except Exception as error:  # remontée au thread principal
+            errors.append(error)
+
+    threads = [threading.Thread(target=relogin) for _ in range(2)]
+    threads[0].start()
+    in_login.wait(5)
+    threads[1].start()
+    time.sleep(0.05)  # le second thread attend le verrou pendant la reconnexion du premier
+    release.set()
+    for thread in threads:
+        thread.join(5)
+        assert not thread.is_alive(), "thread bloqué"
+    assert errors == [] and results == [2, 2], (results, errors)
+    assert len(agent.logins) == 2, "connexion initiale puis une seule reconnexion"
+
+
 def test_vsf_releve_la_redirection_login_avant_la_recherche():
     agent = vsf.VSFAgent()
     agent.get = lambda *args, **kwargs: SimpleNamespace(

@@ -53,6 +53,7 @@ export class AbstractWidgetRecord extends AbstractRecord {
     baseEurocodeField = "rpbm_eurocode_base";
     xglassVehicleIdField = "rpbm_xglass_vehicle_id";
     xglassPieceIdField = "rpbm_xglass_piece_id";
+    xglassPieceLabelField = "rpbm_xglass_piece_label";
     pieceOeIdField = "rpbm_piece_oe_id";
     pieceAmIdField = "rpbm_piece_am_id";
     fullEurocodeField = "rpbm_eurocode";

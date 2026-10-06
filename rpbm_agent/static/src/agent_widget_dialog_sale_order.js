@@ -1,8 +1,13 @@
 /** @odoo-module **/
 
+import { status } from "@odoo/owl";
+
 import { AgentWidgetDialog } from "./agent_widget_dialog";
+import { PART_TYPES } from "./utils";
 
 
+// Lot E2 « VSF d'abord, X'Glass à la demande » : le dialog s'ouvre sans authentification sur
+// l'encart « Dossier » et la recherche VSF ; « Charger X'Glass » (startAgents) lance la chaîne X'Glass.
 export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
     static template = "rpbm_agent.SaleOrderDialog";
 
@@ -11,6 +16,85 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         // Code article → produit des lignes ajoutées par le widget pendant ce dialog.
         this._widgetProductIdsByArticleCode = new Map();
         this.state.selectedLaborOperationKeys = {};
+        // La pièce concernée enregistrée n'est pas remplacée par la suggestion du calque restauré.
+        this.state.pieceConcernee = this.record.pieceConcernee;
+        this.state.xglassLoading = false;
+    }
+
+    async onWillStart() {}
+
+    /**
+     * « Charger X'Glass ». Un seul chargement à la fois : isLoading, partagé avec les autres
+     * chargements, peut retomber pendant l'authentification. La catégorie que la chaîne restaure
+     * est une restauration : l'effet du calque garde alors la base, le tableau VSF, la sélection
+     * et la pièce concernée enregistrée, même sans base ni pièce mémorisées.
+     */
+    startAgents() {
+        if (!this._startAgentsPromise) {
+            this._restorePending = true;
+            this.state.xglassLoading = true;
+            this._startAgentsPromise = super.startAgents().finally(() => {
+                this._startAgentsPromise = undefined;
+                this.state.xglassLoading = false;
+            });
+        }
+        return this._startAgentsPromise;
+    }
+
+    /**
+     * Service rpc non protégé : celui de useService ne résout plus après la destruction du dialog,
+     * qui garderait alors le verrou X'Glass pris pendant l'authentification (fermé avant sa réponse).
+     */
+    async auth_agents() {
+        const rpc = this.env.services.rpc;
+        await rpc("/rpbm_agent_auth");
+        if (status(this) === "destroyed") {
+            // Le verrou est rendu ; la promesse sans fin arrête la chaîne sans toucher à l'état.
+            await rpc("/rpbm_agent_close").catch((error) => console.warn("Impossible de libérer la session portail", error));
+            return new Promise(() => {});
+        }
+        this.state.agentsInitialized = true;
+        this.state.reconnectRequired = false;
+        this._agentLockReleased = false;
+    }
+
+    get showAgentGate() {
+        return false;
+    }
+
+    get showVsfSection() {
+        return true;
+    }
+
+    /** Au montage puis à chaque modification de la base, X'Glass chargé ou non. */
+    shouldSearchVsf() {
+        return Boolean(this.baseEurocode);
+    }
+
+    canConfirm() {
+        return true;
+    }
+
+    async getRecordData() {
+        // Sans véhicule et catégorie X'Glass, seules la base et l'article principal sont écrits :
+        // les identifiants X'Glass mémorisés ne sont jamais effacés.
+        return this.selectedVehicule && this.selectedCalque ? super.getRecordData() : this.getVsfRecordData();
+    }
+
+    /** Champs du dossier, lus en direct dans le formulaire, pour l'encart affiché sans X'Glass. */
+    get recordSummary() {
+        const data = this.props.record.data;
+        const record = this.record;
+        // Le nom Fleet porte déjà la plaque (« Marque/Modèle/Plaque ») ; sans véhicule, la plaque seule.
+        const vehicule = data[record.vehiculeField]?.[1] || data[record.immatriculationField];
+        const article = [data[record.fullEurocodeField], data[record.vsfDesignationField]].filter(Boolean).join(" — ");
+        return [
+            ["Véhicule", vehicule],
+            ["Catégorie", data[record.categorieXglassField]],
+            ["Pièce concernée", PART_TYPES.find(([key]) => key === data[record.pieceConcerneeField])?.[1]],
+            ["Pièce X'Glass", data[record.xglassPieceLabelField]],
+            ["Article principal", article],
+        ].map(([label, value]) => [label, value || "—"]);
     }
 
     get laborOperations() {

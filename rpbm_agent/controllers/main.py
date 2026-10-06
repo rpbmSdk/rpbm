@@ -107,11 +107,13 @@ def _labor_operation_payload(piece_id, raw_temps, products=LABOR_PRODUCT_BY_RATE
 
 # --- Verrou de concurrence -------------------------------------------------
 # Le portail X'Glass n'autorise qu'une seule session active par identifiant,
-# et RPBM ne dispose que d'un seul identifiant partagé X'Glass/VSF pour toute
-# l'entreprise : deux utilisateurs Odoo ne peuvent donc jamais utiliser le
-# widget en même temps sans que l'un invalide la session de l'autre côté
-# portail. Ce verrou sérialise des sessions widget complètes (de
+# et RPBM ne dispose que d'un seul identifiant X'Glass pour toute
+# l'entreprise : deux utilisateurs Odoo ne peuvent donc jamais utiliser
+# X'Glass en même temps sans que l'un invalide la session de l'autre côté
+# portail. Ce verrou sérialise des sessions X'Glass complètes (de
 # /rpbm_agent_auth à /rpbm_agent_close), pas seulement l'appel de login.
+# Il ne protège que X'Glass : VSF tolère plusieurs sessions sur le même compte
+# (trace T1 du 2026-10-06) et ses routes passent par _vsf_call, sans verrou.
 # Réutilise ir.config_parameter (déjà restreint à base.group_system, déjà
 # utilisé pour les 4 identifiants) plutôt qu'un nouveau modèle dédié.
 LOCK_KEY = 'rpbm_agent.session_lock'
@@ -123,13 +125,37 @@ class AgentSessionExpiredError(UserError):
 
 
 def _raise_portal_error(error, user_message, log_message):
-    """Préserve un marqueur stable pour une authentification portail expirée."""
+    """Préserve un marqueur stable pour une authentification X'Glass expirée."""
     _logger.exception(log_message)
-    if isinstance(error, (XGlassAuthError, VSFAuthError)):
+    if isinstance(error, XGlassAuthError):
         raise AgentSessionExpiredError(_(
             "La session des portails a expiré. Reconnexion nécessaire."
         )) from error
+    # VSF se reconnecte côté serveur (_vsf_call) : une VSFAuthError arrivée ici est un
+    # échec de connexion, qui ne doit pas déclencher la reconnexion X'Glass du widget.
+    if isinstance(error, VSFAuthError):
+        raise UserError(_("Connexion au portail VSF impossible. Vérifiez les identifiants configurés.")) from error
     raise UserError(user_message) from error
+
+
+def _configure_trace(params):
+    """Relit le traçage portail ; remet à zéro la numérotation des requêtes tracées."""
+    portal_trace.configure(
+        params.get_param('rpbm_agent.trace') in ('1', 'true', 'True'),
+        params.get_param('rpbm_agent.trace_dir'),
+    )
+
+
+def _vsf_call(fn):
+    """Exécute ``fn(vsfAgent)`` avec la session VSF du processus, connectée à la demande."""
+    # Les routes VSF n'ont plus le verrou X'Glass, qui les fermait de fait aux autres
+    # utilisateurs ; /createProduct crée en sudo.
+    if not request.env.user._is_internal():
+        raise AccessError(_("Le portail VSF est réservé aux utilisateurs internes."))
+    params = request.env['ir.config_parameter'].sudo()
+    if not vsfAgent.logged_in:
+        _configure_trace(params)
+    return vsfAgent.with_session(params.get_param('VSF_LOGIN'), params.get_param('VSF_PASSWORD'), fn)
 
 
 def _lock_row(cr):
@@ -331,25 +357,19 @@ class AgentController(Controller):
 
     @route('/rpbm_agent_auth', auth='user', type='json')
     def rpbm_agent_auth(self):
-        global vsfAgent
         global xglassAgent
         acquire_agent_lock(request.env)
         _logger.info("rpbm_agent_auth")
         params = request.env['ir.config_parameter'].sudo()
-        portal_trace.configure(
-            params.get_param('rpbm_agent.trace') in ('1', 'true', 'True'),
-            params.get_param('rpbm_agent.trace_dir'),
-        )
-        VSF_LOGIN = params.get_param('VSF_LOGIN')
-        VSF_PASSWORD = params.get_param('VSF_PASSWORD')
+        _configure_trace(params)
         XGLASS_USER = params.get_param('XGLASS_USER')
         XGLASS_PASS = params.get_param('XGLASS_PASS')
         # Déconnecte la session portail précédente *avant* de repartir de zéro :
         # l'agent encore en mémoire porte ses cookies, donc son logout aboutit.
         # (Fermer un agent fraîchement construit, comme auparavant, ne
         # déconnectait rien et laissait la session traîner côté X'Glass.)
+        # VSF n'est plus connecté ici : voir _vsf_call.
         xglassAgent.close()
-        vsfAgent = vsf.VSFAgent()
         xglassAgent = xglass.XGLASS()
         # Pas de nouvelle tentative ici : XGLASS.auth() gère déjà la reprise
         # d'une session restée ouverte côté portail.
@@ -362,19 +382,17 @@ class AgentController(Controller):
                 "Connexion au portail X'Glass impossible. Vérifiez les identifiants "
                 "configurés, ou réessayez dans quelques instants."
             ))
-        try:
-            vsfAgent.auth(VSF_LOGIN, VSF_PASSWORD)
-        except VSFError:
-            _logger.exception("Échec de connexion à VSF")
-            release_agent_lock(request.env)
-            raise UserError(_("Connexion au portail VSF impossible. Vérifiez les identifiants configurés."))
         _logger.info("rpbm_agent_auth done")
         return
 
     @route('/rpbm_agent_close', auth='user', type='json')
     def rpbm_agent_close(self):
         _logger.info("rpbm_agent_close")
-        xglassAgent.close()
+        # Les routes VSF ne prolongent plus le verrou : après 15 min de travail VSF seul, un autre
+        # utilisateur a pu le reprendre et charger X'Glass. Sa session n'est alors pas déconnectée.
+        state = _lock_row(request.env.cr)
+        if not state or state.get('uid') == request.env.uid:
+            xglassAgent.close()
         release_agent_lock(request.env)
         _logger.info("rpbm_agent_close done")
         return
@@ -617,12 +635,11 @@ class AgentController(Controller):
             )
 
     @route('/searchBaseEurocode', auth='user', type='json')
-    @_touch_agent_lock
     def searchBaseEurocode(self,baseEurocode:str):
         _logger.info(f"searchBaseEurocode {baseEurocode}")
         try:
             discount = get_vsf_discount(request.env)
-            vsfArticles = vsfAgent.searchEurocodeArticlesClient(baseEurocode)
+            vsfArticles = _vsf_call(lambda agent: agent.searchEurocodeArticlesClient(baseEurocode))
             for vsf_article in vsfArticles:
                 vsf_article.set_rpbm_discount(discount)
             return [vsfArticle.__dict__ for vsfArticle in vsfArticles]
@@ -651,7 +668,6 @@ class AgentController(Controller):
         return _product_payload(product, matched_by) if product else False
 
     @route('/getVsfArticleDetails', auth='user', type='json')
-    @_touch_agent_lock
     def get_vsf_article_details(self, articleVsfInfo=None, enrichSuggestions=True):
         """Retourne les détails de fiche nécessaires au widget, sans écriture Odoo."""
         article_info = articleVsfInfo or {}
@@ -660,11 +676,11 @@ class AgentController(Controller):
             raise UserError(_("Lecture impossible : le code VSF de l'article est absent."))
         try:
             discount = get_vsf_discount(request.env)
-            details = vsfAgent.getArticleDetails(
+            details = _vsf_call(lambda agent: agent.getArticleDetails(
                 article_info,
                 include_suggestions=bool(enrichSuggestions),
                 enrich_suggestions=bool(enrichSuggestions),
-            )
+            ))
             article = _vsf_article_payload(details, discount)
             return article.__dict__
         except VSFError as error:
@@ -675,7 +691,6 @@ class AgentController(Controller):
             )
 
     @route('/createProduct', auth='user', type='json')
-    @_touch_agent_lock
     def createProduct(self,articleVsfInfo:dict):
         _logger.info(f"createProduct {articleVsfInfo}")
         product_code = str(articleVsfInfo.get('code') or '').strip()
@@ -683,27 +698,33 @@ class AgentController(Controller):
             raise UserError(_("Création impossible : le code VSF de l'article est absent."))
 
         # Sérialise les créations par code : un double-clic ou deux requêtes
-        # simultanées ne peuvent pas créer deux produits avec le même code.
+        # simultanées ne peuvent pas créer deux produits avec le même code, à
+        # condition de chercher l'existant avec un curseur neuf (voir plus bas).
         request.env.cr.execute(
             "SELECT pg_advisory_xact_lock(hashtext(%s))",
             (f"rpbm_agent.product:{product_code}",),
         )
         try:
-            article_details = vsfAgent.getArticleDetails(
+            # Seule la lecture est rejouée après une reconnexion : les créations
+            # ci-dessous restent hors de _vsf_call pour ne jamais être faites deux fois.
+            article_details = _vsf_call(lambda agent: agent.getArticleDetails(
                 articleVsfInfo, include_suggestions=False
-            )
+            ))
             article_vsf = vsf.VSFArticle(
                 _rpbm_discount=get_vsf_discount(request.env), **article_details
             )
             constructor_reference = _article_constructor_reference(article_vsf.__dict__)
-            existing_product, matched_by = _find_existing_product(
-                request.env,
-                constructor_reference,
-                article_vsf.code,
-                str(article_vsf.name or '').strip(),
-            )
-            if existing_product:
-                return _product_payload(existing_product, matched_by)
+            # REPEATABLE READ : l'instantané de cette requête précède le verrou consultatif et ne
+            # voit pas le produit qu'une requête concurrente a créé avant de le relâcher.
+            with request.env.registry.cursor() as fresh_cr:
+                existing_product, matched_by = _find_existing_product(
+                    request.env(cr=fresh_cr),
+                    constructor_reference,
+                    article_vsf.code,
+                    str(article_vsf.name or '').strip(),
+                )
+                if existing_product:
+                    return _product_payload(existing_product, matched_by)
             if article_vsf.prixVente is None or article_vsf.prixVenteRPBM is None:
                 raise UserError(_("Création impossible : le prix de l'article VSF est absent."))
 

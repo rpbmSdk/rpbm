@@ -21,6 +21,8 @@ const context = {
     onWillStart() {},
     onWillUnmount() {},
     onMounted: (fn) => mountedHooks.push(fn),
+    // status() d'Owl : un test pose testStatus = "destroyed" pour simuler la fermeture du dialog.
+    status: (component) => component.testStatus || "mounted",
     FormController: class { setup() {} },
     // Comme le patch d'Odoo : `super` dans l'extension appelle la méthode d'origine.
     patch(target, extension) {
@@ -170,6 +172,8 @@ const mount = (data, Dialog = context.AgentWidgetDialog) => {
     const widget = new Dialog();
     widget.props = { record: { data }, close() {} };
     widget.setup();
+    // Service rpc non protégé (this.env.services.rpc) : le même que celui du widget.
+    widget.env = { services: { rpc: (route, params) => widget.rpc(route, params) } };
     widget.state.agentsInitialized = true;
     return widget;
 };
@@ -445,6 +449,197 @@ assert.equal(quote.isWidgetArticleInOrder("6574AXSH"), false);
 assert.equal(quote.isArticleAlreadyInOrder("6574AXSH"), true);
 await quote.addArticleToSaleOrder("6574AXSH");
 assert.equal(orderLines.records.length, 1);
+
+// Lot E2 : le devis s'ouvre sans X'Glass (mount() force agentsInitialized, remis à faux ici).
+const routes = () => plain(rpcCalls.map(({ route }) => route));
+const vsfOnly = (data) => {
+    const widget = mount({ order_line: { records: [] }, ...data }, context.AgentWidgetDialogSaleOrder);
+    widget.state.agentsInitialized = false;
+    return widget;
+};
+// Cinquième effet de setup(), sur le calque.
+const runCalqueEffect = () => runEffect(effects[4]);
+
+// Ouverture avec une base : une recherche, ni authentification ni fermeture des portails.
+const opened = vsfOnly({ rpbm_eurocode_base: "6108A" });
+await opened.onWillStart();
+runVsfEffect();
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "6108A" }]);
+await opened.onDiscard();
+assert.deepEqual(routes(), ["/searchBaseEurocode"]);
+
+// Sans catégorie X'Glass : base et article principal seulement, sans appel véhicule ; plaque et
+// identifiants X'Glass mémorisés restent intacts.
+const vsfWrite = vsfOnly({ ...STORED_PIECES, rpbm_eurocode_base: "6108A", rpbm_license_plate: "GS600HH", rpbm_xglass_vehicle_id: "2" });
+Object.assign(vsfWrite.state, {
+    selectedVehicule: { id: 2 },
+    articlesVsf: [{ code: "6108AGABCHM", name: "Pare-brise A", stock: "2", refConstructeur: "OE-A" }],
+    selectedArticleCodes: { "6108AGABCHM": true },
+    primaryArticleCode: "6108AGABCHM",
+});
+assert.deepEqual(plain(await vsfWrite.getRecordData()), {
+    rpbm_eurocode_base: "6108A",
+    rpbm_eurocode: "6108AGABCHM",
+    rpbm_vsf_designation: "Pare-brise A",
+    rpbm_vsf_stock: 2,
+    rpbm_constructor_reference: "OE-A",
+});
+assert.deepEqual(routes(), []);
+
+// Véhicule et catégorie choisis : écriture complète, libellé de la pièce compris.
+const fullWrite = mount({ ...STORED_PIECES, rpbm_eurocode_base: "6108A", order_line: { records: [] } }, context.AgentWidgetDialogSaleOrder);
+Object.assign(fullWrite.state, { selectedVehicule: { id: 2 }, vehiculeMeta: {}, planche: { id: 1, calques }, selectedCalque: calques[0] });
+fullWrite.getOdooVehicule = async () => ({ id: 5, name: "PEUGEOT/208/GS600HH" });
+fullWrite.callPortal = async () => [{ id: 11, pieceOe: { id: 21, libelle: "Pare-brise athermique", referenceClean: "6108AGNSMVZ1B" } }];
+assert.equal("rpbm_xglass_piece_label" in await fullWrite.getRecordData(), false, "pièce pas encore retrouvée : libellé conservé");
+await fullWrite.getPieces();
+const fullData = plain(await fullWrite.getRecordData());
+assert.deepEqual(
+    [fullData.rpbm_vehicle_id, fullData.rpbm_xglass_category, fullData.rpbm_xglass_vehicle_id, fullData.rpbm_xglass_piece_id, fullData.rpbm_eurocode_base],
+    [[5, "PEUGEOT/208/GS600HH"], "PARE-BRISE", "2", "11", "6108A"],
+);
+assert.equal(fullData.rpbm_xglass_piece_label, "Pare-brise athermique — réf. 6108AGNSMVZ1B");
+fullWrite.state.selectedPiece = undefined;
+fullWrite.state.selectedPieceAm = { pieceAm: { id: 3365070, reference: "6108AGNSMVZ", fournisseur: { libelle: "PILKINGTON" } } };
+assert.equal(fullWrite.xglassPieceLabel, "AM 6108AGNSMVZ (PILKINGTON)");
+fullWrite.state.selectedPieceAm = undefined;
+assert.equal(fullWrite.xglassPieceLabel, "");
+
+// Restauration du calque : la pièce est vidée, le tableau et la sélection VSF restent.
+const keptVsf = mount({ rpbm_eurocode_base: "6108A" });
+Object.assign(keptVsf.state, {
+    articlesVsf: [{ code: "6108AGABCHM" }],
+    selectedArticleCodes: { "6108AGABCHM": true },
+    primaryArticleCode: "6108AGABCHM",
+    selectedPiece: { id: 11 },
+    selectedPieceAm: { pieceAm: { id: 3365069 } },
+});
+keptVsf._lastSearchedBaseEurocode = "6108A";
+keptVsf.clearSelectedPiece(true);
+assert.deepEqual(
+    plain([keptVsf.selectedPiece, keptVsf.selectedPieceAm, keptVsf.baseEurocode, keptVsf.articlesVsf, keptVsf.state.selectedArticleCodes, keptVsf.state.primaryArticleCode, keptVsf._lastSearchedBaseEurocode]),
+    plain([undefined, undefined, "6108A", [{ code: "6108AGABCHM" }], { "6108AGABCHM": true }, "6108AGABCHM", "6108A"]),
+);
+
+// « Charger X'Glass » : agentsInitialized passe à vrai sans relancer la recherche.
+const loading = vsfOnly({ rpbm_eurocode_base: "6108A" });
+loading.rpc = async (route, params) => {
+    rpcCalls.push({ route, params });
+    return route === "/searchBaseEurocode" ? [{ code: "6108AGABCHM" }] : [];
+};
+runVsfEffect();
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "6108A" }]);
+loading.state.agentsInitialized = true;
+runVsfEffect();
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "6108A" }]);
+
+// La pièce concernée enregistrée survit à la restauration du calque (suggestion : pare-brise).
+const partType = vsfOnly({ rpbm_part_type: "rear_window", rpbm_eurocode_base: "6108A" });
+partType.state.planche = { id: 1, calques };
+runCalqueEffect();
+partType.state.selectedCalque = calques[0];
+runCalqueEffect();
+assert.equal(partType.pieceConcernee, "rear_window");
+
+// Recherche périmée (base modifiée pendant la recherche) : ni sa réponse tardive ni son échec
+// n'écrasent la recherche en cours.
+const stale = mount({});
+const pending = {};
+stale.callPortal = (route, { baseEurocode }) => new Promise((resolve, reject) => { pending[baseEurocode] = { resolve, reject }; });
+const staleSearch = (base) => { stale.setBaseEurocode(base); return stale.searchBaseEurocode(); };
+const late = staleSearch("6108A");
+const current = staleSearch("6574A");
+pending["6574A"].resolve([{ code: "6574AGACIMVZ" }]);
+await current;
+pending["6108A"].resolve([{ code: "6108AGABCHM" }]);
+await late;
+assert.deepEqual(plain(stale.articlesVsf), [{ code: "6574AGACIMVZ" }], "réponse tardive ignorée");
+const failed = staleSearch("7310A");
+const next = staleSearch("6108A");
+pending["7310A"].reject(new Error("portail VSF inaccessible"));
+await assert.rejects(failed, /inaccessible/);
+pending["6108A"].resolve([{ code: "6108AGABCHM" }]);
+await next;
+assert.deepEqual(plain(stale.articlesVsf), [{ code: "6108AGABCHM" }], "échec périmé sans effet sur la recherche en cours");
+
+// Revue E2, A : devis avec une catégorie mais ni base ni pièce. Base saisie, article principal choisi,
+// puis « Charger X'Glass » et la vraie chaîne (véhicule, planche, calque de la catégorie) : rien n'est perdu.
+const settleEffects = async () => {
+    for (let round = 0; round < 6; round++) {
+        effects.forEach(runEffect);
+        await new Promise(resolve => setImmediate(resolve));
+    }
+};
+const chain = vsfOnly({ rpbm_xglass_category: "PARE-BRISE", rpbm_part_type: "rear_window", rpbm_license_plate: "GS600HH" });
+chain.rpc = async (route, params) => {
+    rpcCalls.push({ route, params });
+    return {
+        "/searchBaseEurocode": [{ code: "7310AGABCHM" }],
+        "/searchImmatriculation": [{ id: 471612 }],
+        "/rpbm_agent/getVehiculeMeta": { meta: {}, planche: { id: 26881, calques } },
+    }[route] || [];
+};
+await settleEffects();
+chain.onChangeBaseEurocode({ target: { value: "7310A" } });
+await settleEffects();
+Object.assign(chain.state, { selectedArticleCodes: { "7310AGABCHM": true }, primaryArticleCode: "7310AGABCHM" });
+await chain.startAgents();
+await settleEffects();
+assert.equal(chain.selectedCalque?.libelle, "PARE-BRISE", "la chaîne a restauré la catégorie");
+assert.deepEqual(routes().filter(route => route === "/getPieces"), ["/getPieces"]);
+assert.deepEqual(
+    plain([chain.baseEurocode, chain.articlesVsf, chain.state.selectedArticleCodes, chain.getPrimaryArticle()?.code, chain.pieceConcernee]),
+    ["7310A", [{ code: "7310AGABCHM" }], { "7310AGABCHM": true }, "7310AGABCHM", "rear_window"],
+);
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "7310A" }]);
+
+// Revue E2, B : seule une pièce « Autres marques AM » mémorisée, non retrouvée : son libellé reste
+// (opportunité, et devis après « Charger X'Glass »).
+for (const Dialog of [context.AgentWidgetDialogCrmLead, context.AgentWidgetDialogSaleOrder]) {
+    const amOnly = mount({ rpbm_piece_am_id: "3365069", rpbm_xglass_piece_label: "AM 6108AGNSMVZ (PILKINGTON)", order_line: { records: [] } }, Dialog);
+    Object.assign(amOnly.state, { selectedVehicule: { id: 2 }, vehiculeMeta: {}, selectedCalque: calques[0] });
+    amOnly.getOdooVehicule = async () => ({ id: 5, name: "PEUGEOT/208/GS600HH" });
+    assert.equal("rpbm_xglass_piece_label" in await amOnly.getRecordData(), false, Dialog.name);
+}
+
+// Revue E2, C : une base sans résultat n'est pas recherchée de nouveau par les effets ; le bouton la relance (R24).
+const noArticle = vsfOnly({ rpbm_eurocode_base: "9999Z" });
+runVsfEffect();
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "9999Z" }]);
+noArticle.state.agentsInitialized = true;
+runVsfEffect();
+noArticle.state.selectedPiece = { id: 11 };
+runVsfEffect();
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "9999Z" }], "ni X'Glass chargé ni pièce restaurée ne la relancent");
+noArticle.onSearchBaseEurocode(true);
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "9999Z" }, { baseEurocode: "9999Z" }], "le bouton la relance");
+
+// Revue E2, D : deux « Charger X'Glass » rapprochés ne font qu'une authentification.
+const twice = vsfOnly({ rpbm_eurocode_base: "6108A" });
+const firstLoad = twice.startAgents();
+assert.equal(twice.state.xglassLoading, true);
+await Promise.all([firstLoad, twice.startAgents()]);
+assert.deepEqual(routes().filter(route => route === "/rpbm_agent_auth"), ["/rpbm_agent_auth"]);
+assert.equal(twice.state.xglassLoading, false);
+
+// Revue E2 : dialog fermé pendant « Charger X'Glass ». Le verrou pris entre-temps est rendu par un seul
+// /rpbm_agent_close, sans autre appel ni état modifié après la destruction.
+const closing = vsfOnly({ rpbm_eurocode_base: "6108A", rpbm_license_plate: "GS600HH" });
+let resolveAuth;
+const authResponse = new Promise(resolve => { resolveAuth = resolve; });
+const served = [];
+const serve = (route) => { served.push(route); return route === "/rpbm_agent_auth" ? authResponse : Promise.resolve([]); };
+closing.env = { services: { rpc: serve } };
+// rpc de useService : comme _protectMethod d'Odoo, il ne résout plus après la destruction.
+closing.rpc = (route) => serve(route).then(result => closing.testStatus === "destroyed" ? new Promise(() => {}) : result);
+closing.startAgents();
+await closing.onDiscard();
+closing.testStatus = "destroyed";
+const stateAtDestroy = JSON.stringify(closing.state);
+resolveAuth([]);
+await new Promise(resolve => setImmediate(resolve));
+assert.deepEqual(served, ["/rpbm_agent_auth", "/rpbm_agent_close"]);
+assert.equal(JSON.stringify(closing.state), stateAtDestroy);
 
 vm.runInNewContext(`${await load("ArticleComponent.js")}\nthis.ArticleComponent = ArticleComponent;`, context);
 

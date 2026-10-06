@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.AgentWidgetDialog">
         <Dialog size="'fullscreen'" title="'Assistant véhicule et pièces'">
-            <t t-if="!agentsInitialized">
+            <t t-if="showAgentGate">
                 <div t-if="!authError" class="d-flex justify-content-center">
                     <i class="fa fa-spinner fa-spin fa-2x me-2"/>
                     <t t-esc="loadingMessage"/>
@@ -18,7 +18,7 @@
                         <i class="fa fa-spinner fa-spin"/>
                         Reconnexion aux portails et restauration du contexte en cours...
                     </div>
-                <section class="mb-4">
+                <section t-if="agentsInitialized" class="mb-4">
                     <h5>1. Véhicule</h5>
                     <div class="d-flex flex-wrap gap-2 align-items-end">
                         <div class="d-flex flex-column">
@@ -116,7 +116,7 @@
                             <label for="baseEurocode" class="form-label">Base Eurocode</label>
                             <input class="o_input" id="baseEurocode" t-att-value="baseEurocodeInput" placeholder="Base Eurocode" t-ref="baseEurocode" t-on-input="onInputBaseEurocode" t-on-change="onChangeBaseEurocode"/>
                         </div>
-                        <button name="vsf_search" class="btn btn-primary" t-on-click="onSearchBaseEurocode">Rechercher sur VSF</button>
+                        <button name="vsf_search" class="btn btn-primary" t-on-click="() => this.onSearchBaseEurocode(true)">Rechercher sur VSF</button>
                         <a t-att-class="vsfSearchUrl ? 'btn btn-outline-primary' : 'btn btn-outline-primary disabled'" t-att-href="vsfSearchUrl" target="_blank" rel="noopener" t-att-aria-disabled="vsfSearchUrl ? 'false' : 'true'" t-att-tabindex="vsfSearchUrl ? undefined : -1">Ouvrir dans un nouvel onglet</a>
                     </div>
                     <!-- Un tbody par article principal. Sélection par la prop onSelect : un t-on-click

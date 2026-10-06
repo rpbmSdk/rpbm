@@ -3,6 +3,7 @@ import requests
 import bs4 as bs
 import json
 import re
+import threading
 import unicodedata
 import html
 from concurrent.futures import ThreadPoolExecutor
@@ -272,6 +273,40 @@ class VSFAgent:
         self.session = requests.Session()
         portal_trace.attach(self.session, "vsf")
         self.session.headers.update(self.headers)
+        self.logged_in = False
+        self._login_lock = threading.Lock()
+        self._login_generation = 0
+
+    def _login(self, login, password, expired=None):
+        """Connecte l'agent si besoin et renvoie la génération de la session.
+
+        ``expired`` : génération qu'un appel a vue expirer. Si un autre thread
+        s'est déjà reconnecté, la génération courante est plus récente et l'on
+        ne se reconnecte pas une seconde fois.
+        """
+        with self._login_lock:
+            if not self.logged_in or expired == self._login_generation:
+                self.logged_in = False
+                self.auth(login, password)
+                self.logged_in = True
+                self._login_generation += 1
+            return self._login_generation
+
+    def with_session(self, login, password, fn):
+        """Exécute ``fn(self)`` connecté, et le rejoue une fois après une session expirée.
+
+        Les threads des suggestions ne se connectent jamais : leur ``VSFAuthError``
+        remonte ici, et ``fn`` est rejoué en entier.
+        """
+        # ponytail: une session VSF par processus Odoo, connectée à la demande ; VSF
+        # tolère deux sessions sur le même compte (trace T1 du 2026-10-06). Partager
+        # le cookie en base seulement si un jour nécessaire.
+        generation = self._login(login, password)
+        try:
+            return fn(self)
+        except VSFAuthError:
+            self._login(login, password, expired=generation)
+            return fn(self)
 
     def get(self, url, **kwargs):
         kwargs.setdefault("timeout", REQUEST_TIMEOUT)

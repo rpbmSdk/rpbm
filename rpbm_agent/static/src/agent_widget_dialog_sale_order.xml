@@ -2,6 +2,19 @@
 <templates xml:space="preserve">
     <t t-name="rpbm_agent.SaleOrderDialog" t-inherit="rpbm_agent.AgentWidgetDialog" t-inherit-mode="primary">
         <xpath expr="//section[@name='vsf_section']" position="before">
+            <!-- Lot E2 : sans X'Glass, le dossier en lecture seule ; le bouton sert aussi à réessayer. -->
+            <section t-if="!agentsInitialized" name="xglass_summary" class="mb-4">
+                <h5>Dossier</h5>
+                <dl class="row mb-2">
+                    <t t-foreach="recordSummary" t-as="line" t-key="line[0]">
+                        <dt class="col-sm-3" t-esc="line[0]"/>
+                        <dd class="col-sm-9" t-esc="line[1]"/>
+                    </t>
+                </dl>
+                <div t-if="authError" class="alert alert-danger" role="alert" t-esc="authError"/>
+                <button class="btn btn-primary" t-on-click="startAgents" t-att-disabled="isLoading or state.xglassLoading">Charger X'Glass</button>
+                <span t-if="isLoading" class="ms-2"><i class="fa fa-spinner fa-spin me-1"/><t t-esc="loadingMessage"/></span>
+            </section>
             <section t-if="selectedPiece" class="mb-4">
                 <h5>4. Main d'œuvre X'Glass</h5>
                 <p class="form-text">Sélectionnez les opérations à ajouter au devis. Le tarif est celui du service Odoo associé.</p>

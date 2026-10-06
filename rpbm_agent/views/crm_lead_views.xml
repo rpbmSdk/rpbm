@@ -35,6 +35,7 @@
                         <field name="rpbm_piece_oe_id"/>
                         <field name="rpbm_piece_am_id"/>
                         <field name="rpbm_xglass_vehicle_id"/>
+                        <field name="rpbm_xglass_piece_label"/>
                     </group>
                 </page>
             </notebook>

@@ -51,6 +51,7 @@ class CrmLead(models.Model):
     rpbm_piece_oe_id = fields.Char("Identifiant pièce OE sélectionnée")
     rpbm_piece_am_id = fields.Char("Identifiant pièce après-marché sélectionnée")
     rpbm_xglass_vehicle_id = fields.Char("Identifiant véhicule X'Glass sélectionné")
+    rpbm_xglass_piece_label = fields.Char("Pièce X'Glass sélectionnée")
 
     def _rpbm_legacy_triggers(self):
         return {"rpbm_vehicle_id": VEHICLE_DERIVED_FIELDS}
