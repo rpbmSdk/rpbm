@@ -59,6 +59,8 @@ ne sélectionne pas non plus la ligne ; son URL VSF est complète dès la recher
 font défiler en boucle les seules photos de l'article dans l'aperçu, quelle que soit la vignette
 ouverte ; les photos du modèle sont exclues. Recette live du tableau, qui reprend R15 à R17, réussie
 le 2026-10-05 sur le build `6cbecd3` : voir le [jeu de test](../../jeu-de-test.md#tableau-vsf-en-plein-écran-r21-r22-reprise-de-r15-à-r17).
+Le clic milieu, le clic simple sur « Fiche technique » et l'affichage de la recherche VSF après
+connexion ont été vérifiés à la main par l'utilisateur le 2026-10-06, sans écart signalé.
 
 Chaque article sélectionné garde ses propres actions de produit Odoo, dans sa ligne de détail. Sur un devis, l'ajout et le retrait sont indépendants par article ; le retrait ne concerne que la ligne de devis ajoutée par le widget pendant la dialog courante. « Retirer du devis » remplace « Ajouter au devis » dès que la ligne est ajoutée ; un produit déjà présent à l'ouverture de la fenêtre affiche « Article déjà présent dans le devis. », sans retrait (R28, lot correctif `17.0.261006.1`, recette live réussie le 2026-10-06 : voir [9](09-creation-produit.md#retirer-du-devis-r28)).
 

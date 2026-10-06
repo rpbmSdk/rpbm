@@ -266,6 +266,8 @@ dès la recherche : `extractProductInfo` la passe par `_absolute_url` (voir
 [`test_portal_auth.py`](../../test_portal_auth.py). Recette live du tableau (reprise de R15 à R17) réussie le
 2026-10-05 sur le build `6cbecd3` : voir le
 [jeu de test](../jeu-de-test.md#tableau-vsf-en-plein-écran-r21-r22-reprise-de-r15-à-r17).
+Le clic milieu, le clic simple sur « Fiche technique » et l'affichage de la recherche VSF après
+connexion ont été vérifiés à la main par l'utilisateur le 2026-10-06, sans écart signalé.
 
 ### Hiérarchie des classes "record" (champs Odoo par modèle porteur)
 
@@ -491,7 +493,8 @@ rejoue `getRecordData()` sur un dialog dont les trois identifiants de pièce son
 
 `tests/test_legacy_sync.py` vérifie que le miroir `rpbm_xglass_vehicle_id` du devis remonte à
 l'opportunité ; `tests/test_find_existing_product.py` couvre le rattachement produit (voir
-[backend](backend.md#rattachement-dun-article-vsf-à-un-produit-lot-e11)).
+[backend](backend.md#rattachement-dun-article-vsf-à-un-produit-lot-e11) ; non exécuté, abandonné sur
+décision de l'utilisateur, 2026-10-06).
 
 **Cas limite accepté.** Une opportunité sans pièce OE, avec seulement une ligne « Autres marques
 AM » et une base, ouvre le devis sans recherche VSF automatique (règle R12 : la recherche

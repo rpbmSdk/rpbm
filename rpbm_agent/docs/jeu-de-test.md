@@ -223,10 +223,10 @@ Le miroir `rpbm_xglass_vehicle_id` du devis vers l'opportunité est couvert par
 `tests/test_find_existing_product.py` (six tests, valeurs propres au test, voir
 [backend](technique/backend.md#rattachement-dun-article-vsf-à-un-produit-lot-e11)) ; ils demandent
 une base PostgreSQL et le lanceur Odoo avec `--test-enable`. Le poste de développement n'a pas
-PostgreSQL et le build de staging met le module à jour sans `--test-enable` : ces tests n'ont
-**pas été exécutés** au 2026-10-06 (la recette live du 2026-10-05 ne couvre que le cas d'origine,
-par SO-07, étape 1). Pour les jouer : un build Odoo.sh de développement, qui joue les tests, ou un
-Odoo 17 local avec PostgreSQL ; le choix est à faire (point ouvert).
+PostgreSQL et le build de staging met le module à jour sans `--test-enable`. Le test de
+rattachement est **non exécuté, abandonné sur décision de l'utilisateur (2026-10-06)** ; le fichier
+reste dans le dépôt. La recette live du 2026-10-05 ne couvre que le cas d'origine, par SO-07,
+étape 1.
 
 La recette « Tableau VSF en plein écran » plus bas remplace l'ancienne recette R13 à R17 ; elle
 vaut pour le build B (`17.0.261005.2`).
@@ -565,6 +565,10 @@ automatique. La page « aucun résultat » et la page inattendue sont couvertes 
 Recette sans écriture du tableau VSF en plein écran (build `17.0.261005.2`) : **recette réussie le
 2026-10-05 sur le build `6cbecd3`**, sans écriture métier. Rejouée sur un devis, sans écriture, le
 2026-10-06 sur le build `44b86e0` (`17.0.261006.1`), comme non-régression du lot correctif : réussie.
+Les vérifications qui restaient à faire à la main (clic milieu sur « Ouvrir dans un nouvel onglet » et
+sur une vignette, étapes 8 et 9 ; clic simple sur « Fiche technique », étape 9 ; affichage de la
+recherche VSF après connexion, étape 8) ont été faites par l'utilisateur le 2026-10-06 : vérifiées à
+la main, sans écart signalé.
 Elle remplace la recette R13 à R17 (cartes sur une colonne) : le tableau remplace R13 et R14, et R15
 à R17 sont repris aux étapes 8 à 10. Depuis le lot E1 (`17.0.261005.3`), le tableau n'existe plus sur
 l'opportunité : pour la rejouer, les étapes 2 à 11 se font sur un devis lié à une opportunité ; seules
