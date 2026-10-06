@@ -77,6 +77,8 @@ export class AgentWidgetDialog extends asyncWidget {
             baseEurocode: undefined,
             baseEurocodeInput: undefined,
             articlesVsf: [],
+            // Base de la dernière recherche VSF aboutie sans article (R24).
+            vsfNoResultFor: undefined,
             selectedArticleCodes: {},
             primaryArticleCode: undefined,
             articleProducts: {},
@@ -776,6 +778,7 @@ export class AgentWidgetDialog extends asyncWidget {
             this.setBaseEurocode(undefined);
         }
         this.state.articlesVsf = [];
+        this.state.vsfNoResultFor = undefined;
         this.resetVsfSelection();
         this._lastSearchedBaseEurocode = undefined;
     }
@@ -918,6 +921,7 @@ export class AgentWidgetDialog extends asyncWidget {
         const baseEurocode = (this.baseEurocode || "").trim();
         if (!baseEurocode) {
             this.state.articlesVsf = [];
+            this.state.vsfNoResultFor = undefined;
             this.resetVsfSelection();
             this._lastSearchedBaseEurocode = undefined;
             return;
@@ -928,11 +932,13 @@ export class AgentWidgetDialog extends asyncWidget {
             return;
         }
         this._lastSearchedBaseEurocode = baseEurocode;
+        this.state.vsfNoResultFor = undefined;
         try {
             const res = await this.callPortal("/searchBaseEurocode", {
                 baseEurocode,
             });
             this.state.articlesVsf = res;
+            this.state.vsfNoResultFor = res.length ? undefined : baseEurocode;
             this.resetVsfSelection();
         } catch (error) {
             this._lastSearchedBaseEurocode = undefined;

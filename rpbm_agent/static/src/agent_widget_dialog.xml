@@ -157,6 +157,8 @@
                             </t>
                         </tbody>
                     </table>
+                    <!-- t-if et non t-elif : l'opportunité retire la table par XPath. -->
+                    <p t-if="!articlesVsf.length and state.vsfNoResultFor" name="vsf_no_result" class="text-muted mt-2">Aucun article VSF pour « <t t-esc="state.vsfNoResultFor"/> ».</p>
                 </section>
                 </div>
             </t>

@@ -8,19 +8,9 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
 
     setup() {
         super.setup();
-        this._widgetOrderLinesByArticleCode = new Map();
-        this._widgetLaborLinesByKey = new Map();
+        // Code article → produit des lignes ajoutées par le widget pendant ce dialog.
+        this._widgetProductIdsByArticleCode = new Map();
         this.state.selectedLaborOperationKeys = {};
-        this._restoreLaborLines();
-    }
-
-    _restoreLaborLines() {
-        for (const line of this.props.record.data.order_line.records) {
-            const key = line.data.rpbm_labor_operation_key;
-            if (key) {
-                this._widgetLaborLinesByKey.set(key, line);
-            }
-        }
     }
 
     get laborOperations() {
@@ -71,7 +61,6 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
                     product_uom_qty: operation.duration,
                     rpbm_labor_operation_key: operation.key,
                 });
-                this._widgetLaborLinesByKey.set(operation.key, newLine);
             }
             this.state.selectedLaborOperationKeys = {};
         }, "Ajout des opérations de main-d'œuvre au devis en cours...");
@@ -84,13 +73,16 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         }
         await this.runAsync(async () => {
             await this.props.record.data.order_line.delete(line);
-            this._widgetLaborLinesByKey.delete(operation.key);
         }, "Retrait de l'opération de main-d'œuvre du devis en cours...");
     }
 
     getWidgetOrderLine(articleCode) {
-        const line = this._widgetOrderLinesByArticleCode.get(articleCode);
-        return this.props.record.data.order_line.records.includes(line) ? line : undefined;
+        // Recherche par produit, comme pour la main-d'œuvre : l'objet renvoyé par addNewRecord
+        // n'est pas toujours celui conservé dans records (recette 2026-10-05, SO7763).
+        const productId = this._widgetProductIdsByArticleCode.get(articleCode);
+        return productId && this.props.record.data.order_line.records.find(
+            (line) => line.data.product_id?.[0] === productId
+        );
     }
 
     isWidgetArticleInOrder(articleCode) {
@@ -129,7 +121,7 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
                 product_uom_qty: 1,
                 rpbm_xglass_price: xglassPrice,
             });
-            this._widgetOrderLinesByArticleCode.set(articleCode, newLine);
+            this._widgetProductIdsByArticleCode.set(articleCode, product.id);
         }, "Ajout de l'article au devis en cours...");
     }
 
@@ -140,7 +132,7 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
         }
         await this.runAsync(async () => {
             await this.props.record.data.order_line.delete(line);
-            this._widgetOrderLinesByArticleCode.delete(articleCode);
+            this._widgetProductIdsByArticleCode.delete(articleCode);
         }, "Retrait de l'article du devis en cours...");
     }
 }

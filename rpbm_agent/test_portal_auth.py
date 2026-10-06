@@ -292,6 +292,46 @@ def test_vsf_recherche_apparie_les_images_signees():
     ]
 
 
+def _vsf_search_agent(html):
+    page = vsf.bs.BeautifulSoup(html, "html.parser")
+
+    class FakeSearchAgent(vsf.VSFAgent):
+        def searchEurocodePage(self, eurocode):
+            return page
+
+        def post(self, *args, **kwargs):
+            raise AssertionError("POST inattendu : la page ne liste aucun article")
+
+    return FakeSearchAgent()
+
+
+VSF_NO_RESULT_IMG = '<img src="https://client.myvsf.fr/img/no-result.png" class="img-responsive center-block">'
+VSF_NO_RESULT_TEXT = (
+    '<div class="h5 text-info text-center margin-bottom-40">'
+    "Aucun résultat ne correspond à votre recherche.</div>"
+)
+
+
+def test_vsf_recherche_sans_resultat_sans_post():
+    # Trace du 2026-10-06 : 9999Z, A+B &C D et 61-08A renvoient cette page, sans liste d'articles.
+    for markers in (VSF_NO_RESULT_IMG + VSF_NO_RESULT_TEXT, VSF_NO_RESULT_IMG, VSF_NO_RESULT_TEXT):
+        page = (
+            '<title>Catalogue - VSF Vitro Service France</title><meta name="csrf-token" content="tok"/>'
+            f'<div id="catalog" class="margin-bottom-20"><div id="catalog-container">{markers}</div></div>'
+        )
+        assert _vsf_search_agent(page).searchEurocodeArticlesClient("9999Z") == [], markers
+
+
+def test_vsf_recherche_page_inattendue():
+    for page in ("<title>Catalogue</title>", '<div id="catalog-container"><p>Maintenance</p></div>'):
+        try:
+            _vsf_search_agent(page).searchEurocodeArticlesClient("6108A")
+        except vsf.VSFError as error:
+            assert "session" not in str(error).lower(), error
+        else:
+            raise AssertionError("VSFError attendue sans liste d'articles ni message « aucun résultat »")
+
+
 def test_vsf_fiche_exclut_le_carrousel_modele_et_conserve_la_recherche():
     page = vsf.bs.BeautifulSoup(
         '''

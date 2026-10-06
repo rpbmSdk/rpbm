@@ -327,7 +327,17 @@ class VSFAgent:
         page = self.searchEurocodePage(eurocode)
         div = page.find("div", id="articles-list-container")
         if div is None:
-            raise VSFError("Conteneur articles introuvable sur la page de résultats VSF (session expirée ?).")
+            # Trace du 2026-10-06 : une base sans résultat (9999Z, 61-08A) renvoie une page
+            # catalogue authentifiée sans liste d'articles, avec ce message à sa place.
+            catalog = page.find("div", id="catalog-container")
+            if catalog and (
+                catalog.select_one('img[src*="/img/no-result.png"]')
+                or "Aucun résultat ne correspond à votre recherche" in _text(catalog)
+            ):
+                return []
+            raise VSFError(
+                "Page de résultats VSF inattendue, ni liste d'articles ni message « aucun résultat »."
+            )
         csrf_tag = page.find("meta", {"name": "csrf-token"})
         if not csrf_tag:
             raise VSFError("Jeton CSRF introuvable sur la page de résultats VSF.")

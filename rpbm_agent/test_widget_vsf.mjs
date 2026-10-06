@@ -395,6 +395,57 @@ assert.deepEqual(keptFlags(search), [true, true]);
 await search.onSearchImmatriculation();
 assert.deepEqual(keptFlags(search), [false, false]);
 
+// R24 : une recherche VSF sans article retient la base cherchée ; un résultat ou une erreur l'efface.
+const noResult = mount({});
+const searchVsf = (base, callPortal) => {
+    noResult.callPortal = callPortal;
+    noResult.setBaseEurocode(base);
+    return noResult.searchBaseEurocode();
+};
+assert.equal(noResult.state.vsfNoResultFor, undefined);
+await searchVsf("9999Z", async () => []);
+assert.equal(noResult.state.vsfNoResultFor, "9999Z");
+await searchVsf("6108A", async () => [{ code: "6108AGABCHM" }]);
+assert.equal(noResult.state.vsfNoResultFor, undefined);
+await searchVsf("9999Z", async () => []);
+await assert.rejects(searchVsf("61-08A", async () => { throw new Error("portail VSF inaccessible"); }), /inaccessible/);
+assert.equal(noResult.state.vsfNoResultFor, undefined, "une erreur ne laisse pas l'ancien message");
+await searchVsf("9999Z", async () => []);
+noResult.clearSelectedPiece();
+assert.equal(noResult.state.vsfNoResultFor, undefined);
+
+// R28 : l'objet renvoyé par addNewRecord n'est pas toujours celui conservé dans records (SO7763).
+const deletedLines = [];
+const orderLines = {
+    records: [{ data: { product_id: [3420, "Présent à l'ouverture"] } }],
+    async addNewRecord({ context }) {
+        const line = { data: { product_id: [context.default_product_id, "Pare-brise A"] }, async update() {} };
+        this.records.push(line);
+        return line;
+    },
+    async delete(line) {
+        deletedLines.push(line);
+        this.records = this.records.filter(record => record !== line);
+    },
+};
+const quote = mount({ order_line: orderLines }, context.AgentWidgetDialogSaleOrder);
+quote.state.articlesVsf = [{ code: "6108AGABCHM", prixVenteRPBM: 80 }, { code: "6574AXSH", prixVenteRPBM: 5 }];
+quote.state.articleProducts = { "6108AGABCHM": { id: 9001 }, "6574AXSH": { id: 3420 } };
+await quote.addArticleToSaleOrder("6108AGABCHM");
+const replacement = { data: { product_id: [9001, "Pare-brise A"] } };
+orderLines.records = orderLines.records.map(line => line.data.product_id[0] === 9001 ? replacement : line);
+assert.equal(quote.isWidgetArticleInOrder("6108AGABCHM"), true, "« Retirer du devis » après remplacement");
+await quote.removeArticleFromSaleOrder("6108AGABCHM");
+assert.equal(deletedLines.length, 1);
+assert.equal(deletedLines[0], replacement, "la ligne supprimée est celle de records");
+assert.equal(quote.isWidgetArticleInOrder("6108AGABCHM"), false);
+assert.equal(quote.isArticleAlreadyInOrder("6108AGABCHM"), false);
+// Produit présent à l'ouverture : « Article déjà présent », ajout bloqué.
+assert.equal(quote.isWidgetArticleInOrder("6574AXSH"), false);
+assert.equal(quote.isArticleAlreadyInOrder("6574AXSH"), true);
+await quote.addArticleToSaleOrder("6574AXSH");
+assert.equal(orderLines.records.length, 1);
+
 vm.runInNewContext(`${await load("ArticleComponent.js")}\nthis.ArticleComponent = ArticleComponent;`, context);
 
 const openedImages = [];
