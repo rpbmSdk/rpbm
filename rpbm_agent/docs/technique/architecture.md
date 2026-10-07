@@ -148,9 +148,9 @@ sequenceDiagram
     FC->>FC: onMounted : drapeau posé et devis nouveau de cette opportunité ?
     FC->>SO: dialogService.add(AgentWidgetDialogSaleOrder)
     SO->>BE: /searchBaseEurocode (base mémorisée), sans /rpbm_agent_auth
-    BE-->>SO: tableau VSF, encart « Dossier » en lecture seule
+    BE-->>SO: tableau VSF, encart « Dossier » en lecture seule, main-d'œuvre enregistrée (correctif du 2026-10-07)
     opt « Charger X'Glass »
-        SO->>BE: /rpbm_agent_auth, puis restauration (véhicule mémorisé, pièce, pièce AM, main-d'œuvre)
+        SO->>BE: /rpbm_agent_auth, puis restauration (véhicule mémorisé, pièce, pièce AM, main-d'œuvre fraîche)
     end
     U->>SO: articles VSF, Confirmer et enregistrer
 ```

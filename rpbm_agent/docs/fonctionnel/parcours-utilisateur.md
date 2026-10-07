@@ -11,7 +11,7 @@ Le widget `rpbm_agent_widget` est une icône loupe (🔍) présente sur **Piste/
 ```mermaid
 flowchart TD
     A([Ouverture du widget]) --> A1{Fenêtre ouverte sur un devis ?}
-    A1 -->|"Oui (lot E2)"| A2["Encart « Dossier » en lecture seule + recherche VSF immédiate sur la base enregistrée, sans X'Glass"]
+    A1 -->|"Oui (lot E2)"| A2["Encart « Dossier » en lecture seule, main-d'œuvre enregistrée et recherche VSF immédiate sur la base enregistrée, sans X'Glass"]
     A2 --> A3["Bouton « Charger X'Glass » (à la demande)"]
     A3 --> B
     A1 -->|"Non, opportunité"| B[Connexion à X'Glass]
@@ -47,7 +47,7 @@ Notes :
 - Si le conducteur (`driver_id`) du véhicule déjà présent dans Odoo diffère du client de l'enregistrement en cours, une alerte s'affiche.
 - Les pièces de la catégorie sont présentées comme sur le portail : « Pièces principales » puis « Pièces complémentaires », chacune découpée en familles X'Glass, dans l'ordre du portail. Sous chaque famille, l'encart « Autres marques AM » est replié ; il se charge au dépliage, sans qu'une pièce soit sélectionnée. Un clic sur l'une de ses lignes renseigne l'eurocode (et lance la recherche VSF sur le devis), quelle que soit la famille (détail : [3](workflow/03-categorie-xglass.md) et [4](workflow/04-piece-piece-am.md)).
 - Si le champ "Catégorie X'Glass" est déjà renseigné sur l'enregistrement, la catégorie correspondante est présélectionnée automatiquement dès que la planche est chargée.
-- Sur le devis, la recherche VSF part **dès l'ouverture** sur la base enregistrée, sans attendre X'Glass, puis se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique) ; l'opportunité n'a ni recherche VSF ni tableau. « Charger X'Glass » lance ensuite la chaîne ci-dessus (véhicule, catégorie, pièce, main-d'œuvre) sans vider le tableau ni la sélection (détail : [7](workflow/07-confirmation-sale-order.md#devis-sans-xglass-lot-e2)).
+- Sur le devis, la recherche VSF part **dès l'ouverture** sur la base enregistrée, sans attendre X'Glass, puis se relance automatiquement dès que le champ Eurocode change (saisie manuelle ou déduction automatique) ; l'opportunité n'a ni recherche VSF ni tableau. « Charger X'Glass » lance ensuite la chaîne ci-dessus (véhicule, catégorie, pièce, main-d'œuvre fraîche) sans vider le tableau ni la sélection (détail : [7](workflow/07-confirmation-sale-order.md#devis-sans-xglass-lot-e2)).
 - Sur le devis, une base sans résultat (inexistante ou mal formée) n'est pas une erreur : la section affiche « Aucun article VSF pour « *base* ». », sans notification (lot correctif `17.0.261006.1`, détail : [5](workflow/05-recherche-vsf-eurocode.md)).
 - Sur le devis, les articles VSF forment un tableau (eurocode, désignation, référence constructeur, stock, prix, coût, photo). Un clic sur une ligne sélectionne l'article et ouvre sous elle son détail : toutes les vignettes, les caractéristiques et les actions (détail : [5](workflow/05-recherche-vsf-eurocode.md)).
 
@@ -63,21 +63,21 @@ flowchart TD
     V --> W{Le véhicule sélectionné existe-t-il déjà dans Odoo ?}
     W -->|Non| X[Création du véhicule dans fleet.vehicle]
     W -->|Oui| Y[Réutilisation du véhicule existant]
-    X --> Z[Écriture immatriculation + véhicule + véhicule X'Glass + catégorie + pièce concernée + base Eurocode sur la piste]
+    X --> Z[Écriture immatriculation + véhicule + véhicule X'Glass + catégorie + pièce concernée + base Eurocode + main-d'œuvre de la pièce sur la piste]
     Y --> Z
     Z --> AA[Fermeture de la fenêtre — la piste affiche les nouvelles données]
     AA -.->|Créer un devis seulement| AB["Nouveau devis lié à l'opportunité, dont la fenêtre s'ouvre seule"]
 ```
 
-Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardés au clic sur "Enregistrer" — ou immédiatement via "Confirmer et enregistrer" et "Créer un devis") : immatriculation, véhicule lié, identifiant du véhicule X'Glass, catégorie X'Glass, Pièce concernée, Base Eurocode et, lorsque les données Fleet sont déterministes, les champs historiques véhicule (marque, modèle, VIN, énergie, détail modèle et date MEC). Une source vide, ambiguë ou non autorisée avertit sans bloquer ; détail exact dans [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md).
+Champs écrits sur la piste (mise à jour en mémoire du formulaire, sauvegardés au clic sur "Enregistrer" — ou immédiatement via "Confirmer et enregistrer" et "Créer un devis") : immatriculation, véhicule lié, identifiant du véhicule X'Glass, catégorie X'Glass, Pièce concernée, Base Eurocode, main-d'œuvre de la pièce (enregistrée sans rien afficher, correctif du 2026-10-07) et, lorsque les données Fleet sont déterministes, les champs historiques véhicule (marque, modèle, VIN, énergie, détail modèle et date MEC). Une source vide, ambiguë ou non autorisée avertit sans bloquer ; détail exact dans [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md).
 
 > **Article VSF.** La fenêtre de l'opportunité ne cherche plus d'article VSF : elle s'arrête à la base Eurocode. L'Eurocode complet, la désignation VSF, le stock VSF et la référence constructeur ne sont plus écrits depuis l'opportunité ; ils restent visibles et modifiables à la main dans le formulaire, et seul le devis les alimente (voir plus bas).
 
-**Créer un devis.** Le bouton, placé après « Confirmer et enregistrer », est affiché sur une opportunité, pas sur une piste ; sans client, il est grisé, avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. ». Comme « Confirmer » et « Confirmer et enregistrer », il est aussi grisé pendant un chargement. Il écrit et enregistre le dossier, ferme la fenêtre, puis ouvre un **nouveau** devis non enregistré, lié à l'opportunité, comme le bouton natif « Nouveau devis » : chaque clic en ouvre un nouveau. La fenêtre du widget s'ouvre alors seule sur ce devis, sans connexion à X'Glass : recherche VSF immédiate sur la même base, et encart « Dossier » avec le même véhicule, la même catégorie et la même pièce ; « Charger X'Glass » restaure la chaîne complète (détail : [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md#créer-un-devis-lot-e1)). Le libellé de la pièce choisie est écrit dans l'opportunité à cette occasion.
+**Créer un devis.** Le bouton, placé après « Confirmer et enregistrer », est affiché sur une opportunité, pas sur une piste ; sans client, il est grisé, avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. ». Comme « Confirmer » et « Confirmer et enregistrer », il est aussi grisé pendant un chargement. Il écrit et enregistre le dossier, ferme la fenêtre, puis ouvre un **nouveau** devis non enregistré, lié à l'opportunité, comme le bouton natif « Nouveau devis » : chaque clic en ouvre un nouveau. La fenêtre du widget s'ouvre alors seule sur ce devis, sans connexion à X'Glass : recherche VSF immédiate sur la même base, et encart « Dossier » avec le même véhicule, la même catégorie et la même pièce ; « Charger X'Glass » restaure la chaîne complète (détail : [6 — Confirmation sur Piste/Opportunité](workflow/06-confirmation-crm-lead.md#créer-un-devis-lot-e1)). Le libellé de la pièce choisie et sa main-d'œuvre sont écrits dans l'opportunité à cette occasion ; le devis propose cette main-d'œuvre dès l'ouverture.
 
 ### Ordre de Vente (`sale.order`)
 
-Depuis le lot E2, le devis commence par les articles VSF : sa fenêtre s'ouvre par la loupe ou, après « Créer un devis », toute seule, **sans connexion à X'Glass**, sur l'encart « Dossier » (véhicule, catégorie, pièce concernée, pièce X'Glass, article principal, en lecture seule) et la recherche VSF de la base de l'opportunité. Le flux véhicule/catégorie/pièce ci-dessus (identique) et la main-d'œuvre n'apparaissent qu'après « Charger X'Glass », qui restaure le véhicule, la pièce et la base de l'opportunité sans vider le tableau VSF. « Confirmer » est actif dès l'ouverture : sans X'Glass, il n'écrit que la base et l'article principal. Plusieurs vendeurs peuvent chercher sur VSF en même temps ; seul X'Glass reste réservé à un vendeur à la fois. La ligne de détail de chaque article VSF sélectionné propose des actions supplémentaires :
+Depuis le lot E2, le devis commence par les articles VSF : sa fenêtre s'ouvre par la loupe ou, après « Créer un devis », toute seule, **sans connexion à X'Glass**, sur l'encart « Dossier » (véhicule, catégorie, pièce concernée, pièce X'Glass, article principal, en lecture seule) et la recherche VSF de la base de l'opportunité. Le flux véhicule/catégorie/pièce ci-dessus (identique) n'apparaît qu'après « Charger X'Glass », qui restaure le véhicule, la pièce et la base de l'opportunité sans vider le tableau VSF. La main-d'œuvre de la pièce, enregistrée à l'opportunité, est proposée dès l'ouverture, entre l'encart et la recherche VSF (correctif du 2026-10-07). « Confirmer » est actif dès l'ouverture : sans X'Glass, il n'écrit que la base et l'article principal. Plusieurs vendeurs peuvent chercher sur VSF en même temps ; seul X'Glass reste réservé à un vendeur à la fois. La ligne de détail de chaque article VSF sélectionné propose des actions supplémentaires :
 
 ```mermaid
 flowchart TD
@@ -99,8 +99,15 @@ Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule li�
 
 ### Main-d'œuvre X'Glass sur devis
 
-Après la sélection d'une pièce, le widget affiche les opérations X'Glass et
-leurs durées. Le vendeur coche les opérations à facturer puis les ajoute : une
+Les opérations X'Glass de la pièce et leurs durées s'affichent dès l'ouverture
+du devis, sans « Charger X'Glass », quand l'opportunité a une main-d'œuvre
+enregistrée (correctif du 2026-10-07 ; l'opportunité l'enregistre sans rien
+afficher, à « Confirmer », « Confirmer et enregistrer » et « Créer un devis »).
+Sinon, par exemple pour un dossier confirmé avant ce correctif, elles
+apparaissent après « Charger X'Glass », depuis la pièce restaurée ou
+sélectionnée ; le « Confirmer » qui suit les enregistre.
+
+Le vendeur coche les opérations à facturer puis les ajoute : une
 ligne de service est créée par opération, avec la quantité en heures indiquée
 par X'Glass. Le prix et les taxes sont ceux du produit Odoo, jamais un calcul du
 widget : T1 → produit 24, T2 → 23, T3 → 113. Une opération sans durée positive,
@@ -154,7 +161,7 @@ Aucun champ Studio n'est à créer : le module déclare ses champs natifs `rpbm_
 La confirmation mémorise le véhicule X’Glass sélectionné (son identifiant, parmi les véhicules
 qu'une même immatriculation peut renvoyer), la catégorie X’Glass, la base Eurocode et les identifiants
 de la pièce X’Glass, de la pièce OE et de la pièce après-marché, ainsi que le libellé de la pièce
-choisie (lot E2). À la réouverture, le dialogue de l'opportunité restaure ces choix et réduit les
+choisie (lot E2) et la main-d'œuvre de la pièce (correctif du 2026-10-07). À la réouverture, le dialogue de l'opportunité restaure ces choix et réduit les
 listes à la sélection existante ; celui du devis les affiche d'abord dans l'encart « Dossier » et ne
 les restaure qu'après « Charger X'Glass ». Une pièce mémorisée mais
 encore introuvable (chargement en cours, pièce absente de la liste) n'est pas effacée par une

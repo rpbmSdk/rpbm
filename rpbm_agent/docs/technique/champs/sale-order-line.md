@@ -29,3 +29,5 @@ reconnu) : `default_product_id` = produit paramétré (`rpbm_agent.labor_product
 X'Glass en heures, `rpbm_labor_operation_key` = clé de provenance. Prix et taxes viennent du
 produit Odoo. Une opération sans identifiant, sans durée positive ou sans taux reconnu reste non
 ajoutable (`unavailableReason` renvoyé par `/getPieces`).
+
+Les opérations proposées viennent de la pièce chargée par X'Glass ou, depuis le correctif du 2026-10-07 (`17.0.261007.1`), de `rpbm_xglass_labor_operations` ([`crm.lead`](crm-lead.md)) tant que X'Glass n'est pas chargé. Dans ce second cas, le produit de service est résolu à l'ajout, par taux, avec les paramètres `rpbm_agent.labor_product_*` courants (`/rpbm_labor_products`), et non repris de l'enregistrement.

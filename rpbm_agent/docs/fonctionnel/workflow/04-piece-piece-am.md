@@ -84,8 +84,11 @@ la section se réduit à « 4. Base Eurocode » : le champ base et le lien « Ou
 onglet », sans tableau, sans bouton « Rechercher sur VSF » et sans recherche automatique ; le clic
 sur une ligne renseigne la base, rien de plus.
 
-- Sur un devis, la section « 4. Main d'œuvre » reste liée à la pièce sélectionnée : sans pièce,
-  seule « 5. Article VSF » s'affiche, comme pour une base restaurée seule.
+- Sur un devis, la section « 4. Main d'œuvre » suit la pièce sélectionnée ou, tant que X'Glass n'est
+  pas chargé, la main-d'œuvre enregistrée de la pièce mémorisée (correctif du 2026-10-07, voir
+  [7](07-confirmation-sale-order.md#main-dœuvre-enregistrée-correctif-du-2026-10-07)) : sans pièce
+  sélectionnée ni main-d'œuvre enregistrée, seule « 5. Article VSF » s'affiche, comme pour une base
+  restaurée seule.
 - Cas limite : lorsque « Afficher les autres » est actif, une ligne d'une autre famille que celle
   de la pièce sélectionnée remplace la pièce après-marché et la base, la pièce OE restant
   sélectionnée. À la confirmation, la pièce après-marché mémorisée peut donc venir d'une

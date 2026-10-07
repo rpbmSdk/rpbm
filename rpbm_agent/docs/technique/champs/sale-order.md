@@ -13,6 +13,7 @@ les mêmes noms que sur `crm.lead`, ce qui permet au widget d'utiliser une seule
 | `rpbm_intervention_location` | non | lieu d'intervention (préremplissage du transporteur) |
 | `rpbm_xglass_vehicle_id`, `rpbm_xglass_piece_id`, `rpbm_piece_oe_id`, `rpbm_piece_am_id` | non | restauration des sélections du widget : le devis ouvert par « Créer un devis » retrouve ainsi le véhicule X'Glass, la pièce et la pièce AM de l'opportunité, une fois X'Glass chargé (« Charger X'Glass », lot E2) |
 | `rpbm_xglass_piece_label` | non | libellé de la pièce X'Glass (lot E2, `17.0.261006.2`) : lu par l'encart « Dossier », seul affichage de la pièce tant que X'Glass n'est pas chargé ; miroir `related` écrivable comme les autres, sans équivalent Studio |
+| `rpbm_xglass_labor_operations` | non | main-d'œuvre X'Glass de la pièce (correctif `17.0.261007.1`, JSON) : lue par la section « 4. Main d'œuvre X'Glass » du devis ouvert sans X'Glass ; miroir `related` écrivable comme les autres, sans équivalent Studio. Sans opportunité liée, rien ne peut y être enregistré |
 | `carrier_id` | natif `delivery` | mode de remise et route logistique |
 
 Les miroirs Studio historiques du devis (`x_studio_immatriculation_`, `x_studio_pice_concerne`,

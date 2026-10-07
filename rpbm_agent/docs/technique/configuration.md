@@ -37,7 +37,7 @@ Le dépôt sélectionne la cible Odoo par son nom de profil dans `.paradigme.yam
 | `rpbm_agent.vsf_discount` | Remise RPBM décimale entre `0` et `1` ; défaut de compatibilité : `0.2` |
 | `rpbm_agent.labor_product_t1` / `_t2` / `_t3` | Identifiants des `product.product` de service facturés pour les opérations X'Glass T1/T2/T3 ; défauts `24` / `23` / `113` (ids constatés sur `rpbm-preprod`) |
 
-Les paramètres `rpbm_agent.vsf_*` sont lus à chaque recherche VSF et création de produit (`controllers/vsf_config.py`), `rpbm_agent.labor_product_*` à chaque `/getPieces`. Une valeur absente conserve le comportement historique ; une valeur invalide produit une erreur explicite et n'est jamais appliquée silencieusement.
+Les paramètres `rpbm_agent.vsf_*` sont lus à chaque recherche VSF et création de produit (`controllers/vsf_config.py`), `rpbm_agent.labor_product_*` à chaque `/getPieces` et à chaque ajout de main-d'œuvre enregistrée sur le devis sans X'Glass (`/rpbm_labor_products`) : un changement de ces paramètres s'applique donc aussi à la main-d'œuvre enregistrée sur l'opportunité. Une valeur absente conserve le comportement historique ; une valeur invalide produit une erreur explicite et n'est jamais appliquée silencieusement.
 
 ### Mise à jour rapide des identifiants portails
 

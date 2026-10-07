@@ -362,13 +362,14 @@ confirmation (voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactiv
 | `restorePortalContext()` | `AgentWidgetDialog` après reconnexion | `/searchImmatriculation` puis `/getPlanche` | Rejoue la dernière recherche aboutie puis la sélection du véhicule côté portail, sans toucher l'état Owl |
 | `getPieces()` | `AgentWidgetDialog` | `/getPieces` | Pièces d'une catégorie |
 | `getPieceAm()` | `AgentWidgetDialog` | `/getPieceAm` | Pièces après-marché d'une pièce (« Équivalence AM ») |
+| `addSelectedLaborOperations()` | `AgentWidgetDialogSaleOrder`, main-d'œuvre enregistrée (X'Glass non chargé) | `/rpbm_labor_products` | Produits de main-d'œuvre courants par taux (correctif du 2026-10-07) |
 | `loadAutresAm()` | `AgentWidgetDialog`, au dépliage de l'encart « Autres marques AM » d'une famille (sans pièce requise) | `/getPieceAm` sans `pieceId` | Encart X'Glass « AUTRE AM » de la famille (`idElementSit`), en cache par véhicule + `elementSitId` |
 | `onSearchBaseEurocode()` | `AgentWidgetDialog` (neutralisé dans `AgentWidgetDialogCrmLead`) | `/searchBaseEurocode` | Articles VSF par eurocode (dialog du devis seulement) ; une liste vide donne « Aucun article VSF pour « *base* ». » ([R24](#recherche-sans-résultat-r24)) |
 | `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'un article sélectionné (+ suggestions pour un article principal) |
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour un article VSF donné |
 | `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cet article |
 | `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget, retrouvée par son produit ([R28](#ligne-de-devis-ajoutée-par-le-widget-r28)) |
-| `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce), provenance `rpbm_labor_operation_key` |
+| `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce chargée par X'Glass ou, sans X'Glass, `rpbm_xglass_labor_operations` : [correctif du 2026-10-07](#main-dœuvre-enregistrée-correctif-du-2026-10-07)), provenance `rpbm_labor_operation_key` |
 | `onCreateQuotation()` | `AgentWidgetDialogCrmLead` | — (`action.doActionButton` → `action_sale_quotations_new`, aucune route du module) | Écrit l'opportunité, puis ouvre un nouveau devis lié (voir [Créer un devis](#créer-un-devis-lot-e1)) |
 
 L'encart d'actions d'un article VSF est le sous-template `rpbm_agent.ArticleActions`
@@ -383,7 +384,7 @@ ligne, derrière un garde-fou `addArticleToSaleOrder` puisque l'extension Owl es
 appelle `writeRecord(save)` puis ferme le dialog si l'écriture a abouti. `writeRecord(save)` est
 l'écriture commune aux trois boutons d'écriture, « Créer un devis » compris : garde anti-doublon
 `state.writing`, construction d'un objet `data` (via `getRecordData()`, qui inclut
-`rpbm_xglass_vehicle_id` et n'inclut les identifiants de pièce, ni leur libellé, que s'ils ont été
+`rpbm_xglass_vehicle_id` et n'inclut les identifiants de pièce, ni leur libellé, ni la main-d'œuvre de la pièce, que s'ils ont été
 retrouvés ou modifiés explicitement, voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactivés-lot-e11) ;
 sur un devis sans X'Glass, `getVsfRecordData()` seul, voir [lot E2](#vsf-dabord-xglass-à-la-demande-lot-e2)),
 **`this.props.record.update(data)`** — mise à jour en mémoire du
@@ -458,8 +459,9 @@ nouveau (`root.isNew`) et que `root.data.opportunity_id[0] === pendingOpportunit
 vidé et `dialogService.add(AgentWidgetDialogSaleOrder, { record: root })` ouvre le dialog. Au lot E1,
 il restaurait alors le contexte comme à toute réouverture. Depuis le lot E2, il s'ouvre **sans
 authentification X'Glass** : encart « Dossier » et recherche VSF immédiate sur la base mémorisée ;
-le véhicule mémorisé, la pièce, la pièce AM et « 4. Main d'œuvre » reviennent par « Charger X'Glass »
-(voir [lot E2](#vsf-dabord-xglass-à-la-demande-lot-e2)). L'opportunité ayant libéré le verrou en se fermant,
+le véhicule mémorisé, la pièce et la pièce AM reviennent par « Charger X'Glass »
+(voir [lot E2](#vsf-dabord-xglass-à-la-demande-lot-e2)) ; « 4. Main d'œuvre » est proposée dès l'ouverture quand le dossier en a une enregistrée
+(voir [correctif du 2026-10-07](#main-dœuvre-enregistrée-correctif-du-2026-10-07)). L'opportunité ayant libéré le verrou en se fermant,
 rien ne s'oppose à ce chargement.
 - **Pourquoi un drapeau JavaScript.** `doActionButton` recopie dans le contexte de l'action suivante
   toute clé qui ne correspond pas à `CTX_KEY_REGEX` (`default_*`, `search_default_*`, `show_*`,
@@ -606,7 +608,7 @@ Lot E2 (`17.0.261006.2`, commits `afa51df` code et `a562fa7` docs, recette live 
 
 **Ce que voit le vendeur sur le devis.**
 - Le dialog s'ouvre sans porte de chargement, sur l'encart « Dossier » en lecture seule et la section VSF. La recherche VSF part aussitôt sur la base enregistrée, même s'il n'y a qu'une base ou une ligne « Autres marques AM » (le cas limite du lot E1 et la règle R12 sont levés sur le devis).
-- Le bouton « Charger X'Glass » lance la chaîne X'Glass actuelle (verrou, restauration du véhicule, de la catégorie et des pièces, main-d'œuvre, changement de pièce) **sans vider le tableau VSF, la sélection ni l'article principal**, même sur un devis dont la base et la pièce ne sont pas enregistrées. L'encart disparaît, la section 1 apparaît, puis les sections 2 et 3 et « 4. Main d'œuvre X'Glass » quand la chaîne les atteint. Un seul chargement à la fois : le bouton est désactivé pendant le chargement.
+- Le bouton « Charger X'Glass » lance la chaîne X'Glass actuelle (verrou, restauration du véhicule, de la catégorie et des pièces, main-d'œuvre, changement de pièce) **sans vider le tableau VSF, la sélection ni l'article principal**, même sur un devis dont la base et la pièce ne sont pas enregistrées. L'encart disparaît, la section 1 apparaît, puis les sections 2 et 3 quand la chaîne les atteint ; « 4. Main d'œuvre X'Glass » est déjà affichée si le dossier a une main-d'œuvre enregistrée (correctif du 2026-10-07, [ci-dessous](#main-dœuvre-enregistrée-correctif-du-2026-10-07)), sinon elle apparaît avec la pièce. Un seul chargement à la fois : le bouton est désactivé pendant le chargement.
 - « Confirmer » est actif dès l'ouverture. Sans X'Glass, il n'écrit que la base et l'article principal.
 
 **Surcharges de `AgentWidgetDialogSaleOrder`.**
@@ -620,6 +622,7 @@ Lot E2 (`17.0.261006.2`, commits `afa51df` code et `a562fa7` docs, recette live 
 | `shouldSearchVsf()` | `Boolean(baseEurocode)` : au montage, puis à chaque modification de la base, X'Glass chargé ou non | `agentsInitialized` et (pièce ou pièce AM) et base |
 | `canConfirm()` | vrai | véhicule et catégorie sélectionnés |
 | `getRecordData()` | `selectedVehicule && selectedCalque ? super.getRecordData() : getVsfRecordData()` | écriture complète |
+| `laborOperations` (getter) | la liste de `selectedPiece` si elle est chargée ; sinon la main-d'œuvre enregistrée tant que `_keepStoredPiece` ([correctif du 2026-10-07](#main-dœuvre-enregistrée-correctif-du-2026-10-07)) | — (propre au devis) |
 
 Avec cette garde, les identifiants X'Glass mémorisés ne sont jamais effacés par une confirmation faite sans X'Glass.
 
@@ -646,6 +649,41 @@ Avec cette garde, les identifiants X'Glass mémorisés ne sont jamais effacés p
 - Sans X'Glass, le véhicule n'est ni créé ni enrichi : aucun appel `/getOdooVehicule`, `/createVehicule` ni `/enrichVehicule`.
 
 **Contrôles hors réseau.** `test_portal_auth.py` (agent VSF : une seule connexion pour deux appels, une expiration suivie d'une reconnexion puis d'un succès, un second échec propagé, une connexion refusée qui laisse `logged_in` faux, deux threads de la même génération pour une seule reconnexion) et `test_widget_vsf.mjs` (devis avec une base : une recherche, aucune authentification, aucun `/rpbm_agent_close` ; `getRecordData` sans X'Glass : base et quatre champs d'article seulement ; avec véhicule et catégorie : écriture complète, libellé compris ; `clearSelectedPiece(true)` garde tableau et sélection ; le passage de `agentsInitialized` à vrai ne relance pas la recherche ; la pièce concernée enregistrée survit à la restauration ; une réponse périmée est ignorée ; les tests de l'opportunité restent verts), dans les blocs « Lot E2 » et « Revue E2 ». Ce dernier couvre : un devis avec une catégorie mais ni base ni pièce, où la base saisie, le tableau et l'article principal survivent à « Charger X'Glass » et à la vraie chaîne (véhicule, planche, calque) ; le libellé d'une pièce « Autres marques AM » mémorisée seule, conservé sur l'opportunité et sur le devis ; une base sans résultat que les effets ne relancent pas et que le bouton relance ; deux « Charger X'Glass » rapprochés qui ne font qu'une authentification. un dialog fermé pendant « Charger X'Glass », où le verrou pris entre-temps est rendu par un seul `/rpbm_agent_close`, sans autre appel ni état modifié après la destruction. Le harnais force `agentsInitialized` à vrai dans `mount()` ; ces tests le remettent à faux.
+
+## Main-d'œuvre enregistrée (correctif du 2026-10-07)
+
+Correctif `17.0.261007.1`, codé le 2026-10-07, non commité, tests hors réseau verts ; à livrer et recetter ([SO-11](../jeu-de-test.md#so-11--main-dœuvre-enregistrée-proposée-sans-xglass-correctif-du-2026-10-07-r30)). Il revient sur la décision du 2026-10-05 « E2 sans instantané de main-d'œuvre » ([VD-06](../validations-metier.md#historique-des-décisions)).
+
+**Pourquoi.** Au lot E2, la section « 4. Main d'œuvre X'Glass » du devis était `t-if="selectedPiece"`, et `selectedPiece` n'est posée que par `getPieces()`, donc par la chaîne X'Glass de « Charger X'Glass ». Sans elle, un vendeur ne pouvait ni ajouter ni retirer d'article de temps. La main-d'œuvre n'existait nulle part ailleurs : elle est donc enregistrée à l'étape opportunité et reprise sur le devis.
+
+**Champ.** `rpbm_xglass_labor_operations` (`fields.Json`, « Main-d'œuvre X'Glass de la pièce ») sur `crm.lead`, miroir `related` écrivable sur `sale.order`, dans le groupe invisible des deux vues ; pas d'équivalent Studio, pas de migration ([crm-lead](champs/crm-lead.md), [sale-order](champs/sale-order.md)). `utils.js` reçoit `xglassLaborOperationsField` ; le contenu est la liste `laborOperations` de la pièce, telle que `/getPieces` la renvoie (`key`, `label`, `nature`, `rate`, `duration`, `productId`, `unavailableReason`).
+
+**Écriture.** `getRecordData()` (`agent_widget_dialog.js`) écrit `selectedPiece?.laborOperations || []` sous `!this._keepStoredPiece`, la garde des identifiants de pièce X'Glass et OE (lot E1.1), et non la condition du libellé :
+
+| Situation à l'écriture | Main-d'œuvre enregistrée |
+|---|---|
+| Pièce mémorisée, retrouvée à la restauration (`_keepStoredPiece` tombé à faux par `getPieces()`) | réécrite avec la liste de la pièce restaurée |
+| Pièce choisie ou remplacée par une action explicite (`releaseStoredPieces()`) | liste de la nouvelle pièce |
+| Pièce retirée, ou rien de sélectionné (dossier sans pièce mémorisée) | liste vide |
+| Pièce mémorisée ni retrouvée ni changée (X'Glass pas chargé, pièce introuvable, chargement en cours) | conservée |
+| « Confirmer » sans X'Glass (`getVsfRecordData()` seul, faute de véhicule et de catégorie) | non touchée |
+
+L'écriture est silencieuse : rien de nouveau à l'écran de l'opportunité. « Confirmer », « Confirmer et enregistrer » et « Créer un devis » passent tous par `getRecordData()`.
+
+**Lecture sur le devis.** Le getter `laborOperations` (`agent_widget_dialog_sale_order.js`) renvoie la liste de `selectedPiece` quand X'Glass l'a chargée ; sinon, la valeur du champ enregistré **tant que `_keepStoredPiece` est vrai**, c'est-à-dire tant que la pièce mémorisée est conservée (`restoreSelectionFromRecord()` le pose à l'ouverture si un identifiant de pièce X'Glass ou OE est mémorisé). Un dossier sans pièce mémorisée ne propose donc rien, et une pièce remplacée (`releaseStoredPieces()`) ne propose plus l'ancienne main-d'œuvre.
+
+**Gabarit.** `<section t-if="selectedPiece or laborOperations.length" name="xglass_labor">`, dans le XPath `before` qui porte déjà l'encart « Dossier » : la section s'affiche entre « Dossier » et « 5. Article VSF » dès l'ouverture, sans authentification. Son contenu ne change pas : cases à cocher, « Ajouter les opérations sélectionnées », « Retirer » (par la clé `rpbm_labor_operation_key`), motif des opérations indisponibles. `addSelectedLaborOperations()` résout alors le produit de service par taux avec les paramètres courants (un appel `/rpbm_labor_products`, sans portail ni verrou), pas avec le `productId` enregistré, qui ne sert que de repli. Aucun appel portail.
+
+**Après « Charger X'Glass ».** La pièce restaurée fournit sa main-d'œuvre fraîche, qui prime sur l'enregistrée ; le « Confirmer » suivant (véhicule et catégorie choisis) la réécrit et elle remonte à l'opportunité par le miroir.
+
+**Limites connues.**
+- Devis sans opportunité (Ventes › Devis › Nouveau) : le miroir `related` n'a pas de cible, rien ne s'enregistre ; « Charger X'Glass » reste nécessaire, comme pour les autres champs du dossier.
+- Instantané : durées, taux et motifs sont ceux du dernier enregistrement fait avec X'Glass ; le produit de service suit les paramètres courants.
+- Une pièce sans opération n'affiche pas la section sans X'Glass (liste vide, pas de `selectedPiece`) ; après « Charger X'Glass », elle affiche « Aucune opération de main-d'œuvre n'est fournie pour cette pièce. ».
+- Les dossiers confirmés avant `17.0.261007.1` n'ont pas de main-d'œuvre : secours « Charger X'Glass », puis « Confirmer ».
+- Une ligne de main-d'œuvre ajoutée avant un changement de pièce n'a plus de bouton « Retirer » (son opération n'est plus listée) : comme avec X'Glass, on la supprime à la main dans le devis.
+
+**Contrôles hors réseau.** `test_widget_vsf.mjs` : écriture avec la pièce retrouvée, conservation d'une pièce non retrouvée, liste vide quand la pièce est retirée ; devis sans X'Glass : opérations proposées, ajout d'une ligne (produit du paramètre courant, quantité et clé de provenance), « Retirer » visible, un seul appel `/rpbm_labor_products` et aucun appel portail (ni authentification) ; pièce remplacée : l'ancienne main-d'œuvre n'est plus proposée. Rendu Owl local `.paradigme/scripts/check_lot_e2.cjs` (non suivi), cas 4 : section 4 sans X'Glass, ajout, « Retirer ». Non rejoué en live.
 
 ## Reconnexion à chaud des portails
 

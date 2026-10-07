@@ -289,6 +289,10 @@ relevé que « Retirer du devis » manquait après « Ajouter au devis » (R28, 
      lot E2) renseignés ;
      `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` et `rpbm_constructor_reference`
      inchangés.
+   - Attendu (correctif du 2026-10-07, non rejoué) : `rpbm_xglass_labor_operations` renseigné
+     avec les opérations de la pièce OE choisie, sans rien de nouveau à l'écran de l'opportunité ;
+     liste vide si seule une ligne « Autres marques AM » est choisie, sans pièce OE (cas du
+     parcours ci-dessus). Pour un cas avec main-d'œuvre, voir l'étape 0 de SO-11.
    - Attendu : un seul devis, non enregistré, lié à l'opportunité.
    - Attendu (lot E2, **vérifié le 2026-10-06** : voir SO-10 ; au lot E1 : restauration immédiate, voir l'en-tête) : la fenêtre
      du devis s'ouvre seule **sans authentification X'Glass** ni seconde connexion : encart « Dossier »
@@ -415,9 +419,10 @@ Résultats attendus :
 
 ### SO-04 — Opérations de main-d'œuvre X'Glass
 
-Sur un devis de test avec opportunité, cliquer sur « Charger X'Glass » (la main-d'œuvre
-n'apparaît qu'après, lot E2), sélectionner une pièce qui renvoie des opérations T1, T2 ou T3, cocher
-plusieurs opérations puis les ajouter.
+Sur un devis de test avec opportunité, cliquer sur « Charger X'Glass » (chemin X'Glass ; depuis le
+correctif du 2026-10-07, la main-d'œuvre enregistrée à l'opportunité est déjà proposée sans lui :
+voir SO-11), sélectionner une pièce qui renvoie des opérations T1, T2 ou T3, cocher plusieurs
+opérations puis les ajouter.
 
 Résultats attendus :
 
@@ -437,8 +442,9 @@ Sur un devis lié à une opportunité (même protocole sans écriture que CRM-06
    toutes deux présentes, dans cet ordre.
 2. Rouvrir sans pièce, déplier un encart « Autres marques AM » et cliquer sur une ligne :
    « 5. Article VSF » est présente (dès l'ouverture depuis le lot E2), la base est remplie et la
-   recherche VSF se relance, « 4. Main d'œuvre » reste absente (elle suit la pièce sélectionnée ;
-   la numérotation saute de 3 à 5, constat déjà présent pour une base restaurée seule).
+   recherche VSF se relance, « 4. Main d'œuvre » reste absente (elle suit la pièce sélectionnée, ou la
+   main-d'œuvre enregistrée depuis le correctif du 2026-10-07, voir SO-11 ; la numérotation saute de
+   3 à 5, constat déjà présent pour une base restaurée seule).
 3. Aucune action de devis (ajout, retrait) n'est exécutée.
 
 ### SO-06 — Ouverture automatique du dialog sur le devis (lot E1)
@@ -593,6 +599,8 @@ au portail VSF impossible. Vérifiez les identifiants configurés. », sans reco
 
 Scénario du build `17.0.261006.2`. Étapes 1 à 5 : sans écriture enregistrée (même protocole que SO-08, formulaire abandonné à la fin) ; étape 6 : avec écriture, sur l'opportunité de recette de CRM-07.
 
+**Adaptation du 2026-10-07 (build `17.0.261007.1`, non rejouée).** « 4. Main d'œuvre X'Glass » n'est absente à l'ouverture que si le dossier n'a pas de main-d'œuvre enregistrée (cas du devis de la recette du 2026-10-06, confirmé avant le correctif). Sinon elle s'affiche dès l'ouverture : voir SO-11. Les attendus « ni main-d'œuvre » ci-dessous valent donc pour un dossier sans main-d'œuvre enregistrée, et ceux de la recette du 2026-10-06 ci-dessous sont ceux de `17.0.261006.2`.
+
 **Recette réussie le 2026-10-06**, en `17.0.261006.2` (commits `afa51df` code et `a562fa7` docs), sur un devis de recette puis sur l'opportunité de recette de CRM-07.
 - **Étapes 1 à 5, sans écriture enregistrée** (35 s) : ouverture sans `/rpbm_agent_auth` et avec un seul `/searchBaseEurocode` ; tableau et encart « Dossier » corrects (véhicule, catégorie, pièce concernée, article principal, bouton « Charger X'Glass »), ni « 1. Véhicule » ni main-d'œuvre, « Confirmer » actif ; sélection de `6574AGACIMVZ` définie comme article principal ; « Charger X'Glass » : un seul `/rpbm_agent_auth`, chaîne X'Glass sans nouvelle recherche VSF, encart remplacé par « 1. Véhicule », « 2. Catégorie », « 3. Pièce », « 4. Main d'œuvre X'Glass » et « 5. Article VSF », tableau, ligne sélectionnée et statut « Article principal » conservés, pièce concernée à la valeur enregistrée ; « Annuler » : un `/rpbm_agent_close`, formulaire abandonné ; réouverture puis fermeture sans X'Glass : aucun `/rpbm_agent_close` nouveau ; ni erreur de console ni `web_save`.
 - **Étape 6, avec écriture** (34 s, CRM-07 et SO-06 comprises) : le dialog de l'opportunité est inchangé (authentification X'Glass, restauration, « 4. Base Eurocode », aucune recherche VSF) ; « Créer un devis » donne une seule sauvegarde de l'opportunité et un seul `call_button`, et le dialog du devis s'ouvre aussitôt **sans seconde authentification**, avec dans l'encart la catégorie, la base et le libellé de pièce écrit par « Créer un devis » ; côté devis ne partent que `/searchBaseEurocode`, `/getVsfArticleDetails` et `/doesProductExists` ; `6108AGACHM` défini comme article principal puis « Confirmer » sans X'Glass : aucun appel véhicule (`/getOdooVehicule`, `/createVehicule`) ni X'Glass, le formulaire du devis reçoit l'Eurocode `6108AGACHM` et garde la base et le véhicule. Sur l'instance de recette, le champ « catégorie » du formulaire du devis est masqué par une vue Studio ; il est pourtant chargé, puisque l'encart l'affiche. Le devis neuf est abandonné sans être enregistré.
@@ -603,7 +611,7 @@ Scénario du build `17.0.261006.2`. Étapes 1 à 5 : sans écriture enregistrée
 Dossier : un devis brouillon lié à une opportunité qui a une base mémorisée (`6574A`), un véhicule, une catégorie et une pièce mémorisés, sans ligne. Relever par RPC, avant et après : `rpbm_agent.session_lock`, `rpbm_xglass_vehicle_id`, `write_date` et les lignes du devis.
 
 1. **Ouverture.** Ouvrir la fenêtre par la loupe, journal réseau ouvert.
-   - Attendu : **aucun** `/rpbm_agent_auth` ; un `/searchBaseEurocode` sur `6574A`, et le tableau s'affiche, sans attendre X'Glass ; l'encart « Dossier » en lecture seule (véhicule, catégorie, pièce concernée, pièce X'Glass, article principal ; « — » pour une valeur absente) ; **ni** « 1. Véhicule », ni sections 2 et 3, ni « 4. Main d'œuvre » ; « Confirmer » actif ; le verrou inchangé.
+   - Attendu : **aucun** `/rpbm_agent_auth` ; un `/searchBaseEurocode` sur `6574A`, et le tableau s'affiche, sans attendre X'Glass ; l'encart « Dossier » en lecture seule (véhicule, catégorie, pièce concernée, pièce X'Glass, article principal ; « — » pour une valeur absente) ; **ni** « 1. Véhicule », ni sections 2 et 3, ni « 4. Main d'œuvre » (dossier sans main-d'œuvre enregistrée, voir l'adaptation ci-dessus) ; « Confirmer » actif ; le verrou inchangé.
 2. **Sélection.** Sélectionner `6574AGACIMVZ` et le définir comme article principal (sans « Créer le produit » ni « Ajouter au devis »).
    - Attendu : sélection, détail et actions comme dans la recette du tableau VSF.
 3. **« Charger X'Glass ».** Cliquer sur le bouton.
@@ -623,6 +631,37 @@ Dossier : un devis brouillon lié à une opportunité qui a une base mémorisée
    - Dans les journaux, compter les connexions VSF et les reconnexions, pour les confronter aux traces T1 et T2 ([backend](technique/backend.md#état-de-session-partagée)).
 
 Non rejouable à la demande : des identifiants VSF refusés donnent « Connexion au portail VSF impossible. Vérifiez les identifiants configurés. » sans reconnexion X'Glass (couvert hors réseau) ; « Annuler » d'un vendeur dont le verrou a expiré (15 minutes de travail VSF seul) ne déconnecte pas la session X'Glass d'un autre vendeur qui a repris le verrou ; deux vendeurs qui créent le même article en même temps ne produisent pas de doublon de produit (recherche d'existence par un curseur neuf après le verrou par code).
+
+### SO-11 — Main-d'œuvre enregistrée proposée sans X'Glass (correctif du 2026-10-07, R30)
+
+Scénario du build `17.0.261007.1`, **codé et testé hors réseau le 2026-10-07, jamais rejoué en live**. Il remplace, pour le devis, l'attendu « la main-d'œuvre n'apparaît qu'après « Charger X'Glass » » du lot E2. Il **écrit** : l'étape 0 enregistre l'opportunité de recette 12635 (liste des écritures à consigner) ; les étapes 1 à 4 n'enregistrent rien (devis abandonné) ; l'étape 5 réécrit l'opportunité du dossier existant choisi.
+
+Dossier : l'opportunité de recette 12635 (client de test), avec une pièce OE dont X'Glass renvoie des opérations T1, T2 ou T3 (voir SO-04). Relever par RPC, avant et après chaque étape : `rpbm_xglass_labor_operations` de l'opportunité, `write_date`, les lignes du devis et `rpbm_agent.session_lock`.
+
+0. **Enregistrement à l'opportunité (avec écriture).** Ouvrir la fenêtre de l'opportunité, parcourir `GS600HH` › `PARE-BRISE` › une pièce OE qui renvoie des opérations, puis « Créer un devis » (ou « Confirmer et enregistrer »).
+   - Attendu : rien de nouveau à l'écran de l'opportunité ; `rpbm_xglass_labor_operations` contient les opérations de la pièce (`key`, `label`, `nature`, `rate`, `duration`, `productId`, `unavailableReason`) ; une seule sauvegarde de l'opportunité.
+1. **Ouverture du devis, sans X'Glass.** Le devis créé par « Créer un devis » s'ouvre seul, journal réseau ouvert.
+   - Attendu : **aucun** `/rpbm_agent_auth` ; un `/searchBaseEurocode` sur la base ; encart « Dossier » ; la section **« 4. Main d'œuvre X'Glass » est visible**, entre « Dossier » et « 5. Article VSF », avec une case à cocher par opération (libellé, durée en heures, taux), sans authentification ; ni « 1. Véhicule » ni sections 2 et 3 ; « Confirmer » actif ; verrou inchangé.
+2. **Ajout.** Cocher une opération, puis « Ajouter les opérations sélectionnées ».
+   - Attendu : une ligne de service dans le devis (produit de l'opération, quantité égale à sa durée, clé `rpbm_labor_operation_key`) ; la case est remplacée par **« Retirer »** ; aucun appel `/rpbm_agent_*`.
+3. **Retrait.** Cliquer sur « Retirer ».
+   - Attendu : la ligne disparaît du devis ; la case de l'opération est de nouveau cochable.
+4. **Abandon.** « Annuler », puis abandonner le devis sans l'enregistrer.
+   - Attendu : **aucun** `/rpbm_agent_close` (X'Glass n'a pas été chargé) ; aucune écriture enregistrée aux étapes 1 à 4 ; `rpbm_xglass_labor_operations` de l'opportunité inchangé.
+5. **Dossier existant sans main-d'œuvre enregistrée (secours).** Prendre un dossier confirmé avant `17.0.261007.1` (par exemple le devis SO7761 de la recette de SO-10 ; **hypothèse** à vérifier : sa main-d'œuvre n'a pas été enregistrée, relever le champ avant). Ouvrir la fenêtre du devis.
+   - Attendu à l'ouverture : « 4. Main d'œuvre X'Glass » **absente** ; le reste comme en SO-10.
+   - « Charger X'Glass » : un `/rpbm_agent_auth`, la chaîne X'Glass ; la section apparaît avec la liste fraîche de la pièce ; tableau, sélection et article principal conservés.
+   - « Confirmer » (véhicule et catégorie choisis) : `rpbm_xglass_labor_operations` de l'opportunité est renseigné (liste de X'Glass). Rouvrir la fenêtre du devis : la section est maintenant proposée **sans** X'Glass. Lister l'écriture (opportunité).
+6. **Facultatives.**
+   - « Confirmer » sans « Charger X'Glass » sur un devis dont la main-d'œuvre est enregistrée : n'écrit que la base et l'article principal ; `rpbm_xglass_labor_operations` inchangé.
+   - Pièce remplacée après « Charger X'Glass » (clic sur une autre pièce) : la nouvelle main-d'œuvre est proposée ; après « Confirmer », elle remplace l'ancienne sur l'opportunité.
+   - Pièce sans opération : section absente sans X'Glass ; après « Charger X'Glass », « Aucune opération de main-d'œuvre n'est fournie pour cette pièce. ».
+   - Opération indisponible (sans durée, identifiant ou taux reconnu) : non cochable, motif affiché, y compris depuis la main-d'œuvre enregistrée.
+   - Plusieurs devis sur la même opportunité : tous proposent la même main-d'œuvre (miroir `related`).
+   - Devis sans opportunité (Ventes › Devis › Nouveau) : aucune main-d'œuvre enregistrée possible ; « Charger X'Glass » est nécessaire (limite connue, **hypothèse** : le notebook du widget est masqué sans opportunité).
+   - Formulaires opportunité et devis : l'enregistrement s'effectue sans erreur avec le nouveau champ JSON dans le groupe invisible (à vérifier dès le premier build).
+
+Non rejouable à la demande : une durée ou un taux modifié chez X'Glass depuis l'enregistrement (la main-d'œuvre proposée sans X'Glass reste celle du dernier enregistrement, jusqu'à « Charger X'Glass » puis « Confirmer »).
 
 ## Tableau VSF en plein écran (R21, R22, reprise de R15 à R17)
 

@@ -13,6 +13,7 @@
 | `rpbm_eurocode_base` | `state.baseEurocode` | toujours (vide efface) |
 | `rpbm_xglass_piece_id` / `rpbm_piece_oe_id` / `rpbm_piece_am_id` | identifiants X'Glass/OE/après-marché | pour une pièce mémorisée à l'ouverture, **seulement si** la sélection a été retrouvée à la restauration, ou remplacée ou retirée par une action explicite (lot E1.1, voir [Pièce mémorisée](#pièce-mémorisée-lot-e11)) ; sinon la valeur mémorisée est conservée |
 | `rpbm_xglass_piece_label` | libellé de la pièce choisie (lot E2) : libellé et référence de la pièce OE, ou à défaut référence et fournisseur de la pièce après-marché, sinon vide | sous la même condition que les identifiants de pièce, avec une nuance : une pièce « Autres marques AM » mémorisée seule, non retrouvée, garde aussi son libellé ; l'opportunité le renseigne donc dès « Créer un devis », et le devis l'affiche dans l'encart « Dossier » sans X'Glass |
+| `rpbm_xglass_labor_operations` | opérations de main-d'œuvre de la pièce choisie : la liste `laborOperations` de X'Glass (clé, libellé, taux, durée, produit de service, motif d'indisponibilité), vide sans pièce (correctif `17.0.261007.1`) | sous la condition des identifiants de pièce X'Glass et OE, sans la nuance « Autres marques AM » du libellé : écrite si la pièce est retrouvée, choisie, remplacée ou retirée ; une pièce mémorisée ni retrouvée ni changée garde sa main-d'œuvre. **Écriture silencieuse** : rien de nouveau à l'écran de l'opportunité ; les trois boutons l'écrivent (voir [Main-d'œuvre enregistrée](#main-dœuvre-enregistrée-correctif-du-2026-10-07)) |
 
 - **Article VSF principal** : depuis le lot E1, le dialog de l'opportunité ne cherche plus d'article VSF et n'écrit plus `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` ni `rpbm_constructor_reference`. Ces champs restent visibles et modifiables à la main dans le formulaire ; seul le dialog du devis les désigne (« Définir comme article principal », voir [7](07-confirmation-sale-order.md)).
 - **Persistance** : mise à jour en mémoire (`this.props.record.update(data)`) ; écriture effective en base au clic sur « Enregistrer » (bouton « Confirmer »), ou immédiate via `record.save()` (boutons « Confirmer et enregistrer » et « Créer un devis »).
@@ -21,7 +22,7 @@
 
 ## Pièce mémorisée (lot E1.1)
 
-Pour une pièce déjà mémorisée à l'ouverture, les identifiants de pièce (X'Glass, OE et après-marché) ne sont réécrits que si la sélection a été **retrouvée à la restauration**, ou **remplacée ou retirée par une action explicite** de l'utilisateur. Sinon la valeur mémorisée est conservée, libellé de la pièce compris (`rpbm_xglass_piece_label`, lot E2). Confirmer pendant que les pièces chargent encore, ou avec une pièce introuvable, ne les efface donc plus ; les boutons d'écriture sont d'ailleurs grisés pendant un chargement.
+Pour une pièce déjà mémorisée à l'ouverture, les identifiants de pièce (X'Glass, OE et après-marché) ne sont réécrits que si la sélection a été **retrouvée à la restauration**, ou **remplacée ou retirée par une action explicite** de l'utilisateur. Sinon la valeur mémorisée est conservée, libellé de la pièce compris (`rpbm_xglass_piece_label`, lot E2) et main-d'œuvre enregistrée comprise (`rpbm_xglass_labor_operations`, correctif du 2026-10-07). Confirmer pendant que les pièces chargent encore, ou avec une pièce introuvable, ne les efface donc plus ; les boutons d'écriture sont d'ailleurs grisés pendant un chargement.
 
 Actions explicites :
 - un clic sur une pièce, pour la sélectionner ou la désélectionner ;
@@ -33,6 +34,10 @@ Sans effet : un nouveau clic sur le véhicule ou la catégorie déjà affichés 
 
 Pour un dossier sans pièce mémorisée à l'ouverture, rien ne change : la sélection affichée est écrite, vide si rien n'est sélectionné. Détail technique : [frontend](../../technique/frontend.md#pièce-mémorisée-et-boutons-désactivés-lot-e11).
 
+## Main-d'œuvre enregistrée (correctif du 2026-10-07)
+
+Quand une pièce OE est choisie, « Confirmer », « Confirmer et enregistrer » et « Créer un devis » enregistrent aussi, sans rien afficher de plus, les opérations de main-d'œuvre X'Glass de cette pièce (`rpbm_xglass_labor_operations`). Le devis les propose ensuite sans connexion à X'Glass : le vendeur y ajoute ou retire les articles de temps dès l'ouverture ([7](07-confirmation-sale-order.md#main-dœuvre-enregistrée-correctif-du-2026-10-07)). Sans pièce OE (pièce retirée, ou, pour un dossier sans pièce mémorisée, ligne « Autres marques AM » seule), la liste enregistrée est vide. Les règles de conservation sont celles de la pièce mémorisée ([ci-dessus](#pièce-mémorisée-lot-e11)). Décision du 2026-10-07 : [VD-06](../../validations-metier.md#historique-des-décisions).
+
 ## Créer un devis (lot E1)
 
 Le bouton « Créer un devis » se place dans le pied de la fenêtre, après « Confirmer et enregistrer » : le raccourci Ctrl+Entrée reste donc « Confirmer ». Il est affiché sur une opportunité, pas sur une piste, comme le bouton natif « Nouveau devis » ; contrairement à ce dernier, il n'est pas masqué sur une opportunité perdue. Sans client, il est **grisé**, avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. » (lot E1.1). Il est désactivé comme « Confirmer » et « Confirmer et enregistrer » : véhicule et catégorie requis, et aussi pendant une reconnexion aux portails, une écriture et un chargement.
@@ -42,7 +47,7 @@ Un clic :
 1. écrit les champs du dialog dans l'opportunité et l'enregistre, comme « Confirmer et enregistrer » ; si l'enregistrement échoue (champ requis manquant, erreur serveur), rien d'autre ne se passe et la fenêtre reste ouverte pour réessayer ;
 2. ferme les portails et la fenêtre ;
 3. lance l'action native « Nouveau devis » (`action_sale_quotations_new`) : un **nouveau** devis, non enregistré, lié à l'opportunité, comme avec le bouton natif. Chaque clic en ouvre un nouveau ; les devis existants de l'opportunité ne sont ni réutilisés ni modifiés. Si l'action échoue (droits, par exemple), Odoo affiche l'erreur comme pour le bouton natif et l'opportunité reste enregistrée ;
-4. la fenêtre du widget s'ouvre alors seule sur ce devis, sans authentification X'Glass depuis le lot E2 : recherche VSF immédiate et encart « Dossier » (voir [7](07-confirmation-sale-order.md#ouverture-automatique-du-dialog-après-création-du-devis)).
+4. la fenêtre du widget s'ouvre alors seule sur ce devis, sans authentification X'Glass depuis le lot E2 : recherche VSF immédiate, encart « Dossier » et, depuis le correctif du 2026-10-07, main-d'œuvre enregistrée proposée (voir [7](07-confirmation-sale-order.md#ouverture-automatique-du-dialog-après-création-du-devis)).
 
 Un double clic n'écrit et n'ouvre qu'une fois : l'état « écriture en cours » est partagé par les trois boutons. Détail technique : [frontend](../../technique/frontend.md#créer-un-devis-lot-e1).
 
