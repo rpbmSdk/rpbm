@@ -41,6 +41,7 @@
                         <field name="rpbm_piece_am_id"/>
                         <field name="rpbm_xglass_vehicle_id"/>
                         <field name="rpbm_xglass_piece_label"/>
+                        <field name="rpbm_xglass_labor_operations"/>
                     </group>
                 </page>
             </notebook>

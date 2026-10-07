@@ -52,6 +52,9 @@ class CrmLead(models.Model):
     rpbm_piece_am_id = fields.Char("Identifiant pièce après-marché sélectionnée")
     rpbm_xglass_vehicle_id = fields.Char("Identifiant véhicule X'Glass sélectionné")
     rpbm_xglass_piece_label = fields.Char("Pièce X'Glass sélectionnée")
+    # Opérations de main-d'œuvre de la pièce (contrat laborOperations de /getPieces), écrites avec
+    # la pièce : le devis les propose sans recharger X'Glass.
+    rpbm_xglass_labor_operations = fields.Json("Main-d'œuvre X'Glass de la pièce")
 
     def _rpbm_legacy_triggers(self):
         return {"rpbm_vehicle_id": VEHICLE_DERIVED_FIELDS}

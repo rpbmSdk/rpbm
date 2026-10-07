@@ -602,6 +602,37 @@ for (const Dialog of [context.AgentWidgetDialogCrmLead, context.AgentWidgetDialo
     assert.equal("rpbm_xglass_piece_label" in await amOnly.getRecordData(), false, Dialog.name);
 }
 
+// Main-d'œuvre enregistrée avec la pièce (2026-10-07) : le devis la propose sans « Charger X'Glass ».
+const LABOR = [{ key: "11:7", label: "Dépose-repose", rate: "T2", duration: 1.5, productId: 23, unavailableReason: false }];
+const laborWrite = mount({ ...STORED_PIECES, order_line: { records: [] } }, context.AgentWidgetDialogSaleOrder);
+Object.assign(laborWrite.state, { selectedVehicule: { id: 2 }, vehiculeMeta: {}, planche: { id: 1, calques }, selectedCalque: calques[0] });
+laborWrite.getOdooVehicule = async () => ({ id: 5, name: "PEUGEOT/208/GS600HH" });
+assert.equal("rpbm_xglass_labor_operations" in await laborWrite.getRecordData(), false, "pièce pas encore retrouvée : main-d'œuvre conservée");
+laborWrite.callPortal = async () => [{ id: 11, pieceOe: { id: 21 }, laborOperations: LABOR }];
+await laborWrite.getPieces();
+assert.deepEqual(plain((await laborWrite.getRecordData()).rpbm_xglass_labor_operations), LABOR);
+laborWrite.state.selectedPiece = undefined;
+assert.deepEqual(plain((await laborWrite.getRecordData()).rpbm_xglass_labor_operations), [], "pièce retirée : main-d'œuvre vidée");
+
+const laborLines = {
+    records: [],
+    async addNewRecord({ context }) {
+        const line = { data: { product_id: [context.default_product_id, "T2"] }, async update(values) { Object.assign(this.data, values); } };
+        this.records.push(line);
+        return line;
+    },
+};
+const storedLabor = vsfOnly({ ...STORED_PIECES, rpbm_xglass_labor_operations: LABOR, order_line: laborLines });
+assert.deepEqual(plain(storedLabor.laborOperations), LABOR);
+storedLabor.rpc = async (route) => { rpcCalls.push({ route }); return { T1: 24, T2: 99, T3: 113 }; };
+storedLabor.toggleLaborOperation(LABOR[0]);
+await storedLabor.addSelectedLaborOperations();
+assert.deepEqual(plain(laborLines.records.map(line => line.data)), [{ product_id: [99, "T2"], product_uom_qty: 1.5, rpbm_labor_operation_key: "11:7" }], "produit du paramètre courant, pas celui enregistré");
+assert.equal(storedLabor.isLaborOperationInOrder(LABOR[0]), true, "« Retirer » sans X'Glass");
+assert.deepEqual(routes(), ["/rpbm_labor_products"], "ni authentification ni appel portail");
+storedLabor.releaseStoredPieces();
+assert.deepEqual(plain(storedLabor.laborOperations), [], "pièce remplacée : la main-d'œuvre mémorisée n'est plus proposée");
+
 // Revue E2, C : une base sans résultat n'est pas recherchée de nouveau par les effets ; le bouton la relance (R24).
 const noArticle = vsfOnly({ rpbm_eurocode_base: "9999Z" });
 runVsfEffect();

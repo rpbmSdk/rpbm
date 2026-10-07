@@ -405,6 +405,10 @@ export class AgentWidgetDialog extends asyncWidget {
         if (this.record.pieceOeIdField && !this._keepStoredPiece) {
             data[this.record.pieceOeIdField] = this.selectedPiece?.pieceOe?.id ? String(this.selectedPiece.pieceOe.id) : "";
         }
+        // Main-d'œuvre de la pièce, proposée par le devis sans X'Glass.
+        if (this.record.xglassLaborOperationsField && !this._keepStoredPiece) {
+            data[this.record.xglassLaborOperationsField] = this.selectedPiece?.laborOperations || [];
+        }
         // Une pièce « Autres marques AM » mémorisée et non retrouvée garde aussi son libellé.
         if (this.record.xglassPieceLabelField && !this._keepStoredPiece && (this.selectedPiece || !this._keepStoredPieceAm)) {
             data[this.record.xglassPieceLabelField] = this.xglassPieceLabel;

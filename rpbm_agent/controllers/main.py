@@ -616,6 +616,12 @@ class AgentController(Controller):
                     pieces.append(piece)
         return pieces
 
+    @route('/rpbm_labor_products', auth='user', type='json')
+    def laborProducts(self):
+        """Produits de main-d'œuvre courants par taux : la main-d'œuvre enregistrée sur le dossier ne
+        réutilise pas le produit résolu lors de son enregistrement."""
+        return _labor_products(request.env)
+
     @route('/getPieceAm', auth='user', type='json')
     @_touch_agent_lock
     def getPieceAm(self,element_withPiecesAm, pieceId:int=None, elementSitId:int=None):

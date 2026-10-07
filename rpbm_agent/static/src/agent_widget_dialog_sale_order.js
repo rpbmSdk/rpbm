@@ -98,7 +98,11 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
     }
 
     get laborOperations() {
-        return this.selectedPiece?.laborOperations || [];
+        if (this.selectedPiece) {
+            return this.selectedPiece.laborOperations || [];
+        }
+        // Pièce mémorisée non rechargée (X'Glass pas chargé, ou pièce non retrouvée) : sa main-d'œuvre enregistrée.
+        return (this._keepStoredPiece && this.props.record.data[this.record.xglassLaborOperationsField]) || [];
     }
 
     isLaborOperationInOrder(operation) {
@@ -137,9 +141,11 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
             return;
         }
         await this.runAsync(async () => {
+            // Main-d'œuvre enregistrée : produit selon les paramètres courants, pas ceux de l'enregistrement.
+            const products = this.selectedPiece ? {} : await this.rpc("/rpbm_labor_products");
             for (const operation of operations) {
                 const newLine = await this.props.record.data.order_line.addNewRecord({
-                    context: { default_product_id: operation.productId },
+                    context: { default_product_id: products[operation.rate] || operation.productId },
                 });
                 await newLine.update({
                     product_uom_qty: operation.duration,

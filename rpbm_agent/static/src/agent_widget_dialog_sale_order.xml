@@ -15,7 +15,7 @@
                 <button class="btn btn-primary" t-on-click="startAgents" t-att-disabled="isLoading or state.xglassLoading">Charger X'Glass</button>
                 <span t-if="isLoading" class="ms-2"><i class="fa fa-spinner fa-spin me-1"/><t t-esc="loadingMessage"/></span>
             </section>
-            <section t-if="selectedPiece" class="mb-4">
+            <section t-if="selectedPiece or laborOperations.length" name="xglass_labor" class="mb-4">
                 <h5>4. Main d'œuvre X'Glass</h5>
                 <p class="form-text">Sélectionnez les opérations à ajouter au devis. Le tarif est celui du service Odoo associé.</p>
                 <t t-if="laborOperations.length">
