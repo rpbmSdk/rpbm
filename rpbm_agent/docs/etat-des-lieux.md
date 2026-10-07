@@ -24,7 +24,7 @@ Le flux principal (recherche véhicule → catégorie → pièce → eurocode �
 | Retour d'erreur visible par l'utilisateur | **Corrigé** | Notifications + erreurs typées, voir §6 |
 | Concurrence multi-utilisateur des sessions portails | **Corrigé** | Verrou de session, voir §3 ; réservé à X'Glass depuis le lot E2 (VSF accepte plusieurs sessions) |
 | Devis ouvert sans X'Glass (« VSF d'abord, X'Glass à la demande ») | Lot E2 (`17.0.261006.2`) | Encart « Dossier » en lecture seule, recherche VSF immédiate, « Charger X'Glass » à la demande ; nouveau champ `rpbm_xglass_piece_label` ; recette live réussie le 2026-10-06 (SO-10) |
-| Main-d'œuvre X'Glass proposée sans « Charger X'Glass » | Correctif du 2026-10-07 (`17.0.261007.1`, R30) | Main-d'œuvre enregistrée à l'étape opportunité (`rpbm_xglass_labor_operations`) et reprise sur le devis, section « 4. Main d'œuvre X'Glass » dès l'ouverture ; dossiers existants : « Charger X'Glass » puis « Confirmer » ; codé, tests hors réseau verts, à livrer et recetter (SO-11) |
+| Main-d'œuvre X'Glass proposée sans « Charger X'Glass » | Correctif du 2026-10-07 (`17.0.261007.1`, R30) | Main-d'œuvre enregistrée à l'étape opportunité (`rpbm_xglass_labor_operations`) et reprise sur le devis, section « 4. Main d'œuvre X'Glass » dès l'ouverture ; dossiers existants : « Charger X'Glass » puis « Confirmer » ; livré (commits `3706630` code et `2afb41e` docs) et **recetté en live le 2026-10-07** (SO-11, étapes 0 à 4) |
 | Sécurité fine (droits d'accès) | **Décision assumée** | `auth='user'` uniquement, pas de `ir.model.access.csv` — choix explicite, voir [roadmap L3.1](roadmap.md#l3--hygiène) |
 
 ## 3. Cohérence technique — backend
