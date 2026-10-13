@@ -67,7 +67,10 @@ Scénarios à écrire dans `scenarios/`, un par lot :
 | Mode | Demande de prix VSF en brouillon passée en Bateau, puis nouveau besoin | Le brouillon bateau ne reçoit pas la ligne : une autre demande est créée |
 | Colisage | *Achats › Colisages VSF › Reprendre l'historique*, deux fois | La seconde ne crée ni ne rattache rien ; liste des exceptions relue |
 | Colisage | Avoirs VSF rattachés à la main, puis *Coefficient annuel* | 2025 ≈ 1,883 et 2026 ≈ 1,980 (classeur corrigé) ; un écart se documente avant de continuer |
-| Facture | Facture d'un devis de test | Barème sur la ligne de facture (champ technique, sans vue) ; PDF sans prix net ni remise fournisseur |
+| Facture | Devis de test avec le transporteur « Pose sur site (Camion) », pose ajoutée par « Ajouter l'expédition », puis facture | Barème sur la ligne produit de la facture (champ technique, sans vue) ; ligne « Pose à domicile » à 55,30 € HT, non majorée ; PDF sans prix net ni remise fournisseur |
+
+La pose à domicile n'est jamais facturée par le seul choix du transporteur Camion : la ligne « Pose à domicile »
+(55,30 € HT) n'apparaît que par le bouton « Ajouter l'expédition » du devis.
 
 La reprise des colisages est une écriture réelle, voulue : elle crée les colisages 2025-2026 et rattache
 leurs factures.
