@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Aucun xpath positionnel : le formulaire est aussi modifié par Studio. -->
+    <record id="view_order_form_rpbm_pricing" model="ir.ui.view">
+        <field name="name">sale.order.form.rpbm.pricing</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">110</field>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning mb-0" role="alert" invisible="not rpbm_pricing_warning">
+                    <field name="rpbm_pricing_warning"/>
+                </div>
+            </xpath>
+            <field name="sale_order_template_id" position="after">
+                <field name="rpbm_regime" readonly="1"/>
+            </field>
+        </field>
+    </record>
+</odoo>

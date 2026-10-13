@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate : une valeur modifiée en base est respectée ; les replis du code (models/params.py) sont identiques. -->
+    <data noupdate="1">
+        <record id="param_colisage_min_pieces" model="ir.config_parameter">
+            <field name="key">rpbm_pricing.colisage_min_pieces</field>
+            <field name="value">500</field>
+        </record>
+        <record id="param_colisage_min_fees" model="ir.config_parameter">
+            <field name="key">rpbm_pricing.colisage_min_fees</field>
+            <field name="value">629</field>
+        </record>
+        <record id="param_colisage_boat_marchs" model="ir.config_parameter">
+            <field name="key">rpbm_pricing.colisage_boat_marchs</field>
+            <field name="value">751102,795714,797088,855133,916930</field>
+        </record>
+
+        <record id="action_rpbm_colisage_import_history" model="ir.actions.server">
+            <field name="name">Reprendre l'historique des colisages VSF</field>
+            <field name="model_id" ref="model_rpbm_colisage"/>
+            <field name="state">code</field>
+            <field name="code">action = model._rpbm_action_import_history()</field>
+            <field name="groups_id" eval="[Command.set([ref('purchase.group_purchase_manager')])]"/>
+        </record>
+    </data>
+</odoo>

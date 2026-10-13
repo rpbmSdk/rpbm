@@ -6,6 +6,7 @@ __pycache__/
 .env
 .env.local
 *.csv
+!rpbm_pricing/security/ir.model.access.csv
 *.ipynb
 .venv/
 .venv-doc/
@@ -38,4 +39,6 @@ Jobs/consolidation_vehicules/
 Jobs/agent.py
 
 # Notes et directives locales (non suivies) : directive-champs.local.md, rpbm_agent/docs/*.local.md
+# Documentation projet locale (métier, architecture, cartographie), non versionnée depuis le 2026-10-09
+/docs/
 *.local.md

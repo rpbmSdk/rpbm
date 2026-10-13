@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rpbm_colisage_purchase_user,rpbm.colisage purchase user,model_rpbm_colisage,purchase.group_purchase_user,1,1,1,0
+access_rpbm_colisage_purchase_manager,rpbm.colisage purchase manager,model_rpbm_colisage,purchase.group_purchase_manager,1,1,1,1
+access_rpbm_colisage_dau_purchase_user,rpbm.colisage.dau purchase user,model_rpbm_colisage_dau,purchase.group_purchase_user,1,1,1,0
+access_rpbm_colisage_dau_purchase_manager,rpbm.colisage.dau purchase manager,model_rpbm_colisage_dau,purchase.group_purchase_manager,1,1,1,1
+access_rpbm_colisage_year_report_purchase_user,rpbm.colisage.year.report purchase user,model_rpbm_colisage_year_report,purchase.group_purchase_user,1,0,0,0

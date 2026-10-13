@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Paramètres de la règle 8 : valeurs identiques aux replis de models/params.py (docs/regle-8.md). -->
+    <record id="param_insurance_coefficient" model="ir.config_parameter">
+        <field name="key">rpbm_pricing.insurance_coefficient</field>
+        <field name="value">1.5</field>
+    </record>
+    <!-- 0 : aucun arrondi (Q-12) ; 0.01 arrondirait au centime. -->
+    <record id="param_price_rounding" model="ir.config_parameter">
+        <field name="key">rpbm_pricing.price_rounding</field>
+        <field name="value">0</field>
+    </record>
+    <!-- 1 : la règle 8 ne majore plus les dossiers hors assurance (en attente de validation du client). -->
+    <record id="param_rule8_insurance_only" model="ir.config_parameter">
+        <field name="key">rpbm_pricing.rule8_insurance_only</field>
+        <field name="value">0</field>
+    </record>
+
+    <!-- Modèle ir.actions.server : seul cas où le formulaire affiche le bouton « Exécuter » (Odoo 17). -->
+    <record id="action_rule8_install" model="ir.actions.server">
+        <field name="name">RPBM : activer la garde de la règle 8</field>
+        <field name="model_id" ref="base.model_ir_actions_server"/>
+        <field name="state">code</field>
+        <field name="groups_id" eval="[Command.link(ref('base.group_system'))]"/>
+        <field name="code">done = env["sale.order.line"]._rpbm_rule8_install()
+action = {"type": "ir.actions.client", "tag": "display_notification", "params": {
+    "type": "success" if done else "warning",
+    "message": "Garde de la règle 8 en place." if done else "Garde non posée : action introuvable ou valeur inattendue (voir le journal).",
+}}</field>
+    </record>
+
+    <record id="action_rule8_uninstall" model="ir.actions.server">
+        <field name="name">RPBM : restaurer la règle 8 d'origine</field>
+        <field name="model_id" ref="base.model_ir_actions_server"/>
+        <field name="state">code</field>
+        <field name="groups_id" eval="[Command.link(ref('base.group_system'))]"/>
+        <field name="code">done = env["sale.order.line"]._rpbm_rule8_uninstall()
+action = {"type": "ir.actions.client", "tag": "display_notification", "params": {
+    "type": "success" if done else "warning",
+    "message": "Règle 8 d'origine restaurée." if done else "Rien à restaurer : l'action ne porte pas la garde.",
+}}</field>
+    </record>
+</odoo>
