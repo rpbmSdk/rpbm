@@ -365,7 +365,9 @@ class RpbmLegacySyncMixin(models.AbstractModel):
             for trigger, derived in triggers.items():
                 if trigger in vals:
                     touched.update(native for native in derived if native in mapping)
-            reverse = {native for native, (studio, _kind) in mapping.items() if studio in vals and native not in vals}
+            # Le natif gagne s'il est renseigné ; vide (ex. défaut 0 envoyé par le client web), il cède au Studio.
+            reverse = {native for native, (studio, _kind) in mapping.items()
+                       if studio in vals and (native not in vals or (not vals[native] and vals[studio]))}
             if not touched and not reverse:
                 continue
             native_vals, studio_vals = {}, {}

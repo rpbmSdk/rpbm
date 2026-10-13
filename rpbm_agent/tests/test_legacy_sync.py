@@ -96,6 +96,12 @@ class TestLegacySyncWithStudio(TransactionCase):
         self.assertEqual(lead.rpbm_part_type, "side_window")
         self.assertEqual(lead.x_studio_field_eENQz, "Glace Latérale")
 
+    def test_empty_native_yields_to_written_studio(self):
+        # Le client web envoie le défaut de chaque champ actif : natif vide à côté de la saisie Studio.
+        lead = self._lead(rpbm_part_type=False, x_studio_field_eENQz="Lunette arrière")
+        self.assertEqual(lead.rpbm_part_type, "rear_window")
+        self.assertEqual(lead.x_studio_field_eENQz, "Lunette arrière")
+
     def test_unconvertible_native_leaves_studio_untouched(self):
         lead = self._lead(rpbm_fuel_type="gasoline")
         lead.write({"rpbm_fuel_type": "lpg"})
@@ -157,6 +163,14 @@ class TestLegacySyncWithStudio(TransactionCase):
         self.assertEqual(line.x_studio_prix_x_glass, 100.0)
         line.write({"x_studio_prix_x_glass": 80.0})
         self.assertEqual(line.rpbm_xglass_price, 80.0)
+
+        # Création depuis le formulaire : natif caché à 0 envoyé avec la saisie Studio.
+        line = self.env["sale.order.line"].create({
+            "order_id": order.id, "product_id": product.id, "product_uom_qty": 1,
+            "rpbm_xglass_price": 0.0, "x_studio_prix_x_glass": 341.87,
+        })
+        self.assertEqual(line.x_studio_prix_x_glass, 341.87)
+        self.assertEqual(line.rpbm_xglass_price, 341.87)
 
     def test_fleet_enrichment_only_fills_missing_or_malformed_values(self):
         vehicle = self.env["fleet.vehicle"].create({"model_id": self.model.id, "license_plate": "FQ581EN"})

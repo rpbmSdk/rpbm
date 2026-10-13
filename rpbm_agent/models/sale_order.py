@@ -150,7 +150,8 @@ class SaleOrderLine(models.Model):
     _name = "sale.order.line"
     _inherit = ["sale.order.line", "rpbm.legacy.sync.mixin"]
 
-    # Prix RPBM de l'article VSF ; l'automatisation Studio « Tarif x glass » en dérive price_unit.
+    # Barème X'Glass de la ligne ; l'automatisation Studio « Tarif x glass » en dérive price_unit
+    # (gardée par rpbm_pricing quand il est installé).
     rpbm_xglass_price = fields.Float("Prix X'Glass", digits="Product Price")
     # Provenance stable des lignes de main-d'œuvre créées par le widget.
     rpbm_labor_operation_key = fields.Char("Clé opération main-d'œuvre X'Glass", copy=False, index=True)
