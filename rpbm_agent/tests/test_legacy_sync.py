@@ -112,15 +112,15 @@ class TestLegacySyncWithStudio(TransactionCase):
         self.assertEqual(lead.x_studio_field_KyCjB.x_name, "RENAULT")
         self.assertEqual(lead.x_studio_field_ZhaeY.x_name, "CLIO")
 
-        studio_brand = self.env["x_rpbm_marques_voitures"].create({"x_name": "Peugeot"})
-        studio_model = self.env["x_rpbm_modeles_voitures"].create({"x_name": "3008"})
+        studio_brand = self.env["x_rpbm_marques_voitures"].create({"x_name": "Marque Sync AG01"})
+        studio_model = self.env["x_rpbm_modeles_voitures"].create({"x_name": "Modele Sync AG01"})
         lead.write({"x_studio_field_KyCjB": studio_brand.id, "x_studio_field_ZhaeY": studio_model.id})
-        self.assertEqual(lead.rpbm_vehicle_brand_id.name, "Peugeot")
-        self.assertEqual(lead.rpbm_vehicle_model_id.name, "3008")
+        self.assertEqual(lead.rpbm_vehicle_brand_id.name, "Marque Sync AG01")
+        self.assertEqual(lead.rpbm_vehicle_model_id.name, "Modele Sync AG01")
         self.assertEqual(lead.rpbm_vehicle_model_id.brand_id, lead.rpbm_vehicle_brand_id)
 
         # Un homonyme d'orthographe différente réutilise le référentiel existant.
-        other = self._lead(rpbm_vehicle_brand_id=self.env["fleet.vehicle.model.brand"].create({"name": "PEUGEOT"}).id)
+        other = self._lead(rpbm_vehicle_brand_id=self.env["fleet.vehicle.model.brand"].create({"name": "MARQUE SYNC AG01"}).id)
         self.assertEqual(other.x_studio_field_KyCjB, studio_brand)
 
     def test_vehicle_link_derives_fields_and_syncs_studio(self):

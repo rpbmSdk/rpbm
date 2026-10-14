@@ -79,7 +79,7 @@ class TestProductTemplateVSFSync(TransactionCase):
         self.assertEqual(lines[1].date_start, tomorrow)
         self.assertEqual(lines[1].price, 100.0)
 
-    @patch("rpbm_agent.models.product_template.vsf.VSFAgent")
+    @patch.object(vsf, "VSFAgent")
     def test_batch_sync_isolates_failures_and_preserves_identity(self, agent_class):
         valid = self._template(list_price=1.0)
         invalid = self.env["product.template"].create({"name": "Sans eurocode"})

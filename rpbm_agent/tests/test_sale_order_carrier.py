@@ -27,11 +27,18 @@ class TestSaleOrderCarrier(TransactionCase):
         super().setUpClass()
         cls.partner = cls.env["res.partner"].create({"name": "Client transporteur AG01-03"})
         cls.carriers = {}
-        for name in (
-            "Retrait / pose Galleria",
-            "Retrait / pose Genipa",
-            "Pose sur site (Camion)",
-        ):
+        for name in LOCATION_TO_CARRIER.values():
+            # Même critère que _rpbm_find_carrier_for_opportunity : la base réelle peut déjà
+            # porter ces transporteurs ; on en garde un seul (doublons archivés, rollback du test).
+            existing = cls.env["delivery.carrier"].search([
+                ("active", "=", True),
+                ("name", "ilike", name),
+                "|", ("company_id", "=", False), ("company_id", "=", cls.env.company.id),
+            ]).filtered(lambda carrier, name=name: normalize(carrier.name) == normalize(name))
+            if existing:
+                existing[1:].active = False
+                cls.carriers[name] = existing[0]
+                continue
             product = cls.env["product.product"].create(
                 {"name": "Service AG01-03 - %s" % name, "detailed_type": "service"}
             )
@@ -135,11 +142,14 @@ class TestSaleOrderCarrier(TransactionCase):
         self.assertEqual(len(order.order_line), 0)
         self.assertEqual(len(order.picking_ids), 0)
 
+        domicile_carrier = self.carriers["Pose sur site (Camion)"]
+        domicile_carrier.active = False
         linked_missing = self._order(opportunity_id=self._lead("domicile").id)
         with self.assertRaises(UserError):
             linked_missing.action_confirm()
         self.assertEqual(len(linked_missing.order_line), 0)
         self.assertEqual(len(linked_missing.picking_ids), 0)
+        domicile_carrier.active = True
 
         linked_order = self._order(
             opportunity_id=self._lead("domicile").id,
