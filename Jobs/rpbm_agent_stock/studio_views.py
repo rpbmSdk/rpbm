@@ -64,9 +64,18 @@ class Arch:
         self.parent = {child: node for node in self.root.iter() for child in node}
         self.labels = labels  # fields_get fr_FR : libelles et champs existants du modele
 
-    def find(self, tag: str, name: str):
-        """Premier noeud visible, dans l'ordre du document : celui que vise l'xpath du bloc."""
-        return next((node for node in self.root.iter(tag) if node.get("name") == name and not self._ignored(node)), None)
+    def find(self, tag: str, name: str, scope: str = ""):
+        """Premier noeud visible, dans l'ordre du document : celui que vise l'xpath du bloc.
+        `scope` : noeud de la sous-vue inline du champ x2many `scope` (colonne d'une liste de lignes)."""
+        return next((node for node in self.root.iter(tag) if node.get("name") == name
+                     and (self._scope(node) == scope if scope else not self._ignored(node))), None)
+
+    def _scope(self, node) -> str | None:
+        """@name du <field> parent le plus proche (sous-vue inline), None hors sous-vue."""
+        while (node := self.parent.get(node)) is not None:
+            if node.tag == "field":
+                return node.get("name")
+        return None
 
     def in_legacy_page(self, node) -> bool:
         while (node := self.parent.get(node)) is not None:
@@ -90,10 +99,12 @@ class Item(NamedTuple):
     nodes: tuple = ()  # noeuds rpbm_* de premier niveau ajoutes par le bloc
     fields: frozenset = frozenset()  # champs natifs que le bloc reference
     requires: tuple = ()  # noeuds qui doivent exister en plus de l'ancre (champ a deplacer)
+    scope: str = ""  # champ x2many dont la liste inline porte l'ancre (vide : hors sous-vue)
 
     def block(self, arch: Arch) -> str:
         tag, name = self.anchor
-        return f"<xpath expr=\"//{tag}[@name='{name}'][not(ancestor::field)]\" position=\"{self.position}\">{self.content(arch)}</xpath>"
+        target = f"//field[@name='{self.scope}']/tree//{tag}[@name='{name}']" if self.scope else f"//{tag}[@name='{name}'][not(ancestor::field)]"
+        return f"<xpath expr=\"{target}\" position=\"{self.position}\">{self.content(arch)}</xpath>"
 
 
 class Spec(NamedTuple):
@@ -144,6 +155,25 @@ def ancien(tag: str, name: str, optional: bool = False, label: str | None = None
         return f'<attribute name="string">{escape(new)}</attribute>' + ('<attribute name="optional">hide</attribute>' if optional else "")
 
     return Item(f"{name}{SUFFIX}", (tag, name), "attributes", content, check)
+
+
+def ancienne_colonne(scope: str, name: str) -> Item:
+    """Colonne Studio d'une liste de lignes doublee par un natif : libelle « (ancien) » et masquee.
+    Masquee et non supprimee : d'autres xpaths Studio la visent par son nom. Une colonne ne va pas
+    dans l'onglet « Anciens champs » (onglet du document, pas de la ligne)."""
+    def text(arch: Arch) -> str:
+        node = arch.find("field", name, scope)
+        return (node.get("string") if node is not None else None) or arch.labels.get(name, name)
+
+    def check(arch: Arch) -> bool:
+        node = arch.find("field", name, scope)
+        return node is not None and text(arch).endswith(SUFFIX) and node.get("column_invisible") in ("True", "1")
+
+    def content(arch: Arch) -> str:
+        new = text(arch) if text(arch).endswith(SUFFIX) else text(arch) + SUFFIX
+        return f'<attribute name="string">{escape(new)}</attribute><attribute name="column_invisible">True</attribute>'
+
+    return Item(f"{scope}/{name}{SUFFIX}", ("field", name), "attributes", content, check, scope=scope)
 
 
 def legacy_page(anchor_page: str, attrs: str = "") -> Item:
@@ -219,7 +249,10 @@ VIEWS = [
     ] + [ancien("field", name) for name in (
         "x_studio_pice_concerne", "x_studio_immatriculation_", "x_studio_many2one_field_rP62C", "x_studio_many2one_field_DkgHx",
         "x_studio_dtails_modle", "x_studio_vin_", "x_studio_date_1re_mec", "x_studio_nergie_moteur", "x_studio_base_eurocode",
-        "x_studio_eurocode_complet", "x_studio_vsf_dsignation_1", "x_studio_vsf_qt_dispo")] + legacy_tab(
+        "x_studio_eurocode_complet", "x_studio_vsf_dsignation_1", "x_studio_vsf_qt_dispo")] + [
+        # Colonne « Prix XGlass » des lignes : le natif rpbm_xglass_price (vue du module) la remplace.
+        ancienne_colonne("order_line", "x_studio_prix_x_glass"),
+    ] + legacy_tab(
         "other_information",
         ["x_studio_immatriculation_", "x_studio_many2one_field_rP62C", "x_studio_many2one_field_DkgHx", "x_studio_dtails_modle",
          "x_studio_vin_", "x_studio_date_1re_mec", "x_studio_nergie_moteur", "x_studio_base_eurocode"],
@@ -338,7 +371,7 @@ def apply(odoo: Odoo, run_id: str, views: list[Spec] = VIEWS) -> int:
                 expected.append(item)
             elif any(arch.find(*node) is not None for node in item.nodes):
                 report.add("WARN", title, f"{item.label} present ailleurs (deplace dans Studio ?) : non rajoute")
-            elif arch.find(*item.anchor) is None and item.anchor[1] not in created:
+            elif arch.find(*item.anchor, item.scope) is None and item.anchor[1] not in created:
                 report.add("FAIL", title, f"ancre {item.anchor[1]} introuvable : {item.label} non ajoute")
             elif any(arch.find(*node) is None for node in item.requires):
                 report.add("FAIL", title, f"{item.label} : champ introuvable, non deplace")

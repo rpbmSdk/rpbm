@@ -113,6 +113,29 @@ def test_legacy_tab_and_move() -> None:
     assert studio_views.apply(odoo, "t6", [TAB_SPEC]) == 0 and not odoo.writes, "deja deplace : rien a ecrire"
 
 
+LINES_RAW = ('<form><sheet><field name="order_line"><tree><field name="product_uom"/><field name="x_line"/>'
+             '<field name="price_unit"/></tree></field></sheet></form>')
+LINES_DONE = LINES_RAW.replace('<field name="x_line"/>', '<field name="x_line" string="Prix XGlass (ancien)" column_invisible="True"/>')
+LINES_SPEC = studio_views.Spec("mod.view", "form", [studio_views.ancienne_colonne("order_line", "x_line")])
+
+
+def test_hidden_line_column() -> None:
+    labels = {"x_line": "Prix XGlass"}
+    raw = studio_views.Arch(LINES_RAW, labels)
+    assert raw.find("field", "x_line") is None, "sans scope, la sous-vue ne compte pas"
+    assert raw.find("field", "x_line", "order_line") is not None
+    assert raw.find("field", "x_line", "other_line") is None
+    item = LINES_SPEC.items[0]
+    block = item.block(raw)
+    assert block.startswith("<xpath expr=\"//field[@name='order_line']/tree//field[@name='x_line']\" position=\"attributes\">"), block
+    assert ">Prix XGlass (ancien)<" in block and '<attribute name="column_invisible">True</attribute>' in block, block
+    odoo = FakeOdoo(combined=LINES_RAW)
+    assert studio_views.apply(odoo, "t7", [LINES_SPEC]) == 0 and not odoo.writes, "dry-run : ancre trouvee, rien d'ecrit"
+    assert item.check(studio_views.Arch(LINES_DONE, labels))
+    odoo = FakeOdoo(combined=LINES_DONE, commit=True)
+    assert studio_views.apply(odoo, "t8", [LINES_SPEC]) == 0 and not odoo.writes, "second apply : rien a faire"
+
+
 def test_rollback_refuses_when_arch_changed() -> None:
     folder = studio_views.run_dir("t4")
     folder.mkdir(parents=True)
@@ -135,7 +158,8 @@ def main() -> None:
         test_label_from_fields_get_without_double_suffix()
         test_legacy_tab_and_move()
         test_rollback_refuses_when_arch_changed()
-    print("test_studio_views : OK (6 scenarios)")
+        test_hidden_line_column()
+    print("test_studio_views : OK (7 scenarios)")
 
 
 if __name__ == "__main__":
