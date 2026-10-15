@@ -7,6 +7,7 @@ import { Dialog } from '@web/core/dialog/dialog';
 import {
     asyncWidget,
     AbstractWidgetRecord,
+    eurocodeBase,
     PART_TYPES,
     suggestPieceConcernee,
 } from "./utils";
@@ -408,6 +409,11 @@ export class AgentWidgetDialog extends asyncWidget {
         // Main-d'œuvre de la pièce, proposée par le devis sans X'Glass.
         if (this.record.xglassLaborOperationsField && !this._keepStoredPiece) {
             data[this.record.xglassLaborOperationsField] = this.selectedPiece?.laborOperations || [];
+        }
+        // Barème (Q-01) : écrit pour une pièce retrouvée, choisie ou retirée (prix X'Glass du jour) ; sinon
+        // le barème enregistré, saisi à la main compris, reste.
+        if (this.record.xglassPiecePriceField && (this.selectedPiece || this._storedPiecesReleased)) {
+            data[this.record.xglassPiecePriceField] = this.xglassPiecePrice;
         }
         // Une pièce « Autres marques AM » mémorisée et non retrouvée garde aussi son libellé.
         if (this.record.xglassPieceLabelField && !this._keepStoredPiece && (this.selectedPiece || !this._keepStoredPieceAm)) {
@@ -822,6 +828,17 @@ export class AgentWidgetDialog extends asyncWidget {
         return this.selectedPiece ? this.selectedPiece.id : 0;
     }
 
+    /**
+     * Barème X'Glass HT (Q-01) : prix de la pièce d'origine choisie, sinon celui enregistré tant que
+     * l'utilisateur n'a pas changé la pièce. Pièce sans prix, retirée ou AM seule : 0, jamais un prix VSF.
+     */
+    get xglassPiecePrice() {
+        if (this.selectedPiece) {
+            return Number(this.selectedPiece.pieceOe?.prix) || 0;
+        }
+        return this._storedPiecesReleased ? 0 : Number(this.record.recordData[this.record.xglassPiecePriceField]) || 0;
+    }
+
     /** Libellé mémorisé avec la pièce (lot E2) : pièce OE, à défaut pièce après-marché. */
     get xglassPieceLabel() {
         const pieceOe = this.selectedPiece?.pieceOe;
@@ -856,8 +873,9 @@ export class AgentWidgetDialog extends asyncWidget {
             }
             // La base enregistrée prévaut sur celle de la pièce AM restaurée (décision R12
             // du 2026-10-02) ; à défaut (base vide, pièce resélectionnée), on la dérive.
-            if (this.selectedPieceAm && !this.baseEurocode) {
-                this.setBaseEurocode(this.selectedPieceAm.pieceAm.reference.substring(0, 5));
+            const base = this.selectedPieceAm && !this.baseEurocode && eurocodeBase(this.selectedPieceAm.pieceAm.reference);
+            if (base) {
+                this.setBaseEurocode(base);
             }
             this._restorePending = false;
         }
@@ -871,8 +889,11 @@ export class AgentWidgetDialog extends asyncWidget {
     onSelectPieceAM(metaPieceAM) {
         this.state.selectedPieceAm = metaPieceAM;
         this._keepStoredPieceAm = false;
-        // Seul un choix explicite de l'utilisateur dérive la base de la pièce AM.
-        this.setBaseEurocode(metaPieceAM.pieceAm.reference.substring(0, 5));
+        // Seul un choix explicite de l'utilisateur dérive la base de la pièce AM, et seulement d'un eurocode.
+        const base = eurocodeBase(metaPieceAM.pieceAm.reference);
+        if (base) {
+            this.setBaseEurocode(base);
+        }
     }
 
     /**
@@ -956,6 +977,7 @@ export class AgentWidgetDialog extends asyncWidget {
     releaseStoredPieces() {
         this._keepStoredPiece = false;
         this._keepStoredPieceAm = false;
+        this._storedPiecesReleased = true;
     }
 
     get articlesVsf() {

@@ -22,6 +22,7 @@
                         <group string="Pièce et article">
                             <field name="rpbm_xglass_category"/>
                             <field name="rpbm_part_type"/>
+                            <field name="rpbm_xglass_piece_price"/>
                             <field name="rpbm_eurocode_base"/>
                             <field name="rpbm_eurocode"/>
                             <field name="rpbm_vsf_designation"/>

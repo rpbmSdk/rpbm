@@ -79,6 +79,25 @@ class TestProductTemplateVSFSync(TransactionCase):
         self.assertEqual(lines[1].date_start, tomorrow)
         self.assertEqual(lines[1].price, 100.0)
 
+    def test_vsf_goes_first_and_keeps_list_price(self):
+        """IMP-3 : article importé (fournisseur local seul) rattaché à un article VSF."""
+        local = self.env["res.partner"].create({"name": "MPB test"})
+        template = self._template(list_price=412.0, seller_ids=[(0, 0, {"partner_id": local.id, "price": 412.0})])
+        today = fields.Date.context_today(template)
+        mpb = template.seller_ids
+
+        template._sync_vsf_supplierinfo(self._article(), self.partner.id, today)
+        vsf_line = template.seller_ids - mpb
+        self.assertEqual((mpb.price, len(vsf_line), vsf_line.price), (412.0, 1, 80.0))
+        self.assertLess(vsf_line.sequence, mpb.sequence, "VSF passe en tête (P-36)")
+        self.assertEqual(template.list_price, 412.0)
+        self.assertEqual(template.product_variant_id._select_seller(quantity=None).partner_id, self.partner)
+
+        template._sync_vsf_supplierinfo(self._article(), self.partner.id, today)
+        self.assertEqual(len(template.seller_ids), 2, "même jour, même prix : pas de doublon")
+        template._sync_vsf_supplierinfo(self._article("120,00 €"), self.partner.id, today + timedelta(days=1))
+        self.assertEqual(set((template.seller_ids - mpb).mapped("sequence")), {vsf_line.sequence}, "historisation : même séquence")
+
     @patch.object(vsf, "VSFAgent")
     def test_batch_sync_isolates_failures_and_preserves_identity(self, agent_class):
         valid = self._template(list_price=1.0)

@@ -257,6 +257,14 @@ def _product_payload(product, matched_by=None):
     return payload
 
 
+def _vsf_supplier_payload(env, partner_id, price):
+    """Prix fournisseur VSF (net) que le widget pose sur la ligne de devis (rpbm_supplier_price/_id)."""
+    return {
+        'supplier_id': [partner_id, env['res.partner'].sudo().browse(partner_id).display_name],
+        'supplier_price': price,
+    }
+
+
 def _find_existing_product(env, product_code, eurocode, product_name):
     """Recherche un produit dans l'ordre métier : eurocode, référence interne, nom.
 
@@ -697,7 +705,9 @@ class AgentController(Controller):
             )
 
     @route('/createProduct', auth='user', type='json')
-    def createProduct(self,articleVsfInfo:dict):
+    def createProduct(self, articleVsfInfo: dict, existingOnly=False):
+        """Crée le produit d'un article VSF, ou rattache l'existant et y enregistre le prix fournisseur
+        VSF (IMP-3). ``existingOnly`` (ajout au devis) : ne crée jamais, renvoie False sans produit."""
         _logger.info(f"createProduct {articleVsfInfo}")
         product_code = str(articleVsfInfo.get('code') or '').strip()
         if not product_code:
@@ -722,6 +732,7 @@ class AgentController(Controller):
             constructor_reference = _article_constructor_reference(article_vsf.__dict__)
             # REPEATABLE READ : l'instantané de cette requête précède le verrou consultatif et ne
             # voit pas le produit qu'une requête concurrente a créé avant de le relâcher.
+            partner_id = get_vsf_partner_id(request.env)
             with request.env.registry.cursor() as fresh_cr:
                 existing_product, matched_by = _find_existing_product(
                     request.env(cr=fresh_cr),
@@ -730,7 +741,20 @@ class AgentController(Controller):
                     str(article_vsf.name or '').strip(),
                 )
                 if existing_product:
-                    return _product_payload(existing_product, matched_by)
+                    payload = _product_payload(existing_product, matched_by)
+                    if article_vsf.prixVenteRPBM is not None:
+                        # IMP-3 : seule la ligne VSF change (ni list_price, ni catégorie, ni autres
+                        # fournisseurs). Dans le curseur neuf, validé sous le verrou : deux ajouts
+                        # simultanés ne créent pas deux prix VSF actifs. sudo : vendeurs en lecture seule.
+                        try:
+                            with fresh_cr.savepoint():
+                                existing_product.product_tmpl_id.sudo()._sync_vsf_supplierinfo(article_vsf, partner_id)
+                            payload.update(_vsf_supplier_payload(request.env, partner_id, article_vsf.prixVenteRPBM))
+                        except UserError as error:  # plusieurs prix VSF actifs : l'ajout au devis continue
+                            _logger.warning("Prix fournisseur VSF non synchronisé pour %s : %s", existing_product.id, error)
+                    return payload
+            if existingOnly:
+                return False
             if article_vsf.prixVente is None or article_vsf.prixVenteRPBM is None:
                 raise UserError(_("Création impossible : le prix de l'article VSF est absent."))
 
@@ -759,7 +783,7 @@ class AgentController(Controller):
             request.env['product.supplierinfo'].sudo().create(
                 vsf.product_supplierinfo_values(
                     article_vsf,
-                    get_vsf_partner_id(request.env),
+                    partner_id,
                     product_id=product.id,
                     date_start=fields.Date.today(),
                 )
@@ -777,6 +801,6 @@ class AgentController(Controller):
             raise UserError(_("Création impossible pour l'article VSF %s.") % product_code) from error
 
         _logger.info("Produit VSF créé %s", product)
-        return _product_payload(product, 'créé')
+        return {**_product_payload(product, 'créé'), **_vsf_supplier_payload(request.env, partner_id, article_vsf.prixVenteRPBM)}
 
 

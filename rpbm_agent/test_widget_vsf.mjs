@@ -450,6 +450,56 @@ assert.equal(quote.isArticleAlreadyInOrder("6574AXSH"), true);
 await quote.addArticleToSaleOrder("6574AXSH");
 assert.equal(orderLines.records.length, 1);
 
+// IMP-1 / IMP-3 (2026-10-15) : barème = prix de la pièce d'origine, coût VSF dans le prix fournisseur,
+// accessoires suggérés sans barème ; plus jamais prixVenteRPBM dans rpbm_xglass_price.
+const priced = (data, portal) => {
+    const lines = {
+        records: [],
+        async addNewRecord({ context }) {
+            const line = { data: { product_id: [context.default_product_id, "Article"] }, async update(values) { Object.assign(this.data, values); } };
+            this.records.push(line);
+            return line;
+        },
+    };
+    const widget = mount({ ...data, order_line: lines }, context.AgentWidgetDialogSaleOrder);
+    widget.notices = [];
+    widget.notification = { add: (message, { type }) => widget.notices.push(type) };
+    widget.portalCalls = [];
+    widget.callPortal = async (route, params) => { widget.portalCalls.push([route, params]); return portal(params); };
+    widget.state.articlesVsf = [{ code: "3024AGSBLMV1B", prixVenteRPBM: 211.16, suggestedArticles: [{ code: "JOINT", prixVenteRPBM: 4 }] }];
+    widget.state.articleProducts = { "3024AGSBLMV1B": { id: 686 }, JOINT: { id: 77 } };
+    return { widget, lines };
+};
+const VSF_SUPPLIER = (params) => ({ id: params.articleVsfInfo.code === "JOINT" ? 77 : 686, supplier_id: [5708, "VSF"], supplier_price: 211.16 });
+const withBareme = priced({ ...STORED_PIECES, rpbm_xglass_piece_price: 322.38 }, VSF_SUPPLIER);
+await withBareme.widget.addArticleToSaleOrder("3024AGSBLMV1B");
+assert.deepEqual(plain(withBareme.lines.records[0].data), {
+    product_id: [686, "Article"], product_uom_qty: 1, rpbm_xglass_price: 322.38, rpbm_supplier_price: 211.16, rpbm_supplier_id: [5708, "VSF"],
+}, "barème de la pièce d'origine, net VSF en prix fournisseur");
+assert.deepEqual(plain(withBareme.widget.portalCalls[0]), ["/createProduct", { articleVsfInfo: { code: "3024AGSBLMV1B", prixVenteRPBM: 211.16, suggestedArticles: [{ code: "JOINT", prixVenteRPBM: 4 }] }, existingOnly: true }]);
+await withBareme.widget.addArticleToSaleOrder("JOINT");
+assert.equal("rpbm_xglass_price" in withBareme.lines.records[1].data, false, "accessoire suggéré : pas de barème");
+assert.deepEqual(withBareme.widget.notices, [], "barème connu, accessoire : pas d'avertissement");
+
+const noBareme = priced({}, VSF_SUPPLIER);
+await noBareme.widget.addArticleToSaleOrder("3024AGSBLMV1B");
+assert.equal("rpbm_xglass_price" in noBareme.lines.records[0].data, false, "sans pièce d'origine : pas de repli VSF");
+assert.deepEqual(noBareme.widget.notices, ["warning"]);
+
+const released = priced({ ...STORED_PIECES, rpbm_xglass_piece_price: 322.38 }, VSF_SUPPLIER);
+released.widget.releaseStoredPieces();
+assert.equal(released.widget.xglassPiecePrice, 0, "pièce changée : le barème enregistré ne vaut plus");
+
+const portalDown = priced({ rpbm_xglass_piece_price: 322.38 }, () => { throw new Error("VSF indisponible"); });
+await portalDown.widget.addArticleToSaleOrder("3024AGSBLMV1B");
+assert.deepEqual(plain(portalDown.lines.records[0].data), { product_id: [686, "Article"], product_uom_qty: 1, rpbm_xglass_price: 322.38 }, "ligne ajoutée malgré l'échec");
+assert.deepEqual(portalDown.widget.notices, ["warning"]);
+
+const busy = priced({}, VSF_SUPPLIER);
+busy.widget.state.loading = true;
+await busy.widget.addArticleToSaleOrder("3024AGSBLMV1B");
+assert.equal(busy.lines.records.length, 0, "double clic pendant le chargement : rien");
+
 // Lot E2 : le devis s'ouvre sans X'Glass (mount() force agentsInitialized, remis à faux ici).
 const routes = () => plain(rpcCalls.map(({ route }) => route));
 const vsfOnly = (data) => {
@@ -613,6 +663,26 @@ await laborWrite.getPieces();
 assert.deepEqual(plain((await laborWrite.getRecordData()).rpbm_xglass_labor_operations), LABOR);
 laborWrite.state.selectedPiece = undefined;
 assert.deepEqual(plain((await laborWrite.getRecordData()).rpbm_xglass_labor_operations), [], "pièce retirée : main-d'œuvre vidée");
+
+// Barème X'Glass (IMP-1) : même règle que la main-d'œuvre, sans repli VSF.
+const piecePrice = mount({ ...STORED_PIECES, rpbm_xglass_piece_price: 300, order_line: { records: [] } }, context.AgentWidgetDialogSaleOrder);
+Object.assign(piecePrice.state, { selectedVehicule: { id: 2 }, vehiculeMeta: {}, planche: { id: 1, calques }, selectedCalque: calques[0] });
+piecePrice.getOdooVehicule = async () => ({ id: 5, name: "PEUGEOT/208/GS600HH" });
+assert.equal("rpbm_xglass_piece_price" in await piecePrice.getRecordData(), false, "pièce pas encore retrouvée : barème conservé");
+piecePrice.callPortal = async () => [{ id: 11, pieceOe: { id: 21, prix: 322.38 } }, { id: 12, pieceOe: { id: 22 } }];
+await piecePrice.getPieces();
+assert.equal((await piecePrice.getRecordData()).rpbm_xglass_piece_price, 322.38);
+piecePrice.onSelectPiece(12);
+assert.equal((await piecePrice.getRecordData()).rpbm_xglass_piece_price, 0, "prix absent : 0");
+piecePrice.onSelectPiece(12);
+assert.equal((await piecePrice.getRecordData()).rpbm_xglass_piece_price, 0, "pièce retirée : 0");
+
+// Base Eurocode : dérivée d'un eurocode seulement (référence AGC « 4031800 », recette du 2026-10-14).
+const agc = mount({ rpbm_eurocode_base: "3024A" });
+agc.onSelectPieceAM({ pieceAm: { reference: "4031800" } });
+assert.equal(agc.baseEurocode, "3024A", "référence non-eurocode : base inchangée");
+agc.onSelectPieceAM({ pieceAm: { reference: "6108AGNSMVZ1B" } });
+assert.equal(agc.baseEurocode, "6108A");
 
 const laborLines = {
     records: [],

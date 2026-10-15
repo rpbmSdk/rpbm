@@ -6,8 +6,15 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/tree" position="inside">
-                <field name="rpbm_xglass_price" column_invisible="True"/>
                 <field name="rpbm_labor_operation_key" column_invisible="True"/>
+            </xpath>
+            <!-- Barème et prix fournisseur à côté du prix. La colonne Studio « Prix XGlass » est masquée par
+                 Jobs/rpbm_agent_stock/studio_views.py. Barème figé une fois la ligne facturée, comme price_unit :
+                 l'automatisation « Tarif x glass » ne filtre pas les lignes facturées. -->
+            <xpath expr="//field[@name='order_line']/tree//field[@name='price_unit']" position="before">
+                <field name="rpbm_xglass_price" readonly="qty_invoiced &gt; 0"/>
+                <field name="rpbm_supplier_price" optional="show"/>
+                <field name="rpbm_supplier_id" optional="hide"/>
             </xpath>
             <notebook position="inside">
                 <page name="rpbm_agent_xglass" string="Véhicule (X'Glass)" invisible="not opportunity_id">
@@ -27,6 +34,7 @@
                         <group string="Pièce et article">
                             <field name="rpbm_xglass_category"/>
                             <field name="rpbm_part_type"/>
+                            <field name="rpbm_xglass_piece_price"/>
                             <field name="rpbm_eurocode_base"/>
                             <field name="rpbm_eurocode"/>
                             <field name="rpbm_vsf_designation"/>

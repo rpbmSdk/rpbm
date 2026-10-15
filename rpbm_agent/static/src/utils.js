@@ -31,6 +31,14 @@ export function suggestPieceConcernee(calqueLabel) {
     }
 }
 
+/**
+ * Base Eurocode d'une référence de pièce : 4 chiffres et une lettre, ou "" pour une référence
+ * qui n'est pas un eurocode (ex. référence AGC « 4031800 », recette du 2026-10-14).
+ */
+export function eurocodeBase(reference) {
+    return /^\d{4}[A-Z]/.exec(String(reference || "").trim().toUpperCase())?.[0] || "";
+}
+
 export class AbstractRecord {
     constructor(record) {
         Object.assign(this, record);
@@ -55,6 +63,7 @@ export class AbstractWidgetRecord extends AbstractRecord {
     xglassPieceIdField = "rpbm_xglass_piece_id";
     xglassPieceLabelField = "rpbm_xglass_piece_label";
     xglassLaborOperationsField = "rpbm_xglass_labor_operations";
+    xglassPiecePriceField = "rpbm_xglass_piece_price";
     pieceOeIdField = "rpbm_piece_oe_id";
     pieceAmIdField = "rpbm_piece_am_id";
     fullEurocodeField = "rpbm_eurocode";

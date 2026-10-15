@@ -55,6 +55,9 @@ class CrmLead(models.Model):
     # Opérations de main-d'œuvre de la pièce (contrat laborOperations de /getPieces), écrites avec
     # la pièce : le devis les propose sans recharger X'Glass.
     rpbm_xglass_labor_operations = fields.Json("Main-d'œuvre X'Glass de la pièce")
+    # Q-01 (2026-10-12) : barème = Prix XGlass HT de la pièce d'origine choisie, jamais un prix VSF.
+    # Sans lien Studio : le « Prix XGlass (TTC) » Studio de l'opportunité porte le total du devis.
+    rpbm_xglass_piece_price = fields.Float("Barème X'Glass HT de la pièce d'origine", digits="Product Price")
 
     def _rpbm_legacy_triggers(self):
         return {"rpbm_vehicle_id": VEHICLE_DERIVED_FIELDS}

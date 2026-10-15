@@ -52,7 +52,7 @@
                 <t t-elif="isArticleAlreadyInOrder(actionArticle.code)">
                     <span class="ms-2">Article déjà présent dans le devis.</span>
                 </t>
-                <button t-else="" class="btn btn-primary btn-sm ms-2" t-on-click.stop="()=>this.addArticleToSaleOrder(actionArticle.code)">Ajouter au devis</button>
+                <button t-else="" class="btn btn-primary btn-sm ms-2" t-att-disabled="isLoading" t-on-click.stop="()=>this.addArticleToSaleOrder(actionArticle.code)">Ajouter au devis</button>
             </t>
         </xpath>
     </t>

@@ -48,11 +48,15 @@ class ProductTemplate(models.Model):
         today = today or fields.Date.context_today(self)
         active_line = self._active_vsf_supplierinfo(partner_id, today)
         if not active_line:
-            self.env["product.supplierinfo"].create(
-                vsf.product_supplierinfo_values(
-                    article, partner_id, product_tmpl_id=self.id, date_start=today
-                )
+            values = vsf.product_supplierinfo_values(
+                article, partner_id, product_tmpl_id=self.id, date_start=today
             )
+            # VSF passe en tête (P-36) : _select_seller retient le fournisseur de la plus petite séquence ;
+            # un achat local se choisit au cas par cas, il ne devient pas le fournisseur par défaut.
+            others = self.seller_ids.filtered(lambda line: line.partner_id.id != partner_id)
+            if others:
+                values["sequence"] = min(others.mapped("sequence")) - 1
+            self.env["product.supplierinfo"].create(values)
             return
 
         line = active_line
@@ -76,11 +80,12 @@ class ProductTemplate(models.Model):
             return
 
         line.write({"date_end": today - timedelta(days=1)})
-        self.env["product.supplierinfo"].create(
-            vsf.product_supplierinfo_values(
+        self.env["product.supplierinfo"].create({
+            **vsf.product_supplierinfo_values(
                 article, partner_id, product_tmpl_id=self.id, date_start=today
-            )
-        )
+            ),
+            "sequence": line.sequence,
+        })
 
     def _sync_vsf_information(self, agent, discount, partner_id):
         """Synchronise un modèle à partir de sa fiche VSF, sans ses médias."""

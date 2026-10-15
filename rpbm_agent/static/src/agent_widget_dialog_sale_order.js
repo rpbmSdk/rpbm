@@ -93,6 +93,7 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
             ["Catégorie", data[record.categorieXglassField]],
             ["Pièce concernée", PART_TYPES.find(([key]) => key === data[record.pieceConcerneeField])?.[1]],
             ["Pièce X'Glass", data[record.xglassPieceLabelField]],
+            ["Barème X'Glass HT", data[record.xglassPiecePriceField] ? `${data[record.xglassPiecePriceField]} €` : ""],
             ["Article principal", article],
         ].map(([label, value]) => [label, value || "—"]);
     }
@@ -193,25 +194,45 @@ export class AgentWidgetDialogSaleOrder extends AgentWidgetDialog {
     async addArticleToSaleOrder(articleCode) {
         const product = this.getProductForArticle(articleCode);
         const article = this.getArticleByCode(articleCode);
-        if (!product || !article || this.isArticleAlreadyInOrder(articleCode)) {
+        // isLoading : un double clic pendant la lecture VSF ajouterait deux lignes.
+        if (this.isLoading || !product || !article || this.isArticleAlreadyInOrder(articleCode)) {
             return;
         }
-        const xglassPrice = Number(article.prixVenteRPBM);
-        if (!Number.isFinite(xglassPrice)) {
-            this.notification.add("Le prix RPBM de l'article VSF est invalide.", { type: "danger" });
-            return;
-        }
+        // Le barème (Q-01) ne vaut que pour la pièce principale, pas pour ses accessoires suggérés.
+        const isMain = this.articlesVsf.some((candidate) => candidate.code === articleCode);
+        const bareme = isMain ? this.xglassPiecePrice : 0;
         await this.runAsync(async () => {
+            // IMP-3 : rattache l'article et enregistre son prix fournisseur VSF sur le produit existant.
+            let supplier;
+            try {
+                supplier = await this.callPortal("/createProduct", { articleVsfInfo: article, existingOnly: true });
+            } catch (error) {
+                this.notification.add(
+                    `Prix fournisseur VSF non enregistré sur l'article : ${error.data?.message || error.message}`,
+                    { type: "warning" },
+                );
+            }
             const newLine = await this.props.record.data.order_line.addNewRecord({
                 context: { default_product_id: product.id },
             });
-            // Le module recopie ce prix vers x_studio_prix_x_glass, d'où l'automatisation
-            // Studio « Tarif x glass » dérive price_unit. Ne jamais renseigner price_unit ici.
+            // Le module recopie le barème vers le champ Studio historique, d'où l'automatisation « Tarif x glass »
+            // dérive price_unit (× 1,5). Ne jamais renseigner price_unit ici.
             await newLine.update({
                 product_uom_qty: 1,
-                rpbm_xglass_price: xglassPrice,
+                ...(bareme > 0 && { rpbm_xglass_price: bareme }),
+                ...(supplier?.id === product.id && supplier.supplier_id && {
+                    rpbm_supplier_price: supplier.supplier_price,
+                    rpbm_supplier_id: supplier.supplier_id,
+                }),
             });
             this._widgetProductIdsByArticleCode.set(articleCode, product.id);
+            if (isMain && bareme <= 0) {
+                this.notification.add(
+                    "Aucun barème X'Glass : choisissez la pièce d'origine (Charger X'Glass) ou saisissez le barème ; "
+                    + "la ligne garde le prix de l'article.",
+                    { type: "warning" },
+                );
+            }
         }, "Ajout de l'article au devis en cours...");
     }
 

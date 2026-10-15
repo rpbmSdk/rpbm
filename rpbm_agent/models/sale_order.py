@@ -47,6 +47,7 @@ class SaleOrder(models.Model):
     rpbm_xglass_vehicle_id = fields.Char(related="opportunity_id.rpbm_xglass_vehicle_id", readonly=False)
     rpbm_xglass_piece_label = fields.Char(related="opportunity_id.rpbm_xglass_piece_label", readonly=False)
     rpbm_xglass_labor_operations = fields.Json(related="opportunity_id.rpbm_xglass_labor_operations", readonly=False)
+    rpbm_xglass_piece_price = fields.Float(related="opportunity_id.rpbm_xglass_piece_price", readonly=False)
 
     @api.model
     def _rpbm_carrier_name(self, opportunity):
@@ -152,6 +153,34 @@ class SaleOrderLine(models.Model):
 
     # Barème X'Glass de la ligne ; l'automatisation Studio « Tarif x glass » en dérive price_unit
     # (gardée par rpbm_pricing quand il est installé).
-    rpbm_xglass_price = fields.Float("Prix X'Glass", digits="Product Price")
+    rpbm_xglass_price = fields.Float("Barème X'Glass HT", digits="Product Price")
+    # Coût d'achat net de la pièce : le widget y écrit le net VSF ; à défaut, le prix fournisseur de
+    # l'article. Jamais lu par un calcul de prix de vente (P-10, P-44). Fournisseur prévu : P-36, Q-20.
+    rpbm_supplier_price = fields.Float(
+        "Prix fournisseur (net)", digits="Product Price",
+        compute="_compute_rpbm_supplier", store=True, readonly=False, precompute=True, copy=True,
+    )
+    rpbm_supplier_id = fields.Many2one(
+        "res.partner", string="Fournisseur",
+        compute="_compute_rpbm_supplier", store=True, readonly=False, precompute=True, copy=True,
+    )
     # Provenance stable des lignes de main-d'œuvre créées par le widget.
     rpbm_labor_operation_key = fields.Char("Clé opération main-d'œuvre X'Glass", copy=False, index=True)
+
+    # Dépend du seul article : une modification de quantité ou de date ne remplace jamais une saisie
+    # manuelle ni la valeur écrite par le widget.
+    @api.depends("product_id")
+    def _compute_rpbm_supplier(self):
+        for line in self:
+            date = fields.Date.to_date(line.order_id.date_order) if line.order_id.date_order else None
+            # Même choix que l'achat (rpbm_pricing/stock_rule.py) : fournisseur prioritaire par séquence,
+            # puis son prix le plus bas valable à la date. sudo : une ligne créée par un utilisateur
+            # portail (panier) n'a pas accès aux prix fournisseurs.
+            seller = line.product_id.sudo()._select_seller(quantity=None, date=date) if line.product_id else False
+            line.rpbm_supplier_id = seller.partner_id if seller else False
+            company = line.company_id or self.env.company
+            # shortcut: unité d'achat du fournisseur supposée égale à celle de la ligne ; convertir si un fournisseur vend au lot.
+            line.rpbm_supplier_price = seller.currency_id._convert(
+                seller.price_discounted, line.currency_id or company.currency_id, company,
+                date or fields.Date.context_today(line),
+            ) if seller else 0.0
