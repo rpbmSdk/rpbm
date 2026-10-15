@@ -5,13 +5,16 @@
 Index de la documentation du module `rpbm_pricing` (version `17.0.261012.1`), qui s'installe au-dessus de
 `rpbm_agent`. À tenir à jour à chaque version déployée.
 
-## Pages
+## Lecteurs visés et sommaire
 
-1. [Paramètres](parametres.md) : les clés `rpbm_pricing.*`, leur valeur, leur effet et la décision qui les
-   fixera.
-2. [Règle 8](regle-8.md) : garde réversible de l'automatisation Studio « Tarif x glass » (IMP-2).
-3. [Colisage VSF](colisage.md) : modèles, montants et coefficient, reprise de l'historique, droits (IMP-7).
-4. [Recette](recette.md) : installation, tests sous Odoo et recette non destructive sur Odoo.sh.
+| Vous êtes | Lisez |
+|---|---|
+| vendeur, acheteur, comptable ou administrateur de RPBM | [Manuel utilisateur](utilisateur/README.md) : ce qui change à l'écran, tâche par tâche |
+| développeur ou personne qui déploie le module | [Manuel technique](technique/README.md) : modèles, règle 8, colisage, paramètres, installation, tests, recette |
+
+Pages du manuel technique les plus consultées : [Paramètres](technique/parametres.md) ·
+[Règle 8](technique/regle-8.md) · [Colisage VSF](technique/colisage.md) ·
+[Recette](technique/recette-jev.md).
 
 ## Chaîne de prix couverte
 
@@ -39,7 +42,7 @@ Le module reste en mode « règle 8 » : c'est le seul mode possible en producti
 | IMP-7 | Colisage VSF, DAU, rattachements, coefficient, colisage retenu, coefficient annuel, reprise 2025-2026 | `lib/colisage.py`, `models/rpbm_colisage*.py` |
 | IMP-10 (partie) | Barème recopié sur la ligne de facture ; net et remise fournisseur jamais imprimés (P-24, testé) | `models/account_move_line.py`, `models/sale_order_line_invoice.py` |
 
-Une seule version de manifeste pour toute l'itération : le module n'a jamais été déployé, sa mise en place
+Une seule version de manifeste pour toute l'itération : le module n'a jamais été déployé en production (il tourne en préprod depuis le 2026-10-13), sa mise en place
 passe par `post_init_hook` → `hooks.setup(env)` et il n'a pas de dossier `migrations/`. Une version suivante
 qui ajoute une mise en place livrera `migrations/<version>/post-setup.py` (voir [`../CLAUDE.md`](../CLAUDE.md)).
 
@@ -48,7 +51,7 @@ qui ajoute une mise en place livrera `migrations/<version>/post-setup.py` (voir 
 | Sujet | Attend |
 |---|---|
 | Filtre de date et arrondi effectif de la règle 8 | Q-12 |
-| Activation du filtre de régime de la règle 8 | Validation du client ([Paramètres](parametres.md)) |
+| Activation du filtre de régime de la règle 8 | Validation du client ([Paramètres](technique/parametres.md)) |
 | IMP-3 côté prix (prix de revient) | IMP-3 côté widget : le prix fournisseur est encore un net, faux de 20 % |
 | IMP-4 (listes de prix par régime, bascule) | IMP-1, IMP-3, Q-04, Q-08, Q-09, Q-12, Q-13 |
 | IMP-5 (main-d'œuvre et pose) | Q-14 à Q-17, E-02 |
@@ -65,8 +68,8 @@ installation (lot WPA), sinon `rpbm_xglass_price` reste nul sur l'historique ; I
 Le plan qui fait foi est `.paradigme/audits/rpbm_pricing/plan-iteration-1.md` à la racine du dépôt (local,
 non suivi par Git) : choix d'architecture, lots, critiques retenues et risques.
 
-Voir aussi : [`../README.md`](../README.md) (présentation du module) ·
+Voir aussi : [Manuel technique](technique/README.md) · [`../README.md`](../README.md) (présentation du module) ·
 [`../../rpbm_agent/docs/README.md`](../../rpbm_agent/docs/README.md) (module socle).
 
 ---
-Suivant : [Paramètres](parametres.md)
+Suivant : [Manuel utilisateur](utilisateur/README.md)
