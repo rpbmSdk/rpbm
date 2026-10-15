@@ -1,5 +1,7 @@
 # 6 — Confirmation sur Piste/Opportunité (`crm.lead`)
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 6 — Confirmation sur Piste/Opportunité (`crm.lead`)
+
 - **Déclencheur** : clic sur « Confirmer », « Confirmer et enregistrer » ou « Créer un devis » dans la fenêtre du widget, ouverte depuis une fiche `crm.lead`.
 - **Code** : `AgentWidgetDialog.onConfirm()` / `onConfirmAndSave()` → `confirmRecord(save)` → `writeRecord(save)` → `getRecordData()` (`agent_widget_dialog.js`) ; classe `AgentWidgetDialogCrmLead` (`agent_widget_dialog_crm_lead.js`) : pas de recherche VSF sur l'opportunité, et bouton « Créer un devis » (`onCreateQuotation()`).
 
@@ -14,6 +16,7 @@
 | `rpbm_xglass_piece_id` / `rpbm_piece_oe_id` / `rpbm_piece_am_id` | identifiants X'Glass/OE/après-marché | pour une pièce mémorisée à l'ouverture, **seulement si** la sélection a été retrouvée à la restauration, ou remplacée ou retirée par une action explicite (lot E1.1, voir [Pièce mémorisée](#pièce-mémorisée-lot-e11)) ; sinon la valeur mémorisée est conservée |
 | `rpbm_xglass_piece_label` | libellé de la pièce choisie (lot E2) : libellé et référence de la pièce OE, ou à défaut référence et fournisseur de la pièce après-marché, sinon vide | sous la même condition que les identifiants de pièce, avec une nuance : une pièce « Autres marques AM » mémorisée seule, non retrouvée, garde aussi son libellé ; l'opportunité le renseigne donc dès « Créer un devis », et le devis l'affiche dans l'encart « Dossier » sans X'Glass |
 | `rpbm_xglass_labor_operations` | opérations de main-d'œuvre de la pièce choisie : la liste `laborOperations` de X'Glass (clé, libellé, taux, durée, produit de service, motif d'indisponibilité), vide sans pièce (correctif `17.0.261007.1`) | sous la condition des identifiants de pièce X'Glass et OE, sans la nuance « Autres marques AM » du libellé : écrite si la pièce est retrouvée, choisie, remplacée ou retirée ; une pièce mémorisée ni retrouvée ni changée garde sa main-d'œuvre. **Écriture silencieuse** : rien de nouveau à l'écran de l'opportunité ; les trois boutons l'écrivent (voir [Main-d'œuvre enregistrée](#main-dœuvre-enregistrée-correctif-du-2026-10-07)) |
+| `rpbm_xglass_piece_price` | Prix XGlass HT de la pièce d'origine choisie (`pieceOe.prix`), 0 pour une pièce sans prix ou retirée (2026-10-15, [VD-08](../../validations-metier.md#historique-des-décisions)) | écrit pour une pièce retrouvée, choisie ou retirée ; sinon la valeur enregistrée, saisie à la main comprise, est conservée (voir [Barème](#barème-xglass-de-la-pièce-dorigine-2026-10-15)) |
 
 - **Article VSF principal** : depuis le lot E1, le dialog de l'opportunité ne cherche plus d'article VSF et n'écrit plus `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` ni `rpbm_constructor_reference`. Ces champs restent visibles et modifiables à la main dans le formulaire ; seul le dialog du devis les désigne (« Définir comme article principal », voir [7](07-confirmation-sale-order.md)).
 - **Persistance** : mise à jour en mémoire (`this.props.record.update(data)`) ; écriture effective en base au clic sur « Enregistrer » (bouton « Confirmer »), ou immédiate via `record.save()` (boutons « Confirmer et enregistrer » et « Créer un devis »).
@@ -38,6 +41,10 @@ Pour un dossier sans pièce mémorisée à l'ouverture, rien ne change : la sél
 
 Quand une pièce OE est choisie, « Confirmer », « Confirmer et enregistrer » et « Créer un devis » enregistrent aussi, sans rien afficher de plus, les opérations de main-d'œuvre X'Glass de cette pièce (`rpbm_xglass_labor_operations`). Le devis les propose ensuite sans connexion à X'Glass : le vendeur y ajoute ou retire les articles de temps dès l'ouverture ([7](07-confirmation-sale-order.md#main-dœuvre-enregistrée-correctif-du-2026-10-07)). Sans pièce OE (pièce retirée, ou, pour un dossier sans pièce mémorisée, ligne « Autres marques AM » seule), la liste enregistrée est vide. Les règles de conservation sont celles de la pièce mémorisée ([ci-dessus](#pièce-mémorisée-lot-e11)). Décision du 2026-10-07 : [VD-06](../../validations-metier.md#historique-des-décisions).
 
+## Barème X'Glass de la pièce d'origine (2026-10-15)
+
+Décision du client Q-01 (2026-10-12) : le barème est le **Prix XGlass HT de la pièce d'origine**, enregistré dès le choix de la pièce et repris sur le devis, jamais remplacé par un prix VSF ([VD-08](../../validations-metier.md#historique-des-décisions)). Les trois boutons l'écrivent dans `rpbm_xglass_piece_price`, visible et modifiable dans l'onglet « Véhicule (X'Glass) » (groupe « Pièce et article ») : un barème vide s'y voit. Pièce sans prix X'Glass, pièce « Autres marques AM » seule ou pièce retirée : 0, sans repli. Le barème enregistré reste tant que l'utilisateur ne change pas de pièce, de catégorie ou de véhicule. Il n'est lié à aucun champ Studio : le « Prix XGlass (TTC) » Studio de l'opportunité porte le total du devis. Le devis le pose sur la ligne de l'article VSF principal ([7](07-confirmation-sale-order.md#barème-xglass-et-prix-fournisseur-2026-10-15)).
+
 ## Créer un devis (lot E1)
 
 Le bouton « Créer un devis » se place dans le pied de la fenêtre, après « Confirmer et enregistrer » : le raccourci Ctrl+Entrée reste donc « Confirmer ». Il est affiché sur une opportunité, pas sur une piste, comme le bouton natif « Nouveau devis » ; contrairement à ce dernier, il n'est pas masqué sur une opportunité perdue. Sans client, il est **grisé**, avec l'info-bulle « Renseignez le client de l'opportunité pour créer un devis. » (lot E1.1). Il est désactivé comme « Confirmer » et « Confirmer et enregistrer » : véhicule et catégorie requis, et aussi pendant une reconnexion aux portails, une écriture et un chargement.
@@ -52,3 +59,8 @@ Un clic :
 Un double clic n'écrit et n'ouvre qu'une fois : l'état « écriture en cours » est partagé par les trois boutons. Détail technique : [frontend](../../technique/frontend.md#créer-un-devis-lot-e1).
 
 Détail de chaque champ : [technique/champs/crm-lead.md](../../technique/champs/crm-lead.md).
+
+---
+Précédent : [5 — Recherche VSF par eurocode](05-recherche-vsf-eurocode.md) · Suivant : [7 — Confirmation sur Ordre de Vente (`sale.order`)](07-confirmation-sale-order.md)
+
+Voir aussi : [8 — Création du véhicule (`fleet.vehicle`)](08-creation-vehicule.md) · [2 — Sélection du véhicule](02-selection-vehicule.md) · [Frontend (OWL)](../../technique/frontend.md) · [Registre des validations métier](../../validations-metier.md) · [Champs — `crm.lead`](../../technique/champs/crm-lead.md)

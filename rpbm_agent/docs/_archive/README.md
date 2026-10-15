@@ -1,5 +1,7 @@
 # Archive documentaire — sections erronées
 
+[Index](../README.md) › Audit & pilotage › Archive documentaire — sections erronées
+
 Journal de suivi des **sections de documentation rendues fausses par des évolutions du code**,
 archivées ici au lieu d'être supprimées sans trace. Chaque entrée cite le texte erroné, le
 motif, et la correction appliquée dans le document vivant.
@@ -97,7 +99,7 @@ et `createSelectedProduct()` (`/createProduct`) dans la base `AgentWidgetDialog`
 ## `fonctionnel/workflow/07-confirmation-sale-order.md`
 
 ### Ligne 17 — propriétés mortes inexistantes
-> - `SaleOrder.eurocodeField` (`x_studio_eurocode`) et `SaleOrder.OrderlLines` sont des propriétés **mortes**, jamais utilisées dans `getRecordData()` (voir [état des lieux](../../etat-des-lieux.md)).
+> - `SaleOrder.eurocodeField` (`x_studio_eurocode`) et `SaleOrder.OrderlLines` sont des propriétés **mortes**, jamais utilisées dans `getRecordData()` (voir [état des lieux](../etat-des-lieux.md)).
 
 **Motif** : ces propriétés ont été supprimées (L3.4). La classe `SaleOrder`
 (`agent_widget_dialog_sale_order.js`) ne définit plus que `immatriculationField`.
@@ -120,3 +122,8 @@ et `createSelectedProduct()` (`/createProduct`) dans la base `AgentWidgetDialog`
 (`getRecordData` = lignes 241-267) ; le bouton « Confirmer et enregistrer » (`onConfirmAndSave`)
 n'était pas mentionné.
 **Correction** : chemin et persistance mis à jour.
+
+---
+Précédent : [Registre des validations métier](../validations-metier.md) · Retour à l'[index](../README.md)
+
+Voir aussi : [État des lieux](../etat-des-lieux.md)

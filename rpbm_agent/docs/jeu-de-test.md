@@ -1,5 +1,7 @@
 # Jeu de test — Assistant véhicule RPBM
 
+[Index](README.md) › Fonctionnel › Jeu de test — Assistant véhicule RPBM
+
 Jeu de données destiné à rejouer les parcours du module `rpbm_agent` sur une
 instance de test. Les valeurs marquées **observée** proviennent des scénarios
 et fixtures déjà présents dans le dépôt. Les valeurs **synthétiques** ne
@@ -289,7 +291,7 @@ relevé que « Retirer du devis » manquait après « Ajouter au devis » (R28, 
      lot E2) renseignés ;
      `rpbm_eurocode`, `rpbm_vsf_designation`, `rpbm_vsf_stock` et `rpbm_constructor_reference`
      inchangés.
-   - Attendu (correctif du 2026-10-07, non rejoué) : `rpbm_xglass_labor_operations` renseigné
+   - Attendu (correctif du 2026-10-07, constaté en recette live par l'étape 0 de SO-11 ; ce scénario CRM-07 lui-même n'a pas été rejoué) : `rpbm_xglass_labor_operations` renseigné
      avec les opérations de la pièce OE choisie, sans rien de nouveau à l'écran de l'opportunité ;
      liste vide si seule une ligne « Autres marques AM » est choisie, sans pièce OE (cas du
      parcours ci-dessus). Pour un cas avec main-d'œuvre, voir l'étape 0 de SO-11.
@@ -793,3 +795,8 @@ Pour chaque scénario, noter séparément :
 
 Ne pas utiliser de données client réelles dans ce jeu de test et ne pas
 consigner de secrets de portail.
+
+---
+Précédent : [9 — Création du produit (`product.product`)](fonctionnel/workflow/09-creation-produit.md) · Suivant : [Architecture](technique/architecture.md)
+
+Voir aussi : [Backend](technique/backend.md)

@@ -1,5 +1,7 @@
 # AG-01-04 — Cartographie des rapports PDF et proposition de source par champ
 
+[Index](../README.md) › [Audits ciblés](README.md) › AG-01-04 — Cartographie des rapports PDF et proposition de source par champ
+
 ## Statut
 
 **Cartographie préparée le 14 septembre 2026, en lecture seule.** Ce document
@@ -306,3 +308,8 @@ implémentation. Chaque étape est bornée à une vue.
   concernée vide, `opportunity_id.x_studio_lieu_intervention` inatteignable
   pour le repli logistique) doit être rejoué en recette, pas seulement déduit
   des `arch_db`.
+
+---
+Précédent : [AG-01 — Audit des champs utiles et de la compatibilité historique](AG-01-champs-utiles.md) · Suivant : [État des lieux](../etat-des-lieux.md)
+
+Voir aussi : [Roadmap — UI & transfert vers Odoo](../roadmap.md)

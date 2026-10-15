@@ -1,8 +1,10 @@
 # Configuration & déploiement
 
+[Index](../README.md) › Technique › Configuration & déploiement
+
 ## Installation du module
 
-Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis installer via l'interface d'administration (`depends: base_setup, crm, delivery, fleet, product, sale_crm`). Le module exige `delivery` pour le champ natif `sale.order.carrier_id` et `base_setup` pour l'écran Réglages. Le routage stock (`stock_delivery`) est porté par l'architecture stock, pas par ce module.
+Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis installer via l'interface d'administration (`depends: base_setup, crm, delivery, fleet, product, sale_crm, sale_stock`, voir [`__manifest__.py`](../../__manifest__.py)). Le module exige `delivery` pour le champ natif `sale.order.carrier_id`, `base_setup` pour l'écran Réglages et `sale_stock` pour `stock.picking` (miroir `rpbm_vehicle_id`, `models/stock_picking.py`). Le routage stock (`stock_delivery`) est porté par l'architecture stock, pas par ce module.
 
 ## Dépendances Python
 
@@ -74,6 +76,27 @@ mixin ne fait rien et le module fonctionne à l'identique. Les automatisations e
 (cascade de prix sur « Pièce concernée », « Tarif x glass ») continuent donc de tourner pendant la
 transition.
 
+#### Priorité en cas de double saisie
+
+Quand une même écriture touche le natif et son champ Studio, `_rpbm_sync_legacy`
+(`models/legacy_fields.py:368-370`) applique deux règles :
+
+| Écriture | Résultat |
+|---|---|
+| Natif renseigné (avec ou sans le champ Studio) | Le natif gagne et est recopié vers le Studio. |
+| Natif absent, champ Studio saisi | Le Studio est converti vers le natif. |
+| Natif vide (`0`, `False`) et champ Studio renseigné | **Le Studio gagne** : le natif prend la valeur Studio (correctif `17.0.261013.1`). |
+
+Pourquoi le troisième cas : le client web envoie le défaut de chaque champ actif d'une ligne neuve,
+donc `rpbm_xglass_price = 0` à côté de la saisie Studio « Prix X'Glass ». Avant `17.0.261013.1`, ce
+natif vide l'emportait : le Prix X'Glass saisi à la main était remis à 0 et l'automatisation
+« Tarif x glass » ne se déclenchait pas (constaté à la recette de `rpbm_pricing` du 2026-10-13).
+Le correctif ajoute un test et en étend un dans `tests/test_legacy_sync.py` :
+`test_empty_native_yields_to_written_studio` (opportunité, « Pièce concernée ») et, dans
+`test_sale_order_line_price_is_synced_both_ways`, la création d'une ligne de devis avec natif `0.0` et
+Studio `341.87`. Le natif renseigné garde la priorité quand les deux le sont. Voir aussi
+[`sale.order.line`](champs/sale-order-line.md).
+
 ### Migration `17.0.260921.1`
 
 Au premier passage sur une base existante, `migrations/17.0.260921.1/post-native-fields.py` :
@@ -88,6 +111,33 @@ Au premier passage sur une base existante, `migrations/17.0.260921.1/post-native
    action serveur, filtre ni export ; sinon ils sont conservés et listés dans le journal.
 
 Les champs Studio historiques des utilisateurs ne sont jamais supprimés par le module.
+
+### Migrations `17.0.260921.6` et `17.0.260928.3`
+
+| Version | Fichier | Effet |
+|---|---|---|
+| `17.0.260921.6` | `migrations/17.0.260921.6/post-replay-native-fields.py` | Rejoue la migration `17.0.260921.1` (idempotente) : dates de mise en circulation aux formats `MM/YY`, `YYYY` et `JJ/MM/AAAA` restées vides, et champs de l'ancien module conservés à tort (références entre eux, homonymes sur d'autres modèles) lors du premier passage sur le build 37939198. |
+| `17.0.260928.3` | `migrations/17.0.260928.3/post-roles-achats.py` | Donne `purchase.group_purchase_manager` et `stock.group_stock_user` aux acheteurs, voir [Droits et rôles](#droits-et-rôles). |
+
+Les migrations ne tournent pas à l'installation d'une base neuve, seulement à la mise à jour d'une base
+qui porte déjà une version antérieure.
+
+## Droits et rôles
+
+Le module ne crée aucun groupe. Il pose trois éléments, tous livrés par les fichiers `security/` :
+
+| Élément | Fichier | Effet |
+|---|---|---|
+| Lecture Fleet | `security/ir.model.access.csv` (lignes 2 à 4) | Le groupe `sales_team.group_sale_salesman` lit (sans écrire, créer ni supprimer) `fleet.vehicle`, `fleet.vehicle.model` et `fleet.vehicle.model.brand`, pour que le widget et les vues du module fonctionnent pour un vendeur. |
+| Inventaire pour tout vendeur | `security/rpbm_groups.xml` | `sales_team.group_sale_salesman` implique `stock.group_stock_user` : tout vendeur fait livraisons et réceptions et lit les achats liés. |
+| Acheteurs | `migrations/17.0.260928.3/post-roles-achats.py` | Ajoute `purchase.group_purchase_manager` et `stock.group_stock_user` aux logins `rpbm003@gmail.com` et `rpbm004@gmail.com`. |
+
+Points à connaître :
+
+- **Logins en dur.** La liste des acheteurs (`BUYERS`) est écrite dans la migration. Une liste qui bouge souvent appellerait un paramètre système ; le code le dit en commentaire.
+- **Idempotente et prudente.** La migration ajoute les groupes (`(4, id)`), journalise les logins introuvables et ne plante pas si un groupe manque. Le module `purchase` n'est pas dans `depends` : sans lui, `purchase.group_purchase_manager` n'existe pas et la migration émet l'avertissement « groupe absent (module purchase installé ?) » sans donner le groupe Achats.
+- **Routes.** Toutes les routes de `controllers/main.py` restent en `auth='user'` ; aucun groupe dédié n'est ajouté, par décision (roadmap [L3.1](../roadmap.md#l3--hygiène)).
+- **Règle métier.** Qui valide les achats et qui ne fait que livrer ou réceptionner : [`docs/metier/roles-achats.md`](../../../docs/metier/roles-achats.md) et [`docs/architecture/achats-roles.md`](../../../docs/architecture/achats-roles.md) (dossier `docs/` local de la racine du dépôt, non suivi par Git : ces liens ne fonctionnent pas sur un clone sans lui).
 
 ## Intégration dans les vues
 
@@ -173,7 +223,7 @@ Comportements vérifiés contre les portails réels (transcriptions HTTP obtenue
   python debug_portals.py --dump trace/            # + dump du HTML reçu
   ```
   Attention : X'Glass n'autorisant qu'une session par identifiant, lancer ce script pendant qu'un utilisateur se sert du widget invalide sa session.
-- [`test_portal_auth.py`](../../test_portal_auth.py) — vérifie la logique d'authentification et de parsing sans réseau (portails simulés d'après les traces ci-dessus) : `python test_portal_auth.py`. Les mêmes tests sont exposés au lanceur Odoo (`--test-enable`) par `tests/test_portal_parsing.py`.
+- [`test_portal_auth.py`](../../test_portal_auth.py) — vérifie la logique d'authentification et de parsing sans réseau (portails simulés d'après les traces ci-dessus) : `python test_portal_auth.py`. `tests/test_portal_parsing.py` les recopie dans une `TestCase`, mais Odoo l'ignore (classe sans `test_tags`) : ils ne se lancent que par `python test_portal_auth.py` ([Tests](tests.md)).
 
 ## Concurrence — verrou de session
 
@@ -232,3 +282,8 @@ calque 59, famille 3464, pièce OE 3510699), à ne pas modifier sans nouvelle tr
 }
 ```
 Un seul bundle, chargé en glob plat sur `static/src/*` (pas de séparation par sous-dossier `js/`/`xml/`).
+
+---
+Précédent : [Frontend (OWL)](frontend.md) · Suivant : [Tests](tests.md)
+
+Voir aussi : [Champs Odoo par modèle](champs/README.md) · [Champs — `sale.order.line`](champs/sale-order-line.md) · [Roadmap — UI & transfert vers Odoo](../roadmap.md) · [Rôles achats et livraisons](../../../docs/metier/roles-achats.md) · [Rôles achats : groupes et droits](../../../docs/architecture/achats-roles.md) · [Champs — `crm.lead`](champs/crm-lead.md) · [Champs — `sale.order`](champs/sale-order.md) · [Champs — `account.move`](champs/account-move.md) · [Déploiement rpbm_agent + architecture stock — outillage rejouable](../../../Jobs/rpbm_agent_stock/README.md) · [Backend](backend.md) · [Registre des validations métier](../validations-metier.md)

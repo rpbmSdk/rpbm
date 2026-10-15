@@ -1,9 +1,11 @@
 # Architecture
 
+[Index](../README.md) › Technique › Architecture
+
 ## Stack
 
-- **Odoo 17**, module `rpbm_agent` (version courante dans [`__manifest__.py`](../../__manifest__.py), bumpée à chaque déploiement), dépend de `crm`, `delivery`, `fleet`, `product`, `sale_crm`. Le module utilise le champ natif `sale.order.carrier_id` ; le routage de ses routes reste fourni par `stock_delivery` dans l'architecture stock.
-- **Backend** : un controller Odoo (`AgentController`, `controllers/main.py`) pour le widget JSON-RPC et une extension ORM `product.template` pour la synchronisation batch VSF. Pas de règle de sécurité (`ir.model.access.csv`) dans le module.
+- **Odoo 17**, module `rpbm_agent` (version courante dans [`__manifest__.py`](../../__manifest__.py), bumpée à chaque déploiement), dépend de `base_setup`, `crm`, `delivery`, `fleet`, `product`, `sale_crm` et `sale_stock` (liste complète dans [`__manifest__.py`](../../__manifest__.py) ; `sale_stock` apporte `stock.picking`, dont le miroir `rpbm_vehicle_id`). Le module utilise le champ natif `sale.order.carrier_id` ; le routage de ses routes reste fourni par `stock_delivery` dans l'architecture stock.
+- **Backend** : un controller Odoo (`AgentController`, `controllers/main.py`) pour le widget JSON-RPC et une extension ORM `product.template` pour la synchronisation batch VSF. Droits minimaux : lecture seule de Fleet pour les vendeurs (`security/ir.model.access.csv`) et implication Stock du groupe vendeur (`security/rpbm_groups.xml`), voir [configuration](configuration.md#droits-et-rôles).
 - **Intégration portails externes** : `requests.Session()` + `BeautifulSoup4` (scraping HTML/formulaires + quelques endpoints AJAX internes renvoyant du JSON). **Aucune API officielle**, aucun Selenium/Playwright.
 - **Frontend** : composants OWL (framework de vues Odoo), déclarés en `web.assets_backend` (glob `rpbm_agent/static/src/*`). Le widget et les champs `rpbm_*` sont placés par les **vues XML versionnées** du module (onglet « Véhicule (X'Glass) », `views/*.xml`) et, dans les sections Studio, par le script `Jobs/rpbm_agent_stock/studio_views.py` (voir [configuration](configuration.md#intégration-dans-les-vues)) ; le dialogue n'existe que pour `crm.lead` et `sale.order`.
 
@@ -160,6 +162,12 @@ sequenceDiagram
 - **Champs natifs `rpbm_*`** déclarés par le module (voir [configuration](configuration.md#champs-natifs-et-champs-studio-historiques)) : le module fonctionne sur une instance vierge ; les champs Studio historiques, s'ils existent, sont alimentés en double par `models/legacy_fields.py`.
 - **Compatibilité historique véhicule** : marque, modèle, VIN, énergie, détail et date MEC de l'opportunité dérivent du véhicule Fleet lié et sont recopiés vers les champs Studio historiques ; la migration `17.0.260921.1` a rempli les natifs depuis ces champs et retiré les champs que le module avait créés.
 - **Mode logistique** : `sale.order.carrier_id` est la source canonique du lieu/mode de remise. Une vue versionnée le rend visible après les réorganisations Studio ; sa valeur peut être préremplie depuis `crm.lead.x_studio_lieu_intervention` uniquement sur les nouveaux devis. La confirmation de la vente refuse un transporteur vide pour éviter le routage implicite.
-- **Aucune sécurité applicative dédiée** : les routes sont ouvertes à tout utilisateur connecté (`auth='user'`), sans groupe ni `ir.model.access.csv` propre au module.
+- **Pas de groupe dédié au module** : les routes sont ouvertes à tout utilisateur connecté (`auth='user'`), par décision (roadmap L3.1). Le module pose seulement la lecture Fleet des vendeurs et l'implication Stock du groupe vendeur ; voir [Droits et rôles](configuration.md#droits-et-rôles).
+- **Module optionnel `rpbm_pricing`** : `rpbm_agent` ne dépend pas de lui. Quand il est installé, il garde l'automatisation Studio « Tarif x glass » (règle 8) et lit `rpbm_xglass_price` ; voir [Interaction avec rpbm_pricing](rpbm-pricing.md).
 - **Contrôle d'accès** : `/enrichVehicule` n'utilise pas `sudo` et transforme un refus d'écriture Fleet en avertissement non bloquant ; la synchronisation Studio s'exécute avec les droits de l'utilisateur qui écrit.
 - **État de session partagé** : `vsfAgent`/`xglassAgent` sont des instances Python **au niveau module** (pas par utilisateur Odoo, pas par requête), partagées par les threads d'un même processus et perdues quand il s'arrête. Le verrou ne protège plus que X'Glass ; VSF se connecte à la demande, sans verrou (lot E2) — voir [backend](backend.md#état-de-session-partagée) et l'[état des lieux](../etat-des-lieux.md) pour l'implication en usage concurrent.
+
+---
+Précédent : [Jeu de test — Assistant véhicule RPBM](../jeu-de-test.md) · Suivant : [Backend](backend.md)
+
+Voir aussi : [Configuration & déploiement](configuration.md) · [Frontend (OWL)](frontend.md) · [Interaction avec rpbm_pricing](rpbm-pricing.md) · [État des lieux](../etat-des-lieux.md)

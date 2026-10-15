@@ -1,9 +1,11 @@
 # 4 — Pièce et pièce après-marché (déduction eurocode)
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 4 — Pièce et pièce après-marché (déduction eurocode)
+
 - **Déclencheur** : clic utilisateur sur une pièce de la catégorie, ou clic sur une ligne d'un encart « Autres marques AM » (sans pièce sélectionnée, voir [plus bas](#autres-marques-am-par-famille-encart-xglass-autre-am-r11-et-r19)).
 - **Code** : `onSelectPiece()` → `getSelectedPieceAm()`/`getPieceAm()` (`agent_widget_dialog.js`).
 - **Route** : `POST /getPieceAm` (`main.py::getPieceAm`) → pièces après-marché correspondantes sur X'Glass.
-- **Déduction eurocode** : un clic sur une pièce après-marché (`onSelectPieceAM()`), carte « Équivalence AM » ou ligne « Autres marques AM » d'une famille quelconque, renseigne `state.baseEurocode` (état widget, pas encore un champ Odoo) avec les 5 premiers caractères de sa référence. Le changement de base relance la recherche VSF sur le devis ; sur l'opportunité (lot E1), le dialog s'arrête à la base. Sans pièce après-marché, le champ reste à saisir à la main.
+- **Déduction eurocode** : un clic sur une pièce après-marché (`onSelectPieceAM()`), carte « Équivalence AM » ou ligne « Autres marques AM » d'une famille quelconque, renseigne `state.baseEurocode` (état widget, pas encore un champ Odoo) avec la base Eurocode de sa référence (4 chiffres et une lettre). Une référence qui n'est pas un eurocode (ex. référence AGC « 4031800 », recette du 2026-10-14) ne change pas la base : la base courante ou la saisie manuelle est conservée (`eurocodeBase()`, `17.0.261015.1`). Le changement de base relance la recherche VSF sur le devis ; sur l'opportunité (lot E1), le dialog s'arrête à la base. Sans pièce après-marché, le champ reste à saisir à la main.
 - **Affichage d'une pièce après-marché** : libellé, fournisseur, référence, validité (« A partir de », « Jusqu'à » ou « De … à … », comme X'Glass) et description. La description reprend la remarque de X'Glass (ex. « 5Ptes ») devant la description, sauf si elle vaut « - ». Le prix n'est affiché que s'il est connu.
 
 Aucun champ Odoo lu ou écrit à cette étape — uniquement de l'état widget local, qui alimentera l'écriture à la confirmation ([6](06-confirmation-crm-lead.md)/[7](07-confirmation-sale-order.md)).
@@ -59,7 +61,7 @@ même quand « Équivalence AM » est vide. « Équivalence AM » reste sous la 
   bout de ligne seulement s'il est connu. Un séparateur sépare les lignes. Les cartes
   « Équivalence AM » restent des cartes sur deux colonnes.
 - **Clic sur une ligne, dans toute famille** : même effet qu'une carte « Équivalence AM »
-  (sélection, base Eurocode = 5 premiers caractères de la référence, recherche VSF sur le devis),
+  (sélection, base Eurocode dérivée d'une référence eurocode, recherche VSF sur le devis),
   **avec ou sans pièce sélectionnée**. Sans pièce, la section VSF apparaît dès ce clic (voir
   ci-dessous). Vérifier qu'une seule base Eurocode ressort de la liste reste à la charge
   de l'utilisateur.
@@ -104,3 +106,8 @@ sur une ligne renseigne la base, rien de plus.
 Lot D, build A (`17.0.261005.1`) : recette réussie le 2026-10-05 sur le build `ab31793`.
 
 Suivant : [5 — Recherche VSF par eurocode](05-recherche-vsf-eurocode.md).
+
+---
+Précédent : [3 — Catégorie X'Glass (calque)](03-categorie-xglass.md) · Suivant : [5 — Recherche VSF par eurocode](05-recherche-vsf-eurocode.md)
+
+Voir aussi : [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](06-confirmation-crm-lead.md) · [7 — Confirmation sur Ordre de Vente (`sale.order`)](07-confirmation-sale-order.md)

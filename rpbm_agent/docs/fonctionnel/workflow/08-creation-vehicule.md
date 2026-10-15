@@ -1,5 +1,7 @@
 # 8 — Création du véhicule (`fleet.vehicle`)
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 8 — Création du véhicule (`fleet.vehicle`)
+
 - **Déclencheur** : bouton "Créer" sur le véhicule sélectionné (`VehiculeComponent`), ou appel automatique depuis `getRecordData()` si aucun véhicule Odoo existant n'a été trouvé au moment de la confirmation (étapes [6](06-confirmation-crm-lead.md)/[7](07-confirmation-sale-order.md)).
 - **Route** : `POST /createVehicule` (`main.py::createVehicule`).
 - **Condition préalable** : si un `fleet.vehicle` existe déjà avec la même `license_plate`, il est réutilisé tel quel — aucun champ n'est mis à jour dessus, tout le reste de cette étape est sauté.
@@ -22,3 +24,8 @@
 - **Retour** : `{id, name}` du `fleet.vehicle` créé ou réutilisé.
 
 Détail des champs : [technique/champs/fleet-vehicle.md](../../technique/champs/fleet-vehicle.md).
+
+---
+Précédent : [7 — Confirmation sur Ordre de Vente (`sale.order`)](07-confirmation-sale-order.md) · Suivant : [9 — Création du produit (`product.product`)](09-creation-produit.md)
+
+Voir aussi : [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](06-confirmation-crm-lead.md) · [Champs — `fleet.vehicle`](../../technique/champs/fleet-vehicle.md)

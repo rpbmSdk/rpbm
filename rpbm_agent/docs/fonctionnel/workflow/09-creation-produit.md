@@ -1,5 +1,7 @@
 # 9 — Création du produit (`product.product`)
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 9 — Création du produit (`product.product`)
+
 Après la sélection d'un article VSF, le widget cherche le produit dans Odoo, dans cet ordre (lot E1.1, `17.0.261005.4`) :
 
 1. le **code VSF** : `product.template.rpbm_eurocode` égal au code de l'article ;
@@ -39,7 +41,11 @@ La méthode batch `product.template.sync_vsf_information()` relit la fiche à pa
 
 Le prix fournisseur est historisé : une ligne active au même prix est conservée et enrichie (`product_name`/`product_code`) ; un nouveau prix clôture la ligne existante à la veille et démarre une nouvelle ligne à la date du jour. Le bouton de fiche correspondant est livré masqué (`base.group_no_one`) en attente d'une décision d'ouverture aux utilisateurs.
 
-Sur un devis lié à une opportunité, le bouton « Ajouter au devis » ajoute une nouvelle ligne `sale.order.line` avec `default_product_id`, `product_uom_qty = 1` et `rpbm_xglass_price = articleVsf.prixVenteRPBM`. Les `onchange` Odoo calculent les champs dépendants ; le module recopie le prix vers `x_studio_prix_x_glass`, d'où l'automatisation Studio « Tarif x glass » calcule le prix unitaire. Le widget ne met jamais à jour le stock du produit.
+Sur un devis lié à une opportunité, le bouton « Ajouter au devis » ajoute une nouvelle ligne `sale.order.line` avec `default_product_id`, `product_uom_qty = 1`, le barème X'Glass de la pièce d'origine (`rpbm_xglass_price`, article principal seulement, jamais un prix VSF depuis le 2026-10-15) et le prix fournisseur VSF net (`rpbm_supplier_price` = `articleVsf.prixVenteRPBM`, `rpbm_supplier_id` = fournisseur VSF) : voir [7](07-confirmation-sale-order.md#barème-xglass-et-prix-fournisseur-2026-10-15). Les `onchange` Odoo calculent les champs dépendants ; le module recopie le barème vers le champ Studio historique, d'où l'automatisation Studio « Tarif x glass » calcule le prix unitaire. Le widget ne met jamais à jour le stock du produit.
+
+## Prix fournisseur VSF d'un article existant (IMP-3)
+
+Depuis `17.0.261015.1`, « Ajouter au devis » appelle d'abord `/createProduct` avec `existingOnly` : la route relit la fiche VSF côté serveur, retrouve l'article (règles [VD-03](../../validations-metier.md#historique-des-décisions)) et y enregistre le prix fournisseur VSF selon la règle historisée ci-dessus (`_sync_vsf_supplierinfo`). Elle ne crée jamais d'article dans ce mode. Seule la ligne VSF change : ni `list_price`, ni la catégorie, ni les autres fournisseurs (ex. MPB pour un article créé par l'import du stock). VSF passe en tête (P-36, décision du 2026-10-15) : la première ligne VSF prend une séquence avant celles des autres fournisseurs, si bien que `_select_seller` la retient pour l'achat ; un achat local se choisit au cas par cas. Une historisation garde la séquence de la ligne remplacée. Plusieurs prix VSF actifs : l'enregistrement est ignoré (journal), l'ajout continue.
 
 Les dimensions sans unité du bloc VSF « Dimensions » sont interprétées en millimètres ; les unités explicites restent converties vers cette même unité.
 
@@ -56,3 +62,8 @@ Une fois la ligne ajoutée par « Ajouter au devis », le bouton devient « Reti
 Lot correctif `17.0.261006.1` (recette live réussie le 2026-10-06). Avant lui, le widget cherchait la ligne par l'objet mémorisé à l'ajout, que le formulaire ne conserve pas toujours : après « Ajouter au devis », « Retirer du devis » manquait et l'article affichait à tort « Article déjà présent dans le devis. ». La ligne ajoutée était pourtant correcte (quantité et prix). Les lignes de main-d'œuvre gardent leur propre retrait, par clé de provenance ([7](07-confirmation-sale-order.md)). Détail technique : [frontend](../../technique/frontend.md#ligne-de-devis-ajoutée-par-le-widget-r28) ; recette : [SO-08](../../jeu-de-test.md#so-08--retirer-du-devis-lot-correctif-du-2026-10-06-r28).
 
 Détail du champ : [technique/champs/product-product.md](../../technique/champs/product-product.md).
+
+---
+Précédent : [8 — Création du véhicule (`fleet.vehicle`)](08-creation-vehicule.md) · Suivant : [Jeu de test — Assistant véhicule RPBM](../../jeu-de-test.md)
+
+Voir aussi : [Backend](../../technique/backend.md) · [7 — Confirmation sur Ordre de Vente (`sale.order`)](07-confirmation-sale-order.md) · [Frontend (OWL)](../../technique/frontend.md) · [Champs — `product.product` / `product.template`](../../technique/champs/product-product.md)

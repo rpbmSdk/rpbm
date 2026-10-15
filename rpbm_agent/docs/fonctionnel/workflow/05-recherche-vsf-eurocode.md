@@ -1,5 +1,7 @@
 # 5 — Recherche VSF par eurocode
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 5 — Recherche VSF par eurocode
+
 - **Déclencheur** : sur le dialog du devis, automatique **à l'ouverture** dès qu'une base Eurocode est enregistrée, puis dès que `state.baseEurocode` change (déduit à l'étape précédente, ou saisi/corrigé manuellement par l'utilisateur). Depuis le lot E2, la recherche n'attend ni l'authentification X'Glass ni une pièce sélectionnée.
 - **Code** : `onSearchBaseEurocode()` (`agent_widget_dialog.js`), condition `shouldSearchVsf()`.
 - **Route** : `POST /searchBaseEurocode` (`main.py::searchBaseEurocode`) → `vsfAgent.searchEurocodeArticlesClient(baseEurocode)`, retourne la liste des `VSFArticle` correspondants. Sans verrou de session : la session VSF est ouverte à la demande par le serveur, qui se reconnecte seul si elle expire ; la route est réservée aux utilisateurs internes ([backend](../../technique/backend.md#vsf-session-à-la-demande-lot-e2)).
@@ -67,3 +69,8 @@ Chaque article sélectionné garde ses propres actions de produit Odoo, dans sa 
 Sur le devis, la base Eurocode enregistrée lance la recherche VSF à l'ouverture, **sans attendre X'Glass** : le dialog s'affiche tout de suite, avec l'encart « Dossier » en lecture seule (véhicule, catégorie, pièce concernée, pièce X'Glass, article principal) et le tableau. Le bouton « Charger X'Glass » lance ensuite la chaîne X'Glass (véhicule, catégorie, pièce, main-d'œuvre) **sans vider le tableau ni la sélection** ; les modifications de la base relancent la recherche comme avant. Ces règles remplacent celles du lot E1 (recherche seulement quand la pièce mémorisée était retrouvée, sinon « Rechercher sur VSF » ; règle R12), qui valent toujours pour l'opportunité, laquelle ne cherche pas sur VSF. Détail : [frontend](../../technique/frontend.md#vsf-dabord-xglass-à-la-demande-lot-e2) et [SO-10](../../jeu-de-test.md#so-10--vsf-dabord-xglass-à-la-demande-lot-e2). La base est écrite dans le formulaire lors de la confirmation, avec ou sans X'Glass ; son effacement suit la désélection de la pièce principale.
 
 Suivant, selon le modèle porteur : [6 — Confirmation sur Piste/Opportunité](06-confirmation-crm-lead.md) ou [7 — Confirmation sur Ordre de Vente](07-confirmation-sale-order.md).
+
+---
+Précédent : [4 — Pièce et pièce après-marché (déduction eurocode)](04-piece-piece-am.md) · Suivant : [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](06-confirmation-crm-lead.md)
+
+Voir aussi : [Backend](../../technique/backend.md) · [7 — Confirmation sur Ordre de Vente (`sale.order`)](07-confirmation-sale-order.md) · [Jeu de test — Assistant véhicule RPBM](../../jeu-de-test.md) · [9 — Création du produit (`product.product`)](09-creation-produit.md) · [Frontend (OWL)](../../technique/frontend.md)

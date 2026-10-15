@@ -1,5 +1,7 @@
 # 7 — Confirmation sur Ordre de Vente (`sale.order`)
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 7 — Confirmation sur Ordre de Vente (`sale.order`)
+
 Le notebook « Véhicule (X'Glass) » est masqué si le devis ne possède pas d'opportunité liée.
 Le widget n'est donc jamais ouvert dans un contexte où ses champs `related` seraient perdus.
 
@@ -21,6 +23,7 @@ l'utilisateur est prioritaire.
 | `rpbm_eurocode_base` | `state.baseEurocode` | toujours (vide efface), avec ou sans X'Glass |
 | `rpbm_xglass_piece_label` | libellé de la pièce choisie ([6](06-confirmation-crm-lead.md)) | seulement quand X'Glass est chargé, avec véhicule et catégorie choisis, sous la condition des identifiants de pièce |
 | `rpbm_xglass_labor_operations` | main-d'œuvre de la pièce choisie ([6](06-confirmation-crm-lead.md#main-dœuvre-enregistrée-correctif-du-2026-10-07)) | seulement quand X'Glass est chargé, avec véhicule et catégorie choisis, sous la condition des identifiants de pièce ; **jamais** par un « Confirmer » sans X'Glass |
+| `rpbm_xglass_piece_price` | Prix XGlass HT de la pièce d'origine choisie ([6](06-confirmation-crm-lead.md#barème-xglass-de-la-pièce-dorigine-2026-10-15)) | même condition que la main-d'œuvre ; 0 pour une pièce retirée ou sans prix |
 
 - **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
 - L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape ; seule une ligne créée par le widget dans la dialog courante peut être retirée, par « Retirer du devis », qui remplace « Ajouter au devis » une fois la ligne ajoutée (un produit déjà présent à l'ouverture affiche « Article déjà présent dans le devis. », sans retrait) — voir [9 — Création du produit](09-creation-produit.md#retirer-du-devis-r28).
@@ -58,7 +61,7 @@ Détail technique : [frontend](../../technique/frontend.md#vsf-dabord-xglass-à-
 
 ## Main-d'œuvre enregistrée (correctif du 2026-10-07)
 
-Correctif `17.0.261007.1` (codé le 2026-10-07, à livrer et recetter ; [SO-11](../../jeu-de-test.md#so-11--main-dœuvre-enregistrée-proposée-sans-xglass-correctif-du-2026-10-07-r30)). Depuis le lot E2, la main-d'œuvre n'était proposée qu'après « Charger X'Glass » : un vendeur qui voulait seulement ajouter ou retirer un article de temps devait charger X'Glass (connexion, verrou). La main-d'œuvre est maintenant **enregistrée à l'étape opportunité** et reprise sur le devis (décision du 2026-10-07, [VD-06](../../validations-metier.md#historique-des-décisions)).
+Correctif `17.0.261007.1` (livré : commits `3706630` pour le code et `2afb41e` pour la documentation ; recette live réussie le 2026-10-07 ; [SO-11](../../jeu-de-test.md#so-11--main-dœuvre-enregistrée-proposée-sans-xglass-correctif-du-2026-10-07-r30)). Depuis le lot E2, la main-d'œuvre n'était proposée qu'après « Charger X'Glass » : un vendeur qui voulait seulement ajouter ou retirer un article de temps devait charger X'Glass (connexion, verrou). La main-d'œuvre est maintenant **enregistrée à l'étape opportunité** et reprise sur le devis (décision du 2026-10-07, [VD-06](../../validations-metier.md#historique-des-décisions)).
 
 Ce que voit le vendeur sur un devis dont l'opportunité a une main-d'œuvre enregistrée :
 
@@ -71,6 +74,23 @@ Ce que voit le vendeur sur un devis dont l'opportunité a une main-d'œuvre enre
 
 **Limites.** Les durées, taux et produits de service sont ceux du dernier enregistrement fait avec X'Glass (instantané). Sur un devis sans opportunité liée, rien ne s'enregistre : « Charger X'Glass » reste nécessaire. Une pièce sans opération n'affiche pas la section sans X'Glass. Détail technique : [frontend](../../technique/frontend.md#main-dœuvre-enregistrée-correctif-du-2026-10-07) ; champ : [crm-lead](../../technique/champs/crm-lead.md).
 
+## Barème X'Glass et prix fournisseur (2026-10-15)
+
+Lot IMP-1 / IMP-3 (`17.0.261015.1`, [VD-08](../../validations-metier.md#historique-des-décisions), qui remplace VM-10). Constat de départ (recette du 2026-10-14, SO7970) : le widget posait le coût VSF (`prixVenteRPBM`, 211,16) dans le barème au lieu du Prix XGlass de la pièce d'origine (322,38), d'où un prix de 316,74 au lieu de 483,57.
+
+« Ajouter au devis » sur l'article VSF **principal** (une ligne du tableau, pas une suggestion) :
+
+- la ligne reçoit le **barème X'Glass HT** (`rpbm_xglass_price`) : le prix de la pièce d'origine choisie dans ce dialog, sinon celui enregistré sur l'opportunité (`rpbm_xglass_piece_price`, affiché dans l'encart « Dossier ») tant que la pièce n'a pas été changée ; l'automatisation « Tarif x glass » en dérive `price_unit` (× 1,5) ;
+- sans barème (pas de pièce d'origine, pièce « Non communiqué », pièce AM seule), **pas de repli VSF** : la ligne garde le prix de l'article et un avertissement s'affiche (« Aucun barème X'Glass… ») ;
+- le **prix fournisseur** (`rpbm_supplier_price`, colonne « Prix fournisseur (net) ») reçoit le coût VSF net (`prixVenteRPBM`) et le **fournisseur** (`rpbm_supplier_id`, colonne masquable) le partenaire VSF ;
+- le prix fournisseur VSF est aussi enregistré sur l'article Odoo existant ([9](09-creation-produit.md#prix-fournisseur-vsf-dun-article-existant-imp-3)) ; un échec (VSF indisponible) n'empêche pas l'ajout et s'annonce par un avertissement.
+
+Un accessoire suggéré par VSF ne reçoit pas de barème : il sort au prix de l'article (`list_price` = prix VSF), et non plus à `prixVenteRPBM × 1,5`. Son prix fournisseur est renseigné de la même façon.
+
+Dans la liste des lignes du devis, les colonnes **« Barème X'Glass HT »** (modifiable, figée une fois la ligne facturée) et **« Prix fournisseur (net) »** encadrent le prix unitaire ; l'ancienne colonne Studio « Prix XGlass » est masquée par [`studio_views.py`](../../../../Jobs/rpbm_agent_stock/studio_views.py). Une ligne saisie à la main reprend le prix fournisseur de l'article (fournisseur prioritaire par séquence, prix net de remise valable à la date du devis) ; il reste modifiable et n'entre jamais dans le prix de vente.
+
+**Données existantes.** Aucune réécriture : les lignes ajoutées depuis VM-10 gardent le coût VSF dans le barème (ex. ligne 145742 de SO7970 à 211,16), désormais visible et corrigeable à la main ; les lignes historiques n'ont pas de prix fournisseur ; les opportunités n'ont pas de barème enregistré : « Charger X'Glass » puis « Confirmer » le renseigne (même secours que [VD-07](../../validations-metier.md#historique-des-décisions)).
+
 ## Ouverture automatique du dialog après création du devis
 
 Un devis créé par « Créer un devis » depuis l'opportunité ([6](06-confirmation-crm-lead.md#créer-un-devis-lot-e1)) ouvre seul la fenêtre du widget : il n'y a pas de clic sur la loupe. Au lot E1, elle restaurait aussitôt le contexte de l'opportunité. Depuis le lot E2, elle s'ouvre en mode VSF seul (voir [ci-dessus](#devis-sans-xglass-lot-e2)) : encart « Dossier » et recherche VSF immédiate sur la base enregistrée. Le véhicule X'Glass mémorisé (`rpbm_xglass_vehicle_id`) s'il figure dans les résultats de l'immatriculation, sinon le premier, puis la catégorie, la pièce et la pièce après-marché (sections 1 à 3) reviennent par « Charger X'Glass ». « 4. Main d'œuvre » est proposée dès l'ouverture quand l'opportunité a une main-d'œuvre enregistrée ; « 5. Article VSF » est là aussi dès l'ouverture. L'opportunité ayant fermé ses portails et libéré le verrou, la chaîne ne rencontre pas d'obstacle.
@@ -78,3 +98,8 @@ Un devis créé par « Créer un devis » depuis l'opportunité ([6](06-confirma
 L'ouverture n'a lieu qu'une fois, pour ce devis nouveau. Elle n'a pas lieu avec « Nouveau devis » natif, Ventes › Devis › Nouveau, le retour par le fil d'Ariane ou le rechargement de la page ; la loupe reste le moyen d'ouvrir la fenêtre dans ces cas. Le cas limite du lot E1, une opportunité sans pièce OE avec seulement une ligne « Autres marques AM » et une base, qui ouvrait le devis sans recherche VSF automatique, est levé : la recherche part dès qu'il y a une base ([4](04-piece-piece-am.md)).
 
 Détail de chaque champ : [technique/champs/sale-order.md](../../technique/champs/sale-order.md).
+
+---
+Précédent : [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](06-confirmation-crm-lead.md) · Suivant : [8 — Création du véhicule (`fleet.vehicle`)](08-creation-vehicule.md)
+
+Voir aussi : [9 — Création du produit (`product.product`)](09-creation-produit.md) · [Jeu de test — Assistant véhicule RPBM](../../jeu-de-test.md) · [Registre des validations métier](../../validations-metier.md) · [Frontend (OWL)](../../technique/frontend.md) · [Backend](../../technique/backend.md) · [Champs — `crm.lead`](../../technique/champs/crm-lead.md) · [4 — Pièce et pièce après-marché (déduction eurocode)](04-piece-piece-am.md) · [Champs — `sale.order`](../../technique/champs/sale-order.md)

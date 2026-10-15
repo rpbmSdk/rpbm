@@ -1,5 +1,7 @@
 # Champs Odoo par modèle
 
+[Index](../../README.md) › Technique › Champs Odoo par modèle
+
 Référence des champs lus ou écrits par `rpbm_agent`, un fichier par modèle porteur. Depuis la
 version `17.0.260921.1`, le module ne crée que des **champs natifs** préfixés `rpbm_` (déclarés
 dans `models/*.py`) ; les champs Studio historiques de l'instance ne sont plus cités que dans la
@@ -18,3 +20,8 @@ détail étape par étape de quand chaque champ est lu/écrit, voir
 
 `stock.picking.rpbm_vehicle_id` (related `sale_id`, stocké) expose le véhicule sur la livraison
 sans vue dédiée.
+
+---
+Précédent : [Historique des versions](../versions.md) · Suivant : [Champs — `crm.lead`](crm-lead.md)
+
+Voir aussi : [Configuration & déploiement](../configuration.md) · [Parcours — étape par étape](../../fonctionnel/workflow/README.md)

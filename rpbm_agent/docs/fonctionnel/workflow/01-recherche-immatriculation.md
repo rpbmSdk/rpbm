@@ -1,5 +1,7 @@
 # 1 — Recherche véhicule par immatriculation
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 1 — Recherche véhicule par immatriculation
+
 - **Déclencheur** : ouverture du widget (immatriculation déjà présente sur l'enregistrement) ou saisie manuelle + clic "Search". Sur le devis, depuis le lot E2, l'ouverture ne se connecte pas à X'Glass : cette étape et les suivantes (2 à 4) ne partent qu'après « Charger X'Glass » ([7](07-confirmation-sale-order.md#devis-sans-xglass-lot-e2)).
 - **Code** : `AgentWidgetDialog.onSearchImmatriculation()` (`agent_widget_dialog.js`).
 - **Route** : `POST /searchImmatriculation` (`main.py::searchImmatriculation`) → `xglassAgent.searchVehiculeImmat(immatriculation)`.
@@ -11,3 +13,8 @@
 Aucun champ Odoo n'est écrit à cette étape — recherche externe (X'Glass) uniquement, résultat stocké en état local du widget (`state.vehicules`).
 
 Suivant : [2 — Sélection du véhicule](02-selection-vehicule.md).
+
+---
+Précédent : [Parcours — étape par étape](README.md) · Suivant : [2 — Sélection du véhicule](02-selection-vehicule.md)
+
+Voir aussi : [7 — Confirmation sur Ordre de Vente (`sale.order`)](07-confirmation-sale-order.md)

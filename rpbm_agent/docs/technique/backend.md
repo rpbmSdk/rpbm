@@ -1,5 +1,7 @@
 # Backend
 
+[Index](../README.md) › Technique › Backend
+
 `controllers/main.py` expose un unique controller `AgentController`. Deux instances globales sont créées **au chargement du module Python** (pas par requête, pas par utilisateur) :
 
 ```python
@@ -13,7 +15,7 @@ Depuis le lot E2 (`17.0.261006.2`), `/rpbm_agent_auth` ne réinstancie et n'auth
 
 Toutes les routes sont déclarées `type='json'`, `auth='user'` (JSON-RPC, utilisateur Odoo connecté requis, pas de contrôle de droits plus fin), sauf les routes VSF, que `_vsf_call` réserve aux utilisateurs internes depuis le lot E2 : le verrou, qui les fermait de fait aux autres utilisateurs, ne les protège plus.
 
-Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lecture** sur `fleet.vehicle`, `fleet.vehicle.model` et `fleet.vehicle.model.brand` ([`security/ir.model.access.csv`](../../security/ir.model.access.csv)), sans groupe Parc automobile : le groupe Fleet « Officer » restreint la visibilité aux véhicules dont l'utilisateur est conducteur, ce qui masque les véhicules clients. Les créations/écritures du widget (`fleet.vehicle` dans `/createVehicule` et `/enrichVehicule`, `product.product` et `product.supplierinfo` dans `/createProduct`) passent par `sudo()` : elles ne sont possibles que via le widget, pas depuis les menus Parc automobile / Articles.
+Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lecture** sur `fleet.vehicle`, `fleet.vehicle.model` et `fleet.vehicle.model.brand` ([`security/ir.model.access.csv`](../../security/ir.model.access.csv)), sans groupe Parc automobile (voir aussi [Droits et rôles](configuration.md#droits-et-rôles) : `security/rpbm_groups.xml` fait aussi du groupe vendeur un utilisateur Stock) : le groupe Fleet « Officer » restreint la visibilité aux véhicules dont l'utilisateur est conducteur, ce qui masque les véhicules clients. Les créations/écritures du widget (`fleet.vehicle` dans `/createVehicule` et `/enrichVehicule`, `product.product` et `product.supplierinfo` dans `/createProduct`) passent par `sudo()` : elles ne sont possibles que via le widget, pas depuis les menus Parc automobile / Articles.
 
 | Route | Paramètres | Résumé | Modèles/portails touchés |
 |---|---|---|---|
@@ -31,7 +33,7 @@ Droits : les commerciaux (`sales_team.group_sale_salesman`) n'ont que la **lectu
 | `/searchBaseEurocode` | `baseEurocode: str` | Recherche les articles VSF correspondant à une base eurocode. Une base sans résultat renvoie une liste vide, pas une erreur (lot correctif `17.0.261006.1`, voir [Recherche sans résultat](#recherche-sans-résultat-r24)). Sans verrou, par `_vsf_call` (lot E2) | VSF |
 | `/getVsfArticleDetails` | `articleVsfInfo: dict, enrichSuggestions=True` | Lit la fiche de l'article sélectionné : images pleine taille, dimensions, caractéristiques et suggestions VSF (fiches des suggestions lues aussi si `enrichSuggestions`, en parallèle : au plus `MAX_PARALLEL_SUGGESTIONS` = 4 requêtes simultanées, ordre du carrousel conservé). Sans verrou, par `_vsf_call` (lot E2) | VSF |
 | `/doesProductExists` | `articleVsfInfo: dict` | Recherche le produit d'un article VSF (`_find_existing_product`) : code VSF (`rpbm_eurocode`) d'abord, puis référence interne et nom exact unique pour les seuls produits sans eurocode ; jamais un produit qui porte l'eurocode d'un autre article | `product.product`, `product.template` |
-| `/createProduct` | `articleVsfInfo: dict` | Retourne le produit existant (même recherche) ou crée le produit + son prix fournisseur VSF, avec verrou transactionnel par code et eurocode sur le template. Sans verrou de session (lot E2) : seule la lecture de la fiche VSF passe par `_vsf_call` ; les créations restent hors du rejeu, pour ne jamais être faites deux fois ; la recherche d'un produit existant, après le verrou par code, passe par un curseur neuf (voir [VSF, session à la demande](#vsf-session-à-la-demande-lot-e2)) | `product.product`, `product.template`, `product.supplierinfo` |
+| `/createProduct` | `articleVsfInfo: dict, existingOnly=False` | Retourne le produit existant (même recherche) ou crée le produit + son prix fournisseur VSF. Depuis `17.0.261015.1` (IMP-3) : pour un produit existant, enregistre aussi son prix fournisseur VSF (`_sync_vsf_supplierinfo`, dans le curseur neuf, validé sous le verrou ; ni `list_price`, ni catégorie, ni autres fournisseurs) ; la réponse porte alors `supplier_id` (`[id, nom]`) et `supplier_price` (net VSF), comme pour un produit créé ; `existingOnly` (« Ajouter au devis ») renvoie `False` au lieu de créer ; avec verrou transactionnel par code et eurocode sur le template. Sans verrou de session (lot E2) : seule la lecture de la fiche VSF passe par `_vsf_call` ; les créations restent hors du rejeu, pour ne jamais être faites deux fois ; la recherche d'un produit existant, après le verrou par code, passe par un curseur neuf (voir [VSF, session à la demande](#vsf-session-à-la-demande-lot-e2)) | `product.product`, `product.template`, `product.supplierinfo` |
 
 ### Rattachement d'un article VSF à un produit (lot E1.1)
 
@@ -252,3 +254,8 @@ VSF répond donc à une base sans article par une page 200 authentifiée, normal
 **VSF.** Aucun verrou : plusieurs vendeurs peuvent chercher sur VSF en même temps (décision du 2026-10-06, [VD-05](../validations-metier.md#historique-des-décisions)). Le serveur se connecte à la demande et se reconnecte seul, une fois, quand la session expire.
 
 Une expiration détectée dans X'Glass (`XGlassAuthError`) ou le verrou local est convertie en `AgentSessionExpiredError`, sous-classe de `UserError`. Son nom est le marqueur JSON-RPC consommé par le widget ; il ne dépend pas du message affiché. Depuis le lot E2, VSF n'en fait plus partie : une `VSFAuthError` est traitée dans le serveur (reconnexion et un seul rejeu) et, si la reconnexion échoue, devient une `UserError` « Connexion au portail VSF impossible. Vérifiez les identifiants configurés. ». Les autres erreurs portail restent des `UserError` fonctionnels. `/rpbm_agent_auth` reste l'unique route de (re)connexion X'Glass.
+
+---
+Précédent : [Architecture](architecture.md) · Suivant : [Frontend (OWL)](frontend.md)
+
+Voir aussi : [Configuration & déploiement](configuration.md) · [9 — Création du produit (`product.product`)](../fonctionnel/workflow/09-creation-produit.md) · [État des lieux](../etat-des-lieux.md) · [Jeu de test — Assistant véhicule RPBM](../jeu-de-test.md) · [Registre des validations métier](../validations-metier.md)

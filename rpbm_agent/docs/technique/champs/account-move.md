@@ -1,5 +1,7 @@
 # Champs — `account.move`
 
+[Index](../../README.md) › [Champs Odoo par modèle](README.md) › Champs — `account.move`
+
 Facture et avoir client. Les champs sont déclarés dans `models/account_move.py`. Tous sont
 **calculés et stockés** depuis les devis facturés (`invoice_line_ids.sale_line_ids.order_id`), et
 gardent leur valeur si le devis n'est plus lié. Le widget ne les écrit jamais. Aucun n'est
@@ -43,3 +45,8 @@ Les champs du formulaire facture (section Studio) sont ajoutés par le script `s
 (immatriculation, marque, modèle, les deux « Pièce concernée ») vont dans un onglet « Anciens
 champs », visible sur les factures et avoirs client. La facture n'a pas
 de widget : aucune dialog n'existe pour `account.move` (voir [frontend](../frontend.md)).
+
+---
+Précédent : [Champs — `product.product` / `product.template`](product-product.md) · Suivant : [Audits ciblés](../../audits/README.md)
+
+Voir aussi : [Champs — `crm.lead`](crm-lead.md) · [Déploiement rpbm_agent + architecture stock — outillage rejouable](../../../../Jobs/rpbm_agent_stock/README.md) · [Frontend (OWL)](../frontend.md)

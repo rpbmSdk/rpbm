@@ -1,5 +1,7 @@
 # 2 — Sélection du véhicule
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 2 — Sélection du véhicule
+
 - **Déclencheur** : le véhicule X'Glass mémorisé sur l'enregistrement (`rpbm_xglass_vehicle_id`) est auto-sélectionné s'il figure dans la liste, sinon le premier véhicule trouvé (`useEffect` sur `vehicules`) ; l'utilisateur peut aussi cliquer sur un autre véhicule de la liste.
 - **Code** : `onSelectVehicule()` (`agent_widget_dialog.js`).
 - **Routes déclenchées en cascade** :
@@ -9,3 +11,8 @@
 Aucun champ Odoo n'est écrit à cette étape : le seul champ lu est `rpbm_xglass_vehicle_id` (véhicule X'Glass mémorisé, voir [6](06-confirmation-crm-lead.md)), avec un appel en lecture seule sur `fleet.vehicle` ; le reste est de l'état widget local. La création éventuelle du véhicule est différée à la confirmation — voir [8 — Création du véhicule](08-creation-vehicule.md).
 
 Suivant : [3 — Catégorie X'Glass](03-categorie-xglass.md).
+
+---
+Précédent : [1 — Recherche véhicule par immatriculation](01-recherche-immatriculation.md) · Suivant : [3 — Catégorie X'Glass (calque)](03-categorie-xglass.md)
+
+Voir aussi : [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](06-confirmation-crm-lead.md) · [8 — Création du véhicule (`fleet.vehicle`)](08-creation-vehicule.md)

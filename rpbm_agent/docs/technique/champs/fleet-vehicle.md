@@ -1,5 +1,7 @@
 # Champs — `fleet.vehicle`
 
+[Index](../../README.md) › [Champs Odoo par modèle](README.md) › Champs — `fleet.vehicle`
+
 Véhicule Odoo créé (ou réutilisé s'il existe déjà par `license_plate`) lors de la confirmation du
 widget — voir [8 — Création du véhicule](../../fonctionnel/workflow/08-creation-vehicule.md).
 Fleet est le **référentiel canonique** du véhicule : marque, modèle, VIN, énergie, détail et date
@@ -24,3 +26,8 @@ Onglet « X'Glass » ajouté par `views/fleet_vehicle_views.xml`.
 ## Lu/écrit par
 
 - Écriture : [8 — Création du véhicule](../../fonctionnel/workflow/08-creation-vehicule.md) (`/createVehicule`) et confirmation d'un véhicule existant (`/enrichVehicule`)
+
+---
+Précédent : [Champs — `sale.order.line`](sale-order-line.md) · Suivant : [Champs — `product.product` / `product.template`](product-product.md)
+
+Voir aussi : [8 — Création du véhicule (`fleet.vehicle`)](../../fonctionnel/workflow/08-creation-vehicule.md) · [Champs — `crm.lead`](crm-lead.md)

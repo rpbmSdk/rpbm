@@ -1,5 +1,7 @@
 # AG-01 — Audit des champs utiles et de la compatibilité historique
 
+[Index](../README.md) › [Audits ciblés](README.md) › AG-01 — Audit des champs utiles et de la compatibilité historique
+
 ## Statut
 
 **Audit préparé le 14 septembre 2026.** Acquisition Odoo terminée en lecture
@@ -346,3 +348,6 @@ implicite. Le parcours X'Glass ne fournit pas ce champ.
   déduit automatiquement.
 - La relation entre les modèles Fleet et les anciens modèles Studio de marque et
   de modèle nécessite une décision technique et métier avant écriture.
+
+---
+Précédent : [Audits ciblés](README.md) · Suivant : [AG-01-04 — Cartographie des rapports PDF et proposition de source par champ](AG-01-04-cartographie-rapports.md)

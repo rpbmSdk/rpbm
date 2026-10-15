@@ -1,5 +1,7 @@
 # Champs — `product.product` / `product.template`
 
+[Index](../../README.md) › [Champs Odoo par modèle](README.md) › Champs — `product.product` / `product.template`
+
 Article recherché puis, si nécessaire, créé depuis un résultat VSF sélectionné dans le widget —
 voir [9 — Création du produit](../../fonctionnel/workflow/09-creation-produit.md). Champs déclarés
 dans `models/product_template.py`.
@@ -42,3 +44,8 @@ constructeur ou le code VSF.
 ## Lu/écrit par
 
 - Écriture : [9 — Création du produit](../../fonctionnel/workflow/09-creation-produit.md) (`/createProduct`)
+
+---
+Précédent : [Champs — `fleet.vehicle`](fleet-vehicle.md) · Suivant : [Champs — `account.move`](account-move.md)
+
+Voir aussi : [9 — Création du produit (`product.product`)](../../fonctionnel/workflow/09-creation-produit.md)

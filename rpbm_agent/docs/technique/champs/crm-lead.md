@@ -1,5 +1,7 @@
 # Champs — `crm.lead`
 
+[Index](../../README.md) › [Champs Odoo par modèle](README.md) › Champs — `crm.lead`
+
 Modèle porteur de la Piste/Opportunité, **source de vérité du dossier** : le devis recopie ces
 champs en `related`. Tous sont déclarés dans `models/crm_lead.py`.
 
@@ -36,6 +38,7 @@ restent saisissables.
 | `rpbm_xglass_vehicle_id` | char, invisible | widget (identifiant du véhicule X'Glass sélectionné) ; à la réouverture, ce véhicule est repris s'il figure dans les résultats de l'immatriculation, sinon le premier | — (aucun équivalent Studio, donc aucune migration) |
 | `rpbm_xglass_piece_label` | char, invisible (« Pièce X'Glass sélectionnée ») | widget (lot E2, `17.0.261006.2`) : libellé de la pièce choisie, écrit avec les identifiants de pièce et sous la même règle de conservation ; lu par l'encart « Dossier » du devis, qui s'ouvre sans X'Glass | — (aucun équivalent Studio, donc aucune migration) |
 | `rpbm_xglass_labor_operations` | json, invisible (« Main-d'œuvre X'Glass de la pièce ») | widget (correctif `17.0.261007.1`) : liste `laborOperations` de la pièce choisie, telle que `/getPieces` la renvoie, écrite avec les identifiants de pièce et sous la même règle de conservation ; liste vide si la pièce est retirée ; lue par le devis, qui propose ces opérations sans X'Glass | — (aucun équivalent Studio, donc aucune migration) |
+| `rpbm_xglass_piece_price` | float, visible et modifiable (« Barème X'Glass HT de la pièce d'origine », groupe « Pièce et article ») | widget (`17.0.261015.1`, [VD-08](../../validations-metier.md#historique-des-décisions)) : Prix XGlass HT de la pièce OE choisie (`pieceOe.prix`), 0 pour une pièce sans prix ou retirée ; écrit pour une pièce retrouvée, choisie ou retirée, sinon conservé (saisie manuelle comprise) ; repris sur la ligne de l'article VSF principal du devis | — (volontairement sans lien avec le « Prix XGlass (TTC) » Studio de l'opportunité, qui porte le total du devis et alimente l'automatisation 6 ; aucune migration) |
 
 `x_studio_eurocode_joint` n'est pas consommé par le module.
 
@@ -82,3 +85,8 @@ dans la section Studio et déplace les anciens champs doublés dans un onglet «
 
 - Lecture (restauration à l'ouverture) : [2 — Sélection du véhicule](../../fonctionnel/workflow/02-selection-vehicule.md), [3 — Catégorie X'Glass](../../fonctionnel/workflow/03-categorie-xglass.md), [4 — Pièce](../../fonctionnel/workflow/04-piece-piece-am.md)
 - Écriture : [6 — Confirmation sur Piste/Opportunité](../../fonctionnel/workflow/06-confirmation-crm-lead.md) (« Confirmer », « Confirmer et enregistrer », « Créer un devis »)
+
+---
+Précédent : [Champs Odoo par modèle](README.md) · Suivant : [Champs — `sale.order`](sale-order.md)
+
+Voir aussi : [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](../../fonctionnel/workflow/06-confirmation-crm-lead.md) · [7 — Confirmation sur Ordre de Vente (`sale.order`)](../../fonctionnel/workflow/07-confirmation-sale-order.md) · [Frontend (OWL)](../frontend.md) · [Déploiement rpbm_agent + architecture stock — outillage rejouable](../../../../Jobs/rpbm_agent_stock/README.md) · [Configuration & déploiement](../configuration.md) · [2 — Sélection du véhicule](../../fonctionnel/workflow/02-selection-vehicule.md) · [3 — Catégorie X'Glass (calque)](../../fonctionnel/workflow/03-categorie-xglass.md) · [4 — Pièce et pièce après-marché (déduction eurocode)](../../fonctionnel/workflow/04-piece-piece-am.md)

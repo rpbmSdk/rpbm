@@ -1,5 +1,7 @@
 # 3 — Catégorie X'Glass (calque)
 
+[Index](../../README.md) › [Parcours — étape par étape](README.md) › 3 — Catégorie X'Glass (calque)
+
 - **Déclencheur** : clic utilisateur sur une catégorie, OU auto-sélection si le champ `categorieXglass` est déjà renseigné sur l'enregistrement au chargement de la planche (`useEffect` sur `planche`, `agent_widget_dialog.js`).
 - **Code** : `onClickCalque()` (`agent_widget_dialog.js`).
 - **Route** : `POST /getPieces` (`main.py::getPieces`) → liste des pièces de la catégorie.
@@ -63,3 +65,8 @@ mémorisés (décision par défaut, à rouvrir si le client le demande).
 Lot D, build A (`17.0.261005.1`) : recette réussie le 2026-10-05 sur le build `ab31793`.
 
 Suivant : [4 — Pièce et pièce après-marché](04-piece-piece-am.md).
+
+---
+Précédent : [2 — Sélection du véhicule](02-selection-vehicule.md) · Suivant : [4 — Pièce et pièce après-marché (déduction eurocode)](04-piece-piece-am.md)
+
+Voir aussi : [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](06-confirmation-crm-lead.md) · [7 — Confirmation sur Ordre de Vente (`sale.order`)](07-confirmation-sale-order.md) · [Champs — `crm.lead`](../../technique/champs/crm-lead.md) · [Champs — `sale.order`](../../technique/champs/sale-order.md) · [Frontend (OWL)](../../technique/frontend.md) · [Backend](../../technique/backend.md)

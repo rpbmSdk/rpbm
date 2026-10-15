@@ -1,5 +1,7 @@
 # Frontend (OWL)
 
+[Index](../README.md) › Technique › Frontend (OWL)
+
 ## Articles VSF et suggestions
 
 `AgentWidgetDialog` garde les sélections dans `selectedArticleCodes`, indexé par code VSF, et les produits Odoo dans `articleProducts`, également par code. Un article sélectionné possède donc son propre chargement, sa recherche/création produit et, sur un devis, son ajout ou retrait. Depuis le lot E1, le tableau et la recherche VSF n'existent que dans le dialog du devis : celui de l'opportunité les retire (voir [Créer un devis](#créer-un-devis-lot-e1)).
@@ -56,6 +58,17 @@ Lot correctif `17.0.261006.1` (commit `44b86e0`), recette live réussie le 2026-
 - **Main-d'œuvre.** Inchangée : `_laborLine(operation)` cherche par `rpbm_labor_operation_key`, y compris pour une ligne ajoutée lors d'une session précédente. Le code mort `_widgetLaborLinesByKey` et `_restoreLaborLines()`, dont la table n'était jamais relue, est supprimé.
 - **Quantité et prix.** Ils ne s'observent pas sans enregistrer le formulaire ; la preuve vient de la ligne de la recette d'E1 (voir ci-dessus).
 - **Contrôle.** Bloc R28 de `test_widget_vsf.mjs` : l'objet renvoyé par `addNewRecord` est remplacé dans `records` après l'ajout ; « Retirer du devis » s'affiche quand même, le retrait supprime la ligne de `records`, et un produit présent à l'ouverture reste « déjà présent », sans ajout possible.
+
+### Barème et prix fournisseur de la ligne (2026-10-15)
+
+Lot IMP-1 / IMP-3, `17.0.261015.1` ([VD-08](../validations-metier.md#historique-des-décisions)). Le getter `xglassPiecePrice` (`AgentWidgetDialog`) vaut le `pieceOe.prix` de la pièce choisie, sinon le barème enregistré (`rpbm_xglass_piece_price`) tant que `releaseStoredPieces()` n'a pas été appelé (`_storedPiecesReleased`) ; 0 sinon. `getRecordData()` écrit `rpbm_xglass_piece_price` pour une pièce choisie ou après une action explicite, jamais dans `getVsfRecordData()` (devis sans X'Glass). `addArticleToSaleOrder()` :
+
+- ne fait rien pendant un chargement (`isLoading`, double clic) ;
+- appelle `callPortal("/createProduct", {articleVsfInfo, existingOnly: true})` (reconnexion VSF comprise) : prix fournisseur VSF enregistré sur l'article, réponse `supplier_id` / `supplier_price` ; un échec n'est qu'un avertissement ;
+- crée la ligne puis `update({product_uom_qty: 1, rpbm_xglass_price?, rpbm_supplier_price?, rpbm_supplier_id?})` : le barème seulement s'il est positif et pour un article principal (`articlesVsf`, pas une suggestion), le fournisseur seulement si la route a renvoyé le produit de la ligne ; jamais `price_unit` ;
+- avertit (« Aucun barème X'Glass… ») pour un article principal sans barème.
+
+L'encart « Dossier » affiche « Barème X'Glass HT ». La base Eurocode d'une pièce AM passe par `eurocodeBase()` (`utils.js`) : 4 chiffres et une lettre, sinon la base courante reste. Contrôle : blocs « IMP-1 / IMP-3 », « Barème X'Glass » et « Base Eurocode » de `test_widget_vsf.mjs`.
 
 ## Dialog en plein écran (R22)
 
@@ -288,6 +301,7 @@ classDiagram
         +pieceConcerneeField
         +xglassPieceIdField / pieceOeIdField / pieceAmIdField
         +fullEurocodeField / vsfDesignationField / vsfStockField / constructorReferenceField
+        +xglassLaborOperationsField / xglassPiecePriceField
     }
     AbstractRecord <|-- AbstractWidgetRecord
 ```
@@ -368,7 +382,7 @@ confirmation (voir [Pièce mémorisée](#pièce-mémorisée-et-boutons-désactiv
 | `loadArticleDetails()` | `AgentWidgetDialog` | `/getVsfArticleDetails` | Fiche VSF complète d'un article sélectionné (+ suggestions pour un article principal) |
 | `findProductForArticle()` | `AgentWidgetDialog` | `/doesProductExists` | Recherche le produit existant pour un article VSF donné |
 | `createProductForArticle()` | `AgentWidgetDialog` | `/createProduct` | Crée le produit + prix fournisseur pour cet article |
-| `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | — (pas de route, `record.data.order_line.addNewRecord` / `delete`) | Ajoute ou retire une ligne créée par le widget, retrouvée par son produit ([R28](#ligne-de-devis-ajoutée-par-le-widget-r28)) |
+| `addArticleToSaleOrder()` / `removeArticleFromSaleOrder()` | `AgentWidgetDialogSaleOrder` | `/createProduct` (`existingOnly`, ajout seulement), puis `record.data.order_line.addNewRecord` / `delete` | Ajoute ou retire une ligne créée par le widget, retrouvée par son produit ([R28](#ligne-de-devis-ajoutée-par-le-widget-r28)) |
 | `addSelectedLaborOperations()` / `removeLaborOperation()` | `AgentWidgetDialogSaleOrder` | — (`order_line.addNewRecord` / `delete`) | Lignes de service T1/T2/T3 (`laborOperations` de la pièce chargée par X'Glass ou, sans X'Glass, `rpbm_xglass_labor_operations` : [correctif du 2026-10-07](#main-dœuvre-enregistrée-correctif-du-2026-10-07)), provenance `rpbm_labor_operation_key` |
 | `onCreateQuotation()` | `AgentWidgetDialogCrmLead` | — (`action.doActionButton` → `action_sale_quotations_new`, aucune route du module) | Écrit l'opportunité, puis ouvre un nouveau devis lié (voir [Créer un devis](#créer-un-devis-lot-e1)) |
 
@@ -648,11 +662,11 @@ Avec cette garde, les identifiants X'Glass mémorisés ne sont jamais effacés p
 - Un devis sans opportunité n'affiche pas le widget (inchangé).
 - Sans X'Glass, le véhicule n'est ni créé ni enrichi : aucun appel `/getOdooVehicule`, `/createVehicule` ni `/enrichVehicule`.
 
-**Contrôles hors réseau.** `test_portal_auth.py` (agent VSF : une seule connexion pour deux appels, une expiration suivie d'une reconnexion puis d'un succès, un second échec propagé, une connexion refusée qui laisse `logged_in` faux, deux threads de la même génération pour une seule reconnexion) et `test_widget_vsf.mjs` (devis avec une base : une recherche, aucune authentification, aucun `/rpbm_agent_close` ; `getRecordData` sans X'Glass : base et quatre champs d'article seulement ; avec véhicule et catégorie : écriture complète, libellé compris ; `clearSelectedPiece(true)` garde tableau et sélection ; le passage de `agentsInitialized` à vrai ne relance pas la recherche ; la pièce concernée enregistrée survit à la restauration ; une réponse périmée est ignorée ; les tests de l'opportunité restent verts), dans les blocs « Lot E2 » et « Revue E2 ». Ce dernier couvre : un devis avec une catégorie mais ni base ni pièce, où la base saisie, le tableau et l'article principal survivent à « Charger X'Glass » et à la vraie chaîne (véhicule, planche, calque) ; le libellé d'une pièce « Autres marques AM » mémorisée seule, conservé sur l'opportunité et sur le devis ; une base sans résultat que les effets ne relancent pas et que le bouton relance ; deux « Charger X'Glass » rapprochés qui ne font qu'une authentification. un dialog fermé pendant « Charger X'Glass », où le verrou pris entre-temps est rendu par un seul `/rpbm_agent_close`, sans autre appel ni état modifié après la destruction. Le harnais force `agentsInitialized` à vrai dans `mount()` ; ces tests le remettent à faux.
+**Contrôles hors réseau.** `test_portal_auth.py` (agent VSF : une seule connexion pour deux appels, une expiration suivie d'une reconnexion puis d'un succès, un second échec propagé, une connexion refusée qui laisse `logged_in` faux, deux threads de la même génération pour une seule reconnexion) et `test_widget_vsf.mjs` (devis avec une base : une recherche, aucune authentification, aucun `/rpbm_agent_close` ; `getRecordData` sans X'Glass : base et quatre champs d'article seulement ; avec véhicule et catégorie : écriture complète, libellé compris ; `clearSelectedPiece(true)` garde tableau et sélection ; le passage de `agentsInitialized` à vrai ne relance pas la recherche ; la pièce concernée enregistrée survit à la restauration ; une réponse périmée est ignorée ; les tests de l'opportunité restent verts), dans les blocs « Lot E2 » et « Revue E2 ». Ce dernier couvre : un devis avec une catégorie mais ni base ni pièce, où la base saisie, le tableau et l'article principal survivent à « Charger X'Glass » et à la vraie chaîne (véhicule, planche, calque) ; le libellé d'une pièce « Autres marques AM » mémorisée seule, conservé sur l'opportunité et sur le devis ; une base sans résultat que les effets ne relancent pas et que le bouton relance ; deux « Charger X'Glass » rapprochés qui ne font qu'une authentification ; un dialog fermé pendant « Charger X'Glass », où le verrou pris entre-temps est rendu par un seul `/rpbm_agent_close`, sans autre appel ni état modifié après la destruction. Le harnais force `agentsInitialized` à vrai dans `mount()` ; ces tests le remettent à faux.
 
 ## Main-d'œuvre enregistrée (correctif du 2026-10-07)
 
-Correctif `17.0.261007.1`, codé le 2026-10-07, non commité, tests hors réseau verts ; à livrer et recetter ([SO-11](../jeu-de-test.md#so-11--main-dœuvre-enregistrée-proposée-sans-xglass-correctif-du-2026-10-07-r30)). Il revient sur la décision du 2026-10-05 « E2 sans instantané de main-d'œuvre » ([VD-06](../validations-metier.md#historique-des-décisions)).
+Correctif `17.0.261007.1`, livré (commits `3706630` pour le code et `2afb41e` pour la documentation), tests hors réseau verts, recette live réussie le 2026-10-07 ([SO-11](../jeu-de-test.md#so-11--main-dœuvre-enregistrée-proposée-sans-xglass-correctif-du-2026-10-07-r30)). Il revient sur la décision du 2026-10-05 « E2 sans instantané de main-d'œuvre » ([VD-06](../validations-metier.md#historique-des-décisions)).
 
 **Pourquoi.** Au lot E2, la section « 4. Main d'œuvre X'Glass » du devis était `t-if="selectedPiece"`, et `selectedPiece` n'est posée que par `getPieces()`, donc par la chaîne X'Glass de « Charger X'Glass ». Sans elle, un vendeur ne pouvait ni ajouter ni retirer d'article de temps. La main-d'œuvre n'existait nulle part ailleurs : elle est donc enregistrée à l'étape opportunité et reprise sur le devis.
 
@@ -703,3 +717,8 @@ et sélections affichés restent inchangés.
 Si la reconnexion ou le rejeu échoue à nouveau, `reconnectRequired` affiche le bouton
 « Reconnecter » dans le footer. Le bouton conserve le contexte mais ne relance pas l'action
 initiale. Les erreurs réseau, métier ou d'identifiants ne déclenchent pas ce bouton.
+
+---
+Précédent : [Backend](backend.md) · Suivant : [Configuration & déploiement](configuration.md)
+
+Voir aussi : [Déploiement rpbm_agent + architecture stock — outillage rejouable](../../../Jobs/rpbm_agent_stock/README.md) · [Jeu de test — Assistant véhicule RPBM](../jeu-de-test.md) · [État des lieux](../etat-des-lieux.md) · [Champs — `account.move`](champs/account-move.md) · [Champs Odoo par modèle](champs/README.md) · [Registre des validations métier](../validations-metier.md) · [Champs — `crm.lead`](champs/crm-lead.md) · [Champs — `sale.order`](champs/sale-order.md)

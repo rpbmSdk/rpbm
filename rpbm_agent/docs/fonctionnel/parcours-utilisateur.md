@@ -1,5 +1,7 @@
 # Parcours utilisateur
 
+[Index](../README.md) › Fonctionnel › Parcours utilisateur
+
 ## Point d'entrée
 
 Le widget `rpbm_agent_widget` est une icône loupe (🔍) présente sur **Piste/Opportunité** (`crm.lead`) et **Ordre de Vente** (`sale.order`, si une opportunité est liée), à deux endroits qui ouvrent la même fenêtre : l'onglet « Véhicule (X'Glass) » ajouté par les vues versionnées du module (`views/crm_lead_views.xml`, `views/sale_order_views.xml`), et les sections Studio habituelles (« Informations Véhicule » de l'opportunité, groupe sous l'en-tête du devis), où le script `studio_views.py` l'ajoute avec les champs natifs (voir [configuration](../technique/configuration.md#intégration-dans-les-vues)). Un clic ouvre une fenêtre de dialogue en plein écran qui pilote toute la recherche ; son en-tête et ses boutons (« Confirmer », « Confirmer et enregistrer », « Annuler ») restent visibles quand le contenu défile.
@@ -87,7 +89,7 @@ flowchart TD
     W2 -->|Oui| W4["Bouton 'Voir le produit' → ouvre la fiche article dans un nouvel onglet"]
     W3 --> W5["Bouton 'Ajouter au devis' → ajoute une ligne au devis"]
     W4 --> W5
-    W5 --> W6[Clic sur Confirmer pour finaliser base Eurocode et article principal (et véhicule/catégorie si X'Glass est chargé)]
+    W5 --> W6["Clic sur Confirmer pour finaliser base Eurocode et article principal (et véhicule/catégorie si X'Glass est chargé)"]
     W5 -.-> W5R["Bouton 'Retirer du devis' → retire la ligne ajoutée par le widget"]
 ```
 
@@ -95,7 +97,7 @@ Champs/actions spécifiques à l'Ordre de Vente : immatriculation, véhicule li�
 
 > **Article principal.** L'Eurocode complet, la désignation VSF, le stock VSF et la référence constructeur ne sont écrits que si un article VSF a été désigné avec « Définir comme article principal » avant « Confirmer ». Sélectionner un article, ou l'ajouter au devis, ne suffit pas : sans article principal, ces champs restent inchangés, sans message.
 
-**Prix de la ligne ajoutée.** La ligne reçoit un « Prix X'Glass » égal au prix de vente VSF diminué de la remise RPBM (paramètre `rpbm_agent.vsf_discount`, 20 % par défaut ; ce prix vient de VSF malgré son nom). L'automatisation Studio « Tarif x glass » en déduit le prix unitaire : Prix X'Glass × 1,5. Elle ne se déclenche que lorsque le Prix X'Glass change : un prix unitaire corrigé à la main est conservé. Une ligne saisie sans l'assistant garde le prix de la liste de prix.
+**Prix de la ligne ajoutée.** La ligne reçoit un « Prix X'Glass » égal au prix de vente VSF diminué de la remise RPBM (paramètre `rpbm_agent.vsf_discount`, 20 % par défaut ; ce prix vient de VSF malgré son nom). L'automatisation Studio « Tarif x glass » en déduit le prix unitaire : Prix X'Glass × 1,5. Elle ne se déclenche que lorsque le Prix X'Glass change : un prix unitaire corrigé à la main est conservé. Une ligne saisie sans l'assistant garde le prix de la liste de prix, sauf si l'on y saisit un « Prix X'Glass » : ce prix saisi à la main déclenche l'automatisation et est conservé (correctif `17.0.261013.1` ; auparavant le formulaire le remettait à 0). Si le module optionnel `rpbm_pricing` est installé, la majoration est gardée : les articles de service, de consommable ou de film solaire n'y sont pas soumis, elle peut être réservée aux dossiers assurance, et un changement de quantité ramène le prix de la ligne à Prix X'Glass × coefficient (détail : [Interaction avec rpbm_pricing](../technique/rpbm-pricing.md)).
 
 ### Main-d'œuvre X'Glass sur devis
 
@@ -174,3 +176,8 @@ retrouvée, le dialogue montre les familles et leurs encarts « Autres marques A
 les cartes de pièces ; sur le devis, la recherche VSF part malgré tout à l'ouverture (lot E2), alors
 qu'elle ne partait pas au lot D. Un second clic sur la pièce sélectionnée efface les
 sélections dépendantes, la base Eurocode et les résultats VSF.
+
+---
+Précédent : [Documentation — RPBM Agent](../README.md) · Suivant : [Parcours — étape par étape](workflow/README.md)
+
+Voir aussi : [Configuration & déploiement](../technique/configuration.md) · [3 — Catégorie X'Glass (calque)](workflow/03-categorie-xglass.md) · [4 — Pièce et pièce après-marché (déduction eurocode)](workflow/04-piece-piece-am.md) · [7 — Confirmation sur Ordre de Vente (`sale.order`)](workflow/07-confirmation-sale-order.md) · [5 — Recherche VSF par eurocode](workflow/05-recherche-vsf-eurocode.md) · [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](workflow/06-confirmation-crm-lead.md) · [9 — Création du produit (`product.product`)](workflow/09-creation-produit.md) · [Interaction avec rpbm_pricing](../technique/rpbm-pricing.md) · [Champs Odoo par modèle](../technique/champs/README.md)
