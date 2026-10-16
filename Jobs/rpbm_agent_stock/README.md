@@ -1,5 +1,7 @@
 # Déploiement rpbm_agent + architecture stock — outillage rejouable
 
+> Mise à jour du 2026-10-12 : 55,30 € HT est le prix de l'article 46 « Pose à Domicile » facturé par le client (72 lignes confirmées de 2022 à 2026, uniquement ce prix depuis 2023) ; c'est la valeur retenue par [P-19](../../docs/architecture/main-oeuvre-services.md#p-19--pose-à-domicile). Reste à trancher quand la facturer (Q-17).
+
 Scripts pour installer `rpbm_agent` et poser l'architecture stock 1 sur une instance Odoo
 (préproduction aujourd'hui, production plus tard), avec vérification et rollback. Séparé de
 [`Jobs/Gestion Stock/`](../Gestion%20Stock/README.md), qui reste l'historique de décision de la
@@ -22,11 +24,18 @@ Pour la validation métier et la prise en main, voir le [guide client PDF, ses c
 3. Jobs/Gestion Stock/import_odoo.py <phase> --commit            (catalogue articles, P1/P4-P8)
    (P2/P3 de ce script sont l'ancienne architecture 5-entrepôts, abandonnée — ne pas les lancer,
    voir questions-ouvertes.md Q1)
-4. setup_stock_architecture.py <phase> --commit                  (ce dossier, phase par phase)
+3 bis. sale_templates.py apply [--decision ...] --commit          (ce dossier, plan-modeles-devis.md ; AVANT l'étape 4,
+                                                                  sinon 8 modèles actifs bloquent la confirmation des
+                                                                  devis ; les 92 pièces sans fournisseur du §5 restent
+                                                                  à traiter à part)
+4. setup_stock_architecture.py <phase> --commit                  (ce dossier, phase par phase ; carriers pose le tarif
+                                                                  « Pose à domicile » à 55,30 HT)
 5. verify_structural.py                                          (ce dossier, lecture seule)
 6. verify_flows.py --run <id> --tests ... --commit                (ce dossier, écrit des ventes de recette taguées)
 7. rollback.py --run <id> [--commit]                              (ce dossier, quand la recette est terminée)
 ```
+
+L'étape 3 bis est détaillée dans [`plan-modeles-devis.md`](plan-modeles-devis.md). Ce plan répond à l'erreur « pas de prix fournisseur » qui apparaît à la confirmation des devis issus des anciens modèles. Il couvre aussi les articles standards et le tarif de la pose à domicile.
 
 Chaque script est **dry-run par défaut** ; `--commit` est requis pour écrire. Lancer chaque étape
 sans `--commit` d'abord, lire ce qu'elle ferait, puis rejouer avec `--commit`.
@@ -62,16 +71,18 @@ en production plus tard : `--profile <profil-prod>` une fois ce profil déclaré
 | [`verify_structural.py`](verify_structural.py) | **jamais** | Compare l'instance aux tables de `setup_stock_architecture.py` (source unique) — PASS/FAIL/WARN. |
 | [`verify_flows.py`](verify_flows.py) | oui (`--commit`) | Recette T1-T8/MTO ([test-registry](../Gestion%20Stock/architectures/audits/architecture-1-test-registry.md)) — taggée `ARCH1-AUDIT-<run>-<scénario>`, jamais de validation physique. |
 | [`rollback.py`](rollback.py) | oui (`--commit`) | Annule/supprime les enregistrements d'un run `verify_flows.py`, jamais rien d'autre. |
+| [`sale_templates.py`](sale_templates.py) | oui (`--commit`) | `apply` : retire des modèles de devis actifs les lignes d'articles génériques (Q-03) et archive ces articles ; les choix du client du [plan §8](plan-modeles-devis.md#8-décisions-à-faire-valider-par-le-client) ne s'appliquent qu'avec `--decision` (`produits-connexes`, `gel-capteur`, `films-qte-zero`, `pose-domicile`). Rapport : lignes encore bloquantes (FAIL, code retour 1), pièges à qté 0 (WARN), devis ouverts concernés. `rollback --run <id>` : recrée les lignes, remet les valeurs, désarchive ; refusé si un modèle touché a changé depuis. |
 | [`studio_views.py`](studio_views.py) | oui (`--commit`) | `apply` : ajoute en fin des vues Studio le bouton « Assistant véhicule » (formulaires opportunité et devis), les champs natifs `rpbm_*` (formulaires opportunité, devis, facture) et le suffixe « (ancien) » des champs Studio doublés (+ `optional="hide"` dans les listes). Listes et recherches ne reçoivent que le suffixe : leurs colonnes et champs natifs viennent du module. `rollback --run <id>` : restaure les sauvegardes de ce run. |
 
 `tests/` : vérifications hors ligne (aucun réseau) — logique de branchement d'`install_module.py`,
 garde-fou anti-dérive comptant les tables de `setup_stock_architecture.py` contre la spec, et
-idempotence/rollback de `studio_views.py`. À lancer avant tout `--commit` réel :
+idempotence/rollback de `studio_views.py` et de `sale_templates.py`. À lancer avant tout `--commit` réel :
 
 ```
 python tests/test_install_module.py
 python tests/test_setup_stock_architecture.py
 python tests/test_studio_views.py
+python tests/test_sale_templates.py
 ```
 
 ## Vues Studio (`studio_views.py`)
@@ -87,6 +98,11 @@ en fin d'arch de la vue Studio (résolue par la règle de `web_studio`, jamais p
   doublés par un natif y sont déplacés (`<xpath position="move">`, un bloc par champ) ; le natif
   reste à l'ancienne place. Les champs sans équivalent natif (kilométrage, autres infos, prix VSF…)
   ne bougent pas ; listes et recherches gardent seulement le suffixe « (ancien) ».
+- **Colonne « Prix XGlass » des lignes de devis** (`x_studio_prix_x_glass`, `ancienne_colonne`) :
+  renommée « Prix XGlass (ancien) » et masquée (`column_invisible`), sans être supprimée (d'autres
+  xpaths Studio la visent par son nom). La colonne native « Barème X'Glass HT » du module la remplace
+  (`rpbm_agent` `17.0.261015.1`) ; la recopie natif → Studio, donc l'automatisation « Tarif x glass »,
+  continue. Une colonne de ligne ne va pas dans l'onglet « Anciens champs » (onglet du devis).
 - **Vues ignorées** tant que les champs natifs manquent (modèle ou colonnes/recherches du
   module) : mettre `rpbm_agent` à jour d'abord.
 - **Vérification intégrée** (`--commit`) : contrôles rejoués et ouverture en mode Studio strict ;
