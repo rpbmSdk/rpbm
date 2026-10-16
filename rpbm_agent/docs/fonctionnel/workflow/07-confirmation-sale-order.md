@@ -25,6 +25,7 @@ l'utilisateur est prioritaire.
 | `rpbm_xglass_labor_operations` | main-d'œuvre de la pièce choisie ([6](06-confirmation-crm-lead.md#main-dœuvre-enregistrée-correctif-du-2026-10-07)) | seulement quand X'Glass est chargé, avec véhicule et catégorie choisis, sous la condition des identifiants de pièce ; **jamais** par un « Confirmer » sans X'Glass |
 | `rpbm_xglass_piece_price` | Prix XGlass HT de la pièce d'origine choisie ([6](06-confirmation-crm-lead.md#barème-xglass-de-la-pièce-dorigine-2026-10-15)) | même condition que la main-d'œuvre ; 0 pour une pièce retirée ou sans prix |
 
+- **Devis neuf** : depuis `17.0.261015.2`, l'enregistrement d'un devis neuf ne remet plus à vide ces champs de l'opportunité via les miroirs Studio du formulaire (voir [miroirs Studio du devis](../../technique/configuration.md#miroirs-studio-du-devis-1702610152)).
 - **Persistance** : identique à `crm.lead` — mise à jour en mémoire, écriture effective au clic sur « Enregistrer » (bouton « Confirmer ») ou immédiate via `record.save()` (bouton « Confirmer et enregistrer »).
 - L'ajout ou le retrait d'un article principal ou suggéré au devis (`addArticleToSaleOrder()` / `removeArticleFromSaleOrder()`) est indépendant de cette étape ; seule une ligne créée par le widget dans la dialog courante peut être retirée, par « Retirer du devis », qui remplace « Ajouter au devis » une fois la ligne ajoutée (un produit déjà présent à l'ouverture affiche « Article déjà présent dans le devis. », sans retrait) — voir [9 — Création du produit](09-creation-produit.md#retirer-du-devis-r28).
 

@@ -97,6 +97,30 @@ Le correctif ajoute un test et en étend un dans `tests/test_legacy_sync.py` :
 Studio `341.87`. Le natif renseigné garde la priorité quand les deux le sont. Voir aussi
 [`sale.order.line`](champs/sale-order-line.md).
 
+#### Miroirs Studio du devis (`17.0.261015.2`)
+
+Le devis porte des miroirs Studio `related` inscriptibles vers les champs Studio de l'opportunité
+(vue Studio « Anciens champs » : eurocode complet, désignation et stock VSF, base, immatriculation…).
+À la création d'un devis, le client web envoie **tous** les champs du formulaire, ces miroirs compris,
+à leur valeur d'ouverture. Leur inverse écrivait ce vide dans le champ Studio de l'opportunité, puis la
+synchronisation Studio → natif recopiait ce vide dans le natif que le widget venait d'écrire :
+`rpbm_eurocode`, `rpbm_vsf_designation` et `rpbm_vsf_stock` perdus à l'enregistrement d'un devis neuf
+(recette du 2026-10-15, diagnostic `.paradigme/audits/eurocode-vide/rapport.md`, local).
+
+`SaleOrder._rpbm_drop_stale_opportunity_vals` (`models/sale_order.py`), appelée par `create` et `write`,
+repère les related inscriptibles `opportunity_id.<champ>` (natifs et miroirs Studio, sans nommer de
+champ Studio : la correspondance vient de `LEGACY_FIELDS`) et :
+
+| Cas | Effet |
+|---|---|
+| Création : valeur égale à celle de l'opportunité | retirée de l'écriture (elle ne change rien) |
+| Natif et miroir Studio tous deux écrits avec une valeur nouvelle | le miroir Studio est retiré : **le natif gagne** |
+| Miroir Studio seul modifié | écrit ; la synchronisation le remonte au natif comme avant |
+
+La modification d'un devis existant n'envoie que les champs modifiés : seule la deuxième règle s'y
+applique. Tests : `tests/test_legacy_sync.py` (`test_new_sale_order_keeps_natives_over_opening_studio_mirrors`,
+`test_sale_order_native_wins_over_a_modified_studio_mirror`, `test_studio_mirror_alone_still_reaches_the_native`).
+
 ### Migration `17.0.260921.1`
 
 Au premier passage sur une base existante, `migrations/17.0.260921.1/post-native-fields.py` :
@@ -120,7 +144,36 @@ Les champs Studio historiques des utilisateurs ne sont jamais supprimés par le 
 | `17.0.260928.3` | `migrations/17.0.260928.3/post-roles-achats.py` | Donne `purchase.group_purchase_manager` et `stock.group_stock_user` aux acheteurs, voir [Droits et rôles](#droits-et-rôles). |
 
 Les migrations ne tournent pas à l'installation d'une base neuve, seulement à la mise à jour d'une base
-qui porte déjà une version antérieure.
+qui porte déjà une version antérieure (`odoo/modules/migration.py`).
+
+### Installation : `post_init_hook` et migration `17.0.261015.2`
+
+Après le « Branch Rebuild » du 2026-10-13, la pré-prod a installé le module à neuf : aucune migration
+n'a tourné et les natifs sont restés vides (`rpbm_license_plate` renseigné sur 3 opportunités sur
+10 377, `rpbm_xglass_price` sur 13 lignes de devis sur 5 154 ayant un Prix X'Glass Studio). Depuis
+`17.0.261015.2` :
+
+| Élément | Fichier | Effet |
+|---|---|---|
+| `post_init_hook` | `hooks.py` | À l'installation, rejoue `17.0.260921.1/post-native-fields.py` puis `17.0.260928.3/post-roles-achats.py` (chargés par `importlib`, idempotents). |
+| Migration | `migrations/17.0.261015.2/post-replay-native-fields.py` | À la mise à jour d'une base déjà installée (pré-prod), rejoue la même recopie. |
+
+Garanties de la recopie (`_copy_column`) :
+
+- **Ne remplit qu'un natif vide** : `NULL`, chaîne vide, ou `0` pour un nombre (défaut envoyé par le
+  client web, même règle que la [priorité en cas de double saisie](#priorité-en-cas-de-double-saisie)).
+- **Ne remplace jamais un natif renseigné** : un écart avec la valeur Studio est compté et journalisé en
+  avertissement (« conservé malgré une valeur Studio différente », 20 ids au plus).
+- **SQL seulement** : ni automatisation Studio (la règle 8 « Tarif x glass » se déclenche sur
+  `x_studio_prix_x_glass`, qui n'est pas écrit), ni recalcul de `price_unit`, ni `write_date` modifié.
+  Seuls les liens véhicule de l'ancien hook (absents de la pré-prod) et le véhicule des factures passent
+  par l'ORM.
+- Les champs de la facture repris du devis (`rpbm_license_plate`, marque, modèle, `rpbm_eurocode`,
+  `rpbm_part_type`), calculés stockés et donc calculés vides à l'installation, sont remplis en SQL depuis
+  l'opportunité du devis facturé, seulement quand ils sont vides (une facture renseignée n'est jamais modifiée).
+- Une valeur Studio non convertible (stock VSF non numérique, libellé inconnu, date illisible) est ignorée :
+  ni écart compté, ni natif remplacé.
+- Journal : une ligne `rpbm_agent: <table>.<natif> <- <Studio> : N ligne(s)` par champ.
 
 ## Droits et rôles
 

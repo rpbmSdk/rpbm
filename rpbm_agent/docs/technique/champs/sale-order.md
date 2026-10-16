@@ -22,7 +22,11 @@ les mêmes noms que sur `crm.lead`, ce qui permet au widget d'utiliser une seule
 Les miroirs Studio historiques du devis (`x_studio_immatriculation_`, `x_studio_pice_concerne`,
 `x_studio_base_eurocode`, `x_studio_eurocode_complet`, `x_studio_vsf_*`, marque/modèle, VIN…)
 restent alimentés : ils sont `related` vers les champs Studio de l'opportunité, eux-mêmes
-synchronisés depuis les natifs. Aucune synchronisation n'est nécessaire sur `sale.order`.
+synchronisés depuis les natifs. Aucune synchronisation n'est nécessaire sur `sale.order`, mais
+`create` et `write` filtrent les related de l'opportunité (`_rpbm_drop_stale_opportunity_vals`,
+`17.0.261015.2`) : un devis neuf renvoie ces miroirs à leur valeur d'ouverture, dont l'inverse
+effaçait le natif que le widget venait d'écrire (eurocode, désignation et stock VSF vides après
+« Définir comme article principal »). Voir [miroirs Studio du devis](../configuration.md#miroirs-studio-du-devis-1702610152).
 
 ## Transporteur
 
