@@ -472,11 +472,14 @@ class AgentController(Controller):
 
     @route('/createVehicule', auth='user', type='json')
     def createVehicule(
-        self, immatriculation: str, partner_id: int,
+        self, immatriculation: str, partner_id: int = False,
         vehicule_info=None, vehicule_meta=None,
     ):
         """
             Permet de créer un véhicule en BDD de Odoo
+
+            Le client est facultatif : une opportunité se qualifie sans client,
+            le widget n'envoie alors pas ``partner_id`` (véhicule sans conducteur).
 
             Cette route crée avant tout un enregistrement Odoo. Elle ne doit
             pas échouer si un client obsolète a déjà fermé la session X'Glass :
