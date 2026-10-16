@@ -7,7 +7,7 @@ n'a lieu que si le champ n'est plus référencé nulle part (vues, automatisatio
 import logging
 
 from odoo import SUPERUSER_ID, api
-from odoo.tools.sql import column_exists
+from odoo.tools.sql import column_exists, table_columns
 
 from odoo.addons.rpbm_agent.models.legacy_fields import (
     INTERVENTION_LOCATIONS,
@@ -91,11 +91,26 @@ def _copy_column(cr, table, src, dst, expression=None, case_map=None):
         params = tuple(item for pair in case_map.items() for item in pair)
     # Les colonnes Studio portent des majuscules (x_studio_field_NVioD) : identifiants cites, sinon
     # Postgres les replie en minuscules (build 38336004 : column "x_studio_field_nviod" does not exist).
+    numeric = table_columns(cr, table)[dst]["udt_name"] in ("int4", "int8", "numeric", "float8")
     src = f'"{src}"'
     expression = (expression or "{src}").format(src=src)
+    # Natif vide : NULL, chaîne vide, ou 0 (défaut envoyé par le client web) pour un nombre.
+    empty = f"COALESCE({dst}, 0) = 0" if numeric else f"COALESCE({dst}::text, '') = ''"
+    filled = f"{src} IS NOT NULL AND {src}::text <> ''"
+    # Valeur Studio non convertible (NULL) : ni écart compté, ni natif 0/'' remplacé par NULL.
+    differs = f"({expression}) IS NOT NULL AND {dst} IS DISTINCT FROM ({expression})"
+    # Un natif déjà renseigné n'est jamais remplacé : les écarts avec le Studio sont seulement comptés.
     cr.execute(
-        f"UPDATE {table} SET {dst} = {expression} WHERE {dst} IS NULL AND {src} IS NOT NULL AND {src}::text <> ''",
-        params,
+        f"SELECT count(*), (array_agg(id ORDER BY id))[1:20] FROM {table} WHERE NOT ({empty}) AND {filled} AND {differs}",
+        params * 2,
+    )
+    conflicts, conflict_ids = cr.fetchone()
+    if conflicts:
+        _logger.warning("rpbm_agent: %s.%s conservé malgré une valeur Studio %s différente : %s ligne(s), ex. ids %s",
+                        table, dst, src, conflicts, conflict_ids)
+    cr.execute(
+        f"UPDATE {table} SET {dst} = {expression} WHERE {empty} AND {filled} AND {differs}",
+        params * 3,
     )
     _logger.info("rpbm_agent: %s.%s <- %s : %s ligne(s)", table, dst, src, cr.rowcount)
 
@@ -171,6 +186,24 @@ def _refresh_mirrors(env):
             FROM sale_order so
             WHERE p.sale_id = so.id AND p.rpbm_vehicle_id IS DISTINCT FROM so.rpbm_vehicle_id
         """)
+    # Champs de la facture repris du devis (calculés stockés, vides après une installation à neuf) : par SQL,
+    # sans write_date ni recalcul ORM ; une valeur déjà renseignée sur une facture n'est jamais remplacée.
+    # shortcut: devis retenu = plus petit id quand une facture en regroupe plusieurs ; l'ORM prend le premier rencontré.
+    names = ("rpbm_license_plate", "rpbm_vehicle_brand_id", "rpbm_vehicle_model_id", "rpbm_eurocode", "rpbm_part_type")
+    env.cr.execute(f"""
+        UPDATE account_move m SET {", ".join(f"{name} = COALESCE(m.{name}, src.{name})" for name in names)}
+        FROM (
+            SELECT DISTINCT ON (aml.move_id) aml.move_id, {", ".join(f"l.{name}" for name in names)}
+            FROM account_move_line aml
+            JOIN sale_order_line_invoice_rel rel ON rel.invoice_line_id = aml.id
+            JOIN sale_order_line sol ON sol.id = rel.order_line_id
+            JOIN sale_order so ON so.id = sol.order_id
+            JOIN crm_lead l ON l.id = so.opportunity_id
+            ORDER BY aml.move_id, so.id
+        ) src
+        WHERE m.id = src.move_id AND ({" OR ".join(f"(m.{name} IS NULL AND src.{name} IS NOT NULL)" for name in names)})
+    """)
+    _logger.info("rpbm_agent: champs du devis recopiés sur les factures : %s ligne(s)", env.cr.rowcount)
     env.invalidate_all()
     moves = env["account.move"].search([("invoice_line_ids.sale_line_ids.order_id.rpbm_vehicle_id", "!=", False)])
     if moves:

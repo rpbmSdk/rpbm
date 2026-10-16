@@ -3,7 +3,7 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
-from .legacy_fields import INTERVENTION_LOCATIONS, normalize
+from .legacy_fields import INTERVENTION_LOCATIONS, LEGACY_FIELDS, normalize
 
 _logger = logging.getLogger(__name__)
 
@@ -90,11 +90,51 @@ class SaleOrder(models.Model):
             ) % carrier_name
         return candidates, False
 
+    def _rpbm_opportunity_mirrors(self):
+        """{champ du devis: champ de l'opportunité} des related inscriptibles vers l'opportunité,
+        natifs comme miroirs Studio."""
+        return {name: field.related.split(".", 1)[1] for name, field in self._fields.items()
+                if isinstance(field.related, str) and field.related.count(".") == 1
+                and field.related.startswith("opportunity_id.") and not field.readonly
+                and field.type not in ("one2many", "many2many")}
+
+    def _rpbm_drop_stale_opportunity_vals(self, vals, opportunity=None):
+        """Retire de ``vals`` les related de l'opportunité qui ne changent rien, puis tout miroir Studio
+        dont le natif est aussi écrit (le natif gagne).
+
+        Un devis neuf renvoie tous ses champs, miroirs Studio compris, à leur valeur d'ouverture : leur
+        inverse effacerait l'opportunité, et la synchronisation Studio -> natif le natif que le widget
+        venait d'écrire (rapport .paradigme/audits/eurocode-vide/rapport.md). Une saisie Studio seule
+        reste écrite et remonte au natif.
+        """
+        mirrors = self._rpbm_opportunity_mirrors()
+        if opportunity:
+            for name, target in mirrors.items():
+                if name in vals and target in opportunity._fields:
+                    field = self._fields[name]
+                    try:
+                        new = field.convert_to_cache(vals[name], self, validate=False)
+                        old = field.convert_to_cache(opportunity[target], self, validate=False)
+                    except (TypeError, ValueError):
+                        continue
+                    if (new or False) == (old or False):
+                        del vals[name]
+        studio_to_native = {studio: native for native, (studio, _kind) in LEGACY_FIELDS["crm.lead"].items()}
+        order_field_of = {target: name for name, target in mirrors.items()}
+        for name, target in mirrors.items():
+            if name in vals and order_field_of.get(studio_to_native.get(target)) in vals:
+                del vals[name]
+        return vals
+
     @api.model_create_multi
     def create(self, vals_list):
         prepared_vals_list = []
         for original_vals in vals_list:
             vals = dict(original_vals)
+            opportunity_id = vals.get("opportunity_id") or self.env.context.get("default_opportunity_id")
+            # sudo : simple comparaison ; l'écriture de l'opportunité reste soumise aux droits de l'utilisateur.
+            opportunity = self.env["crm.lead"].sudo().browse(opportunity_id).exists() if opportunity_id else None
+            self._rpbm_drop_stale_opportunity_vals(vals, opportunity)
             if not vals.get("carrier_id") and vals.get("opportunity_id"):
                 try:
                     opportunity = self.env["crm.lead"].browse(vals["opportunity_id"]).exists()
@@ -119,6 +159,10 @@ class SaleOrder(models.Model):
                     )
             prepared_vals_list.append(vals)
         return super().create(prepared_vals_list)
+
+    def write(self, vals):
+        # Un devis existant n'envoie que les champs modifiés : seul le conflit natif / miroir Studio reste.
+        return super().write(self._rpbm_drop_stale_opportunity_vals(dict(vals)))
 
     @api.onchange("opportunity_id")
     def _onchange_rpbm_opportunity_carrier(self):

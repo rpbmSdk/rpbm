@@ -46,12 +46,33 @@ def _create_studio_fields(env, model_name, mapping):
         Fields.create(vals)
 
 
+# Natifs de l'opportunité dont le devis porte un miroir Studio (related inscriptible, vue Studio 4858).
+MIRRORED_NATIVES = ("rpbm_eurocode", "rpbm_vsf_designation", "rpbm_vsf_stock")
+
+
+def _create_sale_order_mirrors(env):
+    """Miroirs Studio du devis : {natif: champ du devis related vers le champ Studio de l'opportunité}."""
+    model = env["ir.model"].sudo().search([("model", "=", "sale.order")], limit=1)
+    mirrors = {}
+    for native in MIRRORED_NATIVES:
+        name = "x_mirror_" + native[len("rpbm_"):]
+        if name not in env["sale.order"]._fields:
+            env["ir.model.fields"].sudo().create({
+                "name": name, "model_id": model.id, "field_description": name, "state": "manual",
+                "ttype": "char", "related": "opportunity_id.%s" % LEGACY_FIELDS["crm.lead"][native][0],
+                "store": True, "readonly": False,
+            })
+        mirrors[native] = name
+    return mirrors
+
+
 class TestLegacySyncWithStudio(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         for model_name, mapping in LEGACY_FIELDS.items():
             _create_studio_fields(cls.env, model_name, mapping)
+        cls.mirrors = _create_sale_order_mirrors(cls.env)
         cls.partner = cls.env["res.partner"].create({"name": "Client sync"})
         cls.brand = cls.env["fleet.vehicle.model.brand"].create({"name": "RENAULT"})
         cls.model = cls.env["fleet.vehicle.model"].create({"name": "CLIO", "brand_id": cls.brand.id})
@@ -153,6 +174,47 @@ class TestLegacySyncWithStudio(TransactionCase):
         self.assertEqual(lead.rpbm_xglass_vehicle_id, "471613")
         self.assertEqual(lead.x_studio_field_ORIyy, "7310A")
         self.assertEqual(lead.x_studio_field_eENQz, "Autre...")
+
+    def _studio(self, lead, native):
+        return lead[LEGACY_FIELDS["crm.lead"][native][0]]
+
+    def test_new_sale_order_keeps_natives_over_opening_studio_mirrors(self):
+        # Devis neuf : le client web envoie natifs (écrits par le widget) et miroirs Studio à leur valeur
+        # d'ouverture ; natifs en premier, comme l'ordre fautif du 2026-10-15.
+        lead = self._lead(rpbm_vsf_stock=0)
+        self.env["sale.order"].create({
+            "partner_id": self.partner.id, "opportunity_id": lead.id,
+            "rpbm_eurocode": "4139AGSBMV1P", "rpbm_vsf_designation": "PARE-BRISE KIA", "rpbm_vsf_stock": 3,
+            self.mirrors["rpbm_eurocode"]: False, self.mirrors["rpbm_vsf_designation"]: False,
+            self.mirrors["rpbm_vsf_stock"]: "0",
+        })
+        self.assertEqual(lead.rpbm_eurocode, "4139AGSBMV1P")
+        self.assertEqual(self._studio(lead, "rpbm_eurocode"), "4139AGSBMV1P")
+        self.assertEqual(lead.rpbm_vsf_designation, "PARE-BRISE KIA")
+        self.assertEqual(self._studio(lead, "rpbm_vsf_designation"), "PARE-BRISE KIA")
+        self.assertEqual(lead.rpbm_vsf_stock, 3)
+        self.assertEqual(self._studio(lead, "rpbm_vsf_stock"), "3")
+
+    def test_sale_order_native_wins_over_a_modified_studio_mirror(self):
+        lead = self._lead(rpbm_eurocode="OLD")
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id, "opportunity_id": lead.id,
+            "rpbm_eurocode": "4139AGSBMV1P", self.mirrors["rpbm_eurocode"]: "AUTRE",
+        })
+        self.assertEqual(lead.rpbm_eurocode, "4139AGSBMV1P")
+        order.write({"rpbm_eurocode": "6539RGSH5RD", self.mirrors["rpbm_eurocode"]: False})
+        self.assertEqual(lead.rpbm_eurocode, "6539RGSH5RD")
+        self.assertEqual(self._studio(lead, "rpbm_eurocode"), "6539RGSH5RD")
+
+    def test_studio_mirror_alone_still_reaches_the_native(self):
+        lead = self._lead()
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id, "opportunity_id": lead.id,
+            "rpbm_eurocode": False, self.mirrors["rpbm_eurocode"]: "6539RGSH5RD",
+        })
+        self.assertEqual(lead.rpbm_eurocode, "6539RGSH5RD")
+        order.write({self.mirrors["rpbm_vsf_designation"]: "LUNETTE"})
+        self.assertEqual(lead.rpbm_vsf_designation, "LUNETTE")
 
     def test_sale_order_line_price_is_synced_both_ways(self):
         product = self.env["product.product"].create({"name": "Vitrage", "detailed_type": "consu"})
