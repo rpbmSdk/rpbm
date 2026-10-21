@@ -172,11 +172,15 @@ PUTAWAY_RULES = [
 # Produits de service consommes par les transporteurs (product_id est requis par
 # delivery.carrier, delivery/models/delivery_carrier.py:49). "Retrait comptoir" est partage par
 # les deux comptoirs (meme prestation, prix nul) ; "Pose à domicile" est dedie au camion --
-# renomme depuis "Frais de deplacement" (decision RPBM, 2026-09). Prix a 0.00 pour l'instant
-# pour les deux, a revoir plus tard.
+# renomme depuis "Frais de deplacement" (decision RPBM, 2026-09). Prix HT (taxe 8,5 % non
+# incluse) : "Retrait comptoir" reste a 0.00 ; "Pose à domicile" reprend les 55.30 HT (60,00 TTC)
+# de l'ancien article de devis "Pose à Domicile" (id 46), releve le 2026-09-29 -- voir
+# plan-modeles-devis.md §4. Le fixed_price du transporteur suit ce list_price (compute/inverse,
+# delivery/models/delivery_carrier.py:281-290) : ne pas le regler a la main, un rejeu de
+# "carriers --commit" le remettrait a cette valeur.
 SERVICE_PRODUCTS = [
     ("Retrait comptoir", 0.0),
-    ("Pose à domicile", 0.0),
+    ("Pose à domicile", 55.30),
 ]
 
 # (nom du transporteur, route, nom du produit de service)
