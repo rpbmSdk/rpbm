@@ -24,10 +24,10 @@ Pour la validation métier et la prise en main, voir le [guide client PDF, ses c
 3. Jobs/Gestion Stock/import_odoo.py <phase> --commit            (catalogue articles, P1/P4-P8)
    (P2/P3 de ce script sont l'ancienne architecture 5-entrepôts, abandonnée — ne pas les lancer,
    voir questions-ouvertes.md Q1)
-3 bis. sale_templates.py apply [--decision ...] --commit          (ce dossier, plan-modeles-devis.md ; AVANT l'étape 4,
-                                                                  sinon 8 modèles actifs bloquent la confirmation des
-                                                                  devis ; les 92 pièces sans fournisseur du §5 restent
-                                                                  à traiter à part)
+3 bis. consumable_kits.py apply --perimetre utilises --commit    (ce dossier, plan-modeles-devis.md §9 ; AVANT l'étape 4 :
+       consumable_kits.py archive --commit                       kit vide RPBM-SANS-APPRO sur chaque consommable vendable
+       consumable_kits.py check --perimetre utilises             sans fournisseur, archivage des inutilisés ; check
+                                                                  à rejouer après tout ajout d'article)
 4. setup_stock_architecture.py <phase> --commit                  (ce dossier, phase par phase ; carriers pose le tarif
                                                                   « Pose à domicile » à 55,30 HT)
 5. verify_structural.py                                          (ce dossier, lecture seule)
@@ -71,6 +71,7 @@ en production plus tard : `--profile <profil-prod>` une fois ce profil déclaré
 | [`verify_structural.py`](verify_structural.py) | **jamais** | Compare l'instance aux tables de `setup_stock_architecture.py` (source unique) — PASS/FAIL/WARN. |
 | [`verify_flows.py`](verify_flows.py) | oui (`--commit`) | Recette T1-T8/MTO ([test-registry](../Gestion%20Stock/architectures/audits/architecture-1-test-registry.md)) — taggée `ARCH1-AUDIT-<run>-<scénario>`, jamais de validation physique. |
 | [`rollback.py`](rollback.py) | oui (`--commit`) | Annule/supprime les enregistrements d'un run `verify_flows.py`, jamais rien d'autre. |
+| [`consumable_kits.py`](consumable_kits.py) | oui (`--commit`) | `apply` : nomenclature « Kit » sans composant (`RPBM-SANS-APPRO`) sur les consommables vendables sans fournisseur du périmètre (`modeles`, `utilises`, `vendables`) ; `archive` : archive ceux qui ne servent pas ; `check` : FAIL (code retour 1) s'il en reste un sans fournisseur ni kit ; `rollback --run <id>`. Décision du 2026-10-21 (option A), [plan §9](plan-modeles-devis.md#9-kits-vides-option-a-retenue-le-2026-10-21). |
 | [`sale_templates.py`](sale_templates.py) | oui (`--commit`) | `apply` : retire des modèles de devis actifs les lignes d'articles génériques (Q-03) et archive ces articles ; les choix du client du [plan §8](plan-modeles-devis.md#8-décisions-à-faire-valider-par-le-client) ne s'appliquent qu'avec `--decision` (`produits-connexes`, `gel-capteur`, `films-qte-zero`, `pose-domicile`). Rapport : lignes encore bloquantes (FAIL, code retour 1), pièges à qté 0 (WARN), devis ouverts concernés. `rollback --run <id>` : recrée les lignes, remet les valeurs, désarchive ; refusé si un modèle touché a changé depuis. |
 | [`studio_views.py`](studio_views.py) | oui (`--commit`) | `apply` : ajoute en fin des vues Studio le bouton « Assistant véhicule » (formulaires opportunité et devis), les champs natifs `rpbm_*` (formulaires opportunité, devis, facture) et le suffixe « (ancien) » des champs Studio doublés (+ `optional="hide"` dans les listes). Listes et recherches ne reçoivent que le suffixe : leurs colonnes et champs natifs viennent du module. `rollback --run <id>` : restaure les sauvegardes de ce run. |
 
@@ -83,6 +84,7 @@ python tests/test_install_module.py
 python tests/test_setup_stock_architecture.py
 python tests/test_studio_views.py
 python tests/test_sale_templates.py
+python tests/test_consumable_kits.py
 ```
 
 ## Vues Studio (`studio_views.py`)

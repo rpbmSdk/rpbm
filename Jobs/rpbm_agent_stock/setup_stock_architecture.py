@@ -113,6 +113,13 @@ PICKING_TYPES_INCOMING = [
     ("GALL/IN", "Réception Galleria", "Galleria", "GALL/RET"),
     ("GENI/IN", "Réception Genipa", "Genipa", "GENI/RET"),
 ]
+# Sequence explicite des receptions (decision du 2026-10-21). Creees sans sequence, elles valaient NULL, que PostgreSQL
+# range apres la sequence 1 du type « Receptions » de l'entrepot : Odoo le proposait donc, avec sa destination sur la vue
+# RPBM, a toute commande d'achat saisie a la main (purchase_stock _get_picking_type : premier type entrant par sequence,
+# id). D2/IN d'abord, type par defaut de tout achat (01-architecture-1-zones.md §4.2), puis D1/IN, avant « Receptions ».
+# Une reception d'achat manuelle arrive donc sur Depot 2, dont la validation exige un rack (controle M4 de rpbm_agent
+# 17.0.261021.1) : comportement voulu.
+INCOMING_SEQUENCE = {"D2/IN": -1, "D1/IN": 0, "GALL/IN": 2, "GENI/IN": 3}
 # (sequence_code, nom, src, reservation_method, create_backorder, default_location_return_id)
 PICKING_TYPES_OUTGOING = [
     ("GALL/OUT", "Livraison Galleria", "Galleria", "at_confirm", "ask", None),
@@ -311,7 +318,7 @@ def phase_picking_types(odoo: Odoo, _limit: int | None) -> None:
         entry = xmlid("picktype", seq)
         created[seq] = entry
         rows.append({
-            "id": entry, "name": name, "sequence_code": seq, "code": "incoming",
+            "id": entry, "name": name, "sequence_code": seq, "code": "incoming", "sequence": str(INCOMING_SEQUENCE[seq]),
             "warehouse_id/.id": str(warehouse["id"]), "company_id/.id": str(company_id),
             "default_location_src_id/.id": str(vendors),
             "default_location_dest_id/.id": str(loc(dest)),
@@ -361,6 +368,41 @@ def phase_picking_types(odoo: Odoo, _limit: int | None) -> None:
 
     total = len(PICKING_TYPES_INTERNAL) + len(PICKING_TYPES_INCOMING) + len(PICKING_TYPES_OUTGOING) + len(PICKING_TYPES_RETURNS)
     print(f"\nTotal : {total} types d'operation (attendu : 34).")
+    move_open_purchases_to_d2(odoo)
+    check_purchase_default(odoo)
+
+
+def move_open_purchases_to_d2(odoo: Odoo) -> None:
+    """Commandes d'achat ouvertes dont la reception vise une vue (type « Receptions » de l'entrepot, destination RPBM) :
+    leur reception ne pourrait pas etre validee (stock_quant check_location_id). Passees sur D2/IN."""
+    orders = odoo.search_read("purchase.order", [["state", "in", ["draft", "sent", "to approve"]],
+                                                 ["picking_type_id.default_location_dest_id.usage", "=", "view"]],
+                              ["name", "state", "origin", "picking_type_id", "picking_ids"])
+    print(f"\nCommandes d'achat ouvertes avec une reception vers une vue : {[o['name'] for o in orders] or 'aucune'}")
+    d2_in = odoo.resolve_xmlid(xmlid("picktype", "D2/IN"))
+    d2_dest = odoo.search_read("stock.picking.type", [["id", "=", d2_in]], ["default_location_dest_id"])[0]["default_location_dest_id"] if d2_in else False
+    for order in orders:
+        # Une commande non confirmee n'a pas encore de reception : elle la creera vers la destination de D2/IN. Une
+        # reception deja creee garde la sienne, le type de la commande n'y change rien.
+        pickings = odoo.search_read("stock.picking", [["id", "in", order["picking_ids"]]], ["name", "state", "location_dest_id"]) if order["picking_ids"] else []
+        existing = "; ".join(f"{p['name']} ({p['state']}) vers {p['location_dest_id'][1]}, inchangee" for p in pickings) or "aucune reception encore"
+        print(f"  {order['name']} ({order['state']}, origine {order['origin'] or '-'}) : {order['picking_type_id'][1]} -> D2/IN ; "
+              f"reception a la confirmation vers {d2_dest[1] if d2_dest else '?'} ; {existing}")
+    if orders and not odoo.commit:
+        print(f"  [dry-run] picking_type_id -> D2/IN (id {d2_in})")
+    elif orders and d2_in:
+        odoo.execute("purchase.order", "write", [o["id"] for o in orders], {"picking_type_id": d2_in})
+        print(f"  {len(orders)} commande(s) passee(s) sur D2/IN (id {d2_in})")
+
+
+def check_purchase_default(odoo: Odoo) -> bool:
+    """Type de reception propose a une commande d'achat saisie a la main : D2/IN attendu (INCOMING_SEQUENCE)."""
+    default = odoo.execute("purchase.order", "default_get", ["picking_type_id"]).get("picking_type_id")
+    expected = odoo.resolve_xmlid(xmlid("picktype", "D2/IN"))
+    ok = bool(expected) and default == expected
+    state = "OK" if ok else ("a corriger par picking_types --commit" if not odoo.commit else "ATTENTION")
+    print(f"\nCommande d'achat saisie a la main : type de reception propose {default}, D2/IN = {expected} -> {state}")
+    return ok
 
 
 def phase_routes(odoo: Odoo, _limit: int | None) -> None:
@@ -514,6 +556,7 @@ def phase_check(odoo: Odoo, _limit: int | None) -> None:
     ]:
         count = odoo.search_count(model, [])
         print(f"  {label} ({model}) : {count}")
+    check_purchase_default(odoo)
 
 
 PHASES = {

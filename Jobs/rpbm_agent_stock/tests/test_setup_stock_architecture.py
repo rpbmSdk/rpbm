@@ -28,6 +28,9 @@ def test_34_picking_types() -> None:
     assert total == 34, f"attendu 34 types (31 invariants + 3 reserves aux regles), trouve {total}"
     assert len(arch.PICKING_TYPES_INTERNAL) == 23, "20 transferts inter-sites + 3 types reserves aux regles"
     assert len(arch.PICKING_TYPES_INCOMING) == 4
+    assert set(arch.INCOMING_SEQUENCE) == {seq for seq, *_ in arch.PICKING_TYPES_INCOMING}, "une sequence par reception"
+    assert min(arch.INCOMING_SEQUENCE, key=arch.INCOMING_SEQUENCE.get) == "D2/IN", "D2/IN propose par defaut aux achats"
+    assert max(arch.INCOMING_SEQUENCE[s] for s in ("D1/IN", "D2/IN")) < 1, "avant « Receptions » (sequence 1)"
     assert len(arch.PICKING_TYPES_OUTGOING) == 3
     assert len(arch.PICKING_TYPES_RETURNS) == 4
 

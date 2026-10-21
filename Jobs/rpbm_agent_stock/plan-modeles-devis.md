@@ -2,6 +2,10 @@
 
 Date : 2026-09-29. Étape **3 bis** du [séquencement de déploiement](README.md#séquencement-complet).
 
+> **2026-10-21 — option A retenue** : l'étape 3 bis passe par des kits vides ([§9](#9-kits-vides-option-a-retenue-le-2026-10-21),
+> [`consumable_kits.py`](consumable_kits.py)) ; les articles génériques restent dans les modèles. Les §2 à §8
+> (`sale_templates.py`) restent la trace de l'analyse ; ne pas lancer `sale_templates.py --commit`.
+
 Relevés faits en lecture seule sur la préproduction (build 37939198, copie de la production au
 2026-09-11, Odoo 17). Les mécanismes ont été relus dans le source Odoo 17 (`../odoo17/odoo/addons`,
 chemins ci-dessous relatifs à ce dossier `addons`). Les chiffres sont à recompter sur la
@@ -337,3 +341,25 @@ Valeurs par défaut du plan entre parenthèses.
 - Le contenu des modèles de production par rapport à la copie du 2026-09-11 (le dry-run le montre).
 - Les joints du catalogue couvrent-ils l'usage « enjoliveur » de JOINT1 ?
 - La vue devis modifiée par Studio en production affiche-t-elle bien « Ajouter l'expédition » ?
+
+## 9. Kits vides (option A, retenue le 2026-10-21)
+
+Décision de l'utilisateur du 2026-10-21. Chaque consommable vendable sans fournisseur reçoit une nomenclature `mrp.bom`
+de type « Kit » (phantom), sans ligne, référence `RPBM-SANS-APPRO` : à la confirmation, Odoo remplace son besoin par
+celui de ses composants (`mrp/models/stock_rule.py:254-284`), donc aucun achat, aucune erreur « pas de prix
+fournisseur ». Donnée standard, aucun code ; l'article garde son type et reste dans les modèles de devis.
+
+Appliqué en préprod le 2026-10-21 : 51 kits (25 consommables des modèles actifs + 26 encore utilisés, run
+`runs/20261021-kits-utilises-consommables/`), 18 consommables sans usage archivés (`runs/20261021-archive-18-consommables/`),
+`check --perimetre utilises` PASS. En parallèle, `setup_stock_architecture.py picking_types` fixe la séquence des
+réceptions (D2/IN proposé par défaut aux achats) et passe les commandes d'achat ouvertes vers une vue sur D2/IN.
+
+Effets connus :
+
+- les lignes de ces articles n'apparaissent plus sur les bons de livraison et leur quantité livrée reste à 0 (la
+  facturation sur quantités commandées n'est pas touchée) ;
+- rejouer `consumable_kits.py check --perimetre utilises` après tout ajout d'article : un nouveau consommable sans
+  fournisseur ni kit bloque de nouveau la confirmation ;
+- si un fournisseur est ajouté un jour à l'un de ces articles, supprimer son kit en même temps (sinon sa réception
+  d'achat est explosée en rien) ;
+- hors cible : les stockables sans fournisseur (un kit casserait leur suivi de stock) ; leur donner un fournisseur.
