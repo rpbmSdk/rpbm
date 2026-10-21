@@ -173,7 +173,35 @@ Garanties de la recopie (`_copy_column`) :
   l'opportunité du devis facturé, seulement quand ils sont vides (une facture renseignée n'est jamais modifiée).
 - Une valeur Studio non convertible (stock VSF non numérique, libellé inconnu, date illisible) est ignorée :
   ni écart compté, ni natif remplacé.
+- Une valeur Studio vide (`NULL` ou `''`) est ignorée ; depuis `17.0.261021.2`, `0` l'est aussi pour un
+  nombre (le 2026-10-16, 136 946 lignes de devis étaient « recopiées » alors que 5 155 seulement ont un Prix
+  X'Glass : un natif `NULL` recevait `0`). Les nombres sont comparés arrondis à 6 décimales :
+  `639.1600000000001` (Studio) et `639.16` (natif) ne sont plus un écart (ligne 145823, journal du 2026-10-16).
+  La mise à jour vers `17.0.261021.2` ne rejoue pas la recopie : ces deux règles s'appliquent au prochain
+  rejeu (`post_init_hook` d'une installation à neuf, ou migration qui l'appelle).
 - Journal : une ligne `rpbm_agent: <table>.<natif> <- <Studio> : N ligne(s)` par champ.
+
+## Premier tarif VSF sans date de début (`17.0.261021.2`)
+
+Le premier prix fournisseur VSF d'un article (`/createProduct`, `product.template._sync_vsf_supplierinfo`) est
+créé **sans** `date_start`. Odoo cherche le tarif à la date de la demande de prix quand un besoin est fusionné
+dans une demande existante (`purchase_stock/models/stock_rule.py:251`) ou quand sa quantité change
+(`purchase/models/purchase_order_line.py:326`) ; seule la création d'une ligne prend la date du jour au plus
+tôt. Un tarif daté du jour de sa création n'était donc pas trouvé pour une demande plus ancienne, et la ligne
+passait à 0 € (PO00025, demande du 2026-10-14, tarif du 2026-10-15).
+
+Un changement de prix garde l'historique : la ligne active est close à la veille et une ligne datée du jour
+s'ouvre. Le premier tarif, sans date, couvre donc toute la période avant le premier changement. Le jour de sa
+création (`create_date`), il est corrigé sur place, comme une ligne ouverte le jour même.
+
+Migration `post-vsf-first-price-date.py` : retire la date de début de la ligne VSF la plus ancienne de chaque
+article (partenaire `rpbm_agent.vsf_partner_id`), si aucune autre ligne VSF de l'article n'a une date vide ou
+plus ancienne. SQL seulement, idempotente, ids journalisés ; les lignes de commande existantes ne sont pas
+recalculées. Elle ne tourne pas sur une base installée à neuf (« Branch Rebuild »).
+
+Limite : l'import du catalogue (`Jobs/Gestion Stock/import_odoo.py`, `phase_supplierinfo`) date au jour de
+l'import tout tarif VSF actif sans date de début et crée ses tarifs datés : relancé (après un « Branch Rebuild »
+par exemple), il ramène le prix d'achat à 0 € pour les demandes de prix antérieures.
 
 ## Droits et rôles
 

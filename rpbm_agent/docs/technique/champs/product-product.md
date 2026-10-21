@@ -19,14 +19,15 @@ issue de la fiche VSF). Le stock n'est jamais écrit par le widget.
 
 Un `product.supplierinfo` associé est créé dans la foulée (`partner_id` = fournisseur VSF,
 `product_name` = désignation VSF, `product_code` = code VSF, `price` = prix d'achat remisé RPBM,
-`date_start` = date de création).
+`date_start` vide : le premier tarif couvre aussi une demande de prix antérieure, voir
+[premier tarif VSF](../configuration.md#premier-tarif-vsf-sans-date-de-début-1702610212)).
 
 ## Synchronisation VSF du modèle
 
 `product.template.sync_vsf_information()` relit la fiche à partir de `rpbm_eurocode` sans le
 modifier et met à jour `list_price`, `rpbm_width_mm`, `rpbm_length_mm`, `description` et le prix
 fournisseur VSF (historisé : une ligne au même prix est enrichie, un nouveau prix clôture la
-ligne à J-1 et en ouvre une à J). Désignation, image, type et stock restent inchangés. Le bouton
+ligne à J-1 et en ouvre une à J ; le premier tarif n'a pas de date de début). Désignation, image, type et stock restent inchangés. Le bouton
 « Synchroniser VSF » reste masqué (`base.group_no_one`).
 
 ## Vue

@@ -34,12 +34,13 @@ Le résultat et le critère trouvé (« eurocode », « référence interne » o
 | `product_id` | produit venant d'être créé |
 | `delay` / `min_qty` | `1` / `0` (littéraux) |
 | `price` | `articleVsf.prixVenteRPBM` (remise `rpbm_agent.vsf_discount`, défaut `0.2`) |
+| `date_start` | vide (premier tarif, depuis `17.0.261021.2`) : une demande de prix antérieure le trouve, voir [premier tarif VSF](../../technique/configuration.md#premier-tarif-vsf-sans-date-de-début-1702610212) |
 
 ## Synchronisation ultérieure d'un article existant
 
 La méthode batch `product.template.sync_vsf_information()` relit la fiche à partir de `rpbm_eurocode`. Elle ne modifie ni cet identifiant, ni `name`, ni l'image. Elle actualise le prix de vente, les dimensions, la note interne `description` et la ligne fournisseur VSF.
 
-Le prix fournisseur est historisé : une ligne active au même prix est conservée et enrichie (`product_name`/`product_code`) ; un nouveau prix clôture la ligne existante à la veille et démarre une nouvelle ligne à la date du jour. Le bouton de fiche correspondant est livré masqué (`base.group_no_one`) en attente d'une décision d'ouverture aux utilisateurs.
+Le prix fournisseur est historisé : une ligne active au même prix est conservée et enrichie (`product_name`/`product_code`) ; un nouveau prix clôture la ligne existante à la veille et démarre une nouvelle ligne à la date du jour. Le premier tarif est créé sans date de début, et corrigé sur place le jour de sa création. Le bouton de fiche correspondant est livré masqué (`base.group_no_one`) en attente d'une décision d'ouverture aux utilisateurs.
 
 Sur un devis lié à une opportunité, le bouton « Ajouter au devis » ajoute une nouvelle ligne `sale.order.line` avec `default_product_id`, `product_uom_qty = 1`, le barème X'Glass de la pièce d'origine (`rpbm_xglass_price`, article principal seulement, jamais un prix VSF depuis le 2026-10-15) et le prix fournisseur VSF net (`rpbm_supplier_price` = `articleVsf.prixVenteRPBM`, `rpbm_supplier_id` = fournisseur VSF) : voir [7](07-confirmation-sale-order.md#barème-xglass-et-prix-fournisseur-2026-10-15). Les `onchange` Odoo calculent les champs dépendants ; le module recopie le barème vers le champ Studio historique, d'où l'automatisation Studio « Tarif x glass » calcule le prix unitaire. Le widget ne met jamais à jour le stock du produit.
 
