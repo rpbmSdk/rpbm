@@ -58,6 +58,11 @@ class CrmLead(models.Model):
     # Q-01 (2026-10-12) : barème = Prix XGlass HT de la pièce d'origine choisie, jamais un prix VSF.
     # Sans lien Studio : le « Prix XGlass (TTC) » Studio de l'opportunité porte le total du devis.
     rpbm_xglass_piece_price = fields.Float("Barème X'Glass HT de la pièce d'origine", digits="Product Price")
+    # Procédure FFC : portés par le client, saisissables depuis l'opportunité.
+    rpbm_birth_date = fields.Date(
+        related="partner_id.rpbm_birth_date", readonly=False, groups="sales_team.group_sale_salesman")
+    rpbm_birth_place = fields.Char(
+        related="partner_id.rpbm_birth_place", readonly=False, groups="sales_team.group_sale_salesman")
 
     def _rpbm_legacy_triggers(self):
         return {"rpbm_vehicle_id": VEHICLE_DERIVED_FIELDS}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Sans condition is_company : des assurés sont enregistrés à tort comme sociétés. -->
+    <record id="view_partner_form_rpbm_agent" model="ir.ui.view">
+        <field name="name">res.partner.form.rpbm.agent</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="function" position="after">
+                <field name="rpbm_birth_date"/>
+                <field name="rpbm_birth_place"/>
+            </field>
+        </field>
+    </record>
+</odoo>

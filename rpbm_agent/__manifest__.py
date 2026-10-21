@@ -1,6 +1,6 @@
 {
     "name": "RPBM Agent",
-    "version": "17.0.261016.1",
+    "version": "17.0.261021.1",
     "category": "Tools",
     "summary": "Assistant véhicule et pièces X'Glass / VSF pour les pistes et devis",
     "description": """Widget Odoo qui interroge les portails X'Glass (véhicule, catégories, pièces,
@@ -16,6 +16,7 @@ normalisées dans ses champs natifs, synchronisés avec les champs Studio histor
         "security/ir.model.access.csv",
         "security/rpbm_groups.xml",
         "views/crm_lead_views.xml",
+        "views/res_partner_views.xml",
         "views/sale_order_views.xml",
         "views/sale_order_carrier_views.xml",
         "views/sale_order_report_views.xml",
