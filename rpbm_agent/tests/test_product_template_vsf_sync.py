@@ -51,7 +51,7 @@ class TestProductTemplateVSFSync(TransactionCase):
         self.assertFalse(line.product_id)
         self.assertEqual(line.product_name, "Désignation VSF")
         self.assertEqual(line.product_code, "6571AGRCHIMVZ")
-        self.assertEqual(line.date_start, today)
+        self.assertFalse(line.date_start, "premier tarif sans date de début (bug du prix d'achat à 0)")
         self.assertEqual(line.price, 80.0)
 
         template._sync_vsf_supplierinfo(
@@ -67,17 +67,36 @@ class TestProductTemplateVSFSync(TransactionCase):
 
         template._sync_vsf_supplierinfo(self._article(), self.partner.id, today)
         template._sync_vsf_supplierinfo(self._article("120,00 €"), self.partner.id, tomorrow)
-        lines = template.seller_ids.sorted("date_start")
+        lines = template.seller_ids.sorted("id")
         self.assertEqual(len(lines), 2)
-        self.assertEqual(lines[0].date_end, today)
+        self.assertEqual((lines[0].date_start, lines[0].date_end), (False, today))
         self.assertEqual(lines[1].date_start, tomorrow)
         self.assertEqual(lines[1].price, 96.0)
 
         template._sync_vsf_supplierinfo(self._article("125,00 €"), self.partner.id, tomorrow)
-        lines = template.seller_ids.sorted("date_start")
+        lines = template.seller_ids.sorted("id")
         self.assertEqual(len(lines), 2)
         self.assertEqual(lines[1].date_start, tomorrow)
         self.assertEqual(lines[1].price, 100.0)
+
+    def test_first_price_found_for_an_earlier_purchase_date(self):
+        """PO00025 : demande de prix datée de la veille du premier tarif VSF, besoin fusionné à 0 €.
+
+        purchase_stock (stock_rule.py:251) et purchase (purchase_order_line.py:326) cherchent le
+        tarif à la date de la demande de prix : le premier tarif doit la couvrir.
+        """
+        template = self._template()
+        today = fields.Date.context_today(template)
+        template._sync_vsf_supplierinfo(self._article(), self.partner.id, today)
+        product = template.product_variant_id
+        seller = product._select_seller(
+            partner_id=self.partner, quantity=2, date=today - timedelta(days=1), uom_id=product.uom_po_id
+        )
+        self.assertEqual(seller.price, 80.0)
+
+        template._sync_vsf_supplierinfo(self._article("120,00 €"), self.partner.id, today)
+        self.assertEqual(len(template.seller_ids), 1, "premier tarif créé aujourd'hui : corrigé sur place")
+        self.assertEqual((template.seller_ids.date_start, template.seller_ids.price), (False, 96.0))
 
     def test_vsf_goes_first_and_keeps_list_price(self):
         """IMP-3 : article importé (fournisseur local seul) rattaché à un article VSF."""

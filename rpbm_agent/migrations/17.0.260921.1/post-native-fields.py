@@ -97,20 +97,26 @@ def _copy_column(cr, table, src, dst, expression=None, case_map=None):
     # Natif vide : NULL, chaîne vide, ou 0 (défaut envoyé par le client web) pour un nombre.
     empty = f"COALESCE({dst}, 0) = 0" if numeric else f"COALESCE({dst}::text, '') = ''"
     filled = f"{src} IS NOT NULL AND {src}::text <> ''"
+    # Studio vide : NULL ou '', et 0 pour un nombre (un natif NULL ne reçoit pas 0 : 136 946 « recopies » le 2026-10-16).
+    if numeric:
+        filled += f" AND ({expression}) <> 0"
     # Valeur Studio non convertible (NULL) : ni écart compté, ni natif 0/'' remplacé par NULL.
-    differs = f"({expression}) IS NOT NULL AND {dst} IS DISTINCT FROM ({expression})"
+    # Nombres comparés arrondis : 639.1600000000001 (Studio float) n'est pas un écart avec 639.16.
+    compared = (lambda value: f"round(({value})::numeric, 6)") if numeric else (lambda value: f"({value})")
+    differs = f"({expression}) IS NOT NULL AND {compared(dst)} IS DISTINCT FROM {compared(expression)}"
+    where = f"{filled} AND {differs}"
     # Un natif déjà renseigné n'est jamais remplacé : les écarts avec le Studio sont seulement comptés.
     cr.execute(
-        f"SELECT count(*), (array_agg(id ORDER BY id))[1:20] FROM {table} WHERE NOT ({empty}) AND {filled} AND {differs}",
-        params * 2,
+        f"SELECT count(*), (array_agg(id ORDER BY id))[1:20] FROM {table} WHERE NOT ({empty}) AND {where}",
+        params * where.count(expression),
     )
     conflicts, conflict_ids = cr.fetchone()
     if conflicts:
         _logger.warning("rpbm_agent: %s.%s conservé malgré une valeur Studio %s différente : %s ligne(s), ex. ids %s",
                         table, dst, src, conflicts, conflict_ids)
     cr.execute(
-        f"UPDATE {table} SET {dst} = {expression} WHERE {empty} AND {filled} AND {differs}",
-        params * 3,
+        f"UPDATE {table} SET {dst} = {expression} WHERE {empty} AND {where}",
+        params * (1 + where.count(expression)),
     )
     _logger.info("rpbm_agent: %s.%s <- %s : %s ligne(s)", table, dst, src, cr.rowcount)
 

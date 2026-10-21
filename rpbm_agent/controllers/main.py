@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from odoo import fields, _
+from odoo import _
 from odoo.exceptions import AccessError, UserError
 from odoo.http import Controller, request, route
 import logging
@@ -788,7 +788,6 @@ class AgentController(Controller):
                     article_vsf,
                     partner_id,
                     product_id=product.id,
-                    date_start=fields.Date.today(),
                 )
             )
         except VSFError as error:

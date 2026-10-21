@@ -48,9 +48,9 @@ class ProductTemplate(models.Model):
         today = today or fields.Date.context_today(self)
         active_line = self._active_vsf_supplierinfo(partner_id, today)
         if not active_line:
-            values = vsf.product_supplierinfo_values(
-                article, partner_id, product_tmpl_id=self.id, date_start=today
-            )
+            # Premier tarif sans date de début : les achats le retrouvent à la date d'une demande de prix
+            # antérieure (fusion d'un besoin, changement de quantité : purchase_stock stock_rule.py:251).
+            values = vsf.product_supplierinfo_values(article, partner_id, product_tmpl_id=self.id)
             # VSF passe en tête (P-36) : _select_seller retient le fournisseur de la plus petite séquence ;
             # un achat local se choisit au cas par cas, il ne devient pas le fournisseur par défaut.
             others = self.seller_ids.filtered(lambda line: line.partner_id.id != partner_id)
@@ -68,7 +68,11 @@ class ProductTemplate(models.Model):
             line.write(labels)
             return
 
-        if line.date_start == today:
+        # Premier tarif (sans date de début) créé aujourd'hui : même règle qu'une ligne ouverte aujourd'hui.
+        opened_today = line.date_start == today or (
+            not line.date_start and fields.Date.context_today(self, line.create_date) == today
+        )
+        if opened_today:
             line.write(
                 {
                     **labels,
