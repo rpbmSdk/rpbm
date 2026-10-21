@@ -364,8 +364,9 @@ def build_products() -> tuple[list[str], list[list[str]]]:
 def build_supplierinfo(today: str) -> tuple[list[list[str]], list[list[str]]]:
     """Retourne (lignes VSF, lignes autres fournisseurs).
 
-    date_start est systematiquement renseignee : sans elle la ligne est active pour
-    toujours et l'historisation J-1/J de rpbm_agent ne peut plus fonctionner.
+    Tarif VSF sans date_start (rpbm_agent 17.0.261021.2) : date au jour de l'import, il n'etait pas
+    trouve pour une demande de prix datee de la veille et la ligne d'achat passait a 0 EUR
+    (purchase_stock stock_rule.py:251). rpbm_agent historise une ligne sans date (close a J-1).
     """
     vsf, others = [], []
     for row in read_catalog():
@@ -378,7 +379,7 @@ def build_supplierinfo(today: str) -> tuple[list[list[str]], list[list[str]]]:
         if key.startswith("VSF"):
             vsf.append([
                 xmlid("seller", f"{reference} vsf"), xmlid("prod", reference),
-                str(VSF_PARTNER_ID), price, today, reference,
+                str(VSF_PARTNER_ID), price, "", reference,
             ])
         elif key and key not in NON_SUPPLIER_KEYS:
             others.append([
@@ -538,9 +539,11 @@ def phase_supplierinfo(odoo: Odoo, limit: int | None) -> None:
 
     # Garde-fou P0-B (reconciliation §2.15) : _active_vsf_supplierinfo() leve une UserError
     # des que deux tarifs VSF sont actifs le meme jour, ce qui bloque definitivement la
-    # synchronisation du produit. Decision RPBM du 2026-08-05 : dater les lignes preexistantes
-    # au jour de l'import et ne pas leur en ajouter une seconde. La ligne conservee est reprise
-    # par la premiere synchronisation, qui l'historise elle-meme si le prix a change.
+    # synchronisation du produit. Decision RPBM du 2026-08-05 : ne pas ajouter de seconde ligne
+    # a un produit qui en porte deja une. La ligne conservee est reprise par la premiere
+    # synchronisation, qui l'historise elle-meme si le prix a change. Elle n'est plus datee au
+    # jour de l'import : sans date_start, elle couvre les demandes de prix anterieures
+    # (rpbm_agent 17.0.261021.2, prix d'achat a 0 EUR).
     existing = odoo.search_read(
         "product.supplierinfo", [["partner_id", "=", VSF_PARTNER_ID]],
         ["product_tmpl_id", "date_start", "date_end"],
@@ -549,11 +552,6 @@ def phase_supplierinfo(odoo: Odoo, limit: int | None) -> None:
         line for line in existing
         if line["product_tmpl_id"] and not line["date_end"]
     ]
-    sans_date = [line["id"] for line in actives if not line["date_start"]]
-    if sans_date:
-        print(f"  {len(sans_date)} tarif(s) VSF actifs sans date_start : datation au {today}.")
-        if odoo.commit:
-            odoo.execute("product.supplierinfo", "write", sans_date, {"date_start": today})
 
     if actives:
         # Seuls les produits deja porteurs d'un identifiant externe de cet import peuvent
@@ -700,7 +698,8 @@ def phase_selfcheck() -> None:
         "des lignes du catalogue ne sont ni importees ni exclues"
 
     vsf, others = build_supplierinfo("2026-07-30")
-    assert all(row[4] == "2026-07-30" for row in vsf + others), "date_start obligatoire"
+    assert all(row[4] == "" for row in vsf), "tarif VSF sans date_start (prix d'achat a 0 EUR)"
+    assert all(row[4] == "2026-07-30" for row in others), "date_start des autres fournisseurs"
     assert all(row[2] == str(VSF_PARTNER_ID) for row in vsf), "VSF doit pointer le partenaire 5708"
     seller_ids = [row[0] for row in vsf + others]
     assert len(seller_ids) == len(set(seller_ids)), "identifiants externes de tarif en doublon"
