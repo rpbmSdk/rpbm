@@ -56,6 +56,17 @@ restent saisissables.
 
 Détail : [workflow 7](../../fonctionnel/workflow/07-confirmation-sale-order.md#main-dœuvre-enregistrée-correctif-du-2026-10-07) et [frontend](../frontend.md#main-dœuvre-enregistrée-correctif-du-2026-10-07).
 
+## Client (procédure FFC)
+
+| Champ | Type | Alimentation | Studio historique synchronisé |
+|---|---|---|---|
+| `rpbm_birth_date` | date, `related` `partner_id.rpbm_birth_date`, écrivable | saisie près du client | — |
+| `rpbm_birth_place` | char, `related` `partner_id.rpbm_birth_place`, écrivable | idem | — |
+
+Portés par le client ([`res.partner`](res-partner.md)) : une saisie sur l'opportunité est écrite sur
+la fiche client. Hors du mixin Studio, sans miroir sur le devis. Réservés au groupe vendeur
+(`sales_team.group_sale_salesman`).
+
 ## Synchronisation avec les champs Studio
 
 Le mixin `rpbm.legacy.sync.mixin` (`models/legacy_fields.py`) recopie chaque écriture d'un champ
@@ -67,7 +78,8 @@ valeur non convertible laisse la cible inchangée. Sans champs Studio, le mixin 
 
 `views/crm_lead_views.xml` hérite de trois vues standard :
 
-- **formulaire** : l'onglet « Véhicule (X'Glass) » affiche le widget et tous les champs ci-dessus ;
+- **formulaire** : l'onglet « Véhicule (X'Glass) » affiche le widget et les champs véhicule et pièce ;
+  date et lieu de naissance sous « Client » (groupe `opportunity_partner`), non modifiables sans client ;
 - **recherche** : immatriculation, marque, modèle, VIN, eurocode et un champ combiné « Véhicule »
   (immatriculation, VIN, marque ou modèle en une saisie) ; regroupements par marque, modèle et
   pièce concernée ;
@@ -87,6 +99,6 @@ dans la section Studio et déplace les anciens champs doublés dans un onglet «
 - Écriture : [6 — Confirmation sur Piste/Opportunité](../../fonctionnel/workflow/06-confirmation-crm-lead.md) (« Confirmer », « Confirmer et enregistrer », « Créer un devis »)
 
 ---
-Précédent : [Champs Odoo par modèle](README.md) · Suivant : [Champs — `sale.order`](sale-order.md)
+Précédent : [Champs Odoo par modèle](README.md) · Suivant : [Champs — `res.partner`](res-partner.md)
 
 Voir aussi : [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](../../fonctionnel/workflow/06-confirmation-crm-lead.md) · [7 — Confirmation sur Ordre de Vente (`sale.order`)](../../fonctionnel/workflow/07-confirmation-sale-order.md) · [Frontend (OWL)](../frontend.md) · [Déploiement rpbm_agent + architecture stock — outillage rejouable](../../../../Jobs/rpbm_agent_stock/README.md) · [Configuration & déploiement](../configuration.md) · [2 — Sélection du véhicule](../../fonctionnel/workflow/02-selection-vehicule.md) · [3 — Catégorie X'Glass (calque)](../../fonctionnel/workflow/03-categorie-xglass.md) · [4 — Pièce et pièce après-marché (déduction eurocode)](../../fonctionnel/workflow/04-piece-piece-am.md)

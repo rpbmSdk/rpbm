@@ -4,7 +4,7 @@
 
 ## Installation du module
 
-Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis installer via l'interface d'administration (`depends: base_setup, crm, delivery, fleet, product, sale_crm, sale_stock`, voir [`__manifest__.py`](../../__manifest__.py)). Le module exige `delivery` pour le champ natif `sale.order.carrier_id`, `base_setup` pour l'écran Réglages et `sale_stock` pour `stock.picking` (miroir `rpbm_vehicle_id`, `models/stock_picking.py`). Le routage stock (`stock_delivery`) est porté par l'architecture stock, pas par ce module.
+Déposer `rpbm_agent/` dans le dossier `addons` de l'instance Odoo 17, puis installer via l'interface d'administration (`depends: base_setup, crm, delivery, fleet, product, sale_crm, sale_stock`, voir [`__manifest__.py`](../../__manifest__.py)). Le module exige `delivery` pour le champ natif `sale.order.carrier_id`, `base_setup` pour l'écran Réglages et `sale_stock` pour `stock.picking` (miroir `rpbm_vehicle_id` et refus de valider une réception laissée sur un emplacement qui contient des racks, `models/stock_picking.py`). Le routage stock (`stock_delivery`) est porté par l'architecture stock, pas par ce module.
 
 ## Dépendances Python
 
@@ -198,11 +198,12 @@ Le widget et les champs natifs `rpbm_*` sont ajoutés par les vues versionnées 
 
 | Fichier | Vues standard héritées | Ajouts |
 |---|---|---|
-| `views/crm_lead_views.xml` | formulaire, recherche et liste des opportunités | onglet « Véhicule (X'Glass) » ; recherche et regroupements véhicule ; colonnes immatriculation, eurocode, marque, modèle — voir [crm-lead](champs/crm-lead.md#vue) |
+| `views/crm_lead_views.xml` | formulaire, recherche et liste des opportunités | onglet « Véhicule (X'Glass) » ; date et lieu de naissance sous « Client » ; recherche et regroupements véhicule ; colonnes immatriculation, eurocode, marque, modèle — voir [crm-lead](champs/crm-lead.md#vue) |
 | `views/sale_order_views.xml` | formulaire, liste et recherche des devis | onglet ; colonnes immatriculation, marque, modèle ; recherche et regroupements — voir [sale-order](champs/sale-order.md#vue) |
 | `views/sale_order_carrier_views.xml` | formulaire des devis | transporteur `carrier_id` |
 | `views/sale_order_report_views.xml` | rapports QWeb Studio des devis | mode de remise (AG01-04) |
 | `views/account_move_views.xml` | recherche des factures, liste des factures client | recherche et regroupements véhicule ; colonnes — voir [account-move](champs/account-move.md#vue) |
+| `views/res_partner_views.xml` | formulaire contact | date et lieu de naissance — voir [res-partner](champs/res-partner.md#vue) |
 | `views/fleet_vehicle_views.xml` | formulaire véhicule | onglet « X'Glass » |
 | `views/product_product_views.xml`, `views/product_template_views.xml` | formulaires et recherche des articles | eurocode, dimensions, onglet « VSF », filtre « Eurocode » |
 

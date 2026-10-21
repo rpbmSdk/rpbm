@@ -11,6 +11,7 @@ détail étape par étape de quand chaque champ est lu/écrit, voir
 [le parcours en 9 étapes](../../fonctionnel/workflow/README.md).
 
 - [`crm-lead.md`](crm-lead.md) — Piste/Opportunité, source de vérité du dossier.
+- [`res-partner.md`](res-partner.md) — client : date et lieu de naissance (procédure FFC).
 - [`sale-order.md`](sale-order.md) — Ordre de Vente (miroirs de l'opportunité).
 - [`sale-order-line.md`](sale-order-line.md) — lignes de devis créées par le widget (articles VSF, main-d'œuvre).
 - [`fleet-vehicle.md`](fleet-vehicle.md) — véhicule Odoo créé/réutilisé par le widget, référentiel canonique.
@@ -19,7 +20,9 @@ détail étape par étape de quand chaque champ est lu/écrit, voir
   eurocode et pièce repris du devis facturé.
 
 `stock.picking.rpbm_vehicle_id` (related `sale_id`, stocké) expose le véhicule sur la livraison
-sans vue dédiée.
+sans vue dédiée. `stock.picking._action_done` refuse une réception dont une ligne cochée, de
+quantité non nulle, reste sur un emplacement qui contient des emplacements internes (racks) : le
+rangement est manuel (☰ › « Stocker dans »), sans règle de rangement vers les racks.
 
 ---
 Précédent : [Historique des versions](../versions.md) · Suivant : [Champs — `crm.lead`](crm-lead.md)

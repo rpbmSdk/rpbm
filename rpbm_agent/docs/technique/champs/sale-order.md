@@ -65,6 +65,6 @@ opportunité liée).
 - Création produit et lignes : [9 — Création du produit](../../fonctionnel/workflow/09-creation-produit.md), [sale-order-line.md](sale-order-line.md)
 
 ---
-Précédent : [Champs — `crm.lead`](crm-lead.md) · Suivant : [Champs — `sale.order.line`](sale-order-line.md)
+Précédent : [Champs — `res.partner`](res-partner.md) · Suivant : [Champs — `sale.order.line`](sale-order-line.md)
 
 Voir aussi : [Déploiement rpbm_agent + architecture stock — outillage rejouable](../../../../Jobs/rpbm_agent_stock/README.md) · [6 — Confirmation sur Piste/Opportunité (`crm.lead`)](../../fonctionnel/workflow/06-confirmation-crm-lead.md) · [7 — Confirmation sur Ordre de Vente (`sale.order`)](../../fonctionnel/workflow/07-confirmation-sale-order.md) · [9 — Création du produit (`product.product`)](../../fonctionnel/workflow/09-creation-produit.md)
