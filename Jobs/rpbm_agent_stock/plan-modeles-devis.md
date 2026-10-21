@@ -240,7 +240,8 @@ avant de créer les transporteurs à route.
 
 | # | Action | Outil | Vérification | Retour arrière |
 |---|---|---|---|---|
-| 3 bis | Modèles et articles (§2 à §4) | [`sale_templates.py`](sale_templates.py) `apply` (écrit le 2026-10-16) : dry-run, puis `--commit` avec les `--decision` validées au §8 | Un second dry-run répond « rien à faire », aucune ligne bloquante dans les modèles actifs, code retour 0 | `sale_templates.py rollback --run <run> --commit` |
+| 3 bis | Kits vides sur les consommables sans fournisseur (§9, option A du 2026-10-21) | [`consumable_kits.py`](consumable_kits.py) `apply --perimetre utilises`, puis `archive` : dry-run, puis `--commit` | `consumable_kits.py check --perimetre utilises` PASS (code retour 0) | `consumable_kits.py rollback --run <run> --commit` |
+| ~~3 bis~~ | ~~Modèles et articles (§2 à §4)~~ — abandonné le 2026-10-21 : ne jamais lancer `sale_templates.py --commit` | [`sale_templates.py`](sale_templates.py) | — | — |
 | 3 bis (suite) | Prix fournisseur VSF des 92 pièces sans fournisseur | `sync_vsf_information()`, appelée par le script ou lot par lot | Le rapport du dry-run ne liste plus ces pièces | Aucun (historisation native des prix fournisseur) |
 | 4 | Architecture, **tarif compris** | `setup_stock_architecture.py carriers --commit` | Étape 5 : `check_carriers` compare `fixed_price` à `SERVICE_PRODUCTS` (contrôle à ajouter) | Remettre la constante et rejouer |
 | 4 ter | Archiver « Free delivery charges » | à la main dans Odoo | Seuls les 3 transporteurs RPBM sont proposés | Le désarchiver |
