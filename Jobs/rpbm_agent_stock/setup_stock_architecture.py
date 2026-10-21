@@ -1,6 +1,6 @@
 """Met en place l'architecture stock 1 (entrepot unique, 5 sites en zones) sur rpbm-preprod.
 
-    python setup_stock_architecture.py <phase> [--commit] [--profile ...]
+    python setup_stock_architecture.py <phase> [--commit] [--profile ...] [--sans-route]
 
 Implemente Jobs/Gestion Stock/architectures/01-architecture-1-zones.md §2.1-2.7 (l'architecture
 recommandee, cf. questions-ouvertes.md Q1). Ce fichier reste la seule source de verite : toute
@@ -21,7 +21,8 @@ jamais par hypothese sur un id) :
                                          "reception -> rack" de la spec §2.7 ne sont pas creees,
                                          decision RPBM (2026-09) -- D1/IN et D2/IN livrent deja
                                          directement sur leur depot, pas de rack dedie
-    carriers       delivery.carrier     3 transporteurs
+    carriers       delivery.carrier     3 transporteurs ; --sans-route : sans route (phase 1 de la mise en
+                                         production), le meme appel sans l'option pose ensuite les routes
     check          lecture seule        relevé de l'etat actuel, sans comparaison a la cible
 
 Prealable : rpbm_agent installe (install_module.py) et l'entrepot RPBM existant sur l'instance.
@@ -496,7 +497,7 @@ def phase_putaway(odoo: Odoo, _limit: int | None) -> None:
         odoo.load("stock.putaway.rule", fields, [[row.get(f, "") for f in fields] for row in rows], "putaway (filet Stock -> Dépôt 2)")
 
 
-def phase_carriers(odoo: Odoo, _limit: int | None) -> None:
+def phase_carriers(odoo: Odoo, _limit: int | None, sans_route: bool = False) -> None:
     # 1. Produits de service -- prealable requis par delivery.carrier.product_id
     # (delivery/models/delivery_carrier.py:49). Idempotent via xmlid, comme le reste.
     rows = [
@@ -513,41 +514,72 @@ def phase_carriers(odoo: Odoo, _limit: int | None) -> None:
 
     price_by_product = dict(SERVICE_PRODUCTS)
 
-    # 2. Transporteurs, un par route -- recherche prealable pour ne jamais dupliquer (create()
-    # n'est pas idempotent via xmlid comme load(), delivery.carrier n'ayant pas de mecanisme
-    # d'identifiant externe naturel dans ce flux).
+    # 2. Transporteurs, un par route -- recherche par nom pour ne jamais dupliquer (create() n'est pas
+    # idempotent via xmlid comme load()). Lecture faite aussi en dry-run, pour simuler fidelement.
     for name, route, product_name in CARRIERS:
-        if not odoo.commit:
-            print(f"  [dry-run] transporteur {name!r} : route={route!r} produit={product_name!r} "
-                  f"prix={price_by_product[product_name]}")
-            continue
-        existing = odoo.search_read("delivery.carrier", [["name", "=", name]], ["id"], limit=1)
-        if existing:
-            print(f"  {name} : deja present (id {existing[0]['id']}), non recree.")
-            continue
-        route_id = odoo.resolve_xmlid(xmlid("route", route))
+        existing = odoo.search_read("delivery.carrier", [["name", "=", name]], ["id", "product_id", "route_ids"], limit=1)
+        route_id = None if sans_route else odoo.resolve_xmlid(xmlid("route", route))
         product_tmpl_id = odoo.resolve_xmlid(xmlid("product", product_name))
-        product_id = None
-        if product_tmpl_id:
-            variant = odoo.search_read("product.product", [["product_tmpl_id", "=", product_tmpl_id]], ["id"], limit=1)
-            product_id = variant[0]["id"] if variant else None
-        if not route_id or not product_id:
+        variant = odoo.search_read("product.product", [["product_tmpl_id", "=", product_tmpl_id]], ["id"], limit=1) if product_tmpl_id else []
+        product_id = variant[0]["id"] if variant else None
+        action, vals = carrier_action(existing[0] if existing else None, route_id, product_id, sans_route)
+        if action == "skip":
+            # En dry-run sur une base neuve, le produit de service n'existe pas encore : cree par l'etape 1 au --commit.
             print(f"  {name} : prealable manquant (route={route_id}, produit service={product_id}) -- ignore.")
             continue
-        carrier_id = odoo.call(
-            "delivery.carrier", "create", None, {
-                "name": name, "delivery_type": "fixed",
-                "product_id": product_id, "fixed_price": price_by_product[product_name],
-                "route_ids": [(6, 0, [route_id])],
-                "integration_level": "rate",
-            },
-            label=f"transporteur {name}",
-        )
-        print(f"  {name} : cree (id {carrier_id}), produit {product_name!r} (id {product_id}), "
-              f"prix {price_by_product[product_name]}")
+        if action == "ok":
+            print(f"  {name} : deja conforme (id {existing[0]['id']}, routes {existing[0]['route_ids']}), rien a faire.")
+            continue
+        detail = f"{vals} ; prix {price_by_product[product_name]} via le produit {product_name!r}"
+        if not odoo.commit:
+            print(f"  [dry-run] transporteur {name!r} ({'id %s' % existing[0]['id'] if existing else 'nouveau'}) : {action} {detail}")
+        elif action == "create":
+            carrier_id = odoo.call("delivery.carrier", "create", None, {
+                "name": name, "delivery_type": "fixed", "fixed_price": price_by_product[product_name],
+                "integration_level": "rate", **vals}, label=f"transporteur {name}")
+            print(f"  {name} : cree (id {carrier_id}), {detail}")
+        else:
+            odoo.call("delivery.carrier", "write", [existing[0]["id"]], vals, label=f"transporteur {name}")
+            print(f"  {name} : mis a jour (id {existing[0]['id']}), {detail}")
 
 
-def phase_check(odoo: Odoo, _limit: int | None) -> None:
+def carrier_action(existing: dict | None, route_id: int | None, product_id: int | None,
+                   sans_route: bool) -> tuple[str, dict]:
+    """(action, valeurs) d'un transporteur : create, write, ok ou skip (prealable manquant).
+    sans_route (phase 1 de la mise en production) : aucune route posee ni retiree. Sinon la route est ajoutee
+    (commande 4) a celles deja presentes : la phase 2 pose les routes sur les memes transporteurs, sans doublon."""
+    if (existing is None and not product_id) or (not sans_route and not route_id):
+        return "skip", {}
+    vals: dict = {}
+    if product_id and (existing is None or (existing["product_id"] or [None])[0] != product_id):
+        vals["product_id"] = product_id
+    if not sans_route and (existing is None or route_id not in existing["route_ids"]):
+        vals["route_ids"] = [(6, 0, [route_id])] if existing is None else [(4, route_id)]
+    if existing is None:
+        return "create", vals
+    return ("write", vals) if vals else ("ok", {})
+
+
+def check_carriers(odoo: Odoo, sans_route: bool) -> bool:
+    """3 transporteurs presents, chacun avec sa route ; sans route accepte avec sans_route (phase 1)."""
+    ok = True
+    print("\nTransporteurs :")
+    for name, route, _product_name in CARRIERS:
+        found = odoo.search_read("delivery.carrier", [["name", "=", name]], ["id", "route_ids"], limit=1)
+        route_id = odoo.resolve_xmlid(xmlid("route", route))
+        if not found:
+            state, ok = "ABSENT", False
+        elif route_id and route_id in found[0]["route_ids"]:
+            state = f"OK (id {found[0]['id']}, route posee)"
+        elif sans_route:
+            state = f"OK sans route (id {found[0]['id']}, --sans-route)"
+        else:
+            state, ok = f"route {route!r} manquante (id {found[0]['id']})", False
+        print(f"  {name} : {state}")
+    return ok
+
+
+def phase_check(odoo: Odoo, _limit: int | None, sans_route: bool = False) -> None:
     warehouse = odoo.search_read("stock.warehouse", [["name", "=", WAREHOUSE_NAME]], ["id", "lot_stock_id"])
     print(f"Entrepot {WAREHOUSE_NAME} : {warehouse}")
     for model, label in [
@@ -561,6 +593,7 @@ def phase_check(odoo: Odoo, _limit: int | None) -> None:
         count = odoo.search_count(model, [])
         print(f"  {label} ({model}) : {count}")
     check_purchase_default(odoo)
+    check_carriers(odoo, sans_route)
 
 
 PHASES = {
@@ -580,12 +613,16 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--commit", action="store_true", help="ecrire reellement dans Odoo")
     parser.add_argument("--limit", type=int, help="reserve, non utilise par ces phases")
     parser.add_argument("--profile", default=None, help="profil paradigme-mcp (defaut : lu depuis .paradigme.yaml)")
+    parser.add_argument("--sans-route", action="store_true",
+                        help="carriers/check : transporteurs sans route (phase 1 de la mise en production)")
     args = parser.parse_args(list(argv) if argv is not None else None)
+    if args.sans_route and args.phase not in ("carriers", "check"):
+        parser.error("--sans-route ne vaut que pour les phases carriers et check")
 
     odoo = Odoo(args.profile, args.commit)
     mode = "ECRITURE" if args.commit else "dry-run (aucune ecriture)"
     print(f"Phase {args.phase} sur {odoo.url} (profil {odoo.profile!r}) — {mode}\n")
-    PHASES[args.phase](odoo, args.limit)
+    PHASES[args.phase](odoo, args.limit, **({"sans_route": True} if args.sans_route else {}))
     if not args.commit:
         print("\nAucune ecriture effectuee. Relancer avec --commit pour appliquer.")
     return 0

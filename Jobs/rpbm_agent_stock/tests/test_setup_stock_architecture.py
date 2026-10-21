@@ -47,6 +47,24 @@ def test_3_carriers() -> None:
     assert len(arch.CARRIERS) == 3
 
 
+def test_carrier_action_sans_route() -> None:
+    action = arch.carrier_action
+    # Phase 1 : creation sans route, puis rejeu idempotent.
+    assert action(None, None, 7, True) == ("create", {"product_id": 7})
+    phase1 = {"id": 1, "product_id": [7, "Pose"], "route_ids": []}
+    assert action(phase1, None, 7, True) == ("ok", {})
+    # Phase 2 : meme transporteur, la route est ajoutee, pas de nouveau transporteur.
+    assert action(phase1, 30, 7, False) == ("write", {"route_ids": [(4, 30)]})
+    # --sans-route sur un transporteur deja route : rien a retirer.
+    routed = {"id": 1, "product_id": [7, "Pose"], "route_ids": [30]}
+    assert action(routed, None, 7, True) == ("ok", {})
+    assert action(routed, 30, 7, False) == ("ok", {})
+    # Comportement historique sans l'option : route requise, creation avec route.
+    assert action(None, None, 7, False)[0] == "skip"
+    assert action(None, 30, 7, False) == ("create", {"product_id": 7, "route_ids": [(6, 0, [30])]})
+    assert action(None, None, None, True)[0] == "skip", "produit de service requis a la creation"
+
+
 def test_unique_sequence_codes() -> None:
     codes = (
         [seq for seq, *_ in arch.PICKING_TYPES_INTERNAL]
@@ -77,10 +95,11 @@ def main() -> None:
     test_3_routes()
     test_6_rules()
     test_3_carriers()
+    test_carrier_action_sans_route()
     test_unique_sequence_codes()
     test_returns_reference_existing_incoming()
     test_xmlid_distinct_from_gestion_stock_migration()
-    print("test_setup_stock_architecture : OK (7 assertions)")
+    print("test_setup_stock_architecture : OK (8 tests)")
 
 
 if __name__ == "__main__":

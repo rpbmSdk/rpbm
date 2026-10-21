@@ -67,7 +67,7 @@ en production plus tard : `--profile <profil-prod>` une fois ce profil déclaré
 | Script | Écrit ? | Rôle |
 |---|---|---|
 | [`install_module.py`](install_module.py) | oui (`--commit`) | Rafraîchit la liste des apps si besoin, installe `rpbm_agent`. |
-| [`setup_stock_architecture.py`](setup_stock_architecture.py) | oui (`--commit`) | Implémente [`../Gestion Stock/architectures/01-architecture-1-zones.md`](../Gestion%20Stock/architectures/01-architecture-1-zones.md) §2.1-2.7 (34 types d'opération, 3 routes, 6 règles, transporteurs). |
+| [`setup_stock_architecture.py`](setup_stock_architecture.py) | oui (`--commit`) | Implémente [`../Gestion Stock/architectures/01-architecture-1-zones.md`](../Gestion%20Stock/architectures/01-architecture-1-zones.md) §2.1-2.7 (34 types d'opération, 3 routes, 6 règles, transporteurs). `carriers --sans-route` (et `check --sans-route`) : les 3 transporteurs, leur produit de service et son prix, sans route (phase 1 de la mise en production) ; `carriers --commit` sans l'option ajoute ensuite les routes aux mêmes transporteurs (phase 2), sans doublon ; l'option ne retire jamais une route déjà posée. |
 | [`verify_structural.py`](verify_structural.py) | **jamais** | Compare l'instance aux tables de `setup_stock_architecture.py` (source unique) — PASS/FAIL/WARN. |
 | [`verify_flows.py`](verify_flows.py) | oui (`--commit`) | Recette T1-T8/MTO ([test-registry](../Gestion%20Stock/architectures/audits/architecture-1-test-registry.md)) — taggée `ARCH1-AUDIT-<run>-<scénario>`, jamais de validation physique. |
 | [`rollback.py`](rollback.py) | oui (`--commit`) | Annule/supprime les enregistrements d'un run `verify_flows.py`, jamais rien d'autre. |
