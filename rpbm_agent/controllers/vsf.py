@@ -87,9 +87,7 @@ def product_creation_values(article, description, image=False):
     )
     return {
         "name": article.name,
-        "default_code": constructor_reference_or_vsf_code(
-            constructor_reference, article.code
-        ),
+        "default_code": article.code,
         "rpbm_eurocode": article.code,
         "rpbm_width_mm": getattr(article, "largeurMm", None) or False,
         "rpbm_length_mm": getattr(article, "longueurMm", None) or False,
@@ -121,7 +119,9 @@ def product_supplierinfo_values(
         "product_code": article.code,
         "delay": 1,
         "min_qty": 0,
-        "price": article.prixVenteRPBM,
+        "price": article.prixVente,
+        # Odoo stocke la remise en %, la configuration en fraction (0.07 * 100 = 7.000000000000001).
+        "discount": round(article.remiseRPBM * 100, 2),
     }
     if product_id:
         values["product_id"] = product_id

@@ -691,8 +691,9 @@ def test_vsf_valeurs_de_creation_produit():
         longueurMm=560,
     )
     values = vsf.product_creation_values(article, "<p>Note VSF</p>", image=b"image")
-    assert values["default_code"] == "1617361980"
+    assert values["default_code"] == "6571AGRCHIMVZ"
     assert values["rpbm_eurocode"] == "6571AGRCHIMVZ"
+    assert values["rpbm_constructor_reference"] == "1617361980"
     assert values["rpbm_width_mm"] == 1240
     assert values["rpbm_length_mm"] == 560
     assert values["description"] == "<p>Note VSF</p>"
@@ -755,7 +756,8 @@ def test_vsf_valeurs_fournisseur_completes():
         "product_code": "6571AGRCHIMVZ",
         "delay": 1,
         "min_qty": 0,
-        "price": 80.0,
+        "price": 100.0,
+        "discount": 20.0,
         "product_tmpl_id": 42,
         "date_start": "2026-07-30",
     }

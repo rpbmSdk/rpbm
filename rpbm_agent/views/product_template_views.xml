@@ -11,6 +11,10 @@
                         type="object"
                         groups="base.group_no_one"/>
             </xpath>
+            <!-- Pas default_code : mrp_plm l'a remplacé par un bloc sans libellé (avec « Version »). -->
+            <field name="barcode" position="before">
+                <field name="rpbm_eurocode"/>
+            </field>
         </field>
     </record>
 

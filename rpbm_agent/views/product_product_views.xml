@@ -5,7 +5,8 @@
         <field name="model">product.product</field>
         <field name="inherit_id" ref="product.product_normal_form_view"/>
         <field name="arch" type="xml">
-            <field name="default_code" position="after">
+            <!-- Pas default_code : mrp_plm l'a remplacé par un bloc sans libellé (avec « Version »). -->
+            <field name="barcode" position="before">
                 <field name="rpbm_eurocode"/>
                 <field name="rpbm_width_mm"/>
                 <field name="rpbm_length_mm"/>

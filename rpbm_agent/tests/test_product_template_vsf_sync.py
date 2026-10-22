@@ -52,7 +52,7 @@ class TestProductTemplateVSFSync(TransactionCase):
         self.assertEqual(line.product_name, "Désignation VSF")
         self.assertEqual(line.product_code, "6571AGRCHIMVZ")
         self.assertFalse(line.date_start, "premier tarif sans date de début (bug du prix d'achat à 0)")
-        self.assertEqual(line.price, 80.0)
+        self.assertEqual((line.price, line.discount, line.price_discounted), (100.0, 20.0, 80.0))
 
         template._sync_vsf_supplierinfo(
             self._article(name="Désignation VSF mise à jour"), self.partner.id, today
@@ -71,13 +71,28 @@ class TestProductTemplateVSFSync(TransactionCase):
         self.assertEqual(len(lines), 2)
         self.assertEqual((lines[0].date_start, lines[0].date_end), (False, today))
         self.assertEqual(lines[1].date_start, tomorrow)
-        self.assertEqual(lines[1].price, 96.0)
+        self.assertEqual((lines[1].price, lines[1].discount, lines[1].price_discounted), (120.0, 20.0, 96.0))
 
         template._sync_vsf_supplierinfo(self._article("125,00 €"), self.partner.id, tomorrow)
         lines = template.seller_ids.sorted("id")
         self.assertEqual(len(lines), 2)
         self.assertEqual(lines[1].date_start, tomorrow)
-        self.assertEqual(lines[1].price, 100.0)
+        self.assertEqual((lines[1].price, lines[1].discount, lines[1].price_discounted), (125.0, 20.0, 100.0))
+
+    def test_net_price_line_is_historised_to_public_price_and_discount(self):
+        """17.0.261022.1 : une ligne restée au net (remise 0) n'est pas « à jour » au même net."""
+        template = self._template()
+        today = fields.Date.context_today(template)
+        tomorrow = today + timedelta(days=1)
+        net_line = self.env["product.supplierinfo"].create(
+            {"partner_id": self.partner.id, "product_tmpl_id": template.id, "price": 80.0}
+        )
+
+        # Lendemain : la ligne du jour serait corrigée sur place au lieu d'être historisée.
+        template._sync_vsf_supplierinfo(self._article(), self.partner.id, tomorrow)
+        new_line = template.seller_ids - net_line
+        self.assertEqual((net_line.price, net_line.discount, net_line.date_end), (80.0, 0.0, today))
+        self.assertEqual((new_line.price, new_line.discount, new_line.date_start), (100.0, 20.0, tomorrow))
 
     def test_first_price_found_for_an_earlier_purchase_date(self):
         """PO00025 : demande de prix datée de la veille du premier tarif VSF, besoin fusionné à 0 €.
@@ -92,11 +107,11 @@ class TestProductTemplateVSFSync(TransactionCase):
         seller = product._select_seller(
             partner_id=self.partner, quantity=2, date=today - timedelta(days=1), uom_id=product.uom_po_id
         )
-        self.assertEqual(seller.price, 80.0)
+        self.assertEqual((seller.price, seller.discount), (100.0, 20.0))
 
         template._sync_vsf_supplierinfo(self._article("120,00 €"), self.partner.id, today)
         self.assertEqual(len(template.seller_ids), 1, "premier tarif créé aujourd'hui : corrigé sur place")
-        self.assertEqual((template.seller_ids.date_start, template.seller_ids.price), (False, 96.0))
+        self.assertEqual((template.seller_ids.date_start, template.seller_ids.price), (False, 120.0))
 
     def test_vsf_goes_first_and_keeps_list_price(self):
         """IMP-3 : article importé (fournisseur local seul) rattaché à un article VSF."""
@@ -107,7 +122,7 @@ class TestProductTemplateVSFSync(TransactionCase):
 
         template._sync_vsf_supplierinfo(self._article(), self.partner.id, today)
         vsf_line = template.seller_ids - mpb
-        self.assertEqual((mpb.price, len(vsf_line), vsf_line.price), (412.0, 1, 80.0))
+        self.assertEqual((mpb.price, len(vsf_line), vsf_line.price), (412.0, 1, 100.0))
         self.assertLess(vsf_line.sequence, mpb.sequence, "VSF passe en tête (P-36)")
         self.assertEqual(template.list_price, 412.0)
         self.assertEqual(template.product_variant_id._select_seller(quantity=None).partner_id, self.partner)
