@@ -612,6 +612,25 @@ pending["6108A"].resolve([{ code: "6108AGABCHM" }]);
 await next;
 assert.deepEqual(plain(stale.articlesVsf), [{ code: "6108AGABCHM" }], "échec périmé sans effet sur la recherche en cours");
 
+// Recette 2026-10-22 (SO8164) : base saisie puis « Rechercher sur VSF ». Le change lance l'effet,
+// le clic la recherche forcée : un seul appel VSF, partagé, puis un nouvel appel après « aucun résultat ».
+const typed = mount({ order_line: { records: [] } }, context.AgentWidgetDialogSaleOrder);
+const typedPending = [];
+typed.callPortal = (route, params) => {
+    rpcCalls.push({ route, params });
+    return new Promise((resolve) => typedPending.push(resolve));
+};
+runVsfEffect();
+typed.onChangeBaseEurocode({ target: { value: "4139A" } });
+runVsfEffect();
+const clicked = typed.searchBaseEurocode({ force: true });
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "4139A" }], "change + clic : un seul appel");
+typedPending[0]([]);
+await clicked;
+typed.searchBaseEurocode({ force: true });
+assert.deepEqual(await vsfSearches(), [{ baseEurocode: "4139A" }, { baseEurocode: "4139A" }], "aucun résultat : le bouton relance");
+typedPending[1]([]);
+
 // Revue E2, A : devis avec une catégorie mais ni base ni pièce. Base saisie, article principal choisi,
 // puis « Charger X'Glass » et la vraie chaîne (véhicule, planche, calque de la catégorie) : rien n'est perdu.
 const settleEffects = async () => {

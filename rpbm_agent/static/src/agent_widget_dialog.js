@@ -993,6 +993,12 @@ export class AgentWidgetDialog extends asyncWidget {
             this._lastSearchedBaseEurocode = undefined;
             return;
         }
+        // Même base en cours de recherche : saisie puis clic sur « Rechercher sur VSF » déclenchait
+        // l'effet (change) et le bouton, soit deux appels VSF (recette 2026-10-22). Le premier appelant
+        // signale l'échec éventuel.
+        if (this._vsfSearch?.base === baseEurocode) {
+            return this._vsfSearch.promise.catch(() => {});
+        }
         // Même base déjà cherchée ET résultats affichés : rien à faire. Sans la seconde condition,
         // « Rechercher sur VSF » restait muet après restauration (recette 2026-09-20).
         if (baseEurocode === this._lastSearchedBaseEurocode && this.state.articlesVsf.length) {
@@ -1004,10 +1010,10 @@ export class AgentWidgetDialog extends asyncWidget {
         }
         this._lastSearchedBaseEurocode = baseEurocode;
         this.state.vsfNoResultFor = undefined;
+        const promise = this.callPortal("/searchBaseEurocode", { baseEurocode });
+        this._vsfSearch = { base: baseEurocode, promise };
         try {
-            const res = await this.callPortal("/searchBaseEurocode", {
-                baseEurocode,
-            });
+            const res = await promise;
             // Base modifiée pendant la recherche (celle de l'ouverture, par exemple) : réponse périmée.
             if (baseEurocode !== this._lastSearchedBaseEurocode) {
                 return;
@@ -1021,6 +1027,10 @@ export class AgentWidgetDialog extends asyncWidget {
                 this._lastSearchedBaseEurocode = undefined;
             }
             throw error;
+        } finally {
+            if (this._vsfSearch?.promise === promise) {
+                this._vsfSearch = undefined;
+            }
         }
     }
 
