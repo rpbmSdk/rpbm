@@ -12,7 +12,7 @@ Phases, dans l'ordre des dependances :
     locations     stock.location        emplacements source (racks rattaches a leur depot)
     suppliers     res.partner           fournisseurs FRS hors VSF
     products      product.template      catalogue dedoublonne par EUROCODE
-    supplierinfo  product.supplierinfo  prix fournisseurs (PRIX ACHAT)
+    supplierinfo  product.supplierinfo  prix fournisseurs (VSF : prix public + remise ; autres : PRIX ACHAT)
     costs         product.product       cout standard_price (PRIX RV)
     check         lecture seule         controles post-import
     selfcheck     hors ligne            verification de la logique du script
@@ -67,6 +67,8 @@ CHUNK_SIZE = 200
 # Ne jamais creer un second partenaire VSF : la synchronisation VSF du module leve une
 # UserError des que deux prix fournisseurs sont actifs pour ce partenaire sur un produit.
 VSF_PARTNER_ID = 5708
+# Remise VSF en % sur le prix public : reprend rpbm_agent.vsf_discount (0.2), comme le widget.
+VSF_DISCOUNT = "20"
 
 # Entrepots cibles (decision RPBM du 2026-07-23, forme a confirmer par Q1). Le code Odoo est
 # limite a 5 caracteres.
@@ -364,6 +366,10 @@ def build_products() -> tuple[list[str], list[list[str]]]:
 def build_supplierinfo(today: str) -> tuple[list[list[str]], list[list[str]]]:
     """Retourne (lignes VSF, lignes autres fournisseurs).
 
+    VSF (rpbm_agent 17.0.261022.1) : prix public + remise VSF_DISCOUNT, comme le widget ; le net reste
+    calcule par Odoo. Autres fournisseurs : PRIX ACHAT, remise 0. Colonne discount en derniere position
+    (le selfcheck lit les lignes par position).
+
     Tarif VSF sans date_start (rpbm_agent 17.0.261021.2) : date au jour de l'import, il n'etait pas
     trouve pour une demande de prix datee de la veille et la ligne d'achat passait a 0 EUR
     (purchase_stock stock_rule.py:251). rpbm_agent historise une ligne sans date (close a J-1).
@@ -379,12 +385,12 @@ def build_supplierinfo(today: str) -> tuple[list[list[str]], list[list[str]]]:
         if key.startswith("VSF"):
             vsf.append([
                 xmlid("seller", f"{reference} vsf"), xmlid("prod", reference),
-                str(VSF_PARTNER_ID), price, "", reference,
+                str(VSF_PARTNER_ID), to_number(row["public_price"]), "", reference, VSF_DISCOUNT,
             ])
         elif key and key not in NON_SUPPLIER_KEYS:
             others.append([
                 xmlid("seller", f"{reference} {key}"), xmlid("prod", reference),
-                xmlid("partner", key), price, today, reference,
+                xmlid("partner", key), price, today, reference, "0",
             ])
     return vsf, others
 
@@ -535,7 +541,7 @@ def phase_products(odoo: Odoo, limit: int | None) -> None:
 def phase_supplierinfo(odoo: Odoo, limit: int | None) -> None:
     today = date.today().isoformat()
     vsf, others = build_supplierinfo(today)
-    fields = ["id", "product_tmpl_id/id", "partner_id/{}", "price", "date_start", "product_code"]
+    fields = ["id", "product_tmpl_id/id", "partner_id/{}", "price", "date_start", "product_code", "discount"]
 
     # Garde-fou P0-B (reconciliation §2.15) : _active_vsf_supplierinfo() leve une UserError
     # des que deux tarifs VSF sont actifs le meme jour, ce qui bloque definitivement la
@@ -701,6 +707,10 @@ def phase_selfcheck() -> None:
     assert all(row[4] == "" for row in vsf), "tarif VSF sans date_start (prix d'achat a 0 EUR)"
     assert all(row[4] == "2026-07-30" for row in others), "date_start des autres fournisseurs"
     assert all(row[2] == str(VSF_PARTNER_ID) for row in vsf), "VSF doit pointer le partenaire 5708"
+    public = {row["product_reference"]: to_number(row["public_price"]) for row in read_catalog()}
+    assert all(row[3] == public[row[5]] and float(row[3]) > 0 and row[6] == VSF_DISCOUNT for row in vsf), \
+        "tarif VSF : prix public + remise VSF_DISCOUNT"
+    assert all(row[6] == "0" for row in others), "autres fournisseurs : PRIX ACHAT, remise 0"
     seller_ids = [row[0] for row in vsf + others]
     assert len(seller_ids) == len(set(seller_ids)), "identifiants externes de tarif en doublon"
 
