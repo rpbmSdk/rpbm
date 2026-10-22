@@ -36,7 +36,7 @@ Le dépôt sélectionne la cible Odoo par son nom de profil dans `.paradigme.yam
 | `VSF_LOGIN` | Identifiant du portail VSF |
 | `VSF_PASSWORD` | Mot de passe du portail VSF |
 | `rpbm_agent.vsf_partner_id` | Identifiant du partenaire fournisseur VSF ; défaut de compatibilité : `5708` |
-| `rpbm_agent.vsf_discount` | Remise RPBM décimale entre `0` et `1` ; défaut de compatibilité : `0.2` |
+| `rpbm_agent.vsf_discount` | Remise RPBM décimale entre `0` et `1` ; défaut de compatibilité : `0.2`. Écrite × 100 dans la remise (`discount`, en %) des tarifs VSF depuis `17.0.261022.1` |
 | `rpbm_agent.labor_product_t1` / `_t2` / `_t3` | Identifiants des `product.product` de service facturés pour les opérations X'Glass T1/T2/T3 ; défauts `24` / `23` / `113` (ids constatés sur `rpbm-preprod`) |
 
 Les paramètres `rpbm_agent.vsf_*` sont lus à chaque recherche VSF et création de produit (`controllers/vsf_config.py`), `rpbm_agent.labor_product_*` à chaque `/getPieces` et à chaque ajout de main-d'œuvre enregistrée sur le devis sans X'Glass (`/rpbm_labor_products`) : un changement de ces paramètres s'applique donc aussi à la main-d'œuvre enregistrée sur l'opportunité. Une valeur absente conserve le comportement historique ; une valeur invalide produit une erreur explicite et n'est jamais appliquée silencieusement.
@@ -198,6 +198,28 @@ Migration `post-vsf-first-price-date.py` : retire la date de début de la ligne 
 article (partenaire `rpbm_agent.vsf_partner_id`), si aucune autre ligne VSF de l'article n'a une date vide ou
 plus ancienne. SQL seulement, idempotente, ids journalisés ; les lignes de commande existantes ne sont pas
 recalculées. Elle ne tourne pas sur une base installée à neuf (« Branch Rebuild »).
+
+## Prix fournisseur VSF au prix public avec remise (`17.0.261022.1`)
+
+Le tarif VSF (`product.supplierinfo`) porte le **prix public** VSF (`prixVente`, le `list_price` de l'article) et
+la **remise** RPBM en % (`rpbm_agent.vsf_discount` × 100, soit 20). Le net, `price_discounted`, est calculé par
+Odoo ; la ligne d'achat reprend prix et remise (`purchase/models/purchase_order_line.py:358-363`), la valorisation
+applique la remise (`purchase_stock/models/stock_move.py:94-96`). La colonne « Remise » des tarifs et des lignes
+d'achat est masquée par défaut (`optional="hide"`) : à afficher par utilisateur. `_sync_vsf_supplierinfo` tient une
+ligne pour « à jour » seulement si prix **et** remise concordent ; sinon il la corrige (ligne ouverte le jour même)
+ou l'historise. La référence interne (`default_code`) d'un article créé par `/createProduct` est l'eurocode.
+
+Migration `post-vsf-public-price-eurocode.py` :
+
+- SQL : une ligne VSF à remise 0 dont le prix vaut exactement `ROUND(list_price × (1 − remise), 2)` passe à
+  (`list_price`, remise en %) ; net inchangé à 0,005 € près. Les autres lignes VSF à remise 0 (autre rapport,
+  prix nul) ne sont pas touchées, leurs ids sont journalisés : la synchronisation les historisera au prochain
+  ajout au devis. Idempotente (une ligne convertie a une remise). Les lignes d'achat existantes ne sont pas
+  recalculées (décision du 2026-10-22 : PO00025 ignorée).
+- ORM : `default_code` ← `rpbm_eurocode` pour les variantes dont la référence interne vaut encore la référence
+  constructeur (3527 et 3528 en pré-prod).
+- Fournisseur VSF absent ou paramètre de remise invalide : message dans le journal, rien n'est repris.
+- À passer avant toute modification de `list_price` (P-04) : la migration le prend pour prix public.
 
 Limite : l'import du catalogue (`Jobs/Gestion Stock/import_odoo.py`, `phase_supplierinfo`) date au jour de
 l'import tout tarif VSF actif sans date de début et crée ses tarifs datés : relancé (après un « Branch Rebuild »
