@@ -132,6 +132,16 @@ class TestProductTemplateVSFSync(TransactionCase):
         template._sync_vsf_supplierinfo(self._article("120,00 €"), self.partner.id, today + timedelta(days=1))
         self.assertEqual(set((template.seller_ids - mpb).mapped("sequence")), {vsf_line.sequence}, "historisation : même séquence")
 
+    def test_constructor_reference_shown_on_template(self):
+        """17.0.261022.2 : la référence constructeur de la variante unique se lit et s'écrit depuis l'article."""
+        template = self._template(rpbm_constructor_reference="861101J910")
+        self.assertEqual(template.product_variant_id.rpbm_constructor_reference, "861101J910")
+
+        template.rpbm_constructor_reference = "861101J710"
+        self.assertEqual(template.product_variant_id.rpbm_constructor_reference, "861101J710")
+        template.product_variant_id.rpbm_constructor_reference = "1617361980"
+        self.assertEqual(template.rpbm_constructor_reference, "1617361980")
+
     @patch.object(vsf, "VSFAgent")
     def test_batch_sync_isolates_failures_and_preserves_identity(self, agent_class):
         valid = self._template(list_price=1.0)

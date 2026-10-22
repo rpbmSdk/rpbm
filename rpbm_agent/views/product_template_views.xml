@@ -14,6 +14,9 @@
             <!-- Pas default_code : mrp_plm l'a remplacé par un bloc sans libellé (avec « Version »). -->
             <field name="barcode" position="before">
                 <field name="rpbm_eurocode"/>
+                <field name="rpbm_width_mm"/>
+                <field name="rpbm_length_mm"/>
+                <field name="rpbm_constructor_reference" invisible="product_variant_count &gt; 1"/>
             </field>
         </field>
     </record>

@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from odoo import _, fields, models, tools
+from odoo import _, api, fields, models, tools
 from odoo.exceptions import UserError
 
 from ..controllers import vsf
@@ -17,6 +17,22 @@ class ProductTemplate(models.Model):
     rpbm_eurocode = fields.Char("Eurocode", index=True)
     rpbm_width_mm = fields.Float("Largeur (mm)")
     rpbm_length_mm = fields.Float("Longueur (mm)")
+    # Champ de la variante affiché sur l'article, comme default_code (product/models/product_template.py).
+    rpbm_constructor_reference = fields.Char(
+        "Référence constructeur",
+        compute="_compute_rpbm_constructor_reference",
+        inverse="_set_rpbm_constructor_reference",
+    )
+
+    @api.depends("product_variant_ids.rpbm_constructor_reference")
+    def _compute_rpbm_constructor_reference(self):
+        self._compute_template_field_from_variant_field("rpbm_constructor_reference")
+
+    def _set_rpbm_constructor_reference(self):
+        self._set_product_variant_field("rpbm_constructor_reference")
+
+    def _get_related_fields_variant_template(self):
+        return super()._get_related_fields_variant_template() + ["rpbm_constructor_reference"]
 
     def _vsf_sync_configuration(self):
         """Lit et valide les paramètres nécessaires à une synchronisation VSF."""

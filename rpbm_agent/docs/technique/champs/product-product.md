@@ -12,6 +12,7 @@ dans `models/product_template.py`.
 | `product.template.rpbm_width_mm` | float | Largeur issue de la fiche VSF, en millimètres |
 | `product.template.rpbm_length_mm` | float | Longueur issue de la fiche VSF, en millimètres |
 | `product.product.rpbm_constructor_reference` | char | Référence constructeur de la pièce (`articleVsf.refConstructeur`) ; vide lorsque VSF retourne la sentinelle `"-"` |
+| `product.template.rpbm_constructor_reference` | char, calculé, non stocké | Référence constructeur de la variante unique, lue et écrite depuis l'article (calcul et inverse sur la variante, comme `default_code` ; vide pour un article à plusieurs variantes). Depuis `17.0.261022.2` |
 
 Champs standards également écrits à la création : `name`, `default_code` (eurocode, depuis
 `17.0.261022.1` ; la référence constructeur reste dans `rpbm_constructor_reference`), `list_price`, `type`, `image_1920`, `description` (note interne structurée
@@ -34,7 +35,8 @@ ligne à J-1 et en ouvre une à J ; le premier tarif n'a pas de date de début).
 
 `rpbm_eurocode`, `rpbm_width_mm` et `rpbm_length_mm` sont affichés sous la référence interne, avant le
 code-barres (`views/product_product_views.xml`) ; `rpbm_constructor_reference` dans l'onglet « VSF ». Le
-formulaire article (`views/product_template_views.xml`) affiche `rpbm_eurocode` au même endroit. L'ancre est
+formulaire article (`views/product_template_views.xml`) affiche au même endroit `rpbm_eurocode`, `rpbm_width_mm`,
+`rpbm_length_mm` et, depuis `17.0.261022.2`, `rpbm_constructor_reference` (masquée s'il y a plusieurs variantes). L'ancre est
 `barcode` et non `default_code` : `mrp_plm` remplace ce champ par un bloc sans libellé (avec « Version »).
 
 La recherche des articles propose un filtre « Eurocode » avant la catégorie
