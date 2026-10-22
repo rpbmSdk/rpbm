@@ -75,7 +75,8 @@ Une seule version de manifeste couvre toute l'itération. Les lots sont ceux de 
 | IMP-10 (partie) | barème recopié sur la ligne de facture, net et remise fournisseur jamais imprimés (P-24) | [Surcharges](surcharges.md#saleorderline_prepare_invoice_line) |
 
 Le module fonctionne en mode « règle 8 » seulement. C'est le seul mode possible en production tant que le
-widget n'écrit pas le Prix XGlass HT (IMP-1) ni le prix fournisseur brut (IMP-3 côté widget).
+widget n'écrit pas le Prix XGlass HT (IMP-1) ; il écrit le prix fournisseur VSF brut avec la remise de 20 %
+depuis `rpbm_agent` 17.0.261022.1 (IMP-3 côté widget).
 
 ## Différé
 
@@ -85,7 +86,7 @@ Rien de ce tableau n'est dans le code.
 |---|---|
 | filtre de date et arrondi effectif de la règle 8 | Q-12 |
 | activation du filtre de régime de la règle 8 (`rule8_insurance_only`) | validation du client : sinon une ligne hors assurance garde le `list_price` |
-| IMP-3 côté prix | le prix fournisseur est encore un net, faux de 20 % |
+| IMP-3 côté prix | tarif VSF au prix public + 20 % depuis 17.0.261022.1 (176 lignes encore au net, historisées à la prochaine synchronisation) |
 | IMP-4 : listes de prix par régime, bascule | IMP-1, IMP-3, Q-04, Q-08, Q-09, Q-12, Q-13 |
 | IMP-5 : main-d'œuvre et pose | Q-14 à Q-17, E-02 |
 | IMP-8 (reste) : fournisseur prévu, position fiscale, achat local, points de commande, droits | Q-20, E-01, Q-22, Q-21, Q-23 |

@@ -31,7 +31,8 @@ flowchart LR
 ## Périmètre de l'itération 1
 
 Le module reste en mode « règle 8 » : c'est le seul mode possible en production tant que le widget de
-`rpbm_agent` n'écrit pas le Prix XGlass HT (IMP-1) ni le prix fournisseur brut (IMP-3 côté widget).
+`rpbm_agent` n'écrit pas le Prix XGlass HT (IMP-1). Depuis `rpbm_agent` 17.0.261022.1, il écrit le prix
+fournisseur VSF brut (prix public) avec la remise RPBM de 20 % (IMP-3 côté widget).
 
 | Lot | Livré | Code |
 |---|---|---|
@@ -52,7 +53,7 @@ qui ajoute une mise en place livrera `migrations/<version>/post-setup.py` (voir 
 |---|---|
 | Filtre de date et arrondi effectif de la règle 8 | Q-12 |
 | Activation du filtre de régime de la règle 8 | Validation du client ([Paramètres](technique/parametres.md)) |
-| IMP-3 côté prix (prix de revient) | IMP-3 côté widget : le prix fournisseur est encore un net, faux de 20 % |
+| IMP-3 côté prix (prix de revient) | IMP-3 côté widget fait (17.0.261022.1) : tarif VSF = prix public + remise 20 % ; 176 tarifs VSF hors rapport 0,8 restent au net jusqu'à leur prochaine synchronisation |
 | IMP-4 (listes de prix par régime, bascule) | IMP-1, IMP-3, Q-04, Q-08, Q-09, Q-12, Q-13 |
 | IMP-5 (main-d'œuvre et pose) | Q-14 à Q-17, E-02 |
 | IMP-8 : fournisseur prévu, position fiscale, achat local, points de commande | Q-20, Q-23, E-01, Q-21, Q-22 |
